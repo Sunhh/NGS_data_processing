@@ -18,8 +18,10 @@
 # 2013-08-19 Add a function to fill NULL cells with assigned character. 
 # 2013-08-21 Add a function to transpose a matrix table. Also fix a bug for function &fillNull() which does not fill the first column of line. 
 # 2013-09-11 Edit -cbind log infor. 
+# 2013-11-26 Add in uniqComb.pl function. Add time tag for message output. 
 
 use strict;
+use warnings; 
 
 use Getopt::Long;
 my %opts;
@@ -40,11 +42,14 @@ GetOptions(\%opts,
 			"trimEndReturn!", 
 			"fillNull:s", 
 			"transpose!", "skip_null_line!", "beMatrix!", "fill_new:s",      # transpose a matrix. 
+			"kSrch_idx:s","kSrch_idxCol:s","kSrch_srcCol:s","kSrch_drop!", "kSrch_line!", # Similar to linux command join, without joining and with more index columns. Combined from uniqComb.pl 
 			"help!");
-my $info=<<INFO;
+sub usage {
+
+	my $info=<<INFO;
 ##################################################
 command:perl $0 <STDIN|parameters>
-# 2013-08-19 
+# 2013-11-26 
 
 	-help           help infomation;
 	-combine        combine files;
@@ -88,51 +93,71 @@ command:perl $0 <STDIN|parameters>
 	                  Be aware that only the new added cells will be filled with this character! 
 	                  So the raw NULL cells will remain unchanged! 
 
+			"kSrch_idx:s","kSrch_idxCol:s","kSrch_srcCol:s","kSrch_drop!", "kSrch_line!", # Similar to linux command join, without joining and with more index columns. Combined from uniqComb.pl 
+
 	-symbol         Defining the symbol to divide data.Default is "\\t";
 ##################################################
 INFO
 
-sub usage {
 	print STDOUT "$info"; 
-	print STDERR "Error in $0\n"; 
+	&stop("[Err] Exit $0\n"); 
 	exit(1); 
 }
+
 if ($opts{help} or (-t and !@ARGV)) {
 	&usage; 
 }
 
+#****************************************************************#
+#--------------Main-----Function-----Start-----------------------#
+#****************************************************************#
+
+# Making File handles for reading;
+our @InFp = () ;  
+if ( !@ARGV )
+{
+	@InFp = (\*STDIN);
+}
+else
+{
+	for (@ARGV) {
+		push( @InFp, &openFH($_,'<') );
+	}
+}
+
+
+
 my $symbol = "\t";
-$opts{symbol} ne '' and $symbol = $opts{symbol};
+&goodVar($opts{symbol}) and $symbol = $opts{symbol};
 
 
 &reverse_lines() if($opts{reverse});
-&skip() if ($opts{skip}>0);
+&skip() if (&goodVar($opts{skip}) and $opts{skip}>0);
 &combine() if ($opts{combine});
-&column() if ($opts{column} ne '');
-&extreme() if ($opts{max_col} ne '' || $opts{min_col} ne '');
-&colStat() if ($opts{col_stat} ne '');
-if ($opts{col_sort} ne '') {
+&column() if ( &goodVar($opts{column}) );
+&extreme() if ( &goodVar($opts{max_col}) || &goodVar($opts{min_col}) );
+&colStat() if ( &goodVar($opts{col_stat}) );
+if ( &goodVar($opts{col_sort}) ) {
 	my @file;
-	while (<>) {
-		chomp;
-		push(@file,$_);
-	}continue{
-		if (eof) {
-			my @output=sort col_sort @file;
-			foreach my $line (@output) {
-				print STDOUT "$line\n";
-			}
+	for my $fh (@InFp) {
+		while (<$fh>) {
+			chomp; 
+			push(@file, $_); 
 		}
+	}# End $fh @InFp
+	my @output = sort col_sort @file; 
+	foreach my $line (@output) {
+		print STDOUT "$line\n"; 
 	}
 }# end if
 
-&uniq_rep() if ($opts{col_uniq} ne '' || $opts{col_reps} ne '' || $opts{col_repCount} ne '');
+&uniq_rep() if ( &goodVar($opts{col_uniq}) || &goodVar($opts{col_reps}) || &goodVar($opts{col_repCount}) );
 
-&best_uniqCol() if ($opts{best_uniqCol} ne '');
+&best_uniqCol() if ( &goodVar($opts{best_uniqCol}) );
 
-&UniqColLineF() if ($opts{UniqColLine} ne '');
+&UniqColLineF() if ( &goodVar($opts{UniqColLine}) );
 
-&LabelTbl($opts{label_mark}) if (defined $opts{label_mark});
+&LabelTbl($opts{label_mark}) if ( &goodVar($opts{label_mark}) );
 
 &cbind() if ($opts{cbind}); 
 
@@ -144,22 +169,80 @@ if ($opts{col_sort} ne '') {
 
 &t() if ( $opts{transpose} ); 
 
+&kSrch() if ( &goodVar($opts{kSrch_idx}) ); 
+
+for (@InFp) {
+	close ($_);
+}
+
+
 ######################################################################
+## sub-routines for functions. 
 ######################################################################
+
+# Similar to linux_join and from perl script uniqComb.pl 
+## "kSrch_idx:s","kSrch_idxCol:s","kSrch_srcCol:s","kSrch_drop!", # Similar to linux command join, without joining and with more index columns. Combined from uniqComb.pl 
+sub kSrch {
+	my @src_Cols = ( defined $opts{kSrch_srcCol} ) ? ( &parseCol( $opts{ kSrch_srcCol } ) ) : ( 0 ) ; 
+	my @idx_Cols = ( defined $opts{kSrch_idxCol} ) ? ( &parseCol( $opts{ kSrch_idxCol } ) ) : ( 0 ) ; 
+	my %idx_key; 
+	for my $idxF ( split(/,/, $opts{kSrch_idx}) ) {
+		my $fh = &openFH( $idxF, '<' ); 
+		if ( $opts{kSrch_line} ) {
+			while (<$fh>) {
+				$idx_key{$_} = 1; 
+			}
+		}else{
+			while (<$fh>) {
+				chomp; 
+				my @temp = split(/$symbol/o, $_); 
+				my $tkey = join("\t", @temp[@idx_Cols]); 
+				$idx_key{$tkey} = 1; 
+			}
+		}
+		close ($fh); 
+	}# for my $idxF 
+
+	for my $fh (@InFp) {
+		if ( $opts{kSrch_line} ) {
+			# Using the whole line as a key. 
+			while (<$fh>) {
+				if ($opts{kSrch_drop}) {
+					$idx_key{$_} or print; 
+				}else{
+					$idx_key{$_} and print; 
+				}
+			}#End while 
+		}else{
+			# Using the selected columns as key. 
+			while (<$fh>) {
+				my @temp = split(/$symbol/o, $_); 
+				my $tkey = join("\t", @temp[@src_Cols]); 
+				if ($opts{kSrch_drop}) {
+					$idx_key{$tkey} or print; 
+				}else{
+					$idx_key{$tkey} and print; 
+				}
+			}# End while 
+		}# End if kSrch_line 
+	}# for my $fh (@InFp)
+}# End kSrch 
 
 # Transpose a matrix . Like the t() function in R language. 
 sub t {
 	my @result_lines; 
 	my $line_idx = -1; 
-	while (<>) {
-		chomp; 
-		$opts{skip_null_line} and /^\s*$/ and next; # Here empty line should not be skipped until demanded. 
-		my @ta = split(/$symbol/o, $_); 
-		$line_idx ++; 
-		for (my $i=0; $i<@ta; $i++) {
-			$result_lines[$i][$line_idx] = $ta[$i]; 
-		}
-	}
+	for my $fh (@InFp) {
+		while (<$fh>) {
+			chomp; 
+			$opts{skip_null_line} and /^\s*$/ and next; # Here empty line should not be skipped until demanded. 
+			my @ta = split(/$symbol/o, $_); 
+			$line_idx ++; 
+			for (my $i=0; $i<@ta; $i++) {
+				$result_lines[$i][$line_idx] = $ta[$i]; 
+			}
+		}# End while 
+	}# End $fh in @inFp
 	my $fill_new = (defined $opts{fill_new}) ? $opts{fill_new} : '' ; 
 	for my $r1 (@result_lines) {
 		if ($opts{beMatrix}) {
@@ -176,20 +259,24 @@ sub t {
 sub fillNull {
 	my $tc = 1; 
 	$opts{fillNull} ne '' and $tc = $opts{fillNull}; 
-	while (<>) {
-		while (s/$symbol$symbol/$symbol$tc$symbol/og) { 1; } 
-		s/^$symbol/$tc$symbol/o; 
-		s/$symbol$/$symbol$tc/o; 
-		print; 
-	}
+	for my $fh (@InFp) {
+		while (<$fh>) {
+			while (s/$symbol$symbol/$symbol$tc$symbol/og) { 1; } 
+			s/^$symbol/$tc$symbol/o; 
+			s/$symbol$/$symbol$tc/o; 
+			print; 
+		}# End while 
+	}# End $fh in @InFp
 }# End sub fillNull
 
 # trim end returns from windows. 
 sub trimEndReturn {
-	while (<>) {
-		s/[\b\r\n]+$//; 
-		print "$_\n"; 
-	}
+	for my $fh (@InFp) {
+		while (<$fh>) {
+			s/[\b\r\n]+$//; 
+			print "$_\n"; 
+		}# End while 
+	}# End $fh in @InFp
 }# End sub trimEndReturn 
 
 #cluster_lines , cluster_group
@@ -203,61 +290,63 @@ sub cluster_group {
 		@tcols = &parseCol($opts{cluster_cols}); 
 	}
 	@tcols > 0 and $is_col = 1; 
-	while (<>) {
-		$. % 1000 == 1 and warn "$. lines.\n"; 
-		chomp; /^\s*$/ and next; 
-		my @ta=split(/$symbol/o, $_); 
-
-		$is_col == 1 and @ta = @ta[@tcols]; 
-		my @ta1; 
-		for my $tid (@ta) {
-			(defined $tid and $tid ne '') or next; 
-			push(@ta1, $tid); 
-		}
-		@ta = @ta1; 
-		@ta > 0 or next; 
-
-		my ($minV, $maxV) = ('X', 'X'); 
-		my %usedV; 
-		for my $tid (@ta) {
-			if (defined $groupID{$tid}) {
-				$usedV{ $groupID{$tid} } = 1; 
-				$minV = ($minV eq 'X') 
-					? $groupID{$tid}
-					: ($minV > $groupID{$tid}) 
-						? $groupID{$tid}
-						: $minV
-				; 
-				$maxV = ($maxV eq 'X') 
-					? $groupID{$tid}
-					: ($maxV < $groupID{$tid}) 
-						? $groupID{$tid}
-						: $maxV
-				; 
-			}
-		}#End for my $tid 
-		if ($minV eq 'X') {
+	for my $fh (@InFp) {
+		while (<$fh>) {
+			$. % 1000 == 1 and warn "$. lines.\n"; 
+			chomp; /^\s*$/ and next; 
+			my @ta=split(/$symbol/o, $_); 
+	
+			$is_col == 1 and @ta = @ta[@tcols]; 
+			my @ta1; 
 			for my $tid (@ta) {
-				$groupID{$tid} = $gID; $id2genes{$gID}{$tid} = 1; 
+				(defined $tid and $tid ne '') or next; 
+				push(@ta1, $tid); 
 			}
-			$gID ++; 
-		} elsif ($minV < $maxV) {
-			delete $usedV{$minV}; 
-			for my $tv (keys %usedV) {
-				for my $tk (keys %{$id2genes{$tv}}) {
-					$groupID{$tk} = $minV; $id2genes{$minV}{$tk} = 1; 
+			@ta = @ta1; 
+			@ta > 0 or next; 
+	
+			my ($minV, $maxV) = ('X', 'X'); 
+			my %usedV; 
+			for my $tid (@ta) {
+				if (defined $groupID{$tid}) {
+					$usedV{ $groupID{$tid} } = 1; 
+					$minV = ($minV eq 'X') 
+						? $groupID{$tid}
+						: ($minV > $groupID{$tid}) 
+							? $groupID{$tid}
+							: $minV
+					; 
+					$maxV = ($maxV eq 'X') 
+						? $groupID{$tid}
+						: ($maxV < $groupID{$tid}) 
+							? $groupID{$tid}
+							: $maxV
+					; 
 				}
-				delete $id2genes{$tv}; 
-			}
-			for my $tid (@ta) {
-				exists $groupID{$tid} or do { $groupID{$tid} = $minV; $id2genes{$minV}{$tid} = 1; }; 
-			}
-		} else {
-			for my $tid (@ta) {
-				exists $groupID{$tid} or do { $groupID{$tid} = $minV; $id2genes{$minV}{$tid} = 1; }; 
-			}
-		}#End if ( $minV eq 'X' 
-	}#End while 
+			}#End for my $tid 
+			if ($minV eq 'X') {
+				for my $tid (@ta) {
+					$groupID{$tid} = $gID; $id2genes{$gID}{$tid} = 1; 
+				}
+				$gID ++; 
+			} elsif ($minV < $maxV) {
+				delete $usedV{$minV}; 
+				for my $tv (keys %usedV) {
+					for my $tk (keys %{$id2genes{$tv}}) {
+						$groupID{$tk} = $minV; $id2genes{$minV}{$tk} = 1; 
+					}
+					delete $id2genes{$tv}; 
+				}
+				for my $tid (@ta) {
+					exists $groupID{$tid} or do { $groupID{$tid} = $minV; $id2genes{$minV}{$tid} = 1; }; 
+				}
+			} else {
+				for my $tid (@ta) {
+					exists $groupID{$tid} or do { $groupID{$tid} = $minV; $id2genes{$minV}{$tid} = 1; }; 
+				}
+			}#End if ( $minV eq 'X' 
+		}#End while 
+	}# End for $fh in @InFp 
 	my (%olines, %linev); 
 	while ( my ($tk, $tv) = each %groupID ) {
 		push(@{$olines{$tv}}, $tk);
@@ -272,101 +361,87 @@ sub cluster_group {
 }
 
 #cbind: bind files by columns. 
+# Similar to linux-paste command. 
 sub cbind {
-	@ARGV > 1 or die "There should be no less than two files for -cbind function.\n"; 
-	my @fileH; 
-	my @col_len; 
-	for (@ARGV) {
-		my $tfh; 
-		if ($_ =~ m/\.gz$/) {
-			open ($tfh, '-|', "gzip -cd $_") or die; 
-		}elsif ($_ =~ m/\.bz2$/) {
-			open ($tfh, '-|', "bzip2 -cd $_") or die; 
-		}else{
-			open ($tfh, '<', "$_") or die; 
-		}
-		push(@fileH, $tfh); 
-		push(@col_len, -1); 
-		warn "[Record]File handle [$tfh] for [0-Idx $#fileH] file [$_] " . scalar(localtime()) . "\n";
-	}
-	while (!eof($fileH[0])) {
-		$. % 1000000 == 1 and warn "[Msg]$. lines. " . scalar(localtime()) . "\n"; 
+	@ARGV > 1 or &stop( "[Err]There should be no less than two files for -cbind function.\n" ); 
+	my @col_len = (-1) x scalar(@InFp); 
+	while (!eof($InFp[0])) {
+		$. % 1e6 == 1 and &tmsg( "[Msg]$. lines.\n" ); 
 		my @line; 
-		for (my $i=0; $i<@fileH; $i++) {
-			my $tfh = $fileH[$i]; 
+		for (my $i=0; $i<@InFp; $i++) {
+			my $tfh = $InFp[$i]; 
+			&tmsg("[Rec]Dealing with [0-Idx $i] file [$ARGV[$i]]\n"); 
 			if (eof($tfh)) {
-				die "[Error][$i] file [$ARGV[$i]] (file handle [$tfh]) ended before others!\n"; 
+				&stop("[Err][$i] file [$ARGV[$i]] ended before others!\n"); 
 			}
 			my $tl = <$tfh>; 
-			chomp($tl); $tl =~ s/[\b\n]+$//; 
+			chomp($tl); $tl =~ s/[\r\b\n]+$//; 
 			if ($opts{chkColNum}) {
 				my @cc = ($tl =~ m/($symbol)/og); 
 				my $coln = $#cc+2; 
 				if ($col_len[$i] == -1) {
 					$col_len[$i] = $coln; 
 				}elsif ($col_len[$i] != $coln) {
-					warn "[Warn]Column number of file $ARGV[$i] changed at line ($col_len[$i] to $coln): '$tl'\n[Warn]I modify columns to $col_len[$i]. " . scalar(localtime()) . "\n"; 
+					&tmsg("[Wrn]Column number of file $ARGV[$i] changed at line ($col_len[$i] to $coln): '$tl'\n"); 
+					&tmsg("[Wrn]I modify columns to $col_len[$i].\n"); 
 					$tl = join("$symbol", (split(/$symbol/o, $tl))[0..($col_len[$i]-1)]); 
 				}
-			}
-
-
+			}# End chkColNum 
 			push(@line, $tl); 
-		}
+		}# End for $i<@InFp 
 		print STDOUT join("\t", @line)."\n"; 
+	}# End while !eof($InFp[0])
+	for (my $i=1; $i<@InFp; $i++) {
+		!eof($InFp[$i]) and &tmsg("[Wrn][0-Idx $i] file [$ARGV[$i]] rests lines.\n"); 
 	}
-	for (my $i=1; $i<@fileH; $i++) {
-		!eof($fileH[$i]) and warn "[Warn][0-Idx $i] file [$ARGV[$i]] (file handle [$fileH[$i]]) rests lines. " . scalar(localtime()) . "\n"; 
-	}
-	warn "[Record]-cbind Over. " . scalar(localtime()) . "\n"; 
+	&tmsg( "[Rec] -cbind Over.\n" ); 
 }#End of sub cbind. 
 
 #Labeltbl 2007-06-29
 sub LabelTbl {
-  my ($mark) = @_;
-  $mark =~ s/^\s+//; $mark =~ s/\s+$//g;
-  my @Marks = split(/::/,$mark);
-  my @markT = ();
-  for (my $i=0; $i<@Marks; $i++) {
-    if ($Marks[$i] =~ /^([^.].*)\.{2}/ ) {
-      $markT[$i]  = 'step';
-      $Marks[$i]  = $1;
-    }else{
-      $markT[$i] = 'same';
-    }
-  }
-  
-  while (<>) {
-    my @OutPre = ();
-    foreach my $i (0..$#Marks) {
-      push(@OutPre, $Marks[$i]);
-      $markT[$i] eq 'same' or $Marks[$i]++;
-    }
-    print STDOUT join($symbol,@OutPre,$_); # Only in this function I choose "$symbol" to delimiting output columns. 
-  }
-}
+	my ($mark) = @_;
+	$mark =~ s/^\s+//; $mark =~ s/\s+$//g;
+	my @Marks = split(/::/,$mark);
+	my @markT = ();
+	for (my $i=0; $i<@Marks; $i++) {
+		if ($Marks[$i] =~ /^([^.].*)\.{2}/ ) {
+			$markT[$i]  = 'step';
+			$Marks[$i]  = $1;
+		}else{
+			$markT[$i] = 'same';
+		}
+	}
 
-
-
-
-
-
-
+	for my $fh (@InFp) {
+		while (<$fh>) {
+			# Make individual markers. 
+			my @OutPre = ();
+			foreach my $i (0..$#Marks) {
+				push(@OutPre, $Marks[$i]);
+				$markT[$i] eq 'same' or $Marks[$i]++;
+			}
+			# output. 
+			print STDOUT join($symbol,@OutPre,$_); # Only in this function I choose "$symbol" to delimiting output columns. 
+		}# End while $fh 
+	}# End $fh in @InFp
+}# End sub LabelTbl 
 
 # UniqColLine
 sub UniqColLineF{
 	my %uniqLine;
 	my @Cols = &parseCol($opts{UniqColLine});
-	while (<>) {
-		chomp; s/[^\S$symbol]+$//; 
-		my @temp = split(/$symbol/o,$_);
-		my $key = join($symbol,@temp[@Cols]);
-		if (defined $uniqLine{$key}) {
-		}else{
-			$uniqLine{$key} = 1;
-			print STDOUT "$_\n";
-		}
-	}
+	for my $fh (@InFp) {
+		while (<$fh>) {
+			chomp; s/[^\S$symbol]+$//;
+			my @temp = split(/$symbol/o,$_);
+			my $key = join($symbol,@temp[@Cols]);
+			if (defined $uniqLine{$key}) {
+			}else{
+				$uniqLine{$key} = 1;
+				print STDOUT "$_\n";
+			}
+		}# End while $fh 
+	}# End $fh in @InFp
 }# 2006-11-24 13:41
 
 
@@ -374,54 +449,56 @@ sub UniqColLineF{
 sub best_uniqCol{
 	my $rep = 0;
 	$opts{best_rep} ne '' and $rep = 1;
-	$rep == 1 and (open(REP,'>',$opts{best_rep}) or die "open file $opts{best_rep} failed!\n$info");
+	$rep == 1 and do { open(REP,'>',$opts{best_rep}) or &stop( "[Err]open file $opts{best_rep} failed!\n" ) };
 	my @BestCol   = &parseCol($opts{best_uniqCol});
 	my @SelctCol  = &parseCol($opts{select_col});
 #	my @SelctRule = &parseCol($opts{select_rule});
 	my @SelctRule = split(/,/, $opts{select_rule});
 	foreach my $test (@SelctRule) {
 		$test =~ s/(^\s+|\s+$)//; 
-		($test == 1 or $test == -1) or die "select_rule mustbe 1/-1!\n";
+		($test == 1 or $test == -1) or &stop( "[Err] select_rule mustbe 1/-1!\n" );
 	}
-	($#BestCol > -1 and $#SelctCol > -1 and $#SelctRule > -1) or die $info;
-	$#SelctCol == $#SelctRule or die $info;
+	($#BestCol > -1 and $#SelctCol > -1 and $#SelctRule > -1) or &stop("[Err] $#BestCol > -1 and $#SelctCol > -1 and $#SelctRule > -1\n");
+	$#SelctCol == $#SelctRule or &stop("[Err] SelctCol != SelctRule\n");
 	my %lines;
 	my %slctLines;
 	my %repLines;
 	my %repCount;
 	my @Keys;
-	READING:while (<>) {
-		chomp;
-		my @temp = split(/$symbol/o,$_);
-		my $key = ($opts{best_disOrdCol}) ? join($symbol, (sort @temp[@BestCol])) : join($symbol,@temp[@BestCol]) ; # 2013-02-08 
-		my $newSlct = join($symbol,@temp[@SelctCol]);
-		if (defined $slctLines{$key}) {
-			my @OriginSelct = split(/$symbol/o,$slctLines{$key});
-			if ($rep == 1 and $newSlct eq $slctLines{$key}) {
-				$repLines{$key} .= "\n$_";
-				$repCount{$key} ++;
-				next READING;
-			} # 2007-1-17 16:55
-			COMP:for (my $i=0; $i<@SelctCol; $i++) {
-				my ($slctCol,$slctRule,$originSlct) = ($SelctCol[$i],$SelctRule[$i],$OriginSelct[$i]);
-				my $sym_cmp = ($temp[$slctCol] <=> $originSlct || $temp[$slctCol] cmp $originSlct); 
-				$sym_cmp == 0 and next COMP; 
-				if ($sym_cmp == $slctRule) {
-					$slctLines{$key} = $newSlct;
-					$lines{$key} = $_;
-					$repLines{$key} = $_;
-					$repCount{$key} = 1;
+	for my $fh (@InFp) {
+		READING:while (<$fh>) {
+			chomp;
+			my @temp = split(/$symbol/o,$_);
+			my $key = ($opts{best_disOrdCol}) ? join($symbol, (sort @temp[@BestCol])) : join($symbol,@temp[@BestCol]) ; # 2013-02-08 
+			my $newSlct = join($symbol,@temp[@SelctCol]);
+			if (defined $slctLines{$key}) {
+				my @OriginSelct = split(/$symbol/o,$slctLines{$key});
+				if ($rep == 1 and $newSlct eq $slctLines{$key}) {
+					$repLines{$key} .= "\n$_";
+					$repCount{$key} ++;
+					next READING;
+				} # 2007-1-17 16:55
+				COMP:for (my $i=0; $i<@SelctCol; $i++) {
+					my ($slctCol,$slctRule,$originSlct) = ($SelctCol[$i],$SelctRule[$i],$OriginSelct[$i]);
+					my $sym_cmp = ($temp[$slctCol] <=> $originSlct || $temp[$slctCol] cmp $originSlct); 
+					$sym_cmp == 0 and next COMP; 
+					if ($sym_cmp == $slctRule) {
+						$slctLines{$key} = $newSlct;
+						$lines{$key} = $_;
+						$repLines{$key} = $_;
+						$repCount{$key} = 1;
+					}
+					last COMP; 
 				}
-				last COMP; 
+			}else{
+				$slctLines{$key} = $newSlct;
+				$lines{$key} = $_;
+				$repLines{$key} = $_;
+				$repCount{$key} = 1;
+				push(@Keys,$key);
 			}
-		}else{
-			$slctLines{$key} = $newSlct;
-			$lines{$key} = $_;
-			$repLines{$key} = $_;
-			$repCount{$key} = 1;
-			push(@Keys,$key);
-		}
-	} # end while
+		} # end while
+	}# End for $fh in @InFp
 	foreach my $ttKey (@Keys) {
 		print STDOUT "$lines{$ttKey}\n";
 	}
@@ -437,70 +514,49 @@ sub best_uniqCol{
 #### reverse lines
 sub reverse_lines{
 	my @file;
-	while (<>) {
-		chomp;
-		push(@file,$_);
-	}continue{
-		if (eof) {
-			close ARGV;
-			my @output=reverse(@file);
-			@file=();
-			foreach my $line (@output) {
-				print STDOUT "$line\n";
-			}
+	for my $fh (@InFp) {
+		while (<$fh>) {
+			chomp;
+			push(@file,$_);
 		}
+	}# End $fh in @InFp 
+	my @output=reverse(@file);
+	@file=();
+	foreach my $line (@output) {
+		print STDOUT "$line\n";
 	}
-}
+}# End sub reverse_lines 
 
 
 #### skip head lines
 sub skip{
 	my $skip=$opts{skip}+1;
-	while (<>) {
-		$.<$skip and next;
-		print STDOUT $_;
-	}continue{
-		if (eof) {
-			close ARGV;
+	for my $fh (@InFp) {
+		while (<$fh>) {
+			$. < $skip and next;
+			print STDOUT $_;
 		}
-	}
+	}# End for $fh in @InFp 
 }# end skip
 #### combine files to STDOUT
 sub combine{
-	while (<>) {
-		print STDOUT $_;
-	}
-}# end combine
-
-sub parseCol {
-	my @cols = split(/,/, $_[0]); 
-	my @ncols; 
-	for my $tc (@cols) {
-		$tc =~ s/(^\s+|\s+$)//; 
-		if ($tc =~ m/^\d+$/) {
-			push(@ncols, $tc); 
-		} elsif ($tc =~ m/^(\d+)\-(\d+)$/) {
-			my ($s, $e) = ($1, $2); 
-			if ($s <= $e) {
-				push(@ncols, ($s .. $e)); 
-			}else{
-				push(@ncols, reverse($e .. $s)); 
-			}
-		} else {
-			die "Unparsable column tag for [$tc]\n";
+	for my $fh (@InFp) {
+		while (<$fh>) {
+			print STDOUT $_;
 		}
-	}
-	return (@ncols); 
-}
+	}# End for $fh in @InFp 
+}# end combine
 
 #### select special cols to generate a new line
 sub column{
 	my @cols=&parseCol($opts{column});
-	while (<>) {
-		chomp; s/[^\S$symbol]+$//; 
-		my @temp=split(/$symbol/o,$_);
-		print STDOUT join("\t",@temp[@cols])."\n";
-	}
+	for my $fh (@InFp) {
+		while (<$fh>) {
+			chomp; s/[^\S$symbol]+$//; 
+			my @temp=split(/$symbol/o,$_);
+			print STDOUT join("\t",@temp[@cols])."\n";
+		}
+	}# End for $fh in @InFp 
 }# end column
 
 
@@ -516,37 +572,35 @@ sub extreme{
 		$mode=0;			# 0 for min mode;
 	}
 	my @file;
-	while (<>) {
-		chomp;
-		push(@file,$_);
-	}continue{
-		if (eof) {
-			close ARGV;
-			foreach my $col (@cols) {
-				$#file>0 or last; # Should not be ">=". 
-				my @rest;
-				my @temp_extrm=split(/$symbol/o,$file[0]);
-				my $extreme=$temp_extrm[$col];
-				foreach my $line (@file) {
-					my @temp_line=split(/$symbol/o,$line);
-					if ($mode) {
-						($extreme<$temp_line[$col])?($extreme=$temp_line[$col]):();
-					}else{
-						($extreme>$temp_line[$col])?($extreme=$temp_line[$col]):();
-					}
-				}
-				foreach my $line (@file) {
-					my @temp_line=split(/$symbol/o,$line);
-					($extreme==$temp_line[$col])?(push(@rest,$line)):();
-				}
-				@file=@rest;
-			}
-			foreach my $output (@file) {
-				print STDOUT "$output\n";
-			}
-			@file=();
+	for my $fh (@InFp) {
+		while (<$fh>) {
+			chomp;
+			push(@file,$_);
 		}
 	}
+	foreach my $col (@cols) {
+		$#file>0 or last; # Should not be ">=". 
+		my @rest;
+		my @temp_extrm=split(/$symbol/o,$file[0]);
+		my $extreme=$temp_extrm[$col];
+		foreach my $line (@file) {
+			my @temp_line=split(/$symbol/o,$line);
+			if ($mode) {
+				($extreme<$temp_line[$col])?($extreme=$temp_line[$col]):();
+			}else{
+				($extreme>$temp_line[$col])?($extreme=$temp_line[$col]):();
+			}
+		}
+		foreach my $line (@file) {
+			my @temp_line=split(/$symbol/o,$line);
+			($extreme==$temp_line[$col])?(push(@rest,$line)):();
+		}
+		@file=@rest;
+	}
+	foreach my $output (@file) {
+		print STDOUT "$output\n";
+	}
+	@file=();
 }# end extreme
 
 sub col_sort{
@@ -574,21 +628,23 @@ sub uniq_rep{
 	}elsif ($opts{col_repCount} ne '') {
 		@cols = &parseCol($opts{col_repCount});
 	}else{
-		die "No Cols Found!\n";
+		&stop( "[Err]No Cols Found!\n" );
 	}
-	while (<>) {
-		chomp;
-		my @temp=split(/$symbol/o,$_);
-		my $key = join("\t",@temp[@cols]);
-		if (defined $line{$key}) {
-			$line{$key} .= "\n$_";
-			$rep_count{$key}++;
-		}else{
-			push(@keys,$key);
-			$line{$key} = $_;
-			$rep_count{$key} = 1;
-		}
-	}
+	for my $fh (@InFp) {
+		while (<$fh>) {
+			chomp;
+			my @temp=split(/$symbol/o,$_);
+			my $key = join("\t",@temp[@cols]);
+			if (defined $line{$key}) {
+				$line{$key} .= "\n$_";
+				$rep_count{$key}++;
+			}else{
+				push(@keys,$key);
+				$line{$key} = $_;
+				$rep_count{$key} = 1;
+			}
+		}# End while $fh
+	}# End for $fh in @InFp
 	if ($opts{col_uniq} ne '') {
 		foreach my $key (@keys) {
 			$rep_count{$key} == 1 and print STDOUT "$line{$key}\n";
@@ -612,14 +668,16 @@ sub colStat{
 	my $col = $opts{col_stat};
 	my $total = 0; 
 	my $useful_count = 0; 
-	while (<>) {
-		chomp;
-		my @temp=split(/$symbol/o,$_); 
-		push(@Data,$temp[$col]); 
-		$total += $temp[$col]; 
-		defined $temp[$col] and $temp[$col] ne '' and $useful_count++; 
-	}
-	$#Data == -1 and die "No Data found.\n";
+	for my $fh (@InFp) {
+		while (<$fh>) {
+			chomp;
+			my @temp=split(/$symbol/o,$_); 
+			push(@Data,$temp[$col]); 
+			$total += $temp[$col]; 
+			defined $temp[$col] and $temp[$col] ne '' and $useful_count++; 
+		}
+	}# End for $fh in @InFp
+	$#Data == -1 and &stop( "[Err]No Data found.\n" );
 	my @SortData = sort {$a<=>$b;} @Data;
 	my ($min,$max,$mean) = ($SortData[0],$SortData[$#SortData],$total/($#SortData+1));
 	my $median;
@@ -635,5 +693,90 @@ sub colStat{
 	print STDOUT "$total\t$mean\t$median\t$min\t$max\t",scalar @SortData,"\t$useful_count\n";
 }
 
+######################################################################
+##     Inner sub-routines. 
+######################################################################
+sub openFH ($$) {
+	my $f = shift;
+	my $type = shift;
+	my %goodFileType = qw(
+		<       read
+		>       write
+		read    read
+		write   write
+	);
+	defined $type or $type = 'read';
+	defined $goodFileType{$type} or &stop("[Err]Unknown open method tag [$type].\n");
+	$type = $goodFileType{$type};
+	local *FH;
+	# my $tfh;
+	if ($type eq 'read') {
+		if ($f =~ m/\.gz$/) {
+			open (FH, '-|', "gzip -cd $f") or &stop("[Err]$! [$f]\n");
+			# open ($tfh, '-|', "gzip -cd $f") or &stop "[Err]$! [$f]\n";
+		} elsif ( $f =~ m/\.bz2$/ ) {
+			open (FH, '-|', "bzip2 -cd $f") or &stop("[Err]$! [$f]\n");
+		} else {
+			open (FH, '<', "$f") or &stop("[Err]$! [$f]\n");
+		}
+	} elsif ($type eq 'write') {
+		if ($f =~ m/\.gz$/) {
+			open (FH, '|-', "gzip - > $f") or &stop("[Err]$! [$f]\n");
+		} elsif ( $f =~ m/\.bz2$/ ) {
+			open (FH, '|-', "bzip2 - > $f") or &stop("[Err]$! [$f]\n");
+		} else {
+			open (FH, '>', "$f") or &stop("[Err]$! [$f]\n");
+		}
+	} else {
+		# Something is wrong.
+		&stop("[Err]Something is wrong here.\n");
+	}
+	return *FH;
+}#End sub openFH
 
+
+sub parseCol {
+	my @cols = split(/,/, $_[0]); 
+	my @ncols; 
+	for my $tc (@cols) {
+		$tc =~ s/(^\s+|\s+$)//; 
+		if ($tc =~ m/^\d+$/) {
+			push(@ncols, $tc); 
+		} elsif ($tc =~ m/^(\d+)\-(\d+)$/) {
+			my ($s, $e) = ($1, $2); 
+			if ($s <= $e) {
+				push(@ncols, ($s .. $e)); 
+			}else{
+				push(@ncols, reverse($e .. $s)); 
+			}
+		} else {
+			&stop("[Err]Unparsable column tag for [$tc]\n");
+		}
+	}
+	return (@ncols); 
+}
+
+
+sub goodVar {
+	my ($a, $t) = @_; 
+	defined $t and $t ne '' and $t = lc($t); 
+	(!defined $t or $t eq '') and $t = 'nonull'; 
+	if ($t eq 'nonull') {
+		defined $a and $a ne '' and return 1; 
+	} elsif ( $t eq 'defined' ) {
+		defined $a and return 1; 
+	}
+	return 0; 
+}# End goodVar
+
+sub tmsg {
+	my $tt = scalar( localtime() ); 
+	print STDERR join('', "[$tt]", @_); 
+}# End tmsg 
+
+sub stop {
+	my $tt = scalar( localtime() ); 
+	print STDERR join('', "[$tt]", @_); 
+	exit 1; 
+}# End stop 
 
