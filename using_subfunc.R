@@ -723,6 +723,16 @@ setAs(from="PhredQuality",  to="matrix", def=function (from) as( as(from,  "Fast
 	rd.width <- width(rd)
 	rd.num   <- length(rd)
 
+	# Added 2014-01-10, used for skipping trimming adaptor. 
+	if (is.null(subj) | subj == "") {
+		aln.threebands <- threebands(
+			IRanges(start=1, end=rd.width),
+			start = rd.width+1,
+			end   = rd.width
+		)
+		return(aln.threebands)
+	}
+
 	# 正向比较 pattern 与 rd; 
 	aln.fwd <- pairwiseAlignment(
 		pattern = rd, 
