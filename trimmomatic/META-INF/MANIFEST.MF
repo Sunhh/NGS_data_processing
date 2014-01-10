@@ -1,0 +1,6 @@
+Manifest-Version: 1.0
+Ant-Version: Apache Ant 1.8.4
+Created-By: 1.7.0_40-mockbuild_2013_10_02_16_56-b00 (Oracle Corporatio
+ n)
+Main-Class: org.usadellab.trimmomatic.Trimmomatic
+

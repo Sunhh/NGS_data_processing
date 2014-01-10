@@ -238,9 +238,12 @@ sub extract_seq_by_list {
 	
 	# Read in and draw from sequence file. 
 	my %is_get; 
+	my $seq_num = 0; 
 	for my $fh (@InFp) {
 		for ( my ($relHR, $get) = &get_fasta_seq($fh); defined $relHR; ($relHR, $get) = &get_fasta_seq($fh) ) {
 			my $is_match = 0; # if this sequence ID matches. 
+			$seq_num ++; 
+			$seq_num % 5e3 == 1 and print STDERR "[Msg] $seq_num sequences.\n"; 
 			
 			if ($opts{drawIDmatch}) {
 				FIND: foreach my $tt ( @Keys ) {
@@ -272,11 +275,12 @@ sub extract_seq_by_list {
 # &outDrawnSeq( $relHR, \%dRegion, $tt, $opts{drawWhole} ); 
 sub outDrawnSeq ($$$$) {
 	my ($faR, $drR, $drK, $opts_drawWhole) = @_; 
-	
+
 	unless ( defined $drR and scalar( keys %$drR ) > 0 ) {
 		print STDOUT ">$faR->{head}\n$faR->{seq}\n"; 
+		return (0); 
 	}
-	
+
 	defined $opts_drawWhole or $opts_drawWhole = 0; 
 	$opts_drawWhole = scalar( $opts_drawWhole ); 
 	$opts_drawWhole == 0 or $opts_drawWhole == 1 or do { warn "[Err]opts_drawWhole:$opts_drawWhole not known. changed to 0.\n"; $opts_drawWhole = 0; }; 
@@ -605,7 +609,7 @@ sub get_sample{
 	}
 
 	my $max = 0;
-	$opts{max_num} > 0 and $max = $opts{max_num};			# define max records output,0 presents no max.
+	defined $opts{max_num} and $opts{max_num} > 0 and $max = $opts{max_num};			# define max records output,0 presents no max.
 
 	my $record_num = 0;
 	my $loop = 0;

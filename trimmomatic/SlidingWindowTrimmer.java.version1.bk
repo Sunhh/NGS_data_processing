@@ -1,0 +1,201 @@
+package org.usadellab.trimmomatic.trim;
+
+import org.usadellab.trimmomatic.fastq.FastqRecord;
+
+public class SlidingWindowTrimmer extends AbstractSingleRecordTrimmer
+{
+	private int windowLength;
+	private float requiredQuality;
+	private float totalRequiredQuality;
+
+	public SlidingWindowTrimmer(String args)
+	{
+		String arg[]=args.split(":");		
+		windowLength=Integer.parseInt(arg[0]);
+		requiredQuality=Float.parseFloat(arg[1]);		
+		totalRequiredQuality=requiredQuality*windowLength; // Convert to total
+	}
+
+    public SlidingWindowTrimmer(int windowLength, float requiredQuality) {
+        this.windowLength = windowLength;
+        this.requiredQuality = requiredQuality;
+        totalRequiredQuality=requiredQuality*windowLength; // Convert to total
+    }
+
+    /*
+     * @see org.usadellab.trimmomatic.trim.AbstractSingleRecordTrimmer#processRecord(org.usadellab.trimmomatic.fastq.FastqRecord)
+     */
+	@Override
+	public FastqRecord processRecord(FastqRecord in)
+	{
+		int quals[]=in.getQualityAsInteger(true);
+		
+		if(quals.length<windowLength)
+			return null;
+
+		// find the longest high quality fragment
+		int total=0;
+		for(int i=0;i<windowLength;i++)
+			total+=quals[i];
+
+		int startPre, endPre, bestLength, bestStart, bestEnd, fragLength, start, end;
+
+		startPre = -1;
+		endPre = -1;
+		bestLength = -1;
+		fragLength = -1;
+		start = -1;
+		end = -1;
+
+		bestStart = startPre;
+		bestEnd = endPre;
+
+		if(total < totalRequiredQuality) {
+			startPre = 1;
+			endPre = windowLength;
+		}
+
+		for(int i=0; i<quals.length-windowLength; i++)
+		{
+			total=total-quals[i]+quals[i+windowLength];
+			start = i + 2;
+			end = start + windowLength - 1;
+
+			if(total < totalRequiredQuality)
+			{
+				if (startPre == -1)
+				{
+					fragLength = start - 1;
+					if (fragLength > bestLength)
+					{
+						bestLength = fragLength;
+						bestStart = 1;
+						bestEnd = start - 1;
+					}
+
+					startPre = start;
+					endPre = end;
+				}
+				else if (start <= endPre )
+				{
+					endPre = end;
+				}
+				else
+				{
+					fragLength = start - endPre - 1;
+					if (fragLength > bestLength) 
+					{
+						bestLength = fragLength;
+						bestStart = endPre + 1;
+						bestEnd = start - 1;
+					}
+
+					startPre = start;
+					endPre = end;
+				}
+			}
+		}
+	
+		if (bestStart == -1 || bestEnd == -1 || bestEnd - bestStart < 1)
+		{
+			bestLength = quals.length;
+			bestStart = 1;
+			bestEnd = quals.length;
+		}
+	
+		// compute for last start end if they have high quality
+		// but usually there is no possiable that the 3' end has high quality and the other part always low
+		/*
+		if (total >= totalRequiredQuality) 
+		{
+
+			{
+				bestLength = windowLength;
+				bestStart = start;
+				bestEnd = end;
+			}
+		}
+		*/
+
+		// extend the best fragment for final start, end ,length
+		int finalStart, finalEnd;
+
+		finalStart = bestStart;
+		finalEnd = bestEnd;
+
+		// check if the start could be extend
+		if ( bestStart > 1)
+		{
+			for(int i=bestStart-1; i>1; i--)
+			{
+				if (quals[i-1] >= requiredQuality)
+				{
+					finalStart = i;
+				}
+				else
+				{
+					break;
+				}
+			}
+		}
+
+		// check if the start could be shrink
+		if (finalStart == bestStart)
+		{
+			for(int i=bestStart; i<bestEnd; i++)
+			{
+				if ( quals[i-1] >= requiredQuality)
+				{
+					break;
+				}
+				else
+				{
+					finalStart=i+1;
+				}
+			}
+		}
+
+		// check if the end could be extend
+		if ( bestEnd < quals.length )
+		{
+			for(int i=bestEnd; i<quals.length; i++)
+			{
+				if (quals[i] >= requiredQuality)
+				{
+					finalEnd = i+1;
+				}
+				else
+				{
+					break;
+				}
+			}
+		}
+
+		// check if the the end could be shrink
+		if (finalEnd == bestEnd)
+		{
+			for(int i=bestEnd; i>bestStart; i--)
+			{
+				if (quals[i-1] >= requiredQuality)
+				{
+					break;
+				}
+				else
+				{
+					finalEnd = i-1;
+				}
+			}
+		}
+
+		int finalLength = finalEnd-finalStart+1;
+
+		// return the trimmed base
+		if(finalLength < 1)
+			return null;
+		
+		if(finalLength < quals.length)
+			return new FastqRecord(in,finalStart-1,finalLength);
+		
+		return in;
+	}
+}

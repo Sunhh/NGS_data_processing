@@ -607,6 +607,7 @@ sub col_sort{
 	my @tempa=split(/$symbol/o,$a);
 	my @tempb=split(/$symbol/o,$b);
 	my @cols = &parseCol($opts{col_sort});
+	no warnings; 
 	foreach my $col (@cols) {
 		if (my $result=(($tempa[$col]<=>$tempb[$col]) || ($tempa[$col] cmp $tempb[$col]))) {
 			return $result;
@@ -621,11 +622,11 @@ sub uniq_rep{
 	my %line;
 	my %rep_count;
 	my @keys;
-	if ($opts{col_uniq} ne '') {
+	if (&goodVar($opts{col_uniq})) {
 		@cols = &parseCol($opts{col_uniq});
-	}elsif ($opts{col_reps} ne '') {
+	}elsif (&goodVar($opts{col_reps})) {
 		@cols = &parseCol($opts{col_reps});
-	}elsif ($opts{col_repCount} ne '') {
+	}elsif ( &goodVar($opts{col_repCount}) ) {
 		@cols = &parseCol($opts{col_repCount});
 	}else{
 		&stop( "[Err]No Cols Found!\n" );
@@ -645,15 +646,15 @@ sub uniq_rep{
 			}
 		}# End while $fh
 	}# End for $fh in @InFp
-	if ($opts{col_uniq} ne '') {
+	if (&goodVar($opts{col_uniq})) {
 		foreach my $key (@keys) {
 			$rep_count{$key} == 1 and print STDOUT "$line{$key}\n";
 		}
-	}elsif ($opts{col_reps} ne '') {
+	}elsif ( &goodVar($opts{col_reps}) ) {
 		foreach my $key (@keys) {
 			$rep_count{$key} > 1 and print STDOUT "$line{$key}\n";
 		}
-	}elsif ($opts{col_repCount} ne '') {
+	}elsif ( &goodVar($opts{col_repCount}) ) {
 		print STDOUT "Number\tKeyCols\n";
 		foreach my $key (@keys) {
 			print STDOUT "$rep_count{$key}\t$key\n";
