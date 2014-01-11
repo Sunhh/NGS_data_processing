@@ -1,6 +1,27 @@
 #!/usr/bin/Rscript
 
 ############################################################
+## Start: Artificial sequences (<forward> / <reverse complemented>) list.
+## For the 2nd illumina sequencing technology introduced by Shan.
+## sequence primer 1 (33 bp)    :                          ACACTCTTTCCCTACACGACGCTCTTCCGATCT / AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT
+## pcr primer 1                 : AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT / AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT
+## sequence primer for barcode  :                                                                       GATCGGAAGAGCACACGTCTGAACTCCAGTCAC / GTGACTGGAGTTCAGACGTGTGCTCTTCCGATC
+## sequence primer 2 (34 bp)    :                                 GTGACTGGAGTTCAGACGTGTGCTCTTCCGATCT / AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC
+## pcr primer 2                 : CAAGCAGAAGACGGCATACGAGAT <<<<<< GTGACTGGAGTTCAGACGTGTGCTCTTCCGATCT / AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC >>>>>> ATCTCGTATGCCGTCTTCTGCTTG
+## barcode                      :                                                                                                         >>>>>>
+## adapter A (1)                :  ACACTCTTTCCCTACACGACgctcttccgatc t / a gatcggaagagcGTCGTGTAGGGAAAGAGTGT
+## adapter B (2)                : GTGACTGGAGTTCAGACGTGTgctcttccgatc   /   gatcggaagagcACACGTCTGAACTCCAGTCAC
+## End  : Artificial sequence list.
+## Initial the pattern settings.
+############################################################
+## For paired-end (NOT mate-pair!) sequencing technology.
+## Finally, we should clean "pcr primer 2"-reverse complemented sequence at 3' end for reads from "sequence primer 1" (R1), and
+##                    clean "pcr primer 1"-reverse complemented sequence at 3' end for reads from "sequence primer 2" (R2).
+## Sometimes there are full "pcr primer 2"-reverse complemented artificial sequence near 3' end of R1 reads, followed by mainly polyA. Its proportion is quiet small, so I can address this case later.
+############################################################
+
+
+############################################################
 # 初始化library
 ############################################################
 # FUN: 声明library和变量; 
