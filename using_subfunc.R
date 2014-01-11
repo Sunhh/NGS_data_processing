@@ -10,7 +10,7 @@ suppressMessages({
   library(foreach)
   library(iterators)
   library(doMC)
-  registerDoMC(core=28)
+  registerDoMC(core=10)
   .mcoptions <- list(preschedule=TRUE, set.seed=FALSE)
 }) # End suppressMessages
 
@@ -79,7 +79,8 @@ suppressMessages({
 # .default.qual.opts: 低质量相关参数
 .get.qual.opts <- function(
 		min.qual   = 20, min.length = 40, wind.size  = 4, 
-		java_cmd_pre = 'java -cp /home/Sunhh/src/trimmomatic/ org.usadellab.trimmomatic.Trimmomatic ', 
+		java_cmd_pre = 'java -cp /home/Sunhh/src/trimmomatic/ org.usadellab.trimmomatic.Trimmomatic ', # For WWZ server. 
+#		java_cmd_pre = 'java -cp /home/Sunhh/tools/clean_reads/trimmomatic/ org.usadellab.trimmomatic.Trimmomatic ', # For Penguin server. 
 		java_cores = -1, 
 		... 
 	) {
@@ -722,69 +723,78 @@ setAs(from="PhredQuality",  to="matrix", def=function (from) as( as(from,  "Fast
 	
 	rd.width <- width(rd)
 	rd.num   <- length(rd)
+	aln.ranges <- IRanges( start = rd.width+1, end = rd.width )
 
-	# Added 2014-01-10, used for skipping trimming adaptor. 
-	if (is.null(subj) | subj == "") {
-		aln.threebands <- threebands(
-			IRanges(start=1, end=rd.width),
-			start = rd.width+1,
-			end   = rd.width
+	pre.aln.mapped <- rep(FALSE, rd.num)
+	for (i in 1:length(subj)) {
+		# Added 2014-01-10, used for skipping trimming adaptor. 
+		if (is.null(subj) | subj == "" | is.na(subj)) {
+			next 
+		}
+
+		# 正向比较 pattern 与 rd; 
+		aln.fwd <- pairwiseAlignment(
+			pattern = rd, 
+			subject = subj[i], 
+			type    = 'overlap', 
+			substitutionMatrix=nucleotideSubstitutionMatrix(
+				match    = align.opts$match, 
+				mismatch = -align.opts$mismatch
+			), 
+			gapOpening   = -align.opts$gapOpening, 
+			gapExtension = -align.opts$gapExtension
 		)
-		return(aln.threebands)
-	}
-
-	# 正向比较 pattern 与 rd; 
-	aln.fwd <- pairwiseAlignment(
-		pattern = rd, 
-		subject = subj, 
-		type    = 'overlap', 
-		substitutionMatrix=nucleotideSubstitutionMatrix(
-			match    = align.opts$match, 
-			mismatch = -align.opts$mismatch
-		), 
-		gapOpening   = -align.opts$gapOpening, 
-		gapExtension = -align.opts$gapExtension
-	)
-	# 反向比较 pattern 与 rd; 
-	aln.rev <- pairwiseAlignment(
-		pattern = reverse(rd), 
-		subject = reverse(subj), 
-		type    = 'overlap', 
-		substitutionMatrix=nucleotideSubstitutionMatrix(
-			match    = align.opts$match, 
-			mismatch = -align.opts$mismatch
-		), 
-		gapOpening   = -align.opts$gapOpening, 
-		gapExtension = -align.opts$gapExtension
-	)
-	# 找出匹配的最左和最右位置; 正反向分别匹配一遍, 耗费时间翻倍, 但是能够找到最左和最右边界; 
-	#   当pattern在reads上重复多次时, 取到的是首尾两个匹配位置的序列; 
-	aln.fwd.pat <- pattern(aln.fwd)
-	aln.rev.pat <- pattern(aln.rev)
-	aln.start <- rd.width+1
-	aln.end   <- rd.width
-	# 根据相应 edit distance 来筛选mapping结果, 目前考虑完全匹配的末端碱基数量要有10个, 允许1个mismatch(10%), 
-	#   这样 score = 10*align.opts$match - 1*align.opts$mismatch = 7 分, 这时如果存在gap, 则至少要有12个match存在; 
-	# 根据width来确定min.score阈值; 不知道增加这个过程, 是否会拖慢程序; 
-	aln.mapped <- apply(
-		cbind( width(aln.fwd.pat), score(aln.fwd) ), 
-		MARGIN=1,
-		function (x) {
-			if (x[1] > 0) {
-				if (x[1] > align.opts$thres.width.up) {
-					x[1] = align.opts$thres.width.up
+		# 反向比较 pattern 与 rd; 
+		aln.rev <- pairwiseAlignment(
+			pattern = reverse(rd), 
+			subject = reverse(subj[i]), 
+			type    = 'overlap', 
+			substitutionMatrix=nucleotideSubstitutionMatrix(
+				match    = align.opts$match, 
+				mismatch = -align.opts$mismatch
+			), 
+			gapOpening   = -align.opts$gapOpening, 
+			gapExtension = -align.opts$gapExtension
+		)
+		# 找出匹配的最左和最右位置; 正反向分别匹配一遍, 耗费时间翻倍, 但是能够找到最左和最右边界; 
+		#   当pattern在reads上重复多次时, 取到的是首尾两个匹配位置的序列; 
+		aln.fwd.pat <- pattern(aln.fwd)
+		aln.rev.pat <- pattern(aln.rev)
+		aln.start <- rd.width+1
+		aln.end   <- rd.width
+		# 根据相应 edit distance 来筛选mapping结果, 目前考虑完全匹配的末端碱基数量要有10个, 允许1个mismatch(10%), 
+		#   这样 score = 10*align.opts$match - 1*align.opts$mismatch = 7 分, 这时如果存在gap, 则至少要有12个match存在; 
+		# 根据width来确定min.score阈值; 不知道增加这个过程, 是否会拖慢程序; 
+		aln.mapped <- apply(
+			cbind( width(aln.fwd.pat), score(aln.fwd) ), 
+			MARGIN=1,
+			function (x) {
+				if (x[1] > 0) {
+					if (x[1] > align.opts$thres.width.up) {
+						x[1] = align.opts$thres.width.up
+					}
+					return( x[2] >= align.opts$min.score[ x[1] ] )
+				} else {
+					return( FALSE )
 				}
-				return( x[2] >= align.opts$min.score[ x[1] ] )
-			} else {
-				return( FALSE )
-			}
-		}# End function
-	)
-	# 至此确定了具有匹配的reads; 
-	
-	aln.start[aln.mapped] <- pmin(start(aln.fwd.pat[aln.mapped]), rd.width[aln.mapped]-end(aln.rev.pat[aln.mapped])+1)
-	aln.end[aln.mapped]   <- pmax(end(aln.fwd.pat[aln.mapped]), rd.width[aln.mapped]-start(aln.rev.pat[aln.mapped])+1)
-	aln.ranges <- IRanges( start = aln.start, end = aln.end )
+			}# End function
+		)
+		# 至此确定了具有匹配的reads; 
+		
+		cur.aln.start <- pmin(start(aln.fwd.pat[aln.mapped]), rd.width[aln.mapped]-end(aln.rev.pat[aln.mapped])+1)
+		cur.aln.end   <- pmax(end(aln.fwd.pat[aln.mapped]), rd.width[aln.mapped]-start(aln.rev.pat[aln.mapped])+1)
+		pre.aln.end   <- start(aln.ranges[aln.mapped])
+		pre.aln.end   <- end(aln.ranges[aln.mapped])
+		aln.ranges[aln.mapped] <- IRanges(
+			start = pmin(pre.aln.start, cur.aln.start), 
+			end   = ifelse( pre.aln.mapped[aln.mapped], 
+				cur.aln.end,
+				pmax(pre.aln.end, cur.aln.end)
+			)
+		)
+		pre.aln.mapped[aln.mapped] <- TRUE
+	}#End for i in 1:length(subj)
+
 	aln.threebands <- threebands(
 		IRanges(start=1, end=rd.width), 
 		start = start(aln.ranges), 
