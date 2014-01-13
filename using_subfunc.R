@@ -804,7 +804,7 @@ setAs(from="PhredQuality",  to="matrix", def=function (from) as( as(from,  "Fast
 		
 		cur.aln.start <- pmin(start(aln.fwd.pat[aln.mapped]), rd.width[aln.mapped]-end(aln.rev.pat[aln.mapped])+1)
 		cur.aln.end   <- pmax(end(aln.fwd.pat[aln.mapped]), rd.width[aln.mapped]-start(aln.rev.pat[aln.mapped])+1)
-		pre.aln.end   <- start(aln.ranges[aln.mapped])
+		pre.aln.start <- start(aln.ranges[aln.mapped])
 		pre.aln.end   <- end(aln.ranges[aln.mapped])
 		aln.ranges[aln.mapped] <- IRanges(
 			start = pmin(pre.aln.start, cur.aln.start), 
