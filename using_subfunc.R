@@ -672,6 +672,7 @@ setAs(from="PhredQuality",  to="matrix", def=function (from) as( as(from,  "Fast
 			... 
 		)
 		.tsmsg("[Msg]       trim.low.quality.pe.rd2")
+		invisible(gc())
 		hq.rangeSet.rds$rd2 <- maybe.chunkapply(
 			FUN = .high.qual.rangeSet, 
 			VECTOR.ARGS = list(rd=quality(original.rds$rd2)), 
@@ -753,6 +754,7 @@ setAs(from="PhredQuality",  to="matrix", def=function (from) as( as(from,  "Fast
 		if (is.null(subj[i]) | is.na(subj[i]) | subj[i] == "") {
 			next 
 		}
+		invisible(gc())
 
 		# 正向比较 pattern 与 rd; 
 		aln.fwd <- pairwiseAlignment(
