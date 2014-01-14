@@ -177,6 +177,7 @@ suppressMessages({
 ## Timestampped message
 .tsmsg <- function(...) {
   message("[", date(), "]: ", ...)
+	write( paste( "[", date(), "]: ", ..., sep=""), file="R_log_info", append=TRUE )
 }# End .tsmsg 
 ##################################################
 
@@ -749,7 +750,7 @@ setAs(from="PhredQuality",  to="matrix", def=function (from) as( as(from,  "Fast
 	pre.aln.mapped <- rep(FALSE, rd.num)
 	for (i in 1:length(subj)) {
 		# Added 2014-01-10, used for skipping trimming adaptor. 
-		if (is.null(subj[i]) | subj[i] == "" | is.na(subj[i])) {
+		if (is.null(subj[i]) | is.na(subj[i]) | subj[i] == "") {
 			next 
 		}
 
