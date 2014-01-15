@@ -36,7 +36,27 @@ oFq1 <- paste0(pattern_lis$Prefix[i], "_R1", sep="")
 oFq2 <- paste0(pattern_lis$Prefix[i], "_R2", sep="")
 adp1 <- pattern_lis$R1pattern[i]
 adp2 <- pattern_lis$R2pattern[i]
-clean.pe.fq.file( inFqName1=inFq1, outFqName1=oFq1, adaptor1=adp1, inFqName2=inFq2, outFqName2=oFq2, adaptor2=adp2, RdPerYield=50e6 )
+clean.pe.fq.file( inFqName1=inFq1, outFqName1=oFq1, adaptor1=adp1, inFqName2=inFq2, outFqName2=oFq2, adaptor2=adp2, RdPerYield=40e6 )
+
+system(paste( "perl /home/Sunhh/tools/fq_rdNum.pl ",
+        oFq1, ".paired.hq ",
+        oFq2, ".paired.hq ",
+        oFq1, ".single.hq ",
+        oFq2, ".single.hq ",
+        oFq1, ".paired ",
+        oFq2, ".paired ",
+        oFq1, ".single ",
+        oFq2, ".single ",
+        " >> test_tbl ; ",
+
+        "rm -f ",
+        oFq1, ".paired.hq ",
+        oFq2, ".paired.hq ",
+        oFq1, ".single.hq ",
+        oFq2, ".single.hq ",
+
+        sep="")
+)
 }
 
 clean.mp.fq.file( inFqName1=inFq1, outFqName1=oFq1, inFqName2=inFq2, junction.seq=junc_seq, RdPerYield=40e5 )
@@ -59,7 +79,7 @@ inFq1 <- paste0(pattern_lis$Prefix[i], "_R1.paired", sep="")
 inFq2 <- paste0(pattern_lis$Prefix[i], "_R2.paired", sep="")
 oFq1 <- paste0(pattern_lis$Prefix[i], sep="")
 junc_seq <- pattern_lis$JuncPattern[i]
-clean.mp.fq.file ( inFqName1=inFq1, outFqName1=oFq1, inFqName2=inFq2, junction.seq=junc_seq, RdPerYield=40e5 )
+clean.mp.fq.file ( inFqName1=inFq1, outFqName1=oFq1, inFqName2=inFq2, junction.seq=junc_seq, RdPerYield=40e6 )
 }
 
 
