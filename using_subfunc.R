@@ -1,5 +1,17 @@
 #!/usr/bin/Rscript
 
+###########################################################
+# Storage of basic sequences: 
+#  1. Junction sequence used in Silin' mate-pair libraries. 
+# junc_seq    <- DNAString("GGTCGATAACTTCGTATAATGTATGCTATACGAAGTTATACA") # Sequence given by Dr. Fei, which should be from Silin Zhong.
+# junc_seq    <- DNAString(  "CGTATAACTTCGTATAATGTATGCTATACGAAGTTATACA") # Should be this one according to the file "P3_ec5k_ATTCCT_time2_R1.cleanPE.paired"
+#  2. Junction sequence used in outer mate-pair libraries. 
+# junc_seq    <- DNAString("CTGTCTCTTATACACATCT")
+#
+#
+
+
+
 ############################################################
 ## Start: Artificial sequences (<forward> / <reverse complemented>) list.
 ## For the 2nd illumina sequencing technology introduced by Shan.
