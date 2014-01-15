@@ -39,6 +39,27 @@ adp2 <- pattern_lis$R2pattern[i]
 clean.pe.fq.file( inFqName1=inFq1, outFqName1=oFq1, adaptor1=adp1, inFqName2=inFq2, outFqName2=oFq2, adaptor2=adp2, RdPerYield=50e6 )
 }
 
+clean.mp.fq.file( inFqName1=inFq1, outFqName1=oFq1, inFqName2=inFq2, junction.seq=junc_seq, RdPerYield=40e5 )
 
+
+# [Sunhh@Penguin Q20]$ more MP_junc_pattern
+Prefix  JuncPattern
+P1_cre5k_CACTCA_time1   CGTATAACTTCGTATAATGTATGCTATACGAAGTTATACA
+P1_cre5k_CACTCA_time2   CGTATAACTTCGTATAATGTATGCTATACGAAGTTATACA
+P1_ec5k_ATGAGC_time1    CGTATAACTTCGTATAATGTATGCTATACGAAGTTATACA
+P1_ec5k_ATGAGC_time2    CGTATAACTTCGTATAATGTATGCTATACGAAGTTATACA
+P1_MP2k GGTCGATAACTTCGTATAATGTATGCTATACGAAGTTATACA
+P1_MP5k GGTCGATAACTTCGTATAATGTATGCTATACGAAGTTATACA
+
+source("/home/Sunhh/tools/clean_reads/using_subfunc.R")  # Penguin server.
+pattern_lis <- read.table("MP_junc_pattern", header=T, stringsAsFactors=F)
+for ( i in 1:nrow(pattern_lis) ) {
+gc()
+inFq1 <- paste0(pattern_lis$Prefix[i], "_R1.paired", sep="")
+inFq2 <- paste0(pattern_lis$Prefix[i], "_R2.paired", sep="")
+oFq1 <- paste0(pattern_lis$Prefix[i], sep="")
+junc_seq <- pattern_lis$JuncPattern[i]
+clean.mp.fq.file ( inFqName1=inFq1, outFqName1=oFq1, inFqName2=inFq2, junction.seq=junc_seq, RdPerYield=40e5 )
+}
 
 
