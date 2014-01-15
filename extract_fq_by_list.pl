@@ -52,11 +52,11 @@ if (defined $opts{refLis}) {
 			my ($tk) = (split(/\t/, $_))[0]; 
 			$has_tag{$tk} = 1; 
 			if ( $opts{rdKey} ) {
-				my ($tid = $tk) =~ s!^(\S+)\s.*!$1!; 
+				(my $tid = $tk) =~ s!^(\S+)\s.*!$1!; 
 				$has_tag{$tid} = 1; 
 			}
 			if ( $opts{trim12} ) {
-				my ($tid = $tk) =~ s!^(\S+)/[12](?:\s.*|)$!$1!; 
+				(my $tid = $tk) =~ s!^(\S+)/[12](?:\s.*|)$!$1!; 
 				$has_tag{$tid} = 1; 
 			}
 			$num_ls_lines ++; 
