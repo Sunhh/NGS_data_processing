@@ -22,8 +22,8 @@ sub usage {
 perl $0 -refLis in_list1,in_list2 -srcFq source1.fq,source2.fq -outFq source.fq.filt
 -mode    keep/drop
 -refFq   in_fq1,in_fq2
--rdKey   [!]
--trim12  [remove R1R2 tag]
+-rdKey   [Only Key infor]  RegExp : s\!\^(\\S+)\\s.*\!\$1\!
+-trim12  [remove R1R2 tag] RegExp : s\!\^(\\S+)\/\[12\](\?:\\s.*|)\$\!\$1\!
 INFO
 	exit 1; 
 }

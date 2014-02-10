@@ -1,3 +1,9 @@
+# Perl : CMD: 
+# To comfirm the minimum adaptor: (PE)
+#   grep ATCTCGTATGCCGTCTTCTGCTTG NSP_10kb_ACAGTG_L00M_R1.ndupB | perl -e ' $n=40; $p="ATCTCGTATGCCGTCTTCTGCTTG"; while (<>) { m/(.{$n}$p)/o or next; $h{$1}++; $. >= 10000 and last; } for (sort {$h{$b} <=> $h{$a} } grep { $h{$_} > 1 } keys %h) { print "$_\t$h{$_}\n";}   ' | head
+# To comfirm the maximum adaptor: (PE)
+#   grep ATCTCGTATGCCGTCTTCTGCTTG NSP_10kb_ACAGTG_L00M_R1.ndupB | perl -e ' $n=41; $p="ATCTCGTATGCCGTCTTCTGCTTG"; while (<>) { m/(.{$n}$p)/o or next; $h{$1}++; $. >= 10000 and last; } for (sort {$h{$b} <=> $h{$a} } grep { $h{$_} > 1 } keys %h) { print "$_\t$h{$_}\n";}   ' | head
+
 
 # Record: 
 #  I found in P1_200a_R1.fastq.gz and P1_300_ATCACG_R1.fastq.gz, there are R1 reads end with 'ATCTCGTATGCCGTCTTCTGCTTG' without barcode or 'AGATCGGAAGAGCACACGTCTGAACTiCCAGTCAC' sequences. So for these cases, I might need to run two times of function-clean.pe.fq.file with different "adaptor1" option. 
@@ -23,9 +29,10 @@ for ( i in 1:nrow(barcode_lis) ) {
 	t.prefix <- barcode_lis$Prefix[i]
 	t.R1pattern <- paste0( "AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC", barcode_lis$Barcode[i], "ATCTCGTATGCCGTCTTCTGCTTG",sep="" )
 	t.R2pattern <- "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT"
-	pattern_lis <- rbind( t.prefix, barcode_lis$Barcode[i], t.R1pattern, t.R2pattern )
+	pattern_lis <- rbind( pattern_lis, c(t.prefix, barcode_lis$Barcode[i], t.R1pattern, t.R2pattern) )
 }
 colnames(pattern_lis) <- c("Prefix", "Barcode", "R1pattern", "R2pattern")
+# write.table( pattern_lis, file="pattern_lis", quote=F, sep="\t", col.names=T, row.names=F ) 
 
 source("/home/Sunhh/tools/github/data_proc/using_subfunc.R")
 pattern_lis <- read.table("pattern_lis", header=T, stringsAsFactors=F)
