@@ -828,8 +828,8 @@ setAs(from="PhredQuality",  to="matrix", def=function (from) as( as(from,  "Fast
 		aln.ranges[aln.mapped] <- IRanges(
 			start = pmin(pre.aln.start, cur.aln.start), 
 			end   = ifelse( pre.aln.mapped[aln.mapped], 
-				cur.aln.end,
-				pmax(pre.aln.end, cur.aln.end)
+				pmax(pre.aln.end, cur.aln.end), 
+				cur.aln.end
 			)
 		)
 		pre.aln.mapped[aln.mapped] <- TRUE
