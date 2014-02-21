@@ -85,7 +85,7 @@ gc()
 inFq1 <- paste0(pattern_lis$Prefix[i], "_R1.paired", sep="")
 inFq2 <- paste0(pattern_lis$Prefix[i], "_R2.paired", sep="")
 oFq1 <- paste0(pattern_lis$Prefix[i], sep="")
-junc_seq <- pattern_lis$JuncPattern[i]
+junc_seq <- c(pattern_lis$JuncPattern[i], as.character( reverseComplement(DNAString( pattern_lis$JuncPattern[i] )) ))
 clean.mp.fq.file ( inFqName1=inFq1, outFqName1=oFq1, inFqName2=inFq2, junction.seq=junc_seq, RdPerYield=40e6 )
 }
 
