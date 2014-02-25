@@ -95,6 +95,10 @@ Usage: $0  <fasta_file | STDIN>
   -listBoth               Both strands.
   
   -N50                calc N50;
+  -N50_minLen         [INT] Minimum length of sequences used for calculating N50. 
+  -N50_GenomSize      [INT] Estimated genome size used for calculate NG50; 
+  -N50_levels         [String] Quantile levels used to calculate. Default [00 05 10 15 25 50 60 70 80 90 95 96 97 98 99 100]
+
   -chopKey            'expr'
   -startCodonDist     calc input CDSs\' start codon usage distribution;
   -comma3             output only a comma separated list (no spaces) of atg, gtg, ttg start proportions, in that order
@@ -115,6 +119,7 @@ Usage: $0  <fasta_file | STDIN>
   -dropMatch          [Boolean] Drop seqs with matching ID. Only useful with -drawWhole . 
 
   -keep_len           "min_len-max_len". Extract sequences whose lengths are between min_len and max_len. 
+  -baseCount          [Boolean] Calculate A/T/G/C/N numbers in sequences. 
 
 #******* Instruction of this program *********#
 HELP
@@ -122,20 +127,21 @@ HELP
 }
 
 GetOptions(\%opts,"help!","cut:i","details!","cut_dir:s","cut_prefix:s", 
-				"max_num:i",
-				"res:s","nres:s","table!",
-				"attribute:s","GC_excln:i",
-				"sample:s",
-				"frag:s","frag_width:i","frag_head!","frag_c!","frag_r!",
-				"qual:s","qual_width:i","qual_r!","qual_head!",
-				"listSite:s","listNum:s","listBoth!",
-				"N50!",
-				"chopKey:s","startCodonDist!","comma3!",
-				"uniqSeq!", 
-				"upper!","lower!", 
-				"maskByList!", "maskList:s", "maskType:s", "elseMask!", 
-				"drawByList!", "drawList:s", "drawLcol:s", "drawWhole!", "drawIDmatch!", "dropMatch!", 
-				"keep_len:s"
+	"max_num:i",
+	"res:s","nres:s","table!",
+	"attribute:s","GC_excln:i",
+	"sample:s",
+	"frag:s","frag_width:i","frag_head!","frag_c!","frag_r!",
+	"qual:s","qual_width:i","qual_r!","qual_head!",
+	"listSite:s","listNum:s","listBoth!",
+	"N50!", "N50_minLen:i", "N50_GenomSize:i", "N50_levels:s", 
+	"chopKey:s","startCodonDist!","comma3!",
+	"uniqSeq!", 
+	"upper!","lower!", 
+	"maskByList!", "maskList:s", "maskType:s", "elseMask!", 
+	"drawByList!", "drawList:s", "drawLcol:s", "drawWhole!", "drawIDmatch!", "dropMatch!", 
+	"keep_len:s", 
+	"baseCount!"
 	);
 &usage if ($opts{"help"}); 
 !@ARGV and -t and &usage; 
@@ -193,6 +199,7 @@ my %goodStr = qw(
 &mask_seq_by_list() if ( $opts{maskByList} ); 
 &extract_seq_by_list() if ( $opts{drawByList} ); 
 &keep_len() if ( defined $opts{keep_len} ); 
+&baseCount() if ( $opts{baseCount} ); 
 
 for (@InFp) {
 	close ($_); 
@@ -207,6 +214,29 @@ for (@InFp) {
 #****************************************************************#
 #--------------Subprogram------------Start-----------------------#
 #****************************************************************#
+
+# 2014-02-25 baseCount
+sub baseCount {
+	print STDOUT join("\t", qw/Key A T G C N O All/)."\n";
+	for my $fh (@InFp) {
+		for ( my ($relHR, $get) = &get_fasta_seq($fh); defined $relHR; ($relHR, $get) = &get_fasta_seq($fh) ) {
+			$relHR->{seq} =~ s/\s//g; 
+			my $all = length($relHR->{seq}); 
+			if ($all > 0) {
+				my $ba = ($relHR->{seq} =~ tr/Aa/Aa/); 
+				my $bt = ($relHR->{seq} =~ tr/Tt/Tt/); 
+				my $bg = ($relHR->{seq} =~ tr/Gg/Gg/); 
+				my $bc = ($relHR->{seq} =~ tr/Cc/Cc/);
+				my $bn = ($relHR->{seq} =~ tr/Nn/Nn/);
+				my $bother = $all - $ba - $bt - $bg - $bc - $bn;
+				print STDOUT join("\t", $relHR->{key}, $ba, $bt, $bg, $bc, $bn, $bother, $all)."\n";
+			}else{
+				print STDOUT join("\t", $relHR->{key}, 0,0,0,0,0,0,0)."\n"; 
+			}
+		}#End for my ($relHR, $get)
+	}#End for my $fh
+	
+}# sub baseCount
 
 # 2014-02-25 extract sequences by length
 sub keep_len {
@@ -229,7 +259,7 @@ sub keep_len {
 			print STDOUT ">$relHR->{head}\n$relHR->{seq}\n"; 
 		}# End for sequence retrieval 
 	}#End for file. 
-}
+}# sub keep_len
 
 
 # 2013-10-30 给定列表, 提取列表内序列
@@ -518,21 +548,77 @@ sub editkey {
   }
 }# end editkey, 用来去掉key中不想要的部分; 2007-9-10 16:31 
 
+# 2014-02-25 Extend the usage of N50. 
 sub N50 {
-  my @Length = (); my $totalLen = 0; 
-  for my $fh (@InFp) {
-  	
-  	for ( my ($relHR, $get) = &get_fasta_seq($fh); defined $relHR; ($relHR, $get) = &get_fasta_seq($fh) ) {
-  		$relHR->{seq} =~ s/\s+//g; push(@Length, length($relHR->{seq})); $totalLen += $Length[-1]; 
-  	}
-  }# read in all seq. 
- 	my $tL = $totalLen/2; 
- 	my $tc = 0; 
-	for (sort { $a<=>$b; } @Length ) {
-		$tc += $_;
-		$tc >= $tL and do { print "Total [",$#Length+1,"] sequences.\nTotal [$totalLen] bps.\nN50 = [$_]\n"; last; };
+	my @Length = (); 
+	my $totalLen = 0; 
+	my $totalLen_atgc = 0; 
+	my $min_len   = ( defined $opts{N50_minLen}    ) ? $opts{N50_minLen}    : 0 ; 
+	my $genomSize = ( defined $opts{N50_GenomSize} ) ? $opts{N50_GenomSize} : 0 ; 
+
+	my @Need_lvls = qw/00 05 10 15 25 50 60 70 80 90 95 96 97 98 99 100/; 
+	if ( defined $opts{N50_levels} and $opts{N50_levels} ne '' ) {
+		@Need_lvls = (); 
+		for my $tlvl (split(/\s+/, $opts{N50_levels})) {
+			$tlvl eq '' and next; 
+			push(@Need_lvls, $tlvl); 
+		}
 	}
-}# edit 2007-9-10 16:16 
+	my %Need_ratios; 
+	for my $ta (@Need_lvls) {
+		my $tb = $ta; 
+		$tb = $tb * 0.01; 
+		$Need_ratios{"N$ta"} = $tb; 
+	}
+
+	for my $fh (@InFp) {
+		for ( my ($relHR, $get) = &get_fasta_seq($fh); defined $relHR; ($relHR, $get) = &get_fasta_seq($fh) ) {
+			$relHR->{seq} =~ s/\s+//g; 
+			my $ttl_len = length($relHR->{seq}); 
+			$min_len > 0 and $ttl_len < $min_len and next; 
+			my $atgc_len = ( $relHR->{seq} =~ tr/ATGCatgc/ATGCatgc/ ); 
+			push(@Length, [$ttl_len, $atgc_len]); 
+			$totalLen += $Length[-1][0]; 
+			$totalLen_atgc += $Length[-1][1]; 
+		}
+	}# read in all seq. 
+
+	# Sort lengths 
+	@Length = sort { $b->[0]<=>$a->[0] || $b->[1]<=>$b->[1] } @Length; 
+
+	my $sum = 0; 
+	my $sum_atgc = 0; 
+	my $total_num = scalar(@Length); 
+	# For NG50 
+	print STDOUT "Minimum length cutoff    : $min_len\n"; 
+	print STDOUT "Total sequences number   : $total_num\n"; 
+	print STDOUT "Total sequences bp (ATGC): $totalLen ($totalLen_atgc)\n"; 
+	print STDOUT "Est. Genome size         : $genomSize\n"; 
+	print STDOUT "Maximum length (ATGC)    : $Length[0][0] ($Length[0][1])\n"; 
+	print STDOUT "Minimum length (ATGC)    : $Length[-1][0] ($Length[-1][1])\n"; 
+	for (my $i=0; $i<@Length; $i++) {
+		my ($tlen, $tlen_atgc) = @{$Length[$i]}; 
+		$sum += $tlen; 
+		$sum_atgc += $tlen_atgc; 
+		for my $tn ( @Need_lvls ) {
+			my $tk1 = "N$tn"; 
+			if ( $genomSize > 0 ) {
+				if ( $Need_ratios{$tk1} != -1 and $sum >= $genomSize * $Need_ratios{$tk1} ) {
+					my $ti = $i+1; 
+					print STDOUT "GN$tn (ATGC) (Index) : $tlen ($tlen_atgc) ($ti)\n"; 
+					$Need_ratios{$tk1} = -1; 
+				}
+			}else {
+				if ( $Need_ratios{$tk1} != -1 and $sum >= $totalLen * $Need_ratios{$tk1}) {
+					my $ti = $i+1; 
+					print STDOUT "N$tn (ATGC) (Index) : $tlen ($tlen_atgc) ($ti)\n"; 
+					$Need_ratios{$tk1} = -1; 
+				}
+			}
+		}
+	}
+	print STDOUT "\n"; 
+}# edit 2014-02-25
 
 # 
 sub site_list {
