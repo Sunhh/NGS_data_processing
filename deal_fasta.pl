@@ -36,6 +36,7 @@
 ### 2013-10-30 Add functions : mask_seq_by_list ; extract_seq_by_list ; 
 ### 2013-11-01 Add function : extract_seq_by_list; And edit some small bug in mask_seq_by_list() with warnings. 
 ### 2013-11-01 Edit sub openFH() to deal with .gz/.bz2 files. 
+### 2014-02-25 Add sub keep_len to extract .fa sequences by length. 
 
 use strict;
 use warnings; 
@@ -113,6 +114,7 @@ Usage: $0  <fasta_file | STDIN>
   -drawWhole          [Boolean] Ignore position (and strand) information if given. Retrieve the whole sequence. 
   -dropMatch          [Boolean] Drop seqs with matching ID. Only useful with -drawWhole . 
 
+  -keep_len           "min_len-max_len". Extract sequences whose lengths are between min_len and max_len. 
 
 #******* Instruction of this program *********#
 HELP
@@ -132,7 +134,8 @@ GetOptions(\%opts,"help!","cut:i","details!","cut_dir:s","cut_prefix:s",
 				"uniqSeq!", 
 				"upper!","lower!", 
 				"maskByList!", "maskList:s", "maskType:s", "elseMask!", 
-				"drawByList!", "drawList:s", "drawLcol:s", "drawWhole!", "drawIDmatch!", "dropMatch!"
+				"drawByList!", "drawList:s", "drawLcol:s", "drawWhole!", "drawIDmatch!", "dropMatch!", 
+				"keep_len:s"
 	);
 &usage if ($opts{"help"}); 
 !@ARGV and -t and &usage; 
@@ -189,6 +192,7 @@ my %goodStr = qw(
 &uniqSeq() if ( $opts{uniqSeq} ) ; 
 &mask_seq_by_list() if ( $opts{maskByList} ); 
 &extract_seq_by_list() if ( $opts{drawByList} ); 
+&keep_len() if ( defined $opts{keep_len} ); 
 
 for (@InFp) {
 	close ($_); 
@@ -203,6 +207,30 @@ for (@InFp) {
 #****************************************************************#
 #--------------Subprogram------------Start-----------------------#
 #****************************************************************#
+
+# 2014-02-25 extract sequences by length
+sub keep_len {
+	my ($min_len, $max_len) = (-1, -1); 
+	if ( $opts{keep_len} =~ m!^\s*(\d+)\-(\d+)\s*$! ) {
+		($min_len, $max_len) = ($1, $2); 
+	} elsif ( $opts{keep_len} =~ m!^\s*\-(\d+)\s*$! ) {
+		$max_len = $1; 
+	} elsif ( $opts{keep_len} =~ m!^\s*(\d+)\-\s*$! ) {
+		$min_len = $1; 
+	} else {
+		die "[Err] Failed to parse option [-keep_len $opts{keep_len}]\n"; 
+	}
+	for my $fh (@InFp) {
+		for ( my ($relHR, $get) = &get_fasta_seq($fh); defined $relHR; ($relHR, $get) = &get_fasta_seq($fh) ) {
+			(my $ss = $relHR->{seq}) =~ s/\s//g; 
+			my $ll = length($ss); 
+			$min_len > 0 and $ll < $min_len and next; 
+			$max_len > 0 and $ll > $max_len and next; 
+			print STDOUT ">$relHR->{head}\n$relHR->{seq}\n"; 
+		}# End for sequence retrieval 
+	}#End for file. 
+}
+
 
 # 2013-10-30 给定列表, 提取列表内序列
 # Related parameters:  "drawByList!", "drawList:s", "drawLcol:s", "drawWhole!", "drawIDmatch!", "dropMatch!"
