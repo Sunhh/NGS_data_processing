@@ -734,7 +734,7 @@ sub get_sample{
 			$loop ++; $loop < $start and next SEQUENCE; 
 			print STDOUT ">$relHR->{head}\n$relHR->{seq}\n"; 
 			$record_num ++; 
-			if ($loop == $end && $end ne 'end') {
+			if ($end ne 'end' && $loop == $end) {
 				$loop = 0; 
 				last SEQUENCE; # 跳出当前文件, 进入下一个文件读取; 
 			}elsif ($max > 0 and $record_num == $max) {
