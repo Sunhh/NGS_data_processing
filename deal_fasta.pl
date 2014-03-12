@@ -37,6 +37,7 @@
 ### 2013-11-01 Add function : extract_seq_by_list; And edit some small bug in mask_seq_by_list() with warnings. 
 ### 2013-11-01 Edit sub openFH() to deal with .gz/.bz2 files. 
 ### 2014-02-25 Add sub keep_len to extract .fa sequences by length. 
+### 2014-03-12 Add -listSeq to control if output match_seq for -listSite. 
 
 use strict;
 use warnings; 
@@ -93,6 +94,7 @@ Usage: $0  <fasta_file | STDIN>
   -listSite<sequence>     a sequence for searcing.
   -listNum                [Min|Max]
   -listBoth               Both strands.
+  -listSeq                [Boolean] Output match part of reference sequence if given. 
   
   -N50                calc N50;
   -N50_minLen         [INT] Minimum length of sequences used for calculating N50. 
@@ -133,7 +135,7 @@ GetOptions(\%opts,"help!","cut:i","details!","cut_dir:s","cut_prefix:s",
 	"sample:s",
 	"frag:s","frag_width:i","frag_head!","frag_c!","frag_r!",
 	"qual:s","qual_width:i","qual_r!","qual_head!",
-	"listSite:s","listNum:s","listBoth!",
+	"listSite:s","listNum:s","listBoth!","listSeq!", 
 	"N50!", "N50_minLen:i", "N50_GenomSize:i", "N50_levels:s", 
 	"chopKey:s","startCodonDist!","comma3!",
 	"uniqSeq!", 
@@ -622,16 +624,28 @@ sub N50 {
 
 # 
 sub site_list {
-	print STDOUT "Key\tLength\tMatchStart\tMatchEnd\tMatchLen\n"; 
+	if ($opts{listSeq}) {
+		print STDOUT "Key\tLength\tMatchStart\tMatchEnd\tMatchLen\tMatchSeq\n"; 
+	} else {
+		print STDOUT "Key\tLength\tMatchStart\tMatchEnd\tMatchLen\n"; 
+	}
 	
 	for my $fh (@InFp) {
 		for ( my ($relHR, $get) = &get_fasta_seq($fh); defined $relHR; ($relHR, $get) = &get_fasta_seq($fh) ) {
 			$relHR->{seq} =~ s/\s+//g; 
 			my $len = length ($relHR->{seq}); 
-			map { print STDOUT join("\t", $relHR->{key}, $len, $_->[0], $_->[1], $_->[1]-$_->[0]+1, $_->[2])."\n"; } &siteList(\$opts{listSite}, \$relHR->{seq}, $opts{listNum}); 
+			if ( $opts{listSeq} ) {
+				map { print STDOUT join("\t", $relHR->{key}, $len, $_->[0], $_->[1], $_->[1]-$_->[0]+1, $_->[2])."\n"; } &siteList(\$opts{listSite}, \$relHR->{seq}, $opts{listNum}); 
+			} else {
+				map { print STDOUT join("\t", $relHR->{key}, $len, $_->[0], $_->[1], $_->[1]-$_->[0]+1         )."\n"; } &siteList(\$opts{listSite}, \$relHR->{seq}, $opts{listNum}); 
+			}
 			if ($opts{listBoth}) {
 				my $rcseq = $relHR->{seq}; &rcSeq(\$rcseq, 'rc'); 
-				map { print STDOUT join("\t", $relHR->{key}, $len, $len-$_->[0]+1, $len-$_->[1]+1, $_->[1]-$_->[0]+1, &rcSeq(\$_->[2], 'rc'))."\n"; } &siteList(\$opts{listSite},\$rcseq,$opts{listNum});
+				if ( $opts{listSeq} ) {
+					map { print STDOUT join("\t", $relHR->{key}, $len, $len-$_->[0]+1, $len-$_->[1]+1, $_->[1]-$_->[0]+1, &rcSeq(\$_->[2], 'rc'))."\n"; } &siteList(\$opts{listSite},\$rcseq,$opts{listNum});
+				}else{
+					map { print STDOUT join("\t", $relHR->{key}, $len, $len-$_->[0]+1, $len-$_->[1]+1, $_->[1]-$_->[0]+1                        )."\n"; } &siteList(\$opts{listSite},\$rcseq,$opts{listNum});
+				}
 			}# 增加反向互补序列结果; 
 		}# end for; 
 	}

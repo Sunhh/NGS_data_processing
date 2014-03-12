@@ -125,6 +125,10 @@ while (!eof(R1)) {
 	}
 	if ($dupN > $maxDupN) {
 		$dropN ++; 
+		unless ( $no_out ) {
+			print D1 "$k1\n$os1\n+\n$q1\n"; 
+			print D2 "$k2\n$os2\n+\n$q2\n"; 
+		}
 	} else {
 		unless ( $no_out ) {
 			print O1 "$k1\n$os1\n+\n$q1\n"; 
@@ -150,7 +154,7 @@ my $keep_R = &rate( $keepN, $total );
 
 &timeLog( "[Rec] Finish $ptag files.\n" ); 
 &timeLog( "[Rec] There are $total read pairs in total [$ptag].\n" ); 
-&timeLog( "[Rec] There are $uniq ($uniq_R\%) unique patterns, $mult ($mult_R\%) multiple patterns, and $keepN ($keep_R\%) reads dropped in both (subseq=$subseqP subseqS=$subseqS).\n" ); 
+&timeLog( "[Rec] There are $uniq ($uniq_R\%) unique patterns, $mult ($mult_R\%) multiple patterns, and $keepN ($keep_R\%) reads kept in both (subseq=$subseqP subseqS=$subseqS).\n" ); 
 
 sub readArecord {
 		my ($fh) = @_;

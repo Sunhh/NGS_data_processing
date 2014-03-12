@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w 
 # 2013-08-20 I think it is good enough. 
-#
+# 2014-03-12 Add -NMperc and -maxRdLen to filter "NM" tag. Cause "bwa aln -n float_number" doesn't work properly. 
 use strict; 
 use Getopt::Long; 
 
@@ -9,7 +9,7 @@ my %opts;
 GetOptions(\%opts, 
 	"drop:s", 
 	"keep:s", 
-	"NM_tag:s", # Not used now. 
+	"NMperc:f", "maxRdLen:i", 
 	"XT_tag:s", # U/R/N/M
 	"anyEnd_pair!", 
 	"anyEnd_info!", 
@@ -40,9 +40,13 @@ both paramters if they are assigned at the same time.
                \",\" is calculated as logical AND . 
 -keep        Required if -drop not assigned. The format is same to -drop. 
 
--XT_tag      'U/R/M/N'. I don't like this parameter. But sometimes useful. 
--sameRef
--diffRef
+-sameRef     [Boolean] Need the read pair aligned to a same reference sequence. 
+-diffRef     [Boolean] Need the read pair aligned to different reference sequences. 
+
+-XT_tag      ['U/R/M/N'], separated by \",\". I don't like this parameter. But sometimes useful. 
+
+-NMperc      [float number]. Maximum mismatch\% allowed in the main alignment. 
+-maxRdLen    [INT]. Maximum read length in query. 
 
 ------------- Predefined sets. They should not be assigned at the same time. 
 ------------- This will overlap the parameters of -keep and -drop. 
@@ -126,6 +130,20 @@ if (defined $opts{XT_tag}) {
 }
 ###### End make TAG list 
 
+###### Set maximum NM% allowed. 
+my $need_nm_tag = 0; 
+my %max_nmN; 
+my $maxRdLen = (defined $opts{maxRdLen}) ? $opts{maxRdLen} : 1e3 ; 
+# $maxRdLen < 1 and $maxRdLen = 1; 
+$maxRdLen < 1 and die "-maxRdLen=$maxRdLen?\n"; 
+if (defined $opts{NMperc}) {
+	$opts{NMperc} >= 0 or die "-NMperc=$opts{NMperc} < 0 ?\n"; 
+	$need_nm_tag = 1; 
+	for my $rdLen ( 1..$maxRdLen ) {
+		$max_nmN{$rdLen} = int( $rdLen * $opts{NMperc} ); 
+	}
+}
+###### End set maximum NM% allowed. 
 
 
 ###### Make FLAG list 
@@ -219,8 +237,22 @@ while (<>) {
 
 		$is_output{$tmp_flag} or $is_op = 0; 
 
+		if ($opts{sameRef}) {
+			/^(?:[^\t]+\t){6}\=\t/ or $is_op = 0; 
+		} elsif ($opts{diffRef}) {
+			/^(?:[^\t]+\t){6}\=\t/ and $is_op = 0; 
+		}
+
+		# Checking 
+		my @ta; 
 		if ($is_op == 1 and $need_xt_tag == 1) {
-			my @ta = split(/\t/, $_); 
+			@ta = split(/\t/, $_); 
+		} elsif ($is_op == 1 and $need_nm_tag == 1) {
+			@ta = split(/\t/, $_); 
+		}
+
+		# Check XT: tag
+		if ($is_op == 1 and $need_xt_tag == 1) {
 			if ($need_xt_tag == 1) {
 				my $is_xt_ok = 0; 
 				CHK_XT: 
@@ -231,10 +263,17 @@ while (<>) {
 			}#End if CHK_XT; 
 		}
 
-		if ($opts{sameRef}) {
-			/^(?:[^\t]+\t){6}\=\t/ or $is_op = 0; 
-		} elsif ($opts{diffRef}) {
-			/^(?:[^\t]+\t){6}\=\t/ and $is_op = 0; 
+		# Check NM:i: tag 
+		if ($is_op == 1 and $need_nm_tag == 1) {
+			my $rdLen = length($ta[9]); 
+			my $cur_nmN = 0; 
+			CHK_NM: 
+			for my $tb (@ta[11 .. $#ta]) {
+				if ( $tb =~ m/^NM:i:(\d+)$/ ) {
+					$1 <= $max_nmN{$rdLen} or $is_op = 0; 
+					last CHK_NM; 
+				}
+			}
 		}
 
 		$is_op == 1 and print STDOUT "$_\n"; 
@@ -255,8 +294,16 @@ while (<>) {
 		/^(?:[^\t]+\t){6}\=\t/ and $is_op = 0; 
 	}
 
+	# Checking 
+	my @ta; 
 	if ($is_op == 1 and $need_xt_tag == 1) {
-		my @ta = split(/\t/, $_); 
+		@ta = split(/\t/, $_); 
+	} elsif ($is_op == 1 and $need_nm_tag == 1) {
+		@ta = split(/\t/, $_); 
+	}
+
+	# Check XT: tag
+	if ($is_op == 1 and $need_xt_tag == 1) {
 		if ($need_xt_tag == 1) {
 			my $is_xt_ok = 0; 
 			CHK_XT: 
@@ -267,6 +314,19 @@ while (<>) {
 		}#End if CHK_XT; 
 	}
 
+	# Check NM:i: tag 
+	if ($is_op == 1 and $need_nm_tag == 1) {
+		my $rdLen = length($ta[9]); 
+		my $cur_nmN = 0; 
+		CHK_NM: 
+		for my $tb (@ta[11 .. $#ta]) {
+			if ( $tb =~ m/^NM:i:(\d+)$/ ) {
+				$1 <= $max_nmN{$rdLen} or $is_op = 0; 
+				last CHK_NM; 
+			}
+		}
+	}
+	
 	$is_op == 1 and print STDOUT "$_\n"; 
 
 }
