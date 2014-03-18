@@ -123,6 +123,10 @@ Usage: $0  <fasta_file | STDIN>
   -keep_len           "min_len-max_len". Extract sequences whose lengths are between min_len and max_len. 
   -baseCount          [Boolean] Calculate A/T/G/C/N numbers in sequences. 
 
+  -fa2fq              [Boolean] Transform fasta format to fastq format. 
+  -fa2fqQChar         [Character] Character used for quality line in fastq output. 
+  -fq2fa              [Boolean] Transform fastq format to fasta format. 
+
 #******* Instruction of this program *********#
 HELP
 	exit (1); 
@@ -143,7 +147,8 @@ GetOptions(\%opts,"help!","cut:i","details!","cut_dir:s","cut_prefix:s",
 	"maskByList!", "maskList:s", "maskType:s", "elseMask!", 
 	"drawByList!", "drawList:s", "drawLcol:s", "drawWhole!", "drawIDmatch!", "dropMatch!", 
 	"keep_len:s", 
-	"baseCount!"
+	"baseCount!", 
+	"fa2fq!", "fa2fqQChar:s", "fq2fa!", 
 	);
 &usage if ($opts{"help"}); 
 !@ARGV and -t and &usage; 
@@ -202,6 +207,8 @@ my %goodStr = qw(
 &extract_seq_by_list() if ( $opts{drawByList} ); 
 &keep_len() if ( defined $opts{keep_len} ); 
 &baseCount() if ( $opts{baseCount} ); 
+&fa2fq() if ( $opts{fa2fq} ); 
+&fq2fa() if ( $opts{fq2fa} ); 
 
 for (@InFp) {
 	close ($_); 
@@ -216,6 +223,29 @@ for (@InFp) {
 #****************************************************************#
 #--------------Subprogram------------Start-----------------------#
 #****************************************************************#
+
+# 2014-03-18
+sub fa2fq {
+	my $qBase = 'A'; 
+	defined $opts{fa2fqQChar} and $opts{fa2fqQChar} ne '' and length($opts{fa2fqQChar}) == 1 and $qBase = $opts{fa2fqQChar}; 
+	for my $fh ( @InFp ) {
+		for ( my ($relHR, $get) = &get_fasta_seq($fh); defined $relHR; ($relHR, $get) = &get_fasta_seq($fh) ) {
+			$relHR->{seq} =~ s/\s//g; 
+			my $qSeq = $qBase x length($relHR->{seq}); 
+			print STDOUT "\@$relHR->{head}\n$relHR->{seq}\n+\n$qSeq\n"; 
+		}
+	}
+}#End sub fa2fq
+
+sub fq2fa {
+	for my $fh (@InFp) {
+		my $id = readline($fh); 
+		my $seq = readline($fh); 
+		readline($fh); readline($fh); 
+		$id =~ s/^\@/>/ or die "Failed to fit line format: $id\n"; 
+		print STDOUT "$id$seq"; 
+	}
+}
 
 # 2014-02-25 baseCount
 sub baseCount {
