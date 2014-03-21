@@ -78,8 +78,8 @@ Usage: $0  <fasta_file | STDIN>
   -frag<start-end>  output a fragment of the squence in single sequence fasta file;Start position is 1; May be s1-e1:s2-e2...
   -frag_width<num>  number of characters each line when output;
   -frag_head        whether print out the title of the sequences;
-  -frag_c           give out complemented strand;
-  -frag_r           give out reverse strand;
+  -frag_c           give out complemented string as NUCL;
+  -frag_r           give out reverse string;
   
   -upper/lower        upperize/lowerize charaters of all the sequences;
   
@@ -815,12 +815,11 @@ sub frag{
 				my ($add_s, $add_e) = ($Starts[$i], $Ends[$i]); 
 				$add_s < 0 and $add_s = $l_seq + $add_s + 1; 
 				$add_s < 0 and $add_s = 1; 
-				$add_s > $l_seq+1 and $add_s = $l_seq+1; 
 				$add_e eq 'end' and $add_e = $l_seq; 
 				$add_e < 0 and $add_e = $l_seq + $add_e + 1; 
 				$add_e > $l_seq and $add_e = $l_seq; 
 				$add_e < 0 and $add_e = $add_s-1; 
-				$str .= substr($relHR->{seq}, $add_s-1, $add_e-$add_s+1); 
+				$add_s <= $l_seq and $str .= substr($relHR->{seq}, $add_s-1, $add_e-$add_s+1); 
 				push(@Range, "$add_s-$add_e"); 
 			}
 			my $range = join(',', @Range); 
