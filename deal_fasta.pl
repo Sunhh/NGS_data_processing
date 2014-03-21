@@ -809,19 +809,21 @@ sub frag{
 		for ( my ($relHR, $get) = &get_fasta_seq($fh); defined $relHR; ($relHR, $get) = &get_fasta_seq($fh) ) {
 			$relHR->{seq} =~ s/\s+//g; 
 			my $l_seq = length($relHR->{seq}); 
-			my ($str, $range); 
+			my $str; 
+			my @Range; 
 			for (my $i=0; $i<@Starts; $i++) {
 				my ($add_s, $add_e) = ($Starts[$i], $Ends[$i]); 
 				$add_s < 0 and $add_s = $l_seq + $add_s + 1; 
-				if ($add_e eq 'end') { 
-					$str .= substr($relHR->{seq}, $add_s-1); 
-					$range = ( defined $range ) ? "${range},$add_s-$l_seq" : "$add_s-$l_seq"; 
-				}else{
-					$add_e < 0 and $add_e = $l_seq + $add_e + 1; 
-					$str .= substr($relHR->{seq}, $add_s-1, $add_e-$add_s+1); 
-					$range = ( defined $range ) ? "${range},$add_s-$add_e" : "$add_s-$add_e" ;
-				}
+				$add_s < 0 and $add_s = 1; 
+				$add_s > $l_seq+1 and $add_s = $l_seq+1; 
+				$add_e eq 'end' and $add_e = $l_seq; 
+				$add_e < 0 and $add_e = $l_seq + $add_e + 1; 
+				$add_e > $l_seq and $add_e = $l_seq; 
+				$add_e < 0 and $add_e = $add_s-1; 
+				$str .= substr($relHR->{seq}, $add_s-1, $add_e-$add_s+1); 
+				push(@Range, "$add_s-$add_e"); 
 			}
+			my $range = join(',', @Range); 
 			if ( $opts{frag_c} ) { &rcSeq(\$str, 'c'); $range = "C$range"; } 
 			if ( $opts{frag_r} ) { &rcSeq(\$str, 'r'); $range = "R$range"; } 
 			my $dispR = &Disp_seq(\$str, $opts{frag_width}); 
