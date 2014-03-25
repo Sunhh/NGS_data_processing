@@ -1,5 +1,6 @@
 #!/usr/bin/perl 
 # 2014-03-20 A script to deal with fastq format reads. It will be always in processing. 
+# 2014-03-25 Add function to search a pattern in reads, and return different values as defined. 
 #
 use strict; 
 use warnings; 
@@ -38,6 +39,14 @@ perl $0 in.fastq
 
 -phred_scale [INT] 33/64. Set scale value to get phred quality score. 
 
+-search       [String] Pattern to search in read. 
+-srch_strand  [f/r/b] forward/reverse/both. 
+-srch_back    [position/match/both/read] Default read
+-srch_drop    [Boolean] Only valid if -srch_back == read. It will drop the reads matching to the pattern. 
+-srch_max     [Boolean] Return all patterns bp by bp if given. 
+
+-rdKey        [Boolean] Keep only the first non-blank characters for read key if given. 
+
 #******* Instruction of this program *********#
 HELP
 	exit(1); 
@@ -45,6 +54,7 @@ HELP
 
 GetOptions(\%opts, 
 	"phred_scale:i", 
+	"rdKey!", 
 	"fq2fa!", "oQfile:s", 
 	"fq2Val!", 
 	"keep_len:s", "paired!", 
@@ -54,6 +64,7 @@ GetOptions(\%opts,
 	"33to64!", "64to33!", 
 	"rd_Num!", 
 	"frag:s", "frag_r!", "frag_c!", 
+	"search:s", "srch_strand:s", "srch_back:s", "srch_drop!", "srch_max!", 
 	"help!", 
 ); 
 
@@ -79,6 +90,19 @@ else
 
 
 ## Global settings
+my %good_str = qw(
+	f        1
+	r        -1
+	b        2
+	foward 	 1
+	reverse  -1
+  both     2
+  +        1
+  -        -1
+  1        1
+  -1       -1
+  2        2
+); 
 
 
 ## Call functions. 
@@ -92,10 +116,157 @@ else
 &fq2Val() if ( $opts{fq2Val} ); 
 &rd_Num() if ( $opts{rd_Num} ); 
 &fragmentRd() if ( defined $opts{frag} and $opts{frag} ne '' ); 
+&searchPattern() if ( defined $opts{search} and $opts{search} ne '' ); 
 
 #****************************************************************#
 #--------------Subprogram------------Start-----------------------#
 #****************************************************************#
+
+# -search       [String] Pattern to search in read. 
+# -srch_strand  [f/r/b] forward/reverse/both. 
+# -srch_back    [position/match/both/read] Default read
+# -srch_drop    [Boolean] Only valid if -srch_back == read. It will drop the reads matching to the pattern. 
+sub searchPattern {
+	my $srch_drop = 0; defined $opts{srch_drop} and $srch_drop = 1; 
+	my $srch_str = $good_str{b}; ; defined $opts{srch_strand} and $srch_str = $good_str{ $opts{srch_strand} }; 
+	defined $good_str{ $srch_str } or &stopErr( "[Err] Failed to get strand information! -srch_strand == [$srch_str]\n" ); 
+	my $srch_back = 'read'; defined $opts{srch_back} and $srch_back = $opts{srch_back}; 
+	my $srch_mm = 'min'; defined $opts{srch_max} and $srch_mm = 'max'; 
+	my $srch_pattern = $opts{search}; 
+	if ( $srch_back eq 'position' ) {
+		print STDOUT join("\t", qw/rdID rdLen MatchStart MatchEnd MatchLen/)."\n"; 
+	} elsif ( $srch_back eq 'match' ) {
+		print STDOUT join("\t", qw/rdID rdLen MatchLen MatchSeq/)."\n"; 
+	} elsif ( $srch_back eq 'both' ) {
+		print STDOUT join("\t", qw/rdID rdLen MatchStart MatchEnd MatchLen MatchSeq/)."\n"; 
+	} elsif ( $srch_back eq 'read' ) {
+		; 
+	} else {
+		&stopErr("[Err] Unkonwn -srch_back [$srch_back]\n"); 
+	}
+
+	if ( $srch_str == 1 ) {
+		for my $fh ( @InFp ) {
+			while ( my $rdRec = &get_fq_record($fh) ) {
+				$rdRec->{seq} =~ s/\s//g; 
+				my $rdLen = length($rdRec->{seq}); 
+				my @t_match = &siteList( \$srch_pattern, \$rdRec->{seq}, $srch_mm ); 
+				if ( $srch_back eq 'read' ) {
+					if ( scalar(@t_match) > 0 ) {
+						$srch_drop == 0 and print STDOUT "\@$rdRec->{id}$rdRec->{seq}\n+\n$rdRec->{qual}\n"; 
+					} else {
+						$srch_drop == 1 and  print STDOUT "\@$rdRec->{id}$rdRec->{seq}\n+\n$rdRec->{qual}\n"; 
+					}
+				} elsif ( $srch_back eq 'position' ) {
+					chomp($rdRec->{id}); 
+					map { print STDOUT join("\t", $rdRec->{id}, $rdLen, $_->[0], $_->[1], $_->[1]-$_->[0]+1)."\n"; } @t_match; 
+				} elsif ( $srch_back eq 'match' ) {
+					chomp($rdRec->{id}); 
+					map { print STDOUT join("\t", $rdRec->{id}, $rdLen, $_->[1]-$_->[0]+1, $_->[2])."\n"; } @t_match; 
+				} elsif ( $srch_back eq 'both' ) {
+					chomp($rdRec->{id}); 
+					map { print STDOUT join("\t", $rdRec->{id}, $rdLen, $_->[0], $_->[1], $_->[1]-$_->[0]+1, $_->[2])."\n"; } @t_match; 
+				} else {
+					&stopErr("[Err] Unknown -srch_back [$srch_back]\n"); 
+				}
+			}#End while ()
+		}#End for my $fh
+	} elsif ( $srch_str == -1 ) {
+		for my $fh ( @InFp ) {
+			while ( my $rdRec = &get_fq_record($fh) ) {
+				$rdRec->{seq} =~ s/\s//g; 
+				my $rdLen = length($rdRec->{seq}); 
+				my $seqRC = $rdRec->{seq}; &rcSeq( \$seqRC, 'rc' ); 
+				my @t_match = &siteList( \$srch_pattern, \$seqRC, $srch_mm ); 
+				if ( $srch_back eq 'read' ) {
+					if ( scalar(@t_match) > 0 ) {
+						$srch_drop == 0 and print STDOUT "\@$rdRec->{id}$rdRec->{seq}\n+\n$rdRec->{qual}\n"; 
+					} else {
+						$srch_drop == 1 and print STDOUT "\@$rdRec->{id}$rdRec->{seq}\n+\n$rdRec->{qual}\n"; 
+					}
+				} elsif ( $srch_back eq 'position' ) {
+					chomp($rdRec->{id}); 
+					map { print STDOUT join("\t", $rdRec->{id}, $rdLen, $rdLen - $_->[0] + 1, $rdLen - $_->[1] + 1, $_->[1]-$_->[0]+1)."\n"; } @t_match; 
+				} elsif ( $srch_back eq 'match' ) {
+					chomp($rdRec->{id}); 
+					map { &rcSeq(\$_->[2], 'rc'); print STDOUT join("\t", $rdRec->{id}, $rdLen, $_->[1]-$_->[0]+1, $_->[2])."\n"; } @t_match; 
+				} elsif ( $srch_back eq 'both' ) {
+					chomp($rdRec->{id}); 
+					map { &rcSeq(\$_->[2], 'rc'); print STDOUT join("\t", $rdRec->{id}, $rdLen, $rdLen - $_->[0] + 1, $rdLen - $_->[1] + 1, $_->[1]-$_->[0]+1, $_->[2])."\n"; } @t_match; 
+				} else {
+					&stopErr("[Err] Unknown -srch_back [$srch_back]\n"); 
+				}
+			}#End while ()
+		}#End for my $fh
+	} elsif ( $srch_str == 2 ) {
+		for my $fh ( @InFp ) {
+			while ( my $rdRec = &get_fq_record($fh) ) {
+				$rdRec->{seq} =~ s/\s//g; 
+				my $seqRC = $rdRec->{seq}; &rcSeq( \$seqRC, 'rc' ); 
+				my $rdLen = length($rdRec->{seq}); 
+				my @t_match = &siteList( \$srch_pattern, \$rdRec->{seq}, $srch_mm ); 
+				my @t_match_RC = &siteList( \$srch_pattern, \$seqRC, $srch_mm ); 
+				if ( $srch_back eq 'read' ) {
+					if ( scalar(@t_match) > 0 or scalar(@t_match_RC) > 0 ) {
+						$srch_drop == 0 and print STDOUT "\@$rdRec->{id}$rdRec->{seq}\n+\n$rdRec->{qual}\n"; 
+					} else {
+						$srch_drop == 1 and print STDOUT "\@$rdRec->{id}$rdRec->{seq}\n+\n$rdRec->{qual}\n"; 
+					}
+				} elsif ( $srch_back eq 'position' ) {
+					chomp($rdRec->{id}); 
+					map { print STDOUT join("\t", $rdRec->{id}, $rdLen, $_->[0], $_->[1], $_->[1]-$_->[0]+1)."\n"; } @t_match; 
+					map { print STDOUT join("\t", $rdRec->{id}, $rdLen, $rdLen - $_->[0] + 1, $rdLen - $_->[1] + 1, $_->[1]-$_->[0]+1)."\n"; } @t_match_RC; 
+				} elsif ( $srch_back eq 'match' ) {
+					chomp($rdRec->{id}); 
+					map { print STDOUT join("\t", $rdRec->{id}, $rdLen, $_->[1]-$_->[0]+1, $_->[2])."\n"; } @t_match; 
+					map { &rcSeq(\$_->[2], 'rc'); print STDOUT join("\t", $rdRec->{id}, $rdLen, $_->[1]-$_->[0]+1, $_->[2])."\n"; } @t_match_RC; 
+				} elsif ( $srch_back eq 'both' ) {
+					chomp($rdRec->{id}); 
+					map { print STDOUT join("\t", $rdRec->{id}, $rdLen, $_->[0], $_->[1], $_->[1]-$_->[0]+1, $_->[2])."\n"; } @t_match; 
+					map { &rcSeq(\$_->[2], 'rc'); print STDOUT join("\t", $rdRec->{id}, $rdLen, $rdLen - $_->[0] + 1, $rdLen - $_->[1] + 1, $_->[1]-$_->[0]+1, $_->[2])."\n"; } @t_match_RC; 
+				} else {
+					&stopErr("[Err] Unknown -srch_back [$srch_back]\n"); 
+				}
+			}#End while ()
+		}#End for my $fh
+	} else {
+		&stopErr("[Err] Unknown -srch_strand [$srch_str]\n"); 
+	}
+
+}#sub searchPattern 
+
+# Input : ( \$qry_pattern, \$sbjct_seq, 'min/max')
+# Return: ( [s1,e1,matchSeq1], [s2,e2,matchSeq2], ... )
+sub siteList ($$$) {
+	my $siteR = shift or &stopErr( "[Err]no Site input!\n" );
+	if ($$siteR eq "") {
+		warn "[Err]Site sequence cannot be empty!\n";
+		return;
+	}
+	my $qrSite = qr/$$siteR/s;
+	my $refR = shift or &stopErr( "[Err]no refSeq input!\n" );
+	my $modeChk = shift;
+	my $Is_min = 1;
+	if (defined $modeChk) {
+		$modeChk = lc($modeChk);
+		if ($modeChk eq 'max') {
+			$Is_min = 0;
+		} elsif ($modeChk eq 'min') {
+			$Is_min = 1;
+		} else {
+			warn "[Err]Third para of \&siteList should be 'Max' or 'Min' . Not [$modeChk].\n";
+		}
+	}
+	my @posList = ();
+	pos($$refR) = 0;
+	while ($$refR =~ m/\G(?:.*?)($qrSite)/gs) {
+		push ( @posList, [ $-[1]+1 , $+[1], $1 ] );
+		$Is_min?(pos($$refR) = $+[1]):(pos($$refR) = $-[1]+1);
+	}
+	return @posList;
+}# end siteList subroutine. 2013-10-30
+
+
 
 sub fragmentRd{
 	my $fragR = &frag_regions($opts{frag}); 
@@ -282,6 +453,9 @@ sub sepR12 {
 }#sub sepR12() 
 
 
+# Transvert -phred64 fastq and -phred33 fastq. 
+# Another useful method to change quality string is to use 'tr///' command like this (From -phred64 to -phred33): 
+# $rdQua =~ tr!>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[ \\ ]^_`abcdefghijklmnopqrstuvwxyz \{ |}~!#####$%&'()*+,-./0123456789:;< \= >?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[ \\ ]^_!;
 sub fq2fq {
 	my $scale = shift; 
 	defined $scale or $scale = 33-64; 
@@ -354,6 +528,7 @@ sub get_fq_record {
 	eof($fh) and return( undef() ); 
 	$back{id} = readline($fh); 
 	$back{id} =~ s/^\@// or &stopErr("[Err] The read id line seems wrong:\t$back{id}\n"); 
+	$opts{rdKey} and $back{id} =~ s/^(\S+)\s.*$/$1/; 
 	$back{seq} = readline($fh); 
 	readline($fh); 
 	$back{qual} = readline($fh); 
@@ -407,7 +582,7 @@ sub rcSeq {
 	my ($Is_r, $Is_c) = (0)x2;
 	$tag =~ /r/i and $Is_r = 1;
 	$tag =~ /c/i and $Is_c = 1;
-	!$Is_r and !$Is_c and die "Wrong Input for function rcSeq! $!\n";
+	!$Is_r and !$Is_c and &stopErr( "Wrong Input for function rcSeq! $!\n" );
 	$Is_r and $$seq_r = reverse ($$seq_r);
 	$Is_c and $$seq_r =~ tr/acgturykmbvdhACGTURYKMBVDHwWsSnN/tgcaayrmkvbhdTGCAAYRMKVBHDwWsSnN/; # edit on 2013-09-11 No difference in result.
 	return 0;
@@ -438,30 +613,30 @@ sub openFH ($$) {
 	  write   write
 	);
 	defined $type or $type = 'read';
-	defined $goodFileType{$type} or die "[Err]Unknown open method tag [$type].\n";
+	defined $goodFileType{$type} or &stopErr( "[Err]Unknown open method tag [$type].\n" );
 	$type = $goodFileType{$type};
 	local *FH;
 	# my $tfh;
 	if ($type eq 'read') {
 		if ($f =~ m/\.gz$/) {
-			open (FH, '-|', "gzip -cd $f") or die "[Err]$! [$f]\n";
+			open (FH, '-|', "gzip -cd $f") or &stopErr( "[Err]$! [$f]\n" );
 			# open ($tfh, '-|', "gzip -cd $f") or die "[Err]$! [$f]\n";
 		} elsif ( $f =~ m/\.bz2$/ ) {
-			open (FH, '-|', "bzip2 -cd $f") or die "[Err]$! [$f]\n";
+			open (FH, '-|', "bzip2 -cd $f") or &stopErr( "[Err]$! [$f]\n" );
 		} else {
-			open (FH, '<', "$f") or die "[Err]$! [$f]\n";
+			open (FH, '<', "$f") or &stopErr( "[Err]$! [$f]\n" );
 		}
 	} elsif ($type eq 'write') {
 		if ($f =~ m/\.gz$/) {
-			open (FH, '|-', "gzip - > $f") or die "[Err]$! [$f]\n";
+			open (FH, '|-', "gzip - > $f") or &stopErr( "[Err]$! [$f]\n" );
 		} elsif ( $f =~ m/\.bz2$/ ) {
-			open (FH, '|-', "bzip2 - > $f") or die "[Err]$! [$f]\n";
+			open (FH, '|-', "bzip2 - > $f") or &stopErr( "[Err]$! [$f]\n" );
 		} else {
-			open (FH, '>', "$f") or die "[Err]$! [$f]\n";
+			open (FH, '>', "$f") or &stopErr( "[Err]$! [$f]\n" );
 		}
 	} else {
 		# Something is wrong.
-		die "[Err]Something is wrong here.\n";
+		&stopErr( "[Err]Something is wrong here.\n" );
 	}
 	return *FH;
 }#End sub openFH
