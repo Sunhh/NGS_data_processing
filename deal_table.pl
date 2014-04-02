@@ -26,23 +26,24 @@ use warnings;
 use Getopt::Long;
 my %opts;
 GetOptions(\%opts,
-			"combine!","column:s",
-			"max_col:s","min_col:s",
-			"skip:i",
-			"reverse!",
-			"col_sort:s",
-			"col_uniq:s","col_reps:s","col_repCount:s",		# uniq/repeat columns pick.
-			"col_stat:i",
-			"symbol:s",
-			"best_uniqCol:s","select_col:s","select_rule:s","best_rep:s","best_disOrdCol!", 
-			"UniqColLine:s",
-			"label_mark:s",
-			"cbind!", "chkColNum!", 
-			"cluster_lines!", "cluster_cols:s", 
-			"trimEndReturn!", 
-			"fillNull:s", 
-			"transpose!", "skip_null_line!", "beMatrix!", "fill_new:s",      # transpose a matrix. 
-			"kSrch_idx:s","kSrch_idxCol:s","kSrch_srcCol:s","kSrch_drop!", "kSrch_line!", # Similar to linux command join, without joining and with more index columns. Combined from uniqComb.pl 
+	"combine!","column:s",
+	"max_col:s","min_col:s",
+	"skip:i",
+	"reverse!",
+	"col_sort:s",
+	"col_uniq:s","col_reps:s","col_repCount:s", # uniq/repeat columns pick.
+	"col_stat:i",
+	"symbol:s",
+	"best_uniqCol:s","select_col:s","select_rule:s","best_rep:s","best_disOrdCol!", 
+	"UniqColLine:s",
+	"label_mark:s",
+	"cbind!", "chkColNum!", 
+	"cluster_lines!", "cluster_cols:s", 
+	"trimEndReturn!", 
+	"fillNull:s", 
+	"transpose!", "skip_null_line!", "beMatrix!", "fill_new:s",      # transpose a matrix. 
+	"kSrch_idx:s","kSrch_idxCol:s","kSrch_srcCol:s","kSrch_drop!", "kSrch_line!", # Similar to linux command join, without joining and with more index columns. Combined from uniqComb.pl 
+	"dR2dN!", 
 			"help!");
 sub usage {
 
@@ -51,51 +52,52 @@ sub usage {
 command:perl $0 <STDIN|parameters>
 # 2013-11-26 
 
-	-help           help infomation;
-	-combine        combine files;
-	-column<int>    cols "num1,num2,num3..." will be picked out and joined to a new line;
-	-max_col        Similar to -column, compare by order;
-	-min_col        Similar to -column, compare by order;
-	-skip<int>      Skip first <int> lines.Usually for skipping head lines;
-	-col_sort       sort by col.
+  -help           help infomation;
+  -combine        combine files;
+  -column<int>    cols "num1,num2,num3..." will be picked out and joined to a new line;
+  -max_col        Similar to -column, compare by order;
+  -min_col        Similar to -column, compare by order;
+  -skip<int>      Skip first <int> lines.Usually for skipping head lines;
+  -col_sort       sort by col.
 
-	-col_uniq       pick lines with its columns uniq
-	-col_reps       pick lines with its columns repeat
-	-col_repCount   Show col repeat times.
+  -col_uniq       pick lines with its columns uniq
+  -col_reps       pick lines with its columns repeat
+  -col_repCount   Show col repeat times.
 
-	-col_stat<int>  Get Sum, Mean, Median, Min, Max of the Column;
-	-reverse        reverse the file lines order.
-	
-	-best_uniqCol   1st column is 0; col_1[,col_2...]
-	-select_col     1st column is 0; col_1[,col_2...]
-	-select_rule    1/-1[,1/-1...]; 1 for Max, -1 for Min;
-	-best_rep       out a best uniq cols' repeat records if given;
-	-best_disOrdCol Do not care the order of uniqCols, so "A\\tB" line will be compared with "B\\tA" line. 
-	
-	-UniqColLine    output a line with its col=UniqColLine one time.<*,*,*...>
+  -col_stat<int>  Get Sum, Mean, Median, Min, Max of the Column;
+  -reverse        reverse the file lines order.
 
-	-label_mark     Marks to be added to label_col. in format \" 001..090::a..z::1[::...]\"
+  -best_uniqCol   1st column is 0; col_1[,col_2...]
+  -select_col     1st column is 0; col_1[,col_2...]
+  -select_rule    1/-1[,1/-1...]; 1 for Max, -1 for Min;
+  -best_rep       out a best uniq cols' repeat records if given;
+  -best_disOrdCol Do not care the order of uniqCols, so "A\\tB" line will be compared with "B\\tA" line. 
 
-	-cbind          Bind input files by columns. 
-	-chkColNum      Check column number for each line if given. 
+  -UniqColLine    output a line with its col=UniqColLine one time.<*,*,*...>
 
-	-cluster_lines  Cluster genes in the same line into a same group. 
-	-cluster_cols   Set columns to be clustered. 
+  -label_mark     Marks to be added to label_col. in format \" 001..090::a..z::1[::...]\"
 
-	-trimEndReturn  Trim end return from windows lines. 
+  -cbind          Bind input files by columns. 
+  -chkColNum      Check column number for each line if given. 
 
-	-fillNull       Fill NULL cells with character assigned here. [String]. 
-	
-	-transpose      Transpose a matrix table. 
-	-skip_null_line Will not read in empty lines (with only blanks) if assigned. 
-	-beMatrix       The output table will be filled with NULL blank (empty) to be an intact (M x N) matrix. 
-	-fill_new       Fill new added cells in output matrix with character assigned here. [String]. 
-	                  Be aware that only the new added cells will be filled with this character! 
-	                  So the raw NULL cells will remain unchanged! 
+  -cluster_lines  Cluster genes in the same line into a same group. 
+  -cluster_cols   Set columns to be clustered. 
 
-			"kSrch_idx:s","kSrch_idxCol:s","kSrch_srcCol:s","kSrch_drop!", "kSrch_line!", # Similar to linux command join, without joining and with more index columns. Combined from uniqComb.pl 
+  -trimEndReturn  Trim end return from windows lines. 
+
+  -fillNull       Fill NULL cells with character assigned here. [String]. 
+
+  -transpose      Transpose a matrix table. 
+  -skip_null_line Will not read in empty lines (with only blanks) if assigned. 
+  -beMatrix       The output table will be filled with NULL blank (empty) to be an intact (M x N) matrix. 
+  -fill_new       Fill new added cells in output matrix with character assigned here. [String]. 
+                    Be aware that only the new added cells will be filled with this character! 
+                    So the raw NULL cells will remain unchanged! 
+
+  "kSrch_idx:s","kSrch_idxCol:s","kSrch_srcCol:s","kSrch_drop!", "kSrch_line!", # Similar to linux command join, without joining and with more index columns. Combined from uniqComb.pl 
 
 	-symbol         Defining the symbol to divide data.Default is "\\t";
+  -dR2dN          [Boolean] Change \\r to \\n in files. 
 ##################################################
 INFO
 
@@ -171,6 +173,8 @@ if ( &goodVar($opts{col_sort}) ) {
 
 &kSrch() if ( &goodVar($opts{kSrch_idx}) ); 
 
+&dR2dN() if ( $opts{dR2dN} ); 
+
 for (@InFp) {
 	close ($_);
 }
@@ -179,6 +183,16 @@ for (@InFp) {
 ######################################################################
 ## sub-routines for functions. 
 ######################################################################
+
+# Change \r to \n
+sub dR2dN {
+	for my $fh (@InFp) {
+		while (<$fh>) {
+			s/\r/\n/g; 
+			print STDOUT $_; 
+		}
+	}
+}#sub dR2dN
 
 # Similar to linux_join and from perl script uniqComb.pl 
 ## "kSrch_idx:s","kSrch_idxCol:s","kSrch_srcCol:s","kSrch_drop!", # Similar to linux command join, without joining and with more index columns. Combined from uniqComb.pl 
