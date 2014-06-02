@@ -250,8 +250,9 @@ while (<BN0>) {
 		}elsif (@ta = /^\s*Sbjct[\s:]+(\d+)\s+(\S+)\s+(\d+)/i) {
 			defined $info{sstart} or $info{sstart} = $ta[0]; 
 			$opts{snp} and $info{sseq} .= $ta[1]; 
-			defined $info{send} or $info{send} = $ta[2]; 
-			$info{send} > $ta[2] and $info{send} = $ta[2]; 
+			$info{send} = $ta[2]; 
+			# defined $info{send} or $info{send} = $ta[2]; 
+			# $info{send} > $ta[2] and $info{send} = $ta[2]; 
 		}elsif (/^Lambda/) {
 			if (defined $info{send}) {
 				defined $info{qstr} or $info{qstr} = 'NA'; defined $info{sstr} or $info{sstr} = 'NA'; 
