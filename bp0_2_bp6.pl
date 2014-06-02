@@ -154,20 +154,33 @@ while (<BN0>) {
 			$info{score} = $ta[0]; 
 			$info{bs} = $ta[1]; 
 			($info{evalue} = $ta[2]) =~ s/,$//; 
-			$info{qstart} = undef(); $info{sstart} = undef(); 
-			$info{qend} = undef(); $info{send} = undef(); 
-			$info{qseq} = undef(); $info{sseq} = undef(); 
-		#}elsif (@ta = /^\s*Identities = (\d+)\/(\d+) \(([\d.]+)\%\), Gaps = (\d+)\/(\d+)/i) {
-		}elsif (@ta = /^\s*Identities += +(\d+)\/(\d+) +\(([\d.]+)\%\), +Gaps += +(\d+)\/(\d+)/i or @ta = /^\s*Identities += +(\d+)\/(\d+) +\(([\d.]+)\%\), +Positives += (\d+)\/(\d+) +\(([\d,]+)\%\), +Gaps += +(\d+)\/(\d+)/i) {  
-			if (@ta == 5) {
-				@info{qw/match_base aln_len ident gap_open gap_ttl/} = @ta[0,1,2,3,4]; 
-				$info{mis_mat} = $info{aln_len}-$info{match_base}-$info{gap_open}; 
-			}elsif (@ta == 8) {
-				@info{qw/match_base aln_len ident positives pos_ttl pos_ident gap_open gap_ttl/} = @ta[0,1,2,3,4,5,6,7]; 
-				$info{mis_mat} = $info{aln_len}-$info{match_base}-$info{gap_open}; 
-			}else{
-				warn "Failed to parse line: $_\n"; 
+			for my $ttt ( qw/qstart sstart qend send qseq sseq/ ) {
+				$info{$ttt} = undef(); 
 			}
+		#}elsif (@ta = /^\s*Identities = (\d+)\/(\d+) \(([\d.]+)\%\), Gaps = (\d+)\/(\d+)/i) {
+		}elsif ( @ta = m!^\s*Identities += +(\d+)\/(\d+) +\(([\d.]+)\%\)!i ) { 
+#			@ta = /^\s*Identities += +(\d+)\/(\d+) +\(([\d.]+)\%\), +Gaps += +(\d+)\/(\d+)/i 
+#			or @ta = /^\s*Identities += +(\d+)\/(\d+) +\(([\d.]+)\%\), +Positives += (\d+)\/(\d+) +\(([\d,]+)\%\), +Gaps += +(\d+)\/(\d+)/i
+#			or @ta = m!^\s*Identities += +(\d+)\/(\d+) +\(([\d.]+)\%\)!i
+#		) {  
+			for my $ttt ( qw/match_base aln_len ident positives pos_ttl pos_ident gap_open gap_ttl/ ) {
+				$info{$ttt} = undef(); 
+			}
+			@info{qw/match_base aln_len ident/} = @ta[0,1,2]; 
+			if ( @ta = ($_ =~ m! Positives += (\d+)\/(\d+) +\(([\d,]+)\%\)!i) ) {
+				@info{qw/positives pos_ttl pos_ident/} = @ta[0,1,2]; 
+			}
+			if ( @ta = ($_ =~ m! Gaps += +(\d+)\/(\d+)!i) ) {
+				@info{qw/gap_open gap_ttl/} = @ta[0,1]; 
+			}
+			if (!defined $info{gap_open}) {
+				$info{gap_open}=$info{gap_ttl}=0; 
+			}
+			if (!defined $info{positives}) {
+				$info{pos_ttl} = $info{aln_len}; 
+				$info{positives} = $info{match_base}; 
+			}
+			$info{mis_mat} = $info{aln_len}--$info{match_base}--$info{gap_open}; 
 		}elsif (@ta = /^\s*Strand=(\w+)\/(\w+)/i or @ta = /^\s*Frame += +([\+\-\d]+)(?:\/([\+\-\d]+))?/i) {
 			defined $ta[1] or $ta[1] = ''; 
 			$info{qstr} = $ta[0]; $info{sstr} = $ta[1]; 
