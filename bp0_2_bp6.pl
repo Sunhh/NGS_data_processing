@@ -159,10 +159,6 @@ while (<BN0>) {
 			}
 		#}elsif (@ta = /^\s*Identities = (\d+)\/(\d+) \(([\d.]+)\%\), Gaps = (\d+)\/(\d+)/i) {
 		}elsif ( @ta = m!^\s*Identities += +(\d+)\/(\d+) +\(([\d.]+)\%\)!i ) { 
-#			@ta = /^\s*Identities += +(\d+)\/(\d+) +\(([\d.]+)\%\), +Gaps += +(\d+)\/(\d+)/i 
-#			or @ta = /^\s*Identities += +(\d+)\/(\d+) +\(([\d.]+)\%\), +Positives += (\d+)\/(\d+) +\(([\d,]+)\%\), +Gaps += +(\d+)\/(\d+)/i
-#			or @ta = m!^\s*Identities += +(\d+)\/(\d+) +\(([\d.]+)\%\)!i
-#		) {  
 			for my $ttt ( qw/match_base aln_len ident positives pos_ttl pos_ident gap_open gap_ttl/ ) {
 				$info{$ttt} = undef(); 
 			}
@@ -180,7 +176,7 @@ while (<BN0>) {
 				$info{pos_ttl} = $info{aln_len}; 
 				$info{positives} = $info{match_base}; 
 			}
-			$info{mis_mat} = $info{aln_len}--$info{match_base}--$info{gap_open}; 
+			$info{mis_mat} = $info{aln_len}-$info{match_base}-$info{gap_open}; 
 		}elsif (@ta = /^\s*Strand=(\w+)\/(\w+)/i or @ta = /^\s*Frame += +([\+\-\d]+)(?:\/([\+\-\d]+))?/i) {
 			defined $ta[1] or $ta[1] = ''; 
 			$info{qstr} = $ta[0]; $info{sstr} = $ta[1]; 
