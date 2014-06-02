@@ -45,7 +45,7 @@ if ($opts{snp}) {
 	open BN6, '<', "$opts{bn6}" or do { print "failed to open file(-bn6) $opts{bn6}. $!\n"; &usage(); }; 
 	my %uniq; 
 	while (<BN6>) {
-		chomp; 
+		s/[^\S\t]+$//;
 		/^\s*$/ and next; 
 		my @tmp = split(/\t/, $_); 
 		defined $uniq{$_} or push(@{$snpaln{$tmp[0]}}, $_); 
@@ -63,7 +63,7 @@ if ($opts{snp}) {
 #   evalue bitscore', which is equivalent to the keyword 'std'
 open BN0,'<',"$opts{in}" or do { print "failed to open file(-in) $opts{in}. $!\n"; &usage(); }; 
 while (<BN0>) {
-	chomp; 
+	s/[^\S\t]+$//; 
 	if ($region eq 'head') {
 		if (@ta = /^Query\s*=\s*(\S+)\s*(.*)/i) {
 			if (defined $info{send}) {
@@ -106,7 +106,7 @@ while (<BN0>) {
 			$info{get_slen} = 0; 
 			$info{get_sdef} = 0; 
 			$region = 'sbjct'; 
-		}elsif (@ta = /^Length=([\d,]+)/i or @ta= m/^ {8,}\(([\d,]+) letters\)$/) {
+		}elsif (@ta = /^Length=([\d,]+)/i or @ta= m/^\s{8,}\(([\d,]+) letters\)$/i) {
 			$info{qlen} = $ta[0]; $info{qlen} =~ s/,//g; 
 			$info{get_qlen} = 1; 
 		}elsif ($info{get_qlen} == 0) {
