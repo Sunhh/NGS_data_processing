@@ -81,8 +81,7 @@ while (<BN0>) {
 			}
 			$info{qid} = $ta[0]; 
 			$info{qdef} = $ta[1]; 
-			$info{get_qlen} = 0; 
-			$info{get_sdef} = 0; 
+			$info{get_qlen} =  $info{get_sdef} = 0; 
 			$region = 'query'; 
 		}
 	}elsif ($region eq 'query') {
@@ -98,20 +97,19 @@ while (<BN0>) {
 						# $oline =~ /^$snpl/ or next; 
 						&listSNP(\%info); 
 					}
-				}
+				}# if ($opts{snp})
 				$info{send} = undef(); 
 			}
 			$info{sid} = $ta[0]; 
 			$info{sdef} = $ta[1]; 
-			$info{get_slen} = 0; 
-			$info{get_sdef} = 0; 
+			$info{get_slen} = $info{get_sdef} = 0; 
 			$region = 'sbjct'; 
-		}elsif (@ta = /^Length=([\d,]+)/i or @ta= m/^\s{8,}\(([\d,]+) letters\)$/i) {
+		}elsif (@ta = /^Length=([\d,]+)/i or @ta = ( $_ =~ m/^\s{8,}\(([\d,]+) letters\)$/i ) ) {
 			$info{qlen} = $ta[0]; $info{qlen} =~ s/,//g; 
 			$info{get_qlen} = 1; 
 		}elsif ($info{get_qlen} == 0) {
 			$info{qdef} .= " $_"; 
-		}elsif (/^\*+/) { 
+		}elsif (m/^\s*\*+\s*No\s+hits\s+found/i) { 
 			# edit on 2010-11-08 
 			# here the line is '***** No hits found *****'; 
 			$region = 'head'; # return to head type. 
@@ -133,7 +131,7 @@ while (<BN0>) {
 			}
 			$info{qid} = $ta[0]; 
 			$info{qdef} = $ta[1]; 
-			$info{get_qlen} = 0; 
+			$info{get_qlen} = $info{get_sdef} = 0; 
 			$region = 'query'; 
 		}elsif (@ta = />\s*(\S+)\s*(.*)/) {
 			$info{sid} = $ta[0]; 
@@ -207,7 +205,7 @@ while (<BN0>) {
 			}
 			$info{qid} = $ta[0]; 
 			$info{qdef} = $ta[1]; 
-			$info{get_qlen} = 0; 
+			$info{get_qlen} = $info{get_sdef} = 0; 
 			$region = 'query'; 
 		#}elsif (@ta = /^>\s*(\S+)\s*(.*)/) {
 		}elsif (@ta = /^>\s*(\S+)\s*(.*)/ or @ta = /^Subject\s*=\s*(\S+)\s*(.*)/i) {
@@ -226,8 +224,7 @@ while (<BN0>) {
 			}
 			$info{sid} = $ta[0]; 
 			$info{sdef} = $ta[1]; 
-			$info{get_slen} = 0; 
-			$info{get_sdef} = 0; 
+			$info{get_slen} = $info{get_sdef} = 0; 
 			$region = 'sbjct'; 
 		}elsif (@ta = /^\s*Score += +(\S+) +bits +\((\d+)\), +Expect(?:\(\d+\))? += +(\S+)/i) {
 # editting here. 
