@@ -11,7 +11,7 @@ our @EXPORT_OK = qw(normMAFloc);
 
 
 # Input : (FILE_Handle)
-# Return: \%{ "a"=>Score_lines, "s"=>Aligned_sequence_lines }
+# Return: \%{ "a"=>Score_lines, "o"=>Aligned_sequence_lines }
 # MAF format : multiple alignment format. 
 # https://cgwb.nci.nih.gov/FAQ/FAQformat.html#format5
 sub readMAF {
@@ -29,8 +29,8 @@ sub readMAF {
 				seek( $fh, $curpos, 0 ); 
 				last; 
 			}
-		} elsif ( m/^s\s+/ ) {
-			push(@{$back_record{s}}, $_); 
+		} else {
+			push(@{$back_record{o}}, $_); 
 		}
 		$curpos = tell($fh); 
 	}
