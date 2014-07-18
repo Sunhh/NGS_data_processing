@@ -16,7 +16,7 @@ our @EXPORT_OK = qw(normMAFloc);
 # https://cgwb.nci.nih.gov/FAQ/FAQformat.html#format5
 sub readMAF {
 	my $fh = shift; 
-	my $curpos; 
+	my $curpos = tell($fh); 
 	my %back_record; 
 	my $is_read = 0; 
 	while (<$fh>) {
@@ -34,6 +34,7 @@ sub readMAF {
 		}
 		$curpos = tell($fh); 
 	}
+	defined $back_record{a} or return undef(); 
 	return \%back_record; 
 }# sub readMAF()
 
