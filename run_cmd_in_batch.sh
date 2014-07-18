@@ -90,7 +90,7 @@ do
 		realII=$(( ii+1 ))
 		echo "[Msg][$(date)]Process [$realII] command line."
 		echo "[Msg][CMD]Cmd line: ${files[$ii]}"
-		${files[$ii]} & 
+		eval ${files[$ii]} & 
 		used_pid+=($!)
 		echo "[Msg][PID]${used_pid[@]}" 
 		## end   Commands to be processed . 
@@ -99,6 +99,23 @@ do
 	fi
 	# Wait some time for the next throwing. 
 	sleep 1
+done
+echo "[Rec][$(date)]All commands thrown."
+
+while [ "${#used_pid[@]}" -gt "0" ]
+do
+	# Wait some time for the next checking. 
+	sleep 10
+	new_used_pid=()
+	for cur_pid in ${used_pid[@]}
+	do
+		if ps -p $cur_pid > /dev/null
+		then
+			# If this process ID is running, record it
+			new_used_pid+=( "$cur_pid" )
+		fi
+	done
+	used_pid=("${new_used_pid[@]}")
 done
 
 echo "[Rec][$(date)]All commands finished."; 
