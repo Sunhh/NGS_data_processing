@@ -34,13 +34,13 @@ sub readMAF {
 		}
 		$curpos = tell($fh); 
 	}
-	defined $back_record{a} or return undef(); 
+	defined $back_record{a} or return {}; 
 	return \%back_record; 
 }# sub readMAF()
 
 # Input  : ($MafSline[, 0/1])
 # Input  : Single "s" line from MAF format file. 
-# Return : \%{} : Keys = qw/seqID seqStart blkSize seqStrand seqLen seqSeq normS normE/
+# Return : \%{} : Keys = qw/seqId seqStart blkSize seqStrand seqLen seqSeq normS normE/
 #          (normS, normE) are all 1-based and normS < normE ; 
 sub splitMafSline {
 	my $line = shift; 
