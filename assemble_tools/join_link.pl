@@ -189,7 +189,9 @@ if ( defined $oScfFasFh and $has_fa and scalar(@$scfSeq) > 0 ) {
 	for ( @$scfSeq ) {
 		my $sc_name = sprintf("%s%0${nn}d", $opts{scfPref}, $_->[0]); 
 		my $sc_len = length($_->[1]); 
-		print {$oScfFasFh} ">$sc_name $sc_len\n$_->[1]\n"; 
+		my $tseq = $_->[1]; 
+		$tseq =~ s/(.{100})/$1\n/g; chomp($tseq); 
+		print {$oScfFasFh} ">$sc_name $sc_len\n$tseq\n"; 
 	}
 }
 
@@ -447,7 +449,9 @@ sub betterSeq {
 		$back_seq = &subSeq( \$infor1->{seq}{$id1}, $str1, $s1, $e1 ); 
 	} elsif ( $atgcR_1 < $atgcR_2 ) {
 		$back_seq = &subSeq( \$infor2->{seq}{$id2}, $str2, $s2, $e2); 
-		print {$oDropScfFh} ">DropBlk.$id1:$str1:${s1}-$e1\n" . &subSeq( \$infor1->{seq}{$id1}, $str1, $s1, $e1 ) . "\n"; 
+		my $tseq = &subSeq( \$infor1->{seq}{$id1}, $str1, $s1, $e1 ); 
+		$tseq =~ s/(.{100})/$1\n/g; chomp($tseq); 
+		print {$oDropScfFh} ">DropBlk.$id1:$str1:${s1}-$e1\n$tseq\n"; 
 	} else {
 		;# Not here. 
 	}
@@ -518,8 +522,12 @@ sub betterGapSeq {
 	if ( $atgcR_2 >= $atgcR_1 ) {
 		$back_seq = &subSeq( \$infor2->{seq}{$id2}, $gapStr2a, $gapS2, $gapE2 ); 
 
-		$gapLen1a > 0 and print {$oDropScfFh} ">DropGap.$id1a:$str1a:${gapS1a}-$gapE1a\n" . &subSeq( \$infor1->{seq}{$id1a}, $str1a, $gapS1a, $gapE1a ) . "\n"; 
-		$gapLen1b > 0 and print {$oDropScfFh} ">DropGap.$id1b:$str1b:${gapS1b}-$gapE1b\n" . &subSeq( \$infor1->{seq}{$id1b}, $str1b, $gapS1b, $gapE1b ) . "\n"; 
+		my $tseq = &subSeq( \$infor1->{seq}{$id1a}, $str1a, $gapS1a, $gapE1a ); 
+		$tseq =~ s/(.{100})/$1\n/g; chomp($tseq); 
+		$gapLen1a > 0 and print {$oDropScfFh} ">DropGap.$id1a:$str1a:${gapS1a}-$gapE1a\n$tseq\n"; 
+		$tseq = &subSeq( \$infor1->{seq}{$id1b}, $str1b, $gapS1b, $gapE1b ); 
+		$tseq =~ s/(.{100})/$1\n/g; chomp($tseq); 
+		$gapLen1b > 0 and print {$oDropScfFh} ">DropGap.$id1b:$str1b:${gapS1b}-$gapE1b\n$tseq\n"; 
 	} else {
 		$back_seq  = &subSeq( \$infor1->{seq}{$id1a}, $str1a, $gapS1a, $gapE1a ); 
 		$back_seq .= $gapNSeq; 
