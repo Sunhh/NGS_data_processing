@@ -447,7 +447,7 @@ sub betterSeq {
 		$back_seq = &subSeq( \$infor1->{seq}{$id1}, $str1, $s1, $e1 ); 
 	} elsif ( $atgcR_1 < $atgcR_2 ) {
 		$back_seq = &subSeq( \$infor2->{seq}{$id2}, $str2, $s2, $e2); 
-		print {$oDropScfFh} ">Drop.$id1:$str1:${s1}-$e1\n" . &subSeq( \$infor1->{seq}{$id1}, $str1, $s1, $e1 ) . "\n"; 
+		print {$oDropScfFh} ">DropBlk.$id1:$str1:${s1}-$e1\n" . &subSeq( \$infor1->{seq}{$id1}, $str1, $s1, $e1 ) . "\n"; 
 	} else {
 		;# Not here. 
 	}
@@ -518,8 +518,8 @@ sub betterGapSeq {
 	if ( $atgcR_2 >= $atgcR_1 ) {
 		$back_seq = &subSeq( \$infor2->{seq}{$id2}, $gapStr2a, $gapS2, $gapE2 ); 
 
-		$gapLen1a > 0 and print {$oDropScfFh} ">Drop.$id1a:$str1a:${gapS1a}-$gapE1a\n" . &subSeq( \$infor1->{seq}{$id1a}, $str1a, $gapS1a, $gapE1a ) . "\n"; 
-		$gapLen1b > 0 and print {$oDropScfFh} ">Drop.$id1b:$str1b:${gapS1b}-$gapE1b\n" . &subSeq( \$infor1->{seq}{$id1b}, $str1b, $gapS1b, $gapE1b ) . "\n"; 
+		$gapLen1a > 0 and print {$oDropScfFh} ">DropGap.$id1a:$str1a:${gapS1a}-$gapE1a\n" . &subSeq( \$infor1->{seq}{$id1a}, $str1a, $gapS1a, $gapE1a ) . "\n"; 
+		$gapLen1b > 0 and print {$oDropScfFh} ">DropGap.$id1b:$str1b:${gapS1b}-$gapE1b\n" . &subSeq( \$infor1->{seq}{$id1b}, $str1b, $gapS1b, $gapE1b ) . "\n"; 
 	} else {
 		$back_seq  = &subSeq( \$infor1->{seq}{$id1a}, $str1a, $gapS1a, $gapE1a ); 
 		$back_seq .= $gapNSeq; 
