@@ -26,6 +26,8 @@ HELP
 
 my @specs = qw(S01 S02); 
 defined $opts{specs} and @specs = split(',', $opts{specs}); 
+defined $specs[0] or $specs[0] = ''; 
+defined $specs[1] or $specs[1] = ''; 
 my $oFh = \*STDOUT; 
 if (defined $opts{out}) {
 	my $tfh; 
@@ -53,7 +55,7 @@ for my $fh (@FH) {
 		for (my $i=0; $i<2; $i++) {
 			$rec1{o}[$i] =~ m/^s\s/ or die "Wrong line[$i]: $rec1{o}[$i]\n"; 
 			my %sline = %{ splitMafSline($rec1{o}[$i], 1)}; 
-			$sline{seqId} = "$specs[$i].$sline{seqId}"; 
+			$specs[$i] ne '' and $sline{seqId} = "$specs[$i].$sline{seqId}"; 
 			push(@cur_blk, [@sline{qw/seqId seqStart blkSize seqStrand seqLen seqSeq/}]); 
 			# print {$oFh} join(" ", "s", @sline{qw/seqId seqStart blkSize seqStrand seqLen seqSeq/})."\n"; 
 		}
