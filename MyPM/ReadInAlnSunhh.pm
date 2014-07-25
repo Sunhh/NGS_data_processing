@@ -59,7 +59,8 @@ sub splitMafSline {
 	$back{normS} = -1; 
 	$back{normE} = -1; 
 	if ($want_normP) {
-		( $back{normS}, $back{normE} ) = &normMAFloc( $back{seqStrand}, $back{seqLen}, [$back{seqStart}, $back{blkSize}] ); 
+		my @tse = &normMAFloc( $back{seqStrand}, $back{seqLen}, [$back{seqStart}, $back{blkSize}] ); 
+		( $back{normS}, $back{normE} ) = @{$tse[0]}; 
 	}
 	return \%back; 
 }#End sub splitMafSline()
