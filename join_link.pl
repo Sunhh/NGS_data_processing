@@ -14,6 +14,7 @@ GetOptions(\%opts,
 	"outLnkTbl:s", 
 	"outScfLnk:s", 
 	"scfPref:s", 
+	"dropScfIn:s", 
 	"help!", 
 ); 
 
@@ -43,6 +44,7 @@ perl $0 in.link
 
 -outScfLnk    [\\*STDOUT] Write scaffold links 
 -outScfFas    [File name] Write scaffold sequences to this file if given. 
+-dropScfIn    [File name] Write replaced-dropped scaffolds in this file. 
 -scfPref      [NULL] Prefix of output scaffolds name. 
 
 ######################################################################################################
@@ -107,8 +109,7 @@ if (defined $opts{inCtgFa}) {
 
 my $oScfFasFh = undef(); 
 if (defined $opts{outScfFas}) {
-	my $tfh; 
-	open $tfh, '>', "$opts{outScfFas}" or die; 
+	my $tfh; open $tfh, '>', "$opts{outScfFas}" or die; 
 	$oScfFasFh = $tfh; 
 }
 my $oLnkTblFh = \*STDOUT; 
@@ -118,9 +119,13 @@ if (defined $opts{outLnkTbl}) {
 }
 my $oScfLnkFh = \*STDOUT; 
 if (defined $opts{outScfLnk}) {
-	my $tfh; 
-	open $tfh, '>', "$opts{outScfLnk}" or die; 
+	my $tfh; open $tfh, '>', "$opts{outScfLnk}" or die; 
 	$oScfLnkFh = $tfh; 
+}
+my $oDropScfFh = \*STDOUT; 
+if (defined $opts{dropScfIn}) {
+	my $tfh; open $tfh, '>', "$opts{dropScfIn}" or die; 
+	$oDropScfFh = $tfh; 
 }
 
 
@@ -160,7 +165,8 @@ my %mmmm_link = %{ &multiLink(\%blk_link) }; # Paired links supporting at least 
 
 #####################################################
 # Output links 
-# &printLink(\%blk_link); 
+&tsmsg("[Rec] Writing link table accepted.\n"); 
+&printLink(\%blk_link); 
 
 #####################################################
 # Build new scaffolds
@@ -441,6 +447,7 @@ sub betterSeq {
 		$back_seq = &subSeq( \$infor1->{seq}{$id1}, $str1, $s1, $e1 ); 
 	} elsif ( $atgcR_1 < $atgcR_2 ) {
 		$back_seq = &subSeq( \$infor2->{seq}{$id2}, $str2, $s2, $e2); 
+		print {$oDropScfFh} ">Drop.$id1:$str1:${s1}-$e1\n" . &subSeq( \$infor1->{seq}{$id1}, $str1, $s1, $e1 ) . "\n"; 
 	} else {
 		;# Not here. 
 	}
@@ -510,6 +517,9 @@ sub betterGapSeq {
 	## Rule 2. The one with larger ATGC% is better. 
 	if ( $atgcR_2 >= $atgcR_1 ) {
 		$back_seq = &subSeq( \$infor2->{seq}{$id2}, $gapStr2a, $gapS2, $gapE2 ); 
+
+		$gapLen1a > 0 and print {$oDropScfFh} ">Drop.$id1a:$str1a:${gapS1a}-$gapE1a\n" . &subSeq( \$infor1->{seq}{$id1a}, $str1a, $gapS1a, $gapE1a ) . "\n"; 
+		$gapLen1b > 0 and print {$oDropScfFh} ">Drop.$id1b:$str1b:${gapS1b}-$gapE1b\n" . &subSeq( \$infor1->{seq}{$id1b}, $str1b, $gapS1b, $gapE1b ) . "\n"; 
 	} else {
 		$back_seq  = &subSeq( \$infor1->{seq}{$id1a}, $str1a, $gapS1a, $gapE1a ); 
 		$back_seq .= $gapNSeq; 
