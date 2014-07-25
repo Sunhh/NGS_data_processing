@@ -1,0 +1,73 @@
+#!/usr/bin/perl
+use strict; 
+use warnings; 
+use ReadInAlnSunhh; 
+use Getopt::Long;
+
+my %opts; 
+GetOptions(\%opts, 
+	"help!", 
+	"specs:s", 
+	"out:s", 
+); 
+
+-t and !@ARGV and &usage(); 
+$opts{help} and &usage(); 
+
+sub usage {
+print STDOUT <<HELP; 
+perl $0 in.maf
+-help 
+-specs      [S01,S02] Name of species
+-out        [\\*STDOUT] Output file name. 
+HELP
+	exit 1; 
+}
+
+my @specs = qw(S01 S02); 
+defined $opts{specs} and @specs = split(',', $opts{specs}); 
+my $oFh = \*STDOUT; 
+if (defined $opts{out}) {
+	my $tfh; 
+	open $tfh,'>',"$opts{out}" or die "Failed to open $opts{out}\n$!\n"; 
+	$oFh = $tfh; 
+}
+
+my @FH; 
+!(-t) and push(@FH, \*STDIN); 
+for (@ARGV) {
+	my $fh; 
+	open $fh, '<', "$_" or die; 
+	push(@FH, $fh); 
+}
+
+print {$oFh} "##maf version=1\n"; 
+my @all_blks; 
+for my $fh (@FH) {
+	while ( my %rec1 = %{readMAF($fh)} ) {
+		my @cur_blk; 
+		chomp( $rec1{a}[0] ); 
+		push(@cur_blk, [ $rec1{a}[0] ]); 
+		# print {$oFh} "$rec1{a}[0]\n"; 
+		@{$rec1{o}} >= 2 or next; 
+		for (my $i=0; $i<2; $i++) {
+			$rec1{o}[$i] =~ m/^s\s/ or die "Wrong line[$i]: $rec1{o}[$i]\n"; 
+			my %sline = %{ splitMafSline($rec1{o}[$i], 1)}; 
+			$sline{seqId} = "$specs[$i].$sline{seqId}"; 
+			push(@cur_blk, [@sline{qw/seqId seqStart blkSize seqStrand seqLen seqSeq/}]); 
+			# print {$oFh} join(" ", "s", @sline{qw/seqId seqStart blkSize seqStrand seqLen seqSeq/})."\n"; 
+		}
+		push(@all_blks, [@cur_blk]); 
+		# print {$oFh} "\n"; 
+	}
+}
+
+for my $r1 (sort { $a->[1][3] cmp $b->[1][3] || $a->[1][1] <=> $a->[1][1]  } @all_blks) {
+	print {$oFh} $r1->[0][0] . "\n"; 
+	for (my $i=1; $i<@$r1; $i++) {
+		print {$oFh} join(" ", "s", @{$r1->[$i]})."\n"; 
+	}
+	print {$oFh} "\n"; 
+}
+
+
