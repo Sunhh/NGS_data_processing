@@ -16,23 +16,28 @@ our @EXPORT_OK = qw(normMAFloc);
 # https://cgwb.nci.nih.gov/FAQ/FAQformat.html#format5
 sub readMAF {
 	my $fh = shift; 
-	my $curpos = tell($fh); 
 	my %back_record; 
 	my $is_read = 0; 
 	while (<$fh>) {
 		if ( m/^#/ ) {
+		} elsif ( m/^$/ ) {
+			defined $back_record{a} or return(); 
+			return \%back_record; 
 		} elsif ( m/^a\s+/ ) {
 			if ( $is_read == 0 ) {
 				push(@{$back_record{a}}, $_); 
 				$is_read = 1; 
 			} else {
-				seek( $fh, $curpos, 0 ); 
+				&tsmsg("[Err] This is a bad format of MAF, because I cannot find an empty line to separate alignment blocks.\nLINE: $_\n"); 
 				last; 
 			}
 		} else {
-			push(@{$back_record{o}}, $_); 
+			if ( $is_read == 1 ) {
+				push(@{$back_record{o}}, $_); 
+			} else {
+				&tsmsg("[Err] This is a bad format of MAF, because I get to \^s line before \^a line.\nLINE:$_\n"); 
+			}
 		}
-		$curpos = tell($fh); 
 	}
 	defined $back_record{a} or return {}; 
 	return \%back_record; 

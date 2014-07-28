@@ -59,7 +59,6 @@ my (%r2q, %q2r);
 #   Value of "cont" : {"Qry_scaf_id" => [Len_Qry, "+/-", Start_Position_Qry, End_Position_Qry, blkSizeQ, Start_Position_Ref, End_Position_Ref, blkSizeR] }, ...
 #   Value of "same" : {"Qry_scaf_id" => [Len_Qry, "+/-", Start_Position_Qry, End_Position_Qry, blkSizeQ, Start_Position_Ref, End_Position_Ref, blkSizeR] }, ...
 
-
 &tsmsg("[Rec] Reading in MAF files.\n"); 
 for my $fh (@FH) {
 	while ( my %rec1 = %{readMAF($fh)} ) {
@@ -70,6 +69,7 @@ for my $fh (@FH) {
 			$tl =~ m/^s\s/ and push(@sLines, $tl); 
 		}
 		@sLines >= 2 or next; 
+@sLines > 2 and &tsmsg("[Err] More than two lines in the MAF alignments!\n"); 
 		
 		# Get Ref/Qry alignment information. 
 		my %s1 = %{ splitMafSline($sLines[0], 1) }; # Reference alignment 
@@ -137,6 +137,7 @@ for my $fh (@FH) {
 				} else {
 					; 
 				}
+
 			} else {
 				$all_links{$s1{seqId}}{p3}{$s2{seqId}} = [ $s2{seqLen}, $tmp_str, @s2{qw/normS normE blkSize/}, @s1{qw/normS normE blkSize/}, $s2{seqId}, $s1{seqId} ]; 
 			}# End if ( defined $all_links{$s1}{p3}{$s2{seqId}} )
@@ -164,6 +165,7 @@ for my $fh (@FH) {
 my $cnt = 0; 
 for my $incl1 ( keys %rep_incl ) {
 	for my $incl2 ( keys %{$rep_incl{$incl1}} ) {
+		&tsmsg("[Msg]   Delete link {$incl1}{incl}{$incl2}\n"); 
 		delete $all_links{$incl1}{incl}{$incl2} ; 
 		$cnt ++; 
 	}
@@ -180,6 +182,7 @@ for my $incl1 (keys %all_links) {
 $cnt = 0; 
 for my $incl1 (keys %shrt_incl) {
 	for my $incl2 (keys %{$shrt_incl{$incl1}}) {
+		&tsmsg("[Msg]   Delete low ratio short-link {$incl1}{incl}{$incl2}\n"); 
 		delete $all_links{$incl1}{incl}{$incl2}; 
 		$cnt ++; 
 	}
@@ -215,7 +218,8 @@ for my $refId ( keys %all_links ) {
 			}#End for my $r2Id ( keys %q2r{$qryId} )
 			&save_good_link($all_links{$refId}{p5}{$qryId}, $nearest_link, \%good_links); 
 		}
-	} elsif ( defined $all_links{$refId}{p3} ) {
+	}# End if ( defined $all_links{$refId}{p5} )
+	if ( defined $all_links{$refId}{p3} ) {
 		# Ref_link_type -- "p3"
 		my @qIDs = keys %{$all_links{$refId}{p3}}; 
 		if ( scalar( @qIDs ) == 1 ) {
@@ -237,7 +241,8 @@ for my $refId ( keys %all_links ) {
 			}#End for my $r2Id ( keys %q2r{$qryId} )
 			&save_good_link($all_links{$refId}{p3}{$qryId}, $nearest_link, \%good_links); 
 		}
-	} elsif ( defined $all_links{$refId}{incl} ) { 
+	}# End if ( defined $all_links{$refId}{p3} )
+	if ( defined $all_links{$refId}{incl} ) { 
 		# Ref_link_type -- "incl"
 		my @qIDs = keys %{$all_links{$refId}{incl}}; 
 		if ( scalar( @qIDs ) == 1 ) {
@@ -268,9 +273,7 @@ for my $refId ( keys %all_links ) {
 			&save_good_link($all_links{$refId}{incl}{$qryId}, $nearest_link_p5, \%good_links); 
 			&save_good_link($all_links{$refId}{incl}{$qryId}, $nearest_link_p3, \%good_links); 
 		}
-	} else {
-		; 
-	}# End 'else' from if ( defined $all_links{$refId}{p5} ) 
+	}# End if ( defined $all_links{$refId}{incl} )
 }
 
 &tsmsg("[Rec] Output good links.\n"); 
