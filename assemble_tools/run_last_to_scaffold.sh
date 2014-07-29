@@ -102,7 +102,8 @@ perl $pl_formatMAF -specs "," $file_rawMaf -out $file_fitMaf
 perl $pl_maf2fasta $file_fitMaf > $file_xmfa
 
 echo "[$(date)] Run Mugsy"
-source $sh_mugsyenv                                                                                                                                                     $exe_mugsyWGA --outfile $pref_mugO --seq $file_ctgFa --aln $file_xmfa --distance 2000 --minlength 50 1>stdout.${pref_mugO} 2>stderr.${pref_mugO}
+source $sh_mugsyenv
+$exe_mugsyWGA --outfile $pref_mugO --seq $file_ctgFa --aln $file_xmfa --distance 2000 --minlength 50 1>stdout.${pref_mugO} 2>stderr.${pref_mugO}
 perl $pl_pairedMAF ${pref_mugO}.maf > ${pref_mugO}.paired.maf
 
 echo "[$(date)] Looking for links"
