@@ -19,6 +19,7 @@ then
 	echo "[$(date)][Rec] refFa=$refFa qryFa=$qryFa"
 else
 	echo "[$(date)][Err] Please check the input for refFa and qryFa."
+	echo "[$(date)][CMD] bash $path2Me/$myBasename refFa qryFa dbTag oPref scfPref"
 	exit 1
 fi
 
