@@ -22,7 +22,7 @@ sub readMAF {
 	while (<$fh>) {
 		if ( m/^#/ ) {
 		} elsif ( m/^$/ ) {
-			defined $back_record{a} or return(); 
+			defined $back_record{a} or return {}; 
 			return \%back_record; 
 		} elsif ( m/^a\s+/ ) {
 			if ( $is_read == 0 ) {
