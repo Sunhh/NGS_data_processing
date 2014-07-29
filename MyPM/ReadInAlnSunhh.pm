@@ -4,6 +4,7 @@ package ReadInAlnSunhh;
 
 use strict; 
 use warnings; 
+use LogInforSunhh; 
 use Exporter qw(import);
 
 our @EXPORT = qw(readMAF splitMafSline); 
@@ -92,14 +93,5 @@ sub normMAFloc {
 	}
 	return (@norm_blkSE); 
 }#End sub normMAFloc() 
-
-sub stopErr {
-	&tsmsg(@_); 
-	exit 1; 
-}
-sub tsmsg {
-	my $tt = scalar(localtime()); 
-	print STDERR join('', @_); 
-}
 
 1;

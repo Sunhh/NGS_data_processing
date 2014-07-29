@@ -5,6 +5,7 @@ package SeqAlnSunhh;
 
 use strict; 
 use warnings; 
+use LogInforSunhh; 
 use Exporter qw(import); 
 
 our @EXPORT = qw(olap_e2e_A2B); 
@@ -98,7 +99,7 @@ sub olap_e2e_A2B {
 			elsif ( $up   == $left && $up   >  $diag && $left >  $diag ) { $traceback[$i][$j] = 'L'; $max = $up;   }
 			elsif ( $up   == $diag && $up   >  $left && $diag >  $left ) { $traceback[$i][$j] = 'V'; $max = $up;   }
 			elsif ( $diag == $left && $diag >  $up   && $left >  $up   ) { $traceback[$i][$j] = 'Z'; $max = $diag; }
-			else { die "Why we come here!\n";  }
+			else { &stopErr( "Why we come here!\n" );  }
 			# record the highest score in @smat; 
 			$smat[$i][$j] = $max; 
 		}
@@ -164,7 +165,7 @@ sub olap_e2e_A2B {
 			$seqC_letter = '-'; 
 			$best_x --; 
 		} else {
-			print STDERR "ERROR: Unknown tracebackvalue [$tracebackvalue]\n"; 
+			&tsmsg( "[Err] Unknown tracebackvalue [$tracebackvalue]\n" ); 
 			exit 1; 
 		}
 		$seqA_aln = $seqA_letter . $seqA_aln; 
