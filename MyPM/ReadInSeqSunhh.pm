@@ -8,7 +8,7 @@ use LogInforSunhh;
 use Exporter qw(import); 
 
 our @EXPORT = qw(get_fasta_seq); 
-our EXPORT_OK; 
+our @EXPORT_OK; 
 
 # input a fasta file's handle and a signal show whether it should has a head line;
 # return (undef(),undef()) if input is not enough data.

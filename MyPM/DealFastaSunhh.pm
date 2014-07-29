@@ -9,7 +9,7 @@ use LogInforSunhh;
 use Exporter qw(import);
 
 our @EXPORT = qw(siteList);
-our EXPORT_OK;
+our @EXPORT_OK;
 
 #  Input : (\$expr_pattern, \$sequence_to_search, $check_mode)
 #            $check_mode : 'min' - give the least number of matched patterns without overlap. 
