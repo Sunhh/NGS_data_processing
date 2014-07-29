@@ -100,7 +100,7 @@ sub clip_5p {
 			} elsif ( $posList[$i][0]-$prevE-1 > $max_gap ) {
 				# Should be splitted here. And the previous block [$prevS, $prevE] is not long enough. 
 				push( @clipped_seq, substr($tmpSeq, $prevS-1, $prevE-$prevS+1) ); 
-				push( @clipped_seq, substr($tmpSeq, $prevE-1, $posList[$i][0]-$prevE+1) ); 
+				push( @clipped_seq, substr($tmpSeq, $prevE, $posList[$i][0]-$prevE+1) ); 
 				( $prevS, $prevE ) = ( $posList[$i][0], $posList[$i][1] ); 
 				if ( $prevE-$prevS+1 >= $min_clust_len ) {
 					$tmpSeq = substr($tmpSeq, $prevS-1); 
@@ -123,7 +123,7 @@ sub clip_5p {
 	} else {
 		# The good long enough block does not exist. 
 		push( @clipped_seq, substr($tmpSeq, $prevS-1, $prevE-$prevS+1) ); 
-		$tmpSeq = substr($tmpSeq, $prevE-1); 
+		$tmpSeq = substr($tmpSeq, $prevE); 
 		push( @clipped_seq, split(/[nN]{$max_gap,}/, $tmpSeq) ); 
 	}
 	
