@@ -50,5 +50,6 @@ sub get_fasta_seq {
 	return (\%backH, $has_get);
 }# end sub get_fasta_seq
 
+1; 
 
 
