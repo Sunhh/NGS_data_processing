@@ -13,6 +13,7 @@ my $chk_len = 10e3;
 my $max_gap = 700; 
 my $min_noN = 100; 
 my $min_clust_len = 3e3; 
+my $min_outLen = 100; 
 
 my $srh_pat = '[ATGCatgc]+'; 
 
@@ -40,12 +41,14 @@ for ( my ($relHR, $get) = &get_fasta_seq($sfh); defined $relHR and $get; ($relHR
 	if (scalar(@clipped_5) == 1) {
 		# raw sequence not changed. 
 		( length ( $clipped_5[0] ) == length($tmpSeq) and $clipped_5[0] eq $tmpSeq ) or &stopErr("[Err] key=$relHR->{key} problem\nclipped: $clipped_5[0]\nrawSeq : $tmpSeq\n"); 
-		my $ts = $clipped_5[0]; $ts =~ s/(.{100})/$1\n/g; chomp($ts); 
-		print STDOUT ">$relHR->{head}\n$ts\n"; 
+		if ( $clipped_5[0] >= $min_outLen ) {
+			my $ts = $clipped_5[0]; $ts =~ s/(.{100})/$1\n/g; chomp($ts); 
+			print STDOUT ">$relHR->{head}\n$ts\n"; 
+		}
 	} else {
 		for my $ts (@clipped_5) {
 			$ts =~ s/^[nN]+//; $ts =~ s/[nN]+$//; 
-			length($ts) > 0 or next; 
+			length($ts) >= $min_outLen or next; 
 			$sc_ct ++; 
 			$ts =~ s/(.{100})/$1\n/g; chomp($ts); 
 			print STDOUT ">Clip.$sc_ct [From $relHR->{key}]\n$ts\n"; 
