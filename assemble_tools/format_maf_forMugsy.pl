@@ -64,7 +64,7 @@ for my $fh (@FH) {
 	}
 }
 
-for my $r1 (sort { $a->[1][3] cmp $b->[1][3] || $a->[1][1] <=> $b->[1][1]  } @all_blks) {
+for my $r1 (sort { $b->[1][4]<=>$a->[1][4] || $a->[1][3] cmp $b->[1][3] || $a->[1][1] <=> $b->[1][1]  } @all_blks) {
 	print {$oFh} $r1->[0][0] . "\n"; 
 	for (my $i=1; $i<@$r1; $i++) {
 		print {$oFh} join(" ", "s", @{$r1->[$i]})."\n"; 
