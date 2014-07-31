@@ -41,7 +41,7 @@ for ( my ($relHR, $get) = &get_fasta_seq($sfh); defined $relHR and $get; ($relHR
 	if (scalar(@clipped_5) == 1) {
 		# raw sequence not changed. 
 		( length ( $clipped_5[0] ) == length($tmpSeq) and $clipped_5[0] eq $tmpSeq ) or &stopErr("[Err] key=$relHR->{key} problem\nclipped: $clipped_5[0]\nrawSeq : $tmpSeq\n"); 
-		if ( $clipped_5[0] >= $min_outLen ) {
+		if ( length($clipped_5[0]) >= $min_outLen ) {
 			my $ts = $clipped_5[0]; $ts =~ s/(.{100})/$1\n/g; chomp($ts); 
 			print STDOUT ">$relHR->{head}\n$ts\n"; 
 		}
