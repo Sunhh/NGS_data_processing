@@ -2,6 +2,7 @@
 use strict; 
 use warnings; 
 use ReadInAlnSunhh; 
+use LogInforSunhh; 
 use Getopt::Long;
 
 my %opts; 
@@ -31,7 +32,7 @@ defined $specs[1] or $specs[1] = '';
 my $oFh = \*STDOUT; 
 if (defined $opts{out}) {
 	my $tfh; 
-	open $tfh,'>',"$opts{out}" or die "Failed to open $opts{out}\n$!\n"; 
+	open $tfh,'>',"$opts{out}" or &stopErr("[Err] Failed to open $opts{out}\n$!\n"); 
 	$oFh = $tfh; 
 }
 
@@ -39,7 +40,7 @@ my @FH;
 !(-t) and push(@FH, \*STDIN); 
 for (@ARGV) {
 	my $fh; 
-	open $fh, '<', "$_" or die; 
+	open $fh, '<', "$_" or &stopErr("[Err] Failed to open $_\n$!\n"); 
 	push(@FH, $fh); 
 }
 
@@ -53,7 +54,7 @@ for my $fh (@FH) {
 		# print {$oFh} "$rec1{a}[0]\n"; 
 		@{$rec1{o}} >= 2 or next; 
 		for (my $i=0; $i<2; $i++) {
-			$rec1{o}[$i] =~ m/^s\s/ or die "Wrong line[$i]: $rec1{o}[$i]\n"; 
+			$rec1{o}[$i] =~ m/^s\s/ or &stopErr("Wrong line[$i]: $rec1{o}[$i]\n"); 
 			my %sline = %{ splitMafSline($rec1{o}[$i], 1)}; 
 			$specs[$i] ne '' and $sline{seqId} = "$specs[$i].$sline{seqId}"; 
 			push(@cur_blk, [@sline{qw/seqId seqStart blkSize seqStrand seqLen seqSeq/}]); 
