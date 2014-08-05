@@ -4,7 +4,7 @@ use strict;
 # jellyfish-2.0 query P1_Cor1st_1k_m81.jf GTCGATTAAATACGCAAGTTTGCCACTAGCTGTAGCAGCACTGTCTACGAGTCACGAGATGATGTACAAATGACCGCATAGCGCAGTGGATTAGCGCCTCTGACTTCGGATCAGAAGGTTGTGGGTTTGACTCCCACTGTGGTCATCTGT
 my $db_jf = 'P1_Cor1st_1k_m61.jf'; 
 $db_jf = 'P1_Cor1st_3h5h1k_m61.jf'; 
-my $exe_jf2 = '/home/Sunhh/src/Assemble/MaSuRCA/MaSuRCA-2.2.2/bin/jellyfish-2.0'; 
+my $exe_jf2 = '$HOEM/src/Assemble/MaSuRCA/MaSuRCA-2.2.2/bin/jellyfish-2.0'; 
 my $min_2nd_dep = 1;
 $min_2nd_dep = 4;
 
