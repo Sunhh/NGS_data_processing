@@ -63,6 +63,7 @@ for my $r1 (sort { $b->[1][4]<=>$a->[1][4] || $a->[1][3] cmp $b->[1][3] || $a->[
 	defined $used{ $r1->[1][0] } and next; 
 	my @grp_scf = &relatScaf( $r1->[1][0], \%links, {} ); 
 	$grp_ct ++; 
+
 	my ($refN, $qryN) = (0, 0); 
 	for my $tmp_scf ( @grp_scf ) {
 		defined $used{ $tmp_scf } and &tsmsg("[Err] Error because [$tmp_scf] has been used.\n"); 

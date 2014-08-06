@@ -10,6 +10,8 @@ GetOptions(\%opts,
 	"help!", 
 	"specs:s", 
 	"out:s", 
+	"minLen1:i", 
+	"minLen2:i", 
 ); 
 
 -t and !@ARGV and &usage(); 
@@ -21,6 +23,8 @@ perl $0 in.maf
 -help 
 -specs      [S01,S02] Name of species
 -out        [\\*STDOUT] Output file name. 
+-minLen1    [1] 
+-minLen2    [1]
 HELP
 	exit 1; 
 }
@@ -35,6 +39,8 @@ if (defined $opts{out}) {
 	open $tfh,'>',"$opts{out}" or &stopErr("[Err] Failed to open $opts{out}\n$!\n"); 
 	$oFh = $tfh; 
 }
+defined $opts{minLen1} or $opts{minLen1} = 1; 
+defined $opts{minLen2} or $opts{minLen2} = 1; 
 
 my @FH; 
 !(-t) and push(@FH, \*STDIN); 
@@ -60,6 +66,10 @@ for my $fh (@FH) {
 			push(@cur_blk, [@sline{qw/seqId seqStart blkSize seqStrand seqLen seqSeq/}]); 
 			# print {$oFh} join(" ", "s", @sline{qw/seqId seqStart blkSize seqStrand seqLen seqSeq/})."\n"; 
 		}
+
+		$cur_blk[1][4] >= $opts{minLen1} or next; 
+		$cur_blk[2][4] >= $opts{minLen2} or next; 
+
 		push(@all_blks, [@cur_blk]); 
 		# print {$oFh} "\n"; 
 	}
