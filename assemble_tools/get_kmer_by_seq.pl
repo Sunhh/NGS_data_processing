@@ -58,10 +58,10 @@ print STDOUT ">$tk\n";
 			my $qry_c = `$exe_jf2 query $db_jf $kseq`; 
 			$qry_c =~ m/^(\S+)\s+(\d+)$/ or die "fasd\n"; 
 			my ($res_seq, $res_c) = ($1, $2); 
-			if ( $res_seq eq $kseq ) {
+			if ( uc($res_seq) eq uc($kseq) ) {
 			} else {
 				my $rc_kseq = &rc($kseq); 
-				$rc_kseq eq $res_seq or $res_c = -1; 
+				uc($rc_kseq) eq uc($res_seq) or $res_c = -1; 
 			}
 			print STDOUT join("\t", $i+1, $kseq, $res_c)."\n"; 
 		}
