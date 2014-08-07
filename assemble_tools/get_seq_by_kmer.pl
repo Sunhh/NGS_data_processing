@@ -3,14 +3,14 @@ use strict;
 
 # jellyfish-2.0 query P1_Cor1st_1k_m81.jf GTCGATTAAATACGCAAGTTTGCCACTAGCTGTAGCAGCACTGTCTACGAGTCACGAGATGATGTACAAATGACCGCATAGCGCAGTGGATTAGCGCCTCTGACTTCGGATCAGAAGGTTGTGGGTTTGACTCCCACTGTGGTCATCTGT
 my $db_jf = 'P1_Cor1st_1k_m61.jf'; 
-$db_jf = 'P1_Cor1st_3h5h1k_m61.jf'; 
-my $exe_jf2 = '$HOEM/src/Assemble/MaSuRCA/MaSuRCA-2.2.2/bin/jellyfish-2.0'; 
+$db_jf = 'P3_1kb_sample_m121.jf'; 
+my $exe_jf2 = '/data/share/src/Assemble/MaSuRCA/MaSuRCA-2.2.1/bin/jellyfish-2.0'; 
 my $min_2nd_dep = 1;
 $min_2nd_dep = 4;
 
 
 my $init_k = 'CATCTCGTGACTCGTAGACAGTGCTGCTACAGCTAGTGGCAAACTTGCGTATTTAATCGA'; 
-my $kl = 61; 
+my $kl = 121; 
 $kl --; 
 
 $init_k = 'ACATGAAAATACATTTAAGTTCCATATGCATTTCATGACATGACTCGAGAATACTATGTGTATACATGGCATCAACCAAC'; 
@@ -20,7 +20,7 @@ my $prev_k = $init_k;
 
 my $elong = $init_k; 
 
-for (my $i=0; $i<1000; $i++) {
+for (my $i=0; $i<2000; $i++) {
 	my @qry_kc; 
 	my $prev_k_rc = reverse($prev_k); 
 	$prev_k_rc =~ tr/ATGC/TACG/; 
@@ -53,7 +53,7 @@ for (my $i=0; $i<1000; $i++) {
 			my $ratio = sprintf("%.5f", $qry_kc[1][1]/$qry_kc[0][1]); 
 			my $tmp_tag = '';
 			$ratio >= 0.3 and $tmp_tag = '*'; 
-			&tsmsg("[Err] Multiple selection at [$i+1: $qry_kc[0][0]:$qry_kc[0][1] $qry_kc[1][0]:$qry_kc[1][1] $ratio $tmp_tag] $elong\n"); 
+			&tsmsg("[Err] Multiple selection at [$i+1: $qry_kc[0][0]:$qry_kc[0][1] $qry_kc[1][0]:$qry_kc[1][1] $ratio $tmp_tag] $elong\nkmer = ${prev_k}$qry_kc[0][0]\n"); 
 		}
 		$elong = "$elong$qry_kc[0][0]"; 
 		$prev_k = substr("${prev_k}$qry_kc[0][0]", 1, $kl); 
@@ -61,7 +61,7 @@ for (my $i=0; $i<1000; $i++) {
 	&tsmsg("[Msg] At [$i+1: KD=$qry_kc[0][1]] Elong=$elong\n"); 
 }
 
-print STDOUT "Longest=$elong\n"; 
+print STDOUT ">Longest\n$elong\n"; 
 
 sub tsmsg {
 	my $tt = scalar(localtime()); 
