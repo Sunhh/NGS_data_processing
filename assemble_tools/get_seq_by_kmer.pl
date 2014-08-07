@@ -42,7 +42,7 @@ for (my $i=0; $i<2000; $i++) {
 	}
 	# Find best addBp; 
 	if (scalar(@qry_kc) == 0) {
-		print STDOUT "LongestBefore=$elong\n"; 
+		print STDOUT ">LongestBefore\n$elong\n"; 
 		die "Stop. Cannot extend.\n"; 
 	} elsif (scalar(@qry_kc) == 1) {
 		$elong = "$elong$qry_kc[0][0]"; 
