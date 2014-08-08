@@ -9,7 +9,6 @@ use Statistics::Descriptive::Weighted;
 my $min_scf_len = 20e3; 
 $min_scf_len = 1; 
 $min_scf_len = 10e3; 
-$min_scf_len = -20e3; 
 
 my $max_ins = 50e3; 
 
@@ -70,6 +69,7 @@ print STDOUT join("\t", qw/ScaffID ScaffPos FragCov FragLenMean/)."\n";
 my @frag_covs; 
 my %scf_len; 
 my $prev_scfID; 
+my %scf_range; 
 while (<>) {
 	$. % 1e5 == 1 and &tsmsg("[Msg]Processing $. line.\n"); 
 	chomp; 
@@ -90,6 +90,7 @@ while (<>) {
 
 	$use_flag{$cur_flag} == 1 or next; 
 	$mate_scf eq '=' or next; 
+	abs($spanSize) <= 50e3 or next; 
 #	$spanSize > 0 or next; 
 	my $scfPosE = $scfPosS + $spanSize - 1; 
 	$scfPosE < $scfPosS and ($scfPosS, $scfPosE) = ($scfPosE, $scfPosS); 
@@ -98,10 +99,15 @@ while (<>) {
 		if ($prev_scfID eq $scfID) {
 			for (my $p=$scfPosS; $p<=$scfPosE; $p++) {
 				push(@{ $frag_covs[$p-1] }, $spanSize); 
+				defined $scf_range{max} or $scf_range{max} = $p; 
+				defined $scf_range{min} or $scf_range{min} = $p; 
+				$scf_range{min} > $p and $scf_range{min} = $p; 
+				$scf_range{max} < $p and $scf_range{max} = $p; 
 			}
 		} else {
 			&tsmsg("[Msg]Output $prev_scfID len=$scf_len{$prev_scfID}\n"); 
-			for (my $p=0; $p<$scf_len{$prev_scfID}; $p++) {
+			# for (my $p=0; $p<$scf_len{$prev_scfID}; $p++) {
+			for (my $p=$scf_range{min}-1; $p<$scf_range{max}; $p++) {
 				if ( scalar( @{$frag_covs[$p]} ) > 0 ) {
 					print STDOUT join("\t", $prev_scfID, $p+1, 0, -1, '')."\n"; 
 				} else {
@@ -117,6 +123,10 @@ while (<>) {
 			}
 			for (my $p=$scfPosS; $p<=$scfPosE; $p++) {
 				push( @{$frag_covs[$p-1]}, $spanSize ); 
+				defined $scf_range{max} or $scf_range{max} = $p; 
+				defined $scf_range{min} or $scf_range{min} = $p; 
+				$scf_range{min} > $p and $scf_range{min} = $p; 
+				$scf_range{max} < $p and $scf_range{max} = $p; 
 			}
 		}
 	}else{
@@ -127,11 +137,16 @@ while (<>) {
 		}
 		for (my $p=$scfPosS; $p<=$scfPosE; $p++) {
 			push(@{$frag_covs[$p-1]}, $spanSize); 
+			defined $scf_range{max} or $scf_range{max} = $p; 
+			defined $scf_range{min} or $scf_range{min} = $p; 
+			$scf_range{min} > $p and $scf_range{min} = $p; 
+			$scf_range{max} < $p and $scf_range{max} = $p; 
 		}
 	}
 }
 
-for (my $p=0; $p<$scf_len{$prev_scfID}; $p++) {
+# for (my $p=0; $p<$scf_len{$prev_scfID}; $p++) {
+for (my $p=$scf_range{min}-1; $p<$scf_range{max}; $p++) {
 	print STDOUT join("\t", $prev_scfID, $p+1, scalar( @{$frag_covs[$p]} ), &mean( @{$frag_covs[$p]} ), join(';', @{$frag_covs[$p]}) )."\n"; 
 }
 
