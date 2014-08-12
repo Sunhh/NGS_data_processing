@@ -44,7 +44,8 @@ GetOptions(\%opts,
 	"transpose!", "skip_null_line!", "beMatrix!", "fill_new:s",      # transpose a matrix. 
 	"kSrch_idx:s","kSrch_idxCol:s","kSrch_srcCol:s","kSrch_drop!", "kSrch_line!", # Similar to linux command join, without joining and with more index columns. Combined from uniqComb.pl 
 	"dR2dN!", 
-			"help!");
+	"col_head!", 
+	"help!");
 sub usage {
 
 	my $info=<<INFO;
@@ -96,7 +97,7 @@ command:perl $0 <STDIN|parameters>
 
   "kSrch_idx:s","kSrch_idxCol:s","kSrch_srcCol:s","kSrch_drop!", "kSrch_line!", # Similar to linux command join, without joining and with more index columns. Combined from uniqComb.pl 
 
-	-symbol         Defining the symbol to divide data.Default is "\\t";
+  -symbol         Defining the symbol to divide data.Default is "\\t";
   -dR2dN          [Boolean] Change \\r to \\n in files. 
 ##################################################
 INFO
@@ -175,6 +176,8 @@ if ( &goodVar($opts{col_sort}) ) {
 
 &dR2dN() if ( $opts{dR2dN} ); 
 
+&showHeader() if ( $opts{col_head} ); 
+
 for (@InFp) {
 	close ($_);
 }
@@ -183,6 +186,20 @@ for (@InFp) {
 ######################################################################
 ## sub-routines for functions. 
 ######################################################################
+
+# Show header column-number of a file. 
+sub showHeader {
+	for my $fh ( @InFp ) {
+		while (<$fh>) {
+			chomp; 
+			my @ta = split(/$symbol/, $_); 
+			for (my $i=0; $i<@ta; $i++) {
+				print STDOUT join("\t", $i, $ta[$i])."\n"; 
+			}
+			last; 
+		}
+	}
+}#End sub showHeader
 
 # Change \r to \n
 sub dR2dN {
@@ -754,7 +771,7 @@ sub parseCol {
 	my @cols = split(/,/, $_[0]); 
 	my @ncols; 
 	for my $tc (@cols) {
-		$tc =~ s/(^\s+|\s+$)//; 
+		$tc =~ s/(^\s+|\s+$)//g; 
 		if ($tc =~ m/^\d+$/) {
 			push(@ncols, $tc); 
 		} elsif ($tc =~ m/^(\d+)\-(\d+)$/) {
