@@ -635,6 +635,7 @@ sub extreme{
 }# end extreme
 
 sub col_sort{
+	no strict; 
 	my @tempa=split(/$symbol/o,$a);
 	my @tempb=split(/$symbol/o,$b);
 	my @cols = &parseCol($opts{col_sort});
@@ -704,9 +705,10 @@ sub colStat{
 		while (<$fh>) {
 			chomp;
 			my @temp=split(/$symbol/o,$_); 
+			(defined $temp[$col] and $temp[$col] =~ m/^[\d.\-e]+$/) or next; 
+			$useful_count ++; 
 			push(@Data,$temp[$col]); 
 			$total += $temp[$col]; 
-			defined $temp[$col] and $temp[$col] ne '' and $useful_count++; 
 		}
 	}# End for $fh in @InFp
 	$#Data == -1 and &stop( "[Err]No Data found.\n" );
