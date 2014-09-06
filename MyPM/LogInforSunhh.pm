@@ -4,7 +4,7 @@ use strict;
 use warnings; 
 use Exporter qw(import);
 
-our @EXPORT = qw(tsmsg stopErr);
+our @EXPORT = qw(tsmsg stopErr exeCmd);
 our @EXPORT_OK = qw();
 
 
