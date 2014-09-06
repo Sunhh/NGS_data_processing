@@ -20,5 +20,13 @@ sub stopErr {
 	exit (1); 
 }#End stopErr() 
 
+# Execute command with system and time record. 
+sub exeCmd {
+	for my $cmd ( @_ ) {
+		&tsmsg("[CMD] $cmd\n"); 
+		system($cmd); 
+		&tsmsg("[CMD_done]\n"); 
+	}
+}#End exeCmd 
 
 1; 
