@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w 
 # 2013-08-20 I think it is good enough. 
 # 2014-03-12 Add -NMperc and -maxRdLen to filter "NM" tag. Cause "bwa aln -n float_number" doesn't work properly. 
+# 2014-09-29 Add -showNumber to get include/exclude flag numbers from the selection requirement. 
 use strict; 
 use Getopt::Long; 
 
@@ -21,6 +22,7 @@ GetOptions(\%opts,
 	"minusRd!", 
 	"sameRef!", 
 	"diffRef!", 
+	"showNumber!", 
 	"help!", 
 ); 
 
@@ -61,6 +63,8 @@ both paramters if they are assigned at the same time.
 -onlyMapRd     -drop 2=1
 -plusRd        -keep 2=0,4=0
 -minusRd       -keep 2=0,4=1
+
+-showNumber    Only show the flag numbers with Include/Exclude information. 
 
 ###################################################################
 # BitPos	Flag	Chr	Description
@@ -223,6 +227,19 @@ for (sort { $a<=>$b } keys %flag) {
 	}
 }# End for ( sort { $a<=>$b } keys %flag ) [FLAG_NUM]
 ###### Set FLAGs OK. 
+
+###### Show flag number usage: If we only need to show flag number usage. 
+if ( $opts{showNumber} ) {
+	for ( 1 .. 2047 ) {
+		if ( defined $is_output{$_} ) {
+			print STDOUT join("\t", $_, 'Include')."\n"; 
+		} else {
+			print STDOUT join("\t", $_, 'Exclude')."\n"; 
+		}
+	}
+	exit(0); 
+}
+###### End showing flag number usage. 
 
 # exit; 
 
