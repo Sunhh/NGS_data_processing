@@ -80,7 +80,7 @@ function bwaSE {
 	oSaiS_tmp="${inFqS_tmp}.${db_lab}.sai"
 
 	exe_cmd "$exe_bwa aln $para_bwaAln -f $oSaiS_tmp $db_tmp $inFqS_tmp"
-	exe_cmd "$exe_bwa sampe $para_bwaSse $db_tmp $oSaiS_tmp $inFqS_tmp | $exe_samtools view -bSh -o $oBamPre_tmp.bam -"
+	exe_cmd "$exe_bwa samse $para_bwaSse $db_tmp $oSaiS_tmp $inFqS_tmp | $exe_samtools view -bSh -o $oBamPre_tmp.bam -"
 	[ -n "$para_bamSort" ] && exe_cmd "$exe_samtools sort $para_bamSort $oBamPre_tmp.bam $oBamPre_tmp.srt"
 	[ -n "$para_bamSort" ] && exe_cmd "$exe_samtools index $oBamPre_tmp.srt.bam"
 
