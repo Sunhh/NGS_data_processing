@@ -247,12 +247,13 @@ sub kSrch {
 		}else{
 			# Using the selected columns as key. 
 			while (<$fh>) {
+				chomp; 
 				my @temp = split(/$symbol/o, $_); 
 				my $tkey = join("\t", @temp[@src_Cols]); 
 				if ($opts{kSrch_drop}) {
-					$idx_key{$tkey} or print; 
+					$idx_key{$tkey} or print STDOUT "$_\n"; 
 				}else{
-					$idx_key{$tkey} and print; 
+					$idx_key{$tkey} and print STDOUT "$_\n"; 
 				}
 			}# End while 
 		}# End if kSrch_line 
