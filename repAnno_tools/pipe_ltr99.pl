@@ -46,8 +46,8 @@ $input{dgt_gff} = "$input{refFa}.gff99.dgt";
 &exeCmd("$tool{exe_gt} suffixerator -db $input{refFa} -indexname $input{refIdx} -tis -suf -lcp -des -ssp -dna"); 
 &exeCmd("$tool{exe_gt} ltrharvest   -index $input{refIdx} -out $input{hvt_outFa} -outinner $input{hvt_innFa} -gff3 $input{hvt_gff} -minlenltr 100 -maxlenltr 6000 -mindistltr 1500 -maxdistltr 25000 -mintsd 5 -maxtsd 5 -motif tgca -similar 99 -vic 10  > $input{hvt_res99}"); 
 # Step 2.1.2. Using LTRdigest to find elements with PPT (poly purine tract) or PBS (primer binding site)
-&exeCmd("$tool{exe_gt} gff3 -sort $input{hvt_res99} > $input{hvt_res99}.sort"); 
-&exeCmd("$tool{exe_gt} ltrdigest -trnas $input{eu_tRNA} $input{hvt_res99}.sort $input{refIdx} > $input{dgt_gff}"); 
+&exeCmd("$tool{exe_gt} gff3 -sort $input{hvt_gff} > $input{hvt_gff}.sort"); 
+&exeCmd("$tool{exe_gt} ltrdigest -trnas $input{eu_tRNA} $input{hvt_gff}.sort $input{refIdx} > $input{dgt_gff}"); 
 ## ltrdigest is done previously. 
 ## Format results. 
 &exeCmd("perl $tool{pl_ch_gff_to_tab} $input{dgt_gff} 1>dgt.tab"); 
