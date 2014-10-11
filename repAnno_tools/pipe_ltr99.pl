@@ -9,7 +9,7 @@ use LogInforSunhh;
 # tools
 my %tool; 
 {
-my $dir1 = "/workdir/laopopo/spinach/genome/Repeat/05.LTR/tools"; 
+my $dir1 = "/data/Sunhh/P1_repeat/02.LTR/repAnno_tools"; 
 $tool{pl_ch_gff_to_tab} = "$dir1/ch_gff_to_tab.pl"; 
 $tool{pl_ch_seqID} = "$dir1/ch_seqID.pl"; 
 $tool{pl_filter_tab_byPBSPPT} = "$dir1/filter_tab_byPBSPPT.pl"; 
@@ -19,29 +19,40 @@ $tool{pl_filter_RepMsk_out} = "$dir1/filter_RepMsk_out.pl";
 $tool{pl_build_Examplar_byFa} = "$dir1/build_Examplar_byFa.pl"; 
 $tool{pl_lis_masked_RepMsk_out} = "$dir1/lis_masked_RepMsk_out.pl"; 
 
-$tool{pl_deal_fasta} = "/home/laopopo/tools/github/NGS_data_processing/deal_fasta.pl"; 
-$tool{pl_deal_table} = "/home/laopopo/tools/github/NGS_data_processing/deal_table.pl"; 
+$tool{pl_deal_fasta} = "/home/Sunhh/tools/github/NGS_data_processing/deal_fasta.pl"; 
+$tool{pl_deal_table} = "/home/Sunhh/tools/github/NGS_data_processing/deal_table.pl"; 
 
-$tool{exe_RepeatMasker} = "/share/app/Annotation/repeatmasker/RepeatMasker/RepeatMasker"; 
+$tool{exe_RepeatMasker} = "/data/Sunhh/src/Annot/repeatmasker/RepeatMasker/RepeatMasker"; 
+$tool{exe_gt} = '/data/Sunhh/src/Annot/genometools/gt-1.5.3-complete/bin/gt'; 
 }
 
 my %input; 
 {
-$input{refFa} = "PG1All_v2.scf.fa"; 
-$input{hvt_gff} = "PG1All_v2.scf.fa.gff99"; 
-$input{hvt_outFa} = "PG1All_v2.scf.fa.out99"; 
-$input{hvg_innFa} = "PG1All_v2.scf.fa.outinner99"; 
-$input{dgt_gff} = "PG1All_v2.scf.fa.gff99.dgt"; 
+$input{eu_tRNA} = '/data/Sunhh/P1_repeat/db/eukaryotic-tRNAs.fa'; 
+
+$input{refFa} = "P1Genom_Gt5h.scf.fa"; 
+$input{refIdx} = 'P1GenomeGt5hScf'; 
+
+$input{hvt_gff} = "$input{refFa}.gff99"; 
+$input{hvt_outFa} = "$input{refFa}.out99"; 
+$input{hvt_innFa} = "$input{refFa}.outinner99"; 
+$input{hvt_res99} = "$input{refFa}.result99"; 
+$input{dgt_gff} = "$input{refFa}.gff99.dgt"; 
+
 }
 
+
 # Step 2.1.1. Collection of candidate elements with LTRs that are 99% or more in similarity using LTRharvest 
-## Done previously. 
+&exeCmd("$tool{exe_gt} suffixerator -db $input{refFa} -indexname $input{refIdx} -tis -suf -lcp -des -ssp -dna"); 
+&exeCmd("$tool{exe_gt} ltrharvest   -index $input{refIdx} -out $input{hvt_outFa} -outinner $input{hvt_innFa} -gff3 $input{hvt_gff} -minlenltr 100 -maxlenltr 6000 -mindistltr 1500 -maxdistltr 25000 -mintsd 5 -maxtsd 5 -motif tgca -similar 99 -vic 10  > $input{hvt_res99}"); 
 # Step 2.1.2. Using LTRdigest to find elements with PPT (poly purine tract) or PBS (primer binding site)
+&exeCmd("$tool{exe_gt} gff3 -sort $input{hvt_res99} > $input{hvt_res99}.sort"); 
+&exeCmd("$tool{exe_gt} ltrdigest -trnas $input{eu_tRNA} $input{hvt_res99}.sort $input{refIdx} > $input{dgt_gff}"); 
 ## ltrdigest is done previously. 
 ## Format results. 
 &exeCmd("perl $tool{pl_ch_gff_to_tab} $input{dgt_gff} 1>dgt.tab"); 
 &exeCmd("perl $tool{pl_ch_seqID} $input{hvt_outFa} dgt.tab 1>full_LTR.fa 2>dgt.tab1"); 
-&exeCmd("perl $tool{pl_ch_seqID} $input{hvg_innFa} dgt.tab 1>inner.fa 2>dgt.tab2"); 
+&exeCmd("perl $tool{pl_ch_seqID} $input{hvt_innFa} dgt.tab 1>inner.fa 2>dgt.tab2"); 
 &exeCmd("mv dgt.tab1 dgt.tab"); 
 &exeCmd("perl $tool{pl_filter_tab_byPBSPPT} dgt.tab > dgt.tab.wPP"); # table with PBS / PPT information. 
 &exeCmd("perl $tool{pl_name_from_tab} dgt.tab.wPP > dgt.tab.wPPID"); 
