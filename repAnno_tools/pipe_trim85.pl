@@ -6,7 +6,6 @@ use LogInforSunhh;
 use Cwd 'abs_path';
 use File::Basename;
 
-
 !@ARGV and die "perl $0 fasdf\n"; 
 
 # 2.2.	Collection of relatively old LTR retrotransposons
@@ -45,21 +44,21 @@ $input{eu_tRNA} = '/data/Sunhh/P1_repeat/db/eukaryotic-tRNAs.fa';
 $input{refFa} = "P1Genom_Gt5h.scf.fa";
 $input{refIdx} = 'P1GenomeGt5hScf';
 
-$input{hvt_gff} = "$input{refFa}.gff85"; 
-$input{hvt_outFa} = "$input{refFa}.out85"; 
-$input{hvt_innFa} = "$input{refFa}.outinner85"; 
-$input{hvt_res} = "$input{refFa}.result85"; 
-$input{dgt_gff} = "$input{refFa}.gff85.dgt"; 
+$input{hvt_gff} = "$input{refFa}.gffT85"; 
+$input{hvt_outFa} = "$input{refFa}.outT85"; 
+$input{hvt_innFa} = "$input{refFa}.outinnerT85"; 
+$input{hvt_res} = "$input{refFa}.resultT85"; 
+$input{dgt_gff} = "$input{refFa}.gffT85.dgt"; 
 
-$input{ref_hvt_gff} = "$input{refFa}.gff99"; 
-$input{ref_hvt_outFa} = "$input{refFa}.out99"; 
-$input{ref_dbLTR} = "LTR99_named.lib"; 
+$input{ref_hvt_gff} = "$input{refFa}.gffT99"; 
+$input{ref_hvt_outFa} = "$input{refFa}.outT99"; 
+$input{ref_dbLTR} = "TRIM99_named.lib"; 
 }
 
 
 # Step 2.2.1 Collection of candidate elements with LTRs that are 85% or more in similarity using LTRharvest 
 &exeCmd("$tool{exe_gt} suffixerator -db $input{refFa} -indexname $input{refIdx} -tis -suf -lcp -des -ssp -dna"); 
-&exeCmd("$tool{exe_gt} ltrharvest -index $input{refIdx} -out $input{hvt_outFa} -outinner $input{hvt_innFa} -gff3 $input{hvt_gff} -minlenltr 100 -maxlenltr 6000 -mindistltr 1500 -maxdistltr 25000 -mintsd 5 -maxtsd 5 -vic 10  > $input{hvt_res}"); 
+&exeCmd("$tool{exe_gt} ltrharvest -index $input{refIdx} -out $input{hvt_outFa} -outinner $input{hvt_innFa} -gff3 $input{hvt_gff} -minlenltr 70 -maxlenltr 500 -mindistltr 280 -maxdistltr 1500 -mintsd 5 -maxtsd 5 -vic 10  > $input{hvt_res}"); 
 
 # Step 2.2.1.2 Since the terminal sequence motif is not specified, only elements with terminal sequences with patterns that are previously reported are retained.
 &exeCmd("perl $tool{pl_get_LTR_wi_Termi} $input{hvt_gff} $input{hvt_outFa} $input{refFa} $input{ref_hvt_gff} $input{ref_hvt_outFa}"); 
@@ -115,14 +114,14 @@ $input{ref_dbLTR} = "LTR99_named.lib";
 &exeCmd("perl $tool{pl_build_Examplar_byFa} notMasked.full_LTR.fa 1>stdout.build_examplar_notMsk 2>stderr.build_examplar_notMsk"); 
 
 ## Combine both examplars. 
-&exeCmd("cat woNest.fullLTR.examplars notMasked.full_LTR.fa.examplars > LTR85.lib"); 
+&exeCmd("cat woNest.fullLTR.examplars notMasked.full_LTR.fa.examplars > TRIM85.lib"); 
 
 ### Sub routines.
 sub getPath {
 	my ($toolR, $cfg_file) = @_;
 	open (CF,'<',"$cfg_file") or &stopErr("[Err] file [$cfg_file] $!\n");
 	while (<CF>) {
-		m/^\s*$/ and next; 
+		m/^\s*$/ and next;
 		s/[^\S\t]+$//;
 		my ($tk, $tv) = split(/\t/, $_);
 		while ($tv =~ m/__([^\s_]+)__/) {
@@ -134,7 +133,7 @@ sub getPath {
 		$toolR->{$tk} = $tv;
 		&tsmsg("[Msg] Setting $tk=$tv\n");
 	}
-	close CF; 
-	return 0; 
+	close CF;
+	return 0;
 }#End sub getPath
 

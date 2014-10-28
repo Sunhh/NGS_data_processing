@@ -3,19 +3,18 @@
 use strict;
 use warnings; 
 use LogInforSunhh; 
-use Cwd 'abs_path'; 
-use File::Basename; 
+use Cwd 'abs_path';
+use File::Basename;
 
 !@ARGV and die "perl $0 fasdf\n"; 
 
 # tools
-
 my %tool; 
 {
-$tool{pathCfg_dir} = dirname( abs_path($0) ); 
-$tool{pathCfg_file} = "$tool{pathCfg_dir}/path.conf"; 
+$tool{pathCfg_dir} = dirname( abs_path($0) );
+$tool{pathCfg_file} = "$tool{pathCfg_dir}/path.conf";
 
-&getPath(\%tool, $tool{pathCfg_file}); 
+&getPath(\%tool, $tool{pathCfg_file});
 
 #my $dir1 = "/data/Sunhh/P1_repeat/02.LTR/repAnno_tools"; 
 #$tool{pl_ch_gff_to_tab} = "$dir1/ch_gff_to_tab.pl"; 
@@ -41,18 +40,18 @@ $input{eu_tRNA} = '/data/Sunhh/P1_repeat/db/eukaryotic-tRNAs.fa';
 $input{refFa} = "P1Genom_Gt5h.scf.fa"; 
 $input{refIdx} = 'P1GenomeGt5hScf'; 
 
-$input{hvt_gff} = "$input{refFa}.gff99"; 
-$input{hvt_outFa} = "$input{refFa}.out99"; 
-$input{hvt_innFa} = "$input{refFa}.outinner99"; 
-$input{hvt_res} = "$input{refFa}.result99"; 
-$input{dgt_gff} = "$input{refFa}.gff99.dgt"; 
+$input{hvt_gff} = "$input{refFa}.gffT99"; 
+$input{hvt_outFa} = "$input{refFa}.outT99"; 
+$input{hvt_innFa} = "$input{refFa}.outinnerT99"; 
+$input{hvt_res} = "$input{refFa}.resultT99"; 
+$input{dgt_gff} = "$input{refFa}.gffT99.dgt"; 
 
 }
 
 
 # Step 2.1.1. Collection of candidate elements with LTRs that are 99% or more in similarity using LTRharvest 
 &exeCmd("$tool{exe_gt} suffixerator -db $input{refFa} -indexname $input{refIdx} -tis -suf -lcp -des -ssp -dna"); 
-&exeCmd("$tool{exe_gt} ltrharvest   -index $input{refIdx} -out $input{hvt_outFa} -outinner $input{hvt_innFa} -gff3 $input{hvt_gff} -minlenltr 100 -maxlenltr 6000 -mindistltr 1500 -maxdistltr 25000 -mintsd 5 -maxtsd 5 -motif tgca -similar 99 -vic 10  > $input{hvt_res}"); 
+&exeCmd("$tool{exe_gt} ltrharvest   -index $input{refIdx} -out $input{hvt_outFa} -outinner $input{hvt_innFa} -gff3 $input{hvt_gff} -minlenltr 70 -maxlenltr 500 -mindistltr 280 -maxdistltr 1500 -mintsd 5 -maxtsd 5 -motif tgca -similar 99 -vic 10  > $input{hvt_res}"); 
 # Step 2.1.2. Using LTRdigest to find elements with PPT (poly purine tract) or PBS (primer binding site)
 &exeCmd("$tool{exe_gt} gff3 -sort $input{hvt_gff} > $input{hvt_gff}.sort"); 
 &exeCmd("$tool{exe_gt} ltrdigest -trnas $input{eu_tRNA} $input{hvt_gff}.sort $input{refIdx} > $input{dgt_gff}"); 
@@ -96,26 +95,26 @@ $input{dgt_gff} = "$input{refFa}.gff99.dgt";
 &exeCmd("perl $tool{pl_deal_fasta} dgt.tab.wPP.filtN.filtFlank.full_LTR.fa -drawByList -drawWhole -dropMatch -drawLcol 0 -drawList dgt.tab.wPP.filtN.filtFlank.full_LTR.fa.kl.toRM > notMasked.full_LTR.fa"); 
 &exeCmd("perl $tool{pl_build_Examplar_byFa} notMasked.full_LTR.fa 1>stdout.build_examplar_notMsk 2>stderr.build_examplar_notMsk"); 
 ## Combine both examplars. 
-&exeCmd("cat woNest.fullLTR.examplars notMasked.full_LTR.fa.examplars > LTR99.lib"); 
+&exeCmd("cat woNest.fullLTR.examplars notMasked.full_LTR.fa.examplars > TRIM99.lib"); 
 
-### Sub routines. 
+### Sub routines.
 sub getPath {
-	my ($toolR, $cfg_file) = @_; 
-	open (CF,'<',"$cfg_file") or &stopErr("[Err] file [$cfg_file] $!\n"); 
+	my ($toolR, $cfg_file) = @_;
+	open (CF,'<',"$cfg_file") or &stopErr("[Err] file [$cfg_file] $!\n");
 	while (<CF>) {
-		m/^\s*$/ and next; 
-		s/[^\S\t]+$//; 
-		my ($tk, $tv) = split(/\t/, $_); 
+		m/^\s*$/ and next;
+		s/[^\S\t]+$//;
+		my ($tk, $tv) = split(/\t/, $_);
 		while ($tv =~ m/__([^\s_]+)__/) {
-			my $pk = $1; 
-			defined $toolR->{$pk} or &stopErr("[Err] Unknown key [$pk]\n"); 
-			my $pv = $toolR->{$pk}; 
-			$tv =~ s/__${pk}__/$pv/; 
+			my $pk = $1;
+			defined $toolR->{$pk} or &stopErr("[Err] Unknown key [$pk]\n");
+			my $pv = $toolR->{$pk};
+			$tv =~ s/__${pk}__/$pv/;
 		}
-		$toolR->{$tk} = $tv; 
-		&tsmsg("[Msg] Setting $tk=$tv\n"); 
+		$toolR->{$tk} = $tv;
+		&tsmsg("[Msg] Setting $tk=$tv\n");
 	}
-	close CF; 
-	return 0; 
+	close CF;
+	return 0;
 }#End sub getPath
 
