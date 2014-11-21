@@ -28,6 +28,13 @@ inFq1 <- paste0(pattern_lis$Prefix[i], "_R1.paired", sep="")
 inFq2 <- paste0(pattern_lis$Prefix[i], "_R2.paired", sep="")
 oFq1 <- paste0(pattern_lis$Prefix[i], sep="")
 junc_seq <- pattern_lis$JuncPattern[i]
-clean.mp.fq.file ( inFqName1=inFq1, outFqName1=oFq1, inFqName2=inFq2, junction.seq=junc_seq, RdPerYield=20e6 )
+	myseq <- junc_seq
+	myseq_comp <- chartr("ATGC", "TACG", myseq)
+	substring(myseq[1], 1:nchar(myseq[1]), 1:nchar(myseq[1]))
+	x <- strsplit(myseq_comp, "")
+	x <- lapply(x, rev)
+	myseq_revcomp <- sapply(x, paste, collapse="")
+junc_seq <- c(junc_seq, myseq_revcomp)
+clean.mp.fq.file ( inFqName1=inFq1, outFqName1=oFq1, inFqName2=inFq2, junction.seq=junc_seq, RdPerYield=20e6, min.length=40, align.opts=list() )
 }
 

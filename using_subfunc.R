@@ -1,4 +1,5 @@
 #!/usr/bin/Rscript
+# 2014-11-21 Edit basic function - .pattern.rangeSet() to find leftmost and right most alignment boundaries. 
 
 ###########################################################
 # Storage of basic sequences: 
@@ -47,7 +48,7 @@ suppressMessages({
   library(foreach)
   library(iterators)
   library(doMC)
-  registerDoMC(core=10)
+  registerDoMC(core=14)
   .mcoptions <- list(preschedule=TRUE, set.seed=FALSE)
 }) # End suppressMessages
 
@@ -68,13 +69,10 @@ suppressMessages({
 .get.align.opts <- function ( 
 		thres.width.min=6, thres.width.up=100, thres.mismatch.ratio=0.2, 
 		match=1, mismatch=3, gapOpening=5, gapExtension=2, 
-		min.length=40, 
 		... 
 	) {
 	back.opts <- lapply(list(...), function (x) x)
 	names(back.opts) <- names(list(...))
-	
-	back.opts$min.length           = min.length
 	
 	back.opts$thres.width.min      = thres.width.min 
 	back.opts$thres.width.up       = thres.width.up 
@@ -112,6 +110,30 @@ suppressMessages({
 # 获取全局所需默认align.opts参数; 
 .default.align.opts <- .get.align.opts() 
 ##################################################
+.reset.align.score <- function ( 
+		back.opts = .default.align.opts
+	) {
+	# 生成与匹配片段长度(width)相关联的$min.score系列值; 
+	#   允许10个碱基里面有2个(20%)错配时, score值只有8-6=2, 因此不适合简单用score来区分, 应该配合aln.width数据; 
+	#   要求匹配长度至少为6个碱基, 不大于最低匹配长度时要求完全相同, 大于最低长度后允许20% mismatch差异; 
+	#   暂不考虑gap的罚分结果(那个只会导致threshold更低); 
+	for (i in 1:back.opts$thres.width.up) {
+		if (i <= back.opts$thres.width.min) {
+			# 其实前面的分数没用, 只有[thres.width.min]处的分数有用; 
+			back.opts$min.score[i] <- back.opts$match * back.opts$thres.width.min
+		} else {
+			maxmisNum <- floor(back.opts$thres.mismatch.ratio * i)
+			# 允许1个gap+剩余extension; 这个不好掌握, 先不写这个规定了; 
+			back.opts$min.score[i] <- min(
+				back.opts$match * (i-maxmisNum) - back.opts$mismatch * maxmisNum
+			)
+		}
+		if (back.opts$min.score[i] < 0) back.opts$min.score[i] = 1
+	}# End for
+	names(back.opts$min.score) <- 1:back.opts$thres.width.up
+
+	return(back.opts)
+}# .reset.align.score()
 
 # .default.qual.opts: 低质量相关参数
 .get.qual.opts <- function(
@@ -481,7 +503,8 @@ setAs(from="PhredQuality",  to="matrix", def=function (from) as( as(from,  "Fast
 				if (!append) { unlink(filepath); }
 				writeFastq(
 					object=sr,
-					file=filepath, mode=ifelse(append, "a", "w")
+					file=filepath, mode=ifelse(append, "a", "w"),
+					compress=FALSE
 				)
 			},
 			## Default
@@ -772,67 +795,65 @@ setAs(from="PhredQuality",  to="matrix", def=function (from) as( as(from,  "Fast
 		}
 		invisible(gc())
 
-		# 正向比较 pattern 与 rd; 
-		aln.fwd <- pairwiseAlignment(
-			pattern = rd, 
-			subject = subj[i], 
-			type    = 'overlap', 
-			substitutionMatrix=nucleotideSubstitutionMatrix(
-				match    = align.opts$match, 
-				mismatch = -align.opts$mismatch
-			), 
-			gapOpening   = -align.opts$gapOpening, 
-			gapExtension = -align.opts$gapExtension
-		)
-		# 反向比较 pattern 与 rd; 
-		aln.rev <- pairwiseAlignment(
-			pattern = reverse(rd), 
-			subject = reverse(subj[i]), 
-			type    = 'overlap', 
-			substitutionMatrix=nucleotideSubstitutionMatrix(
-				match    = align.opts$match, 
-				mismatch = -align.opts$mismatch
-			), 
-			gapOpening   = -align.opts$gapOpening, 
-			gapExtension = -align.opts$gapExtension
-		)
-		# 找出匹配的最左和最右位置; 正反向分别匹配一遍, 耗费时间翻倍, 但是能够找到最左和最右边界; 
-		#   当pattern在reads上重复多次时, 取到的是首尾两个匹配位置的序列; 
-		aln.fwd.pat <- pattern(aln.fwd)
-		aln.rev.pat <- pattern(aln.rev)
-		aln.start <- rd.width+1
-		aln.end   <- rd.width
-		# 根据相应 edit distance 来筛选mapping结果, 目前考虑完全匹配的末端碱基数量要有10个, 允许1个mismatch(10%), 
-		#   这样 score = 10*align.opts$match - 1*align.opts$mismatch = 7 分, 这时如果存在gap, 则至少要有12个match存在; 
-		# 根据width来确定min.score阈值; 不知道增加这个过程, 是否会拖慢程序; 
-		aln.mapped <- apply(
-			cbind( width(aln.fwd.pat), score(aln.fwd) ), 
-			MARGIN=1,
-			function (x) {
-				if (x[1] > 0) {
-					if (x[1] > align.opts$thres.width.up) {
-						x[1] = align.opts$thres.width.up
-					}
-					return( x[2] >= align.opts$min.score[ x[1] ] )
-				} else {
-					return( FALSE )
-				}
-			}# End function
-		)
-		# 至此确定了具有匹配的reads; 
-		
-		cur.aln.start <- pmin(start(aln.fwd.pat[aln.mapped]), rd.width[aln.mapped]-end(aln.rev.pat[aln.mapped])+1)
-		cur.aln.end   <- pmax(end(aln.fwd.pat[aln.mapped]), rd.width[aln.mapped]-start(aln.rev.pat[aln.mapped])+1)
-		pre.aln.start <- start(aln.ranges[aln.mapped])
-		pre.aln.end   <- end(aln.ranges[aln.mapped])
-		aln.ranges[aln.mapped] <- IRanges(
-			start = pmin(pre.aln.start, cur.aln.start), 
-			end   = ifelse( pre.aln.mapped[aln.mapped], 
-				pmax(pre.aln.end, cur.aln.end), 
-				cur.aln.end
+		# Use recursive pairwiseAlignment() to get the most left match
+		rest.aln.mapped <- rep(TRUE, rd.num)
+		tmp.rd <- rd
+		while ( sum(rest.aln.mapped) ) {
+			# Compare pattern(subj[i]) to reads(tmp.rd). 
+			aln.fwd <- pairwiseAlignment(
+				pattern = tmp.rd[rest.aln.mapped], 
+				subject = subj[i], 
+				type    = 'overlap', 
+				substitutionMatrix=nucleotideSubstitutionMatrix(
+					match    = align.opts$match, 
+					mismatch = -align.opts$mismatch
+				), 
+				gapOpening   = -align.opts$gapOpening, 
+				gapExtension = -align.opts$gapExtension
 			)
-		)
-		pre.aln.mapped[aln.mapped] <- TRUE
+			aln.fwd.pat <- pattern(aln.fwd)
+			aln.width   <- width(aln.fwd.pat)
+			# Determine which read is currently really matched under the score system. 
+			rest.aln.mapped.2 <- apply(
+				cbind( aln.width, score(aln.fwd) ), 
+				MARGIN=1,
+				function (x) {
+					if (x[1] > 0) {
+						if (x[1] > align.opts$thres.width.up) {
+							x[1] = align.opts$thres.width.up
+						}
+						return( x[2] >= align.opts$min.score[ x[1] ] )
+					} else {
+						return( FALSE )
+					}
+				}# End function
+			)
+			aln.start <- start(aln.fwd.pat[rest.aln.mapped.2])
+			aln.end   <- end(  aln.fwd.pat[rest.aln.mapped.2])
+			# Make a T/F vector "rest.aln.mapped.3", whose length == rest.aln.mapped, and only currently matched reads are TRUE
+			# This is a T/F vector for currently rest reads. 
+			rest.aln.mapped.3 <- rest.aln.mapped
+			rest.aln.mapped.3[rest.aln.mapped][!rest.aln.mapped.2] <- FALSE
+			# Mask read data "tmp.rd" at aligned region with "N" strings. 
+			subseq(tmp.rd[rest.aln.mapped.3], start=aln.start, end=aln.end) <- DNAStringSet( sapply( aln.width[rest.aln.mapped.2], function (x) { paste(rep("N", x),collapse="") } ) )
+
+			# renew the leftmost and rightmost boundaries in variable "aln.ranges"
+			pre.aln.start <- start(aln.ranges[rest.aln.mapped.3])
+			pre.aln.end   <-   end(aln.ranges[rest.aln.mapped.3])
+			aln.ranges[rest.aln.mapped.3] <- IRanges(
+				start = pmin(pre.aln.start, aln.start), 
+				end   = ifelse( pre.aln.mapped[rest.aln.mapped.3], 
+					pmax(pre.aln.end, aln.end), 
+					aln.end
+				)
+			)
+			pre.aln.mapped[rest.aln.mapped.3] <- TRUE
+
+			# Renew variable "rest.aln.mapped" for next cycle. 
+			# Knock out currently not matching reads from the previously rest reads set. 
+			rest.aln.mapped <- rest.aln.mapped.3
+		}#End while (sum(rest.aln.mapped))
+
 	}#End for i in 1:length(subj)
 
 	aln.threebands <- threebands(
@@ -1112,7 +1133,7 @@ suppressMessages({
 		rd1 <- narrow( rd1, start=start(match.3bands.r1$left), end=end(match.3bands.r1$left), use.names=TRUE )
 		rd2 <- narrow( rd2, start=start(match.3bands.r2$left), end=end(match.3bands.r2$left), use.names=TRUE )
 		# 不要从5'端(left端)起始junction的; 
-		no.5start <- width(match.3bands.r1$left) > 0 & width(match.3bands.r2$left) > 0
+		no.5start <- width(match.3bands.r1$left) > 1 & width(match.3bands.r2$left) > 1
 		if (min.length > 0) {
 			save.left  <- width(match.3bands.r1$left)  >= min.length & no.5start
 			save.right <- width(match.3bands.r2$left)  >= min.length & no.5start
@@ -1371,6 +1392,7 @@ clean.pe.fq.file <- function (
 		inFqName1,      outFqName1,      adaptor1, 
 		inFqName2=NULL, outFqName2=NULL, adaptor2=NULL, 
 		RdPerYield=100e6, 
+		min.length=40, 
 		align.opts=list(), use.right=FALSE,  
 		qual.opts=list(), 
 		...
@@ -1380,6 +1402,7 @@ clean.pe.fq.file <- function (
 	# 合并match比对参数, 去除了原"errRate=0.2"参数, 改为直接使用"align.opts"来控制一切(可以用.get.align.opts()来重新生成相关参数); 
 	# 由于qual.opts相关参数需要在每条reads水平逐个使用, 因此如果每次都用.merge.lists整合, 会非常浪费计算资源, 因此仅在主函数中修改此相关参量; 
 	align.opts <- .merge.lists(align.opts, .default.align.opts)
+	align.opts <- .reset.align.score( back.opts=align.opts )
 	qual.opts  <- .merge.lists(qual.opts, .default.qual.opts)
 	
 	num.rec <- list(
@@ -1468,11 +1491,11 @@ clean.pe.fq.file <- function (
 			#  Trmming adaptors. 
 			clean.fq <- .adaptor.trimmed.pe.fq(
 				rd1=rd1, adaptor1=adaptor1, 
-				align.opts=align.opts, min.length=align.opts$min.length, use.right=use.right, 
+				align.opts=align.opts, min.length=min.length, use.right=use.right, 
 				... 
 			)
 			# 输出结果; ()
-			if (length(clean.fq$R1.single) > 0) writeFastq(clean.fq$R1.single,   file=oFqName$s1, mode="a")
+			if (length(clean.fq$R1.single) > 0) writeFastq(clean.fq$R1.single,   file=oFqName$s1, mode="a", compress=FALSE)
 		}# End while( length( rd1 <- yield(inFh1) ) ) 
 		close(inFh1)
 		.tsmsg("[Msg]   Trimming SE adapter End.")
@@ -1576,13 +1599,13 @@ clean.pe.fq.file <- function (
 			clean.fq.P <- .adaptor.trimmed.pe.fq( 
 				rd1=rd1.p, adaptor1=adaptor1, 
 				rd2=rd2.p, adaptor2=adaptor2, 
-				align.opts=align.opts, min.length=align.opts$min.length, use.right=use.right, 
+				align.opts=align.opts, min.length=min.length, use.right=use.right, 
 				... 
 			)
-			if (length(clean.fq.P$R1.pair) > 0) writeFastq(clean.fq.P$R1.pair,   file=oFqName$p1, mode="a")
-			if (length(clean.fq.P$R2.pair) > 0) writeFastq(clean.fq.P$R2.pair,   file=oFqName$p2, mode="a")
-			if (length(clean.fq.P$R1.single) > 0) writeFastq(clean.fq.P$R1.single,   file=oFqName$s1, mode="a")
-			if (length(clean.fq.P$R2.single) > 0) writeFastq(clean.fq.P$R2.single,   file=oFqName$s2, mode="a")
+			if (length(clean.fq.P$R1.pair) > 0) writeFastq(clean.fq.P$R1.pair,   file=oFqName$p1, mode="a", compress=FALSE)
+			if (length(clean.fq.P$R2.pair) > 0) writeFastq(clean.fq.P$R2.pair,   file=oFqName$p2, mode="a", compress=FALSE)
+			if (length(clean.fq.P$R1.single) > 0) writeFastq(clean.fq.P$R1.single,   file=oFqName$s1, mode="a", compress=FALSE)
+			if (length(clean.fq.P$R2.single) > 0) writeFastq(clean.fq.P$R2.single,   file=oFqName$s2, mode="a", compress=FALSE)
 		}#End paired while 
 		close(inFh.p1)
 		close(inFh.p2)
@@ -1599,10 +1622,10 @@ clean.pe.fq.file <- function (
 				# 高质量 single reads 的 trimming; 
 				clean.fq.S <- .adaptor.trimmed.pe.fq( 
 					rd1=rd1.s, adaptor1=adaptor1, 
-					align.opts=align.opts, min.length=align.opts$min.length, use.right=use.right, 
+					align.opts=align.opts, min.length=min.length, use.right=use.right, 
 					... 
 				)
-				if (length(clean.fq.S$R1.single) > 0) writeFastq(clean.fq.S$R1.single,   file=oFqName$s1, mode="a")
+				if (length(clean.fq.S$R1.single) > 0) writeFastq(clean.fq.S$R1.single,   file=oFqName$s1, mode="a", compress=FALSE)
 			}# End while (rd1.s)
 			close(inFh.s1)
 			.tsmsg("[Msg]   Trimming SE1 adaptor End : ")
@@ -1615,10 +1638,10 @@ clean.pe.fq.file <- function (
 				# 高质量 single reads 的 trimming; 
 				clean.fq.S <- .adaptor.trimmed.pe.fq( 
 					rd1=rd2.s, adaptor1=adaptor2, 
-					align.opts=align.opts, min.length=align.opts$min.length, use.right=use.right, 
+					align.opts=align.opts, min.length=min.length, use.right=use.right, 
 					... 
 				)
-				if (length(clean.fq.S$R1.single) > 0) writeFastq(clean.fq.S$R1.single,   file=oFqName$s2, mode="a")
+				if (length(clean.fq.S$R1.single) > 0) writeFastq(clean.fq.S$R1.single,   file=oFqName$s2, mode="a", compress=FALSE)
 			}# End while (rd2.s)
 			close(inFh.s2)
 			.tsmsg("[Msg]   Trimming SE2 adaptor End : ")
@@ -1632,18 +1655,21 @@ clean.pe.fq.file <- function (
 ##################################################
 # clean.mp.fq.file : 处理 clean 过的 mate-paired reads 文件; 
 #   封装 .adaptor.trimmed.mp.fq( rd1, junction.seq, rd2=NULL, align.opts=list(), min.length=1, ... ) # ... used for maybe.chunkapply()
+# For align.opts$thres.width.min selection: I grepped 1M R1 reads with 6bp w/ 0.2 rate, and it is fine. (FP=(270+196)/1M~=4.7e-4). It is acceptable. 
 
 clean.mp.fq.file <- function (
 		inFqName1,      outFqName1, inFqName2=NULL, 
 		junction.seq=NULL, 
 		RdPerYield=100e6, 
 		align.opts=list(), 
+		min.length=40,
 		...
 	) {
 	invisible(gc())
 	
 	# 合并match比对参数, 去除了原"errRate=0.2"参数, 改为直接使用"align.opts"来控制一切(可以用.get.align.opts()来重新生成相关参数); 
 	align.opts <- .merge.lists(align.opts, .default.align.opts)
+	align.opts <- .reset.align.score( back.opts=align.opts )
 	if (is.null(junction.seq)) {
 		.tsmsg("[Err] Cannot find junction sequence from junction.seq\n")
 		stop("[Err] Junction seq not found.\n")
@@ -1664,7 +1690,7 @@ clean.mp.fq.file <- function (
 		.tsmsg( "[Rec] Begin to clean single end file: ", inFqName1 )
 		
 		# 开始处理 junction sequence. 
-		.tsmsg("[Msg]   Trimming SE junction Start : ")
+		.tsmsg("[Msg]   Trimming SE-MP junction Start : ")
 		inFh1 <- FastqStreamer(inFqName1, n=RdPerYield)
 		
 		# while ( length( rd1 <- as(yield(inFh1), "QualityScaledDNAStringSet") ) ) {
@@ -1674,23 +1700,23 @@ clean.mp.fq.file <- function (
 			#  Trmming junction sequence. 
 			clean.fq <- .adaptor.trimmed.mp.fq( 
 				rd1=rd1, junction.seq=junction.seq, 
-				align.opts=align.opts, min.length=align.opts$min.length, 
+				align.opts=align.opts, min.length=min.length, 
 				... 
 			)
 			# 输出结果; ()
-			if ( length( clean.fq$R1.pair )   > 0 ) writeFastq(object=clean.fq$R1.pair, file=oFqName$p1, mode="a") 
-			if ( length( clean.fq$R2.pair )   > 0 ) writeFastq(object=clean.fq$R2.pair, file=oFqName$p2, mode="a")
-			if ( length( clean.fq$R1.single ) > 0 ) writeFastq(object=clean.fq$R1.single, file=oFqName$s1, mode="a")
-			if ( length( clean.fq$R2.single ) > 0 ) writeFastq(object=clean.fq$R2.single, file=oFqName$s2, mode="a")
+			if ( length( clean.fq$R1.pair )   > 0 ) writeFastq(object=clean.fq$R1.pair, file=oFqName$p1, mode="a", compress=FALSE) 
+			if ( length( clean.fq$R2.pair )   > 0 ) writeFastq(object=clean.fq$R2.pair, file=oFqName$p2, mode="a", compress=FALSE)
+			if ( length( clean.fq$R1.single ) > 0 ) writeFastq(object=clean.fq$R1.single, file=oFqName$s1, mode="a", compress=FALSE)
+			if ( length( clean.fq$R2.single ) > 0 ) writeFastq(object=clean.fq$R2.single, file=oFqName$s2, mode="a", compress=FALSE)
 		}# End while( length( rd1 <- as(yield(inFh1), "QualityScaledDNAStringSet") )
 		close(inFh1)
-		.tsmsg("[Msg]   Trimming SE junction End.")
+		.tsmsg("[Msg]   Trimming SE-MP junction End.")
 	} else {
 		# paired cleaning
 		.tsmsg( "[Rec] Begin to clean paired end files: ", paste(inFqName1, inFqName2, sep=":") )
 		
 		# 开始去除 junction
-		.tsmsg("[Msg]   Trimming PE junction Start : ")
+		.tsmsg("[Msg]   Trimming PE-MP junction Start : ")
 		inFh.p1 <- FastqStreamer(inFqName1, n=RdPerYield)
 		inFh.p2 <- FastqStreamer(inFqName2, n=RdPerYield)
 		while ( length( rd1.p <- yield(inFh.p1) ) ) {
@@ -1700,17 +1726,17 @@ clean.mp.fq.file <- function (
 			#  Trmming junction sequence. 
 			clean.fq.P <- .adaptor.trimmed.mp.fq(
 				rd1=rd1.p, junction.seq=junction.seq, rd2=rd2.p, 
-				align.opts=align.opts, min.length=align.opts$min.length, 
+				align.opts=align.opts, min.length=min.length, 
 				... 
 			)
-			if (length(clean.fq.P$R1.pair) > 0) writeFastq(object=clean.fq.P$R1.pair, file=oFqName$p1, mode="a")
-			if (length(clean.fq.P$R2.pair) > 0) writeFastq(object=clean.fq.P$R2.pair, file=oFqName$p2, mode="a")
-			if (length(clean.fq.P$R1.single) > 0) writeFastq(object=clean.fq.P$R1.single, file=oFqName$s1, mode="a")
-			if (length(clean.fq.P$R1.single) > 0) writeFastq(object=clean.fq.P$R2.single, file=oFqName$s2, mode="a")
+			if (length(clean.fq.P$R1.pair) > 0) writeFastq(object=clean.fq.P$R1.pair, file=oFqName$p1, mode="a", compress=FALSE)
+			if (length(clean.fq.P$R2.pair) > 0) writeFastq(object=clean.fq.P$R2.pair, file=oFqName$p2, mode="a", compress=FALSE)
+			if (length(clean.fq.P$R1.single) > 0) writeFastq(object=clean.fq.P$R1.single, file=oFqName$s1, mode="a", compress=FALSE)
+			if (length(clean.fq.P$R1.single) > 0) writeFastq(object=clean.fq.P$R2.single, file=oFqName$s2, mode="a", compress=FALSE)
 		}#End paired while 
 		close(inFh.p1)
 		close(inFh.p2)
-		.tsmsg("[Msg]   Trimming PE junction End : ")
+		.tsmsg("[Msg]   Trimming PE-MP junction End : ")
 	}# if (is.null(inFqName2)) else 
 	.tsmsg("[Rec] Over.")
 	return(0)
