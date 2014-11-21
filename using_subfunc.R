@@ -48,7 +48,7 @@ suppressMessages({
   library(foreach)
   library(iterators)
   library(doMC)
-  registerDoMC(core=14)
+  registerDoMC(core=20)
   .mcoptions <- list(preschedule=TRUE, set.seed=FALSE)
 }) # End suppressMessages
 
@@ -66,6 +66,7 @@ suppressMessages({
 #   此函数也可以用来在后面文件处理之前重新生成匹配参数用; 
 #   .get.align.opts( thres.width.min=6, thres.width.up=100, thres.mismatch.ratio=0.2, match=1, mismatch=3, gapOpening=5, gapExtension=2  )
 # .default.align.opts: 比对参数
+# When using thres.width.min=10bp for Mate-Paired data, there are reads with 6bp adaptor ended in the reads.
 .get.align.opts <- function ( 
 		thres.width.min=6, thres.width.up=100, thres.mismatch.ratio=0.2, 
 		match=1, mismatch=3, gapOpening=5, gapExtension=2, 
