@@ -1,5 +1,6 @@
 #!/usr/bin/Rscript
 # 2014-11-21 Edit basic function - .pattern.rangeSet() to find leftmost and right most alignment boundaries. 
+# 2014-11-22 Edit Mate-pair data clean functions to separate read pairs with or without junction sequence matched. 
 
 ###########################################################
 # Storage of basic sequences: 
@@ -1060,7 +1061,7 @@ suppressMessages({
 	}
 	
 	# 定义一个返回的 reads list, list包含4个变量(R1.pair, R2.pair)
-	back.rd <- list( R1.pair=NULL, R1.single=NULL, R2.pair=NULL, R2.single=NULL ) # 呵呵, 这个有意思, 用NULL赋值是删除, 赋值时指定则添加; 
+	back.rd <- list( R1.pairA=NULL, R1.pairB=NULL, R1.single=NULL, R2.pairA=NULL, R2.pairB=NULL, R2.single=NULL ) # 呵呵, 这个有意思, 用NULL赋值是删除, 赋值时指定则添加; 
 	if ( is.null(rd2) ) {
 		# 仅有 rd1 时
 		# 获取 trimmed 后剩余序列位置; 我不明白 delox 中为什么要trip掉序列名字, 也没有看出来速度变快, 这里就不效仿了; 
@@ -1077,28 +1078,41 @@ suppressMessages({
 		)
 		.tsmsg("[Msg]     Finish to run multicore-foreach. trim.junction.se")
 		
+		# When width(match.3bands.r1$left[i]) == width(rd1[i]), there should be no junction sequence found in the current read. 
 		rd1.left  <- narrow(rd1, start=start(match.3bands.r1$left), end=end(match.3bands.r1$left), use.names=TRUE)
 		rd1.right <- reverseComplement( narrow(rd1, start=start(match.3bands.r1$right), end=end(match.3bands.r1$right), use.names=TRUE) )
+
+		width.left  <- width(match.3bands.r1$left)
+		width.right <- width(match.3bands.r1$right)
+
 		# 从5'端(left)起始的junction所在reads对不能要; 
-		no.5start <- width(match.3bands.r1$left) > 0
+		no.5start <- width.left > 0
+		# "no.aln" shows the reads without junction adaptor found. 
+		no.aln    <- width.left == width(rd1)
 		
 		if (min.length > 0) {
-			save.left  <- width(match.3bands.r1$left ) >= min.length & no.5start
-			save.right <- width(match.3bands.r1$right) >= min.length & no.5start
-			save.pair  <- save.left & save.right
-			back.rd$R1.pair <- rd1.left[ save.pair ]
-			back.rd$R2.pair <- rd1.right[ save.pair ]
-			back.rd$R1.single <- rd1.left[save.left & !save.right]
-			back.rd$R2.single <- rd1.right[!save.left & save.right]
-			.tsmsg( "[Rec]   Kept : ", paste( sum(save.pair), sum(save.left & !save.right), sum(!save.left & save.right), sep=":") )
+			save.left   <- width.left  >= min.length
+			save.right  <- width.right >= min.length
+			save.pairA  <- save.left & save.right
+			back.rd$R1.pairA  <- rd1.left[  save.pairA ]
+			back.rd$R2.pairA  <- rd1.right[ save.pairA ]
+			back.rd$R1.pairB  <- rd1[1][FALSE]
+			back.rd$R2.pairB  <- rd1[1][FALSE]
+			back.rd$R1.single <- rd1.left[  save.left & !save.right]
+			back.rd$R2.single <- rd1.right[!save.left &  save.right]
+			.tsmsg("[Rec]   Kept : pairA:pairB:single1:single2")
+			.tsmsg("[Rec]        : ", paste( sum(save.pairA), 0, sum(save.left & !save.right), sum(!save.left &  save.right), sep=":" ))
 		} else {
-			back.rd$R1.pair <- rd1.left[no.5start]
-			back.rd$R2.pair <- rd1.right[no.5start]
-			back.rd$R1.single <- rd1[1][FALSE]
-			back.rd$R2.single <- back.rd$R1.single
-			.tsmsg("[Rec]   Kept : ", sum(no.5start))
+			save.pairA <- no.5start  & !no.aln
+			back.rd$R1.pairA  <- rd1.left[save.pairA]
+			back.rd$R2.pairA  <- rd1.right[save.pairA]
+			back.rd$R1.pairB  <- rd1[1][FALSE]
+			back.rd$R2.pairB  <- rd1[1][FALSE]
+			back.rd$R1.single <- rd1.left[no.aln]
+			back.rd$R2.single <- rd1.right[!no.5start]
+			.tsmsg("[Rec]   Kept : pairA:pairB:single1:single2")
+			.tsmsg("[Rec]   Kept : ", paste( sum(save.pairA), 0, sum(no.aln), sum(!no.5start), sep=":" ))
 		}
-		
 	} else {
 		# 同时存在 rd1/rd2 时
 
@@ -1130,26 +1144,40 @@ suppressMessages({
 		.tsmsg("[Msg]     trim.junction.pe.2 End")
 		.tsmsg("[Msg]   Finish to run multicore-foreach. trim.junction.pe")
 		
+		width.raw1 <- width(rd1)
+		width.raw2 <- width(rd2)
 		# 获取干净的reads; 
 		rd1 <- narrow( rd1, start=start(match.3bands.r1$left), end=end(match.3bands.r1$left), use.names=TRUE )
 		rd2 <- narrow( rd2, start=start(match.3bands.r2$left), end=end(match.3bands.r2$left), use.names=TRUE )
+		width.new1 <- width(match.3bands.r1$left)
+		width.new2 <- width(match.3bands.r2$left)
 		# 不要从5'端(left端)起始junction的; 
-		no.5start <- width(match.3bands.r1$left) > 1 & width(match.3bands.r2$left) > 1
+		no.5start <- width.new1 > 0 & width.new2 > 0
+		no.aln    <- (width.raw1 == width.new1) & (width.raw2 == width.new2)
 		if (min.length > 0) {
-			save.left  <- width(match.3bands.r1$left)  >= min.length & no.5start
-			save.right <- width(match.3bands.r2$left)  >= min.length & no.5start
-			save.pair  <- save.left & save.right
-			back.rd$R1.pair <- rd1[ save.pair ]
-			back.rd$R2.pair <- rd2[ save.pair ]
-			back.rd$R1.single <- rd1[ save.left & !save.right ]
-			back.rd$R2.single <- rd2[ !save.left & save.right ]
-			.tsmsg("[Rec]     Kept : ", paste(sum(no.5start), sum(save.pair), sum(save.left), sum(save.right), sum( save.left & !save.right ), sum( !save.left & save.right ), sep=":"), " numbers.")
+			save.left  <- width.new1  >= min.length & no.5start
+			save.right <- width.new2  >= min.length & no.5start
+			save.pairA <- save.left & save.right & !no.aln
+			save.pairB <- save.left & save.right &  no.aln
+			back.rd$R1.pairA <- rd1[ save.pairA ]
+			back.rd$R2.pairA <- rd2[ save.pairA ]
+			back.rd$R1.pairB <- rd1[ save.pairB ]
+			back.rd$R2.pairB <- rd2[ save.pairB ]
+			back.rd$R1.single <- rd1[ save.left & !save.right  ]
+			back.rd$R2.single <- rd2[ !save.left & save.right  ]
+			.tsmsg("[Rec]   Kept : pairA:pairB:single1:single2")
+			.tsmsg("[Rec]        : ", paste(sum(save.pairA), sum(save.pairB), sum(save.left & !save.right), sum(!save.left & save.right), sep=":"))
 		} else {
-			back.rd$R1.pair  <- rd1[no.5start]
-			back.rd$R2.pair  <- rd2[no.5start]
-			back.rd$R1.single <- rd1[1][FALSE]
-			back.rd$R2.single <- back.rd$R1.single
-			.tsmsg( "[Rec]   Kept : ", paste( sum(no.5start), sep=":") )
+			save.pairA <- no.5start & !no.aln
+			save.pairB <- no.5start &  no.aln
+			back.rd$R1.pairA  <- rd1[save.pairA]
+			back.rd$R2.pairA  <- rd2[save.pairA]
+			back.rd$R1.pairB  <- rd1[save.pairB]
+			back.rd$R2.pairB  <- rd2[save.pairB]
+			back.rd$R1.single <- rd1[!no.5start & width.new1 > 0]
+			back.rd$R2.single <- rd2[!no.5start & width.new2 > 0]
+			.tsmsg("[Rec]   Kept : pairA:pairB:single1:single2")
+			.tsmsg("[Rec]        : ", paste(sum(save.pairA), sum(save.pairB), sum(!no.5start & width.new1 > 0), sum(!no.5start & width.new2 > 0), sep=":"))
 		}
 	}# End if ( is.null(rd2) ) else 
 	# 返回结果reads; 
@@ -1677,13 +1705,18 @@ clean.mp.fq.file <- function (
 	}
 	
 	# 预设值输出文件; 如果输出文件已存在, 将其删除重写; 
+	# p1a/p2a are reads with junction sequences trimmed, p1b/p2b are reads without junction sequences found. 
 	oFqName <- list()
-	oFqName$p1 <- paste0(outFqName1,'.p1')
-	oFqName$p2 <- paste0(outFqName1,'.p2')
-	oFqName$s1 <- paste0(outFqName1,'.s1')
-	oFqName$s2 <- paste0(outFqName1,'.s2')
+	oFqName$p1a <- paste0(outFqName1,'.p1a')
+	oFqName$p2a <- paste0(outFqName1,'.p2a')
+	oFqName$p1b <- paste0(outFqName1,'.p1b')
+	oFqName$p2b <- paste0(outFqName1,'.p2b')
+	oFqName$s1  <- paste0(outFqName1,'.s1')
+	oFqName$s2  <- paste0(outFqName1,'.s2')
 	lapply( oFqName, function (fn) { if (file.exists(fn)) file.remove(fn) } )
-	.tsmsg( "[Rec]   New output files: ", paste(oFqName$p1, oFqName$p2, oFqName$s1, oFqName$s2, ":") )
+	.tsmsg( "[Rec]   Output clean pairs w/  junction sequences trimmed: ", paste(oFqName$p1a, oFqName$p2a, ":") )
+	.tsmsg( "[Rec]   Output       pairs w/o junction sequences found  : ", paste(oFqName$p1b, oFqName$p2b, ":") )
+	.tsmsg( "[Rec]   Output clean singles   after trimming            : ", paste(oFqName$s1 , oFqName$s2 , ":") )
 	
 	if (is.null(inFqName2))
 	{
@@ -1705,10 +1738,10 @@ clean.mp.fq.file <- function (
 				... 
 			)
 			# 输出结果; ()
-			if ( length( clean.fq$R1.pair )   > 0 ) writeFastq(object=clean.fq$R1.pair, file=oFqName$p1, mode="a", compress=FALSE) 
-			if ( length( clean.fq$R2.pair )   > 0 ) writeFastq(object=clean.fq$R2.pair, file=oFqName$p2, mode="a", compress=FALSE)
-			if ( length( clean.fq$R1.single ) > 0 ) writeFastq(object=clean.fq$R1.single, file=oFqName$s1, mode="a", compress=FALSE)
-			if ( length( clean.fq$R2.single ) > 0 ) writeFastq(object=clean.fq$R2.single, file=oFqName$s2, mode="a", compress=FALSE)
+			if ( length( clean.fq$R1.pairA  ) > 0 ) writeFastq(object=clean.fq$R1.pairA , file=oFqName$p1a, mode="a", compress=FALSE) 
+			if ( length( clean.fq$R2.pairA  ) > 0 ) writeFastq(object=clean.fq$R2.pairA , file=oFqName$p2a, mode="a", compress=FALSE)
+			if ( length( clean.fq$R1.single ) > 0 ) writeFastq(object=clean.fq$R1.single, file=oFqName$s1 , mode="a", compress=FALSE)
+			if ( length( clean.fq$R2.single ) > 0 ) writeFastq(object=clean.fq$R2.single, file=oFqName$s2 , mode="a", compress=FALSE)
 		}# End while( length( rd1 <- as(yield(inFh1), "QualityScaledDNAStringSet") )
 		close(inFh1)
 		.tsmsg("[Msg]   Trimming SE-MP junction End.")
@@ -1730,8 +1763,10 @@ clean.mp.fq.file <- function (
 				align.opts=align.opts, min.length=min.length, 
 				... 
 			)
-			if (length(clean.fq.P$R1.pair) > 0) writeFastq(object=clean.fq.P$R1.pair, file=oFqName$p1, mode="a", compress=FALSE)
-			if (length(clean.fq.P$R2.pair) > 0) writeFastq(object=clean.fq.P$R2.pair, file=oFqName$p2, mode="a", compress=FALSE)
+			if (length(clean.fq.P$R1.pairA)  > 0) writeFastq(object=clean.fq.P$R1.pairA, file=oFqName$p1a, mode="a", compress=FALSE)
+			if (length(clean.fq.P$R2.pairA)  > 0) writeFastq(object=clean.fq.P$R2.pairA, file=oFqName$p2a, mode="a", compress=FALSE)
+			if (length(clean.fq.P$R1.pairB)  > 0) writeFastq(object=clean.fq.P$R1.pairB, file=oFqName$p1b, mode="a", compress=FALSE)
+			if (length(clean.fq.P$R2.pairB)  > 0) writeFastq(object=clean.fq.P$R2.pairB, file=oFqName$p2b, mode="a", compress=FALSE)
 			if (length(clean.fq.P$R1.single) > 0) writeFastq(object=clean.fq.P$R1.single, file=oFqName$s1, mode="a", compress=FALSE)
 			if (length(clean.fq.P$R1.single) > 0) writeFastq(object=clean.fq.P$R2.single, file=oFqName$s2, mode="a", compress=FALSE)
 		}#End paired while 

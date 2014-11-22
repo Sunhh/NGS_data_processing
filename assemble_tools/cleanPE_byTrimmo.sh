@@ -16,7 +16,7 @@ adp_fas="/data/Sunhh/src/Assemble/Trimmomatic/Trimmomatic-0.32/adapters/TruSeq3-
 minLen=25
 
 para_jar="-threads $cpuN"
-para_PE="ILLUMINACLIP:$adp_fas:2:30:10:1 SLIDINGWINDOW:4:20 LEADING:3 TRAILING:3 MINLEN:$minLen"
+para_PE="ILLUMINACLIP:$adp_fas:2:30:10:1:TRUE SLIDINGWINDOW:4:20 LEADING:3 TRAILING:3 MINLEN:$minLen"
 
 tsmsg "[Rec] All start."
 for inPref in HKC_15_20kb HKC_8_10kb HWB_15_20kb HWB_8_10kb
