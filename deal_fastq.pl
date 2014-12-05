@@ -2,10 +2,20 @@
 # 2014-03-20 A script to deal with fastq format reads. It will be always in processing. 
 # 2014-03-25 Add function to search a pattern in reads, and return different values as defined. 
 #
+
+BEGIN {
+	use File::Basename; 
+	use Cwd 'abs_path'; 
+	my $pl_dir = dirname( abs_path(__FILE__) ); 
+	use lib "$pl_dir/MyPM"; 
+}
+
+
 use strict; 
 use warnings; 
 use List::Util qw(first max maxstr min minstr reduce shuffle sum); 
 use Getopt::Long; 
+use LogInforSunhh; 
 my %opts; 
 
 sub usage {
@@ -32,6 +42,11 @@ perl $0 in.fastq
 -64to33       [Boolean] Transform phred64 to phred33 quality. 
 
 -rd_Num       [Boolean] Summary read number/length of fq files. 
+
+-rd_LenHist   [Boolean] 
+-rd_LenHist_pmin   [Boolean] by paired-min. 
+-rd_LenHist_range  [1/0-max] Example: [10-20], then 10 stands for <=10, 20 stands for >=20; 
+-rd_LenHist_name   ["RdNum"] A string for the 2nd column's name. 
 
 -frag         [String] [start-end] output a fragment of the squence in single sequence fasta file;Start position is 1; May be s1-e1:s2-e2...
 -frag_r       [Boolean] give out reversed string; 
@@ -62,7 +77,7 @@ GetOptions(\%opts,
 	"joinR12!", # In fact, this function can be performed by keep_len() subroutine with "-keep_len 0- -paired "
 	"showQscale!", 
 	"33to64!", "64to33!", 
-	"rd_Num!", 
+	"rd_Num!", "rd_LenHist!", "rd_LenHist_pmin!", "rd_LenHist_range:s", "rd_LenHist_name:s", 
 	"frag:s", "frag_r!", "frag_c!", 
 	"search:s", "srch_strand:s", "srch_back:s", "srch_drop!", "srch_max!", 
 	"help!", 
@@ -117,6 +132,7 @@ my %good_str = qw(
 &rd_Num() if ( $opts{rd_Num} ); 
 &fragmentRd() if ( defined $opts{frag} and $opts{frag} ne '' ); 
 &searchPattern() if ( defined $opts{search} and $opts{search} ne '' ); 
+&rd_LenHist() if ( $opts{rd_LenHist} ); 
 
 #****************************************************************#
 #--------------Subprogram------------Start-----------------------#
@@ -385,6 +401,64 @@ sub fq2Val {
 	}
 }#sub fq2Val() 
 
+# -rd_LenHist
+# -rd_LenHist_pmin
+# -rd_LenHist_range : [1-maxLen]
+# -rd_LenHist_name  : [rdNum]
+sub rd_LenHist {
+	my $is_pmin = 0; 
+	my %lhist; 
+	defined $opts{rd_LenHist_name} or $opts{rd_LenHist_name} = 'RdNum'; 
+
+	if ( $opts{rd_LenHist_pmin} ) {
+		for ( my $i=0; $i<@InFp; $i+=2 ) {
+			my $fh1 = $InFp[$i]; 
+			my $fh2 = $InFp[$i+1]; 
+			while ( !eof($fh1) and !eof($fh2) ) {
+				my $rdRec1 = &get_fq_record($fh1); 
+				my $rdRec2 = &get_fq_record($fh2); 
+				(my $ss1 = $rdRec1->{seq}) =~ s/\s//g; 
+				(my $ss2 = $rdRec2->{seq}) =~ s/\s//g; 
+				my $l1 = length($ss1); 
+				my $l2 = length($ss2); 
+				my $lmin = ( $l1 < $l2 ) ? $l1 : $l2 ; 
+				$lhist{$lmin} ++; 
+			}
+		}
+	} else {
+		for my $fh ( @InFp ) {
+			while ( my $rdRec = &get_fq_record($fh) ) {
+				(my $ss = $rdRec->{seq}) =~ s/\s//g; 
+				my $ll = length($ss); 
+				$lhist{$ll} ++; 
+			}
+		}
+	}
+	my @srt_len = sort { $a <=> $b } keys %lhist; 
+	my ($min, $max) = @srt_len[0, $#srt_len]; 
+	$min < 1 or $min = 1; 
+	if ( defined $opts{rd_LenHist_range} ) {
+		$opts{rd_LenHist_range} =~ m/^(\d+)\-(\d+)$/ or &stopErr("[Err] -rd_LenHist_range unparsed [$opts{rd_LenHist_range}]\n"); 
+		($min, $max) = ($1, $2); 
+		my %new_lhist; 
+		for my $ll ( keys %lhist ) {
+			if ( $ll < $min ) {
+				$new_lhist{$min} += $lhist{$ll}; 
+			} elsif ( $ll > $max ) {
+				$new_lhist{$max} += $lhist{$ll}; 
+			} else {
+				$new_lhist{$ll} += $lhist{$ll}; 
+			}
+		}
+		%lhist = %new_lhist; 
+	}
+	print STDOUT join("\t", qw/RdLen/, $opts{rd_LenHist_name})."\n"; 
+	for my $ll ( $min .. $max ) {
+		defined $lhist{$ll} or $lhist{$ll} = 0; 
+		print STDOUT join("\t", $ll, $lhist{$ll})."\n"; 
+	}
+}# rd_LenHist
+
 # Filter reads by read length. 
 sub keep_len {
 	my ($min_len, $max_len) = &max_min_range( shift ); 
@@ -534,16 +608,6 @@ sub get_fq_record {
 	$back{qual} = readline($fh); 
 	chomp($back{qual});
 	return(\%back); 
-}
-
-sub tsmsg {
-	my $tt = scalar(localtime()); 
-	print STDERR join('', "[$tt] ", @_); 
-}
-
-sub stopErr {
-	&tsmsg(@_); 
-	exit(1); 
 }
 
 # Guess phred scale from file handle input. 
