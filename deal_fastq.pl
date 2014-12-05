@@ -16,6 +16,7 @@ use warnings;
 use List::Util qw(first max maxstr min minstr reduce shuffle sum); 
 use Getopt::Long; 
 use LogInforSunhh; 
+use fileSunhh; 
 my %opts; 
 
 sub usage {
@@ -666,44 +667,6 @@ sub rcSeq {
 #        h       a or c or t; not g
 #        d       a or g or t; not c
 #        n       a or c or g or t
-
-sub openFH ($$) {
-	my $f = shift;
-	my $type = shift;
-	my %goodFileType = qw(
-	  <       read
-	  >       write
-	  read    read
-	  write   write
-	);
-	defined $type or $type = 'read';
-	defined $goodFileType{$type} or &stopErr( "[Err]Unknown open method tag [$type].\n" );
-	$type = $goodFileType{$type};
-	local *FH;
-	# my $tfh;
-	if ($type eq 'read') {
-		if ($f =~ m/\.gz$/) {
-			open (FH, '-|', "gzip -cd $f") or &stopErr( "[Err]$! [$f]\n" );
-			# open ($tfh, '-|', "gzip -cd $f") or die "[Err]$! [$f]\n";
-		} elsif ( $f =~ m/\.bz2$/ ) {
-			open (FH, '-|', "bzip2 -cd $f") or &stopErr( "[Err]$! [$f]\n" );
-		} else {
-			open (FH, '<', "$f") or &stopErr( "[Err]$! [$f]\n" );
-		}
-	} elsif ($type eq 'write') {
-		if ($f =~ m/\.gz$/) {
-			open (FH, '|-', "gzip - > $f") or &stopErr( "[Err]$! [$f]\n" );
-		} elsif ( $f =~ m/\.bz2$/ ) {
-			open (FH, '|-', "bzip2 - > $f") or &stopErr( "[Err]$! [$f]\n" );
-		} else {
-			open (FH, '>', "$f") or &stopErr( "[Err]$! [$f]\n" );
-		}
-	} else {
-		# Something is wrong.
-		&stopErr( "[Err]Something is wrong here.\n" );
-	}
-	return *FH;
-}#End sub openFH
 
 # Input : "min_len-max_len"
 # Return: (min_len, max_len)
