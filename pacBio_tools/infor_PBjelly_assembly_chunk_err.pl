@@ -70,6 +70,10 @@ while (<>) {
 		&stopErr("[Err] Why here? : $_\n"); 
 	}
 }
+if (keys %infor > 0) {
+	&outputInfor(\%infor); 
+	%infor = (); 
+}
 
 # Input : \%infor : {@ids}
 # asmDir     : ref0105227e5_ref0293445e3
