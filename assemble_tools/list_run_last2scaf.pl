@@ -85,7 +85,7 @@ sub run_last2scaff {
 
 	# Carry out commands. 
 	&exe_cmd("$tools{pl_clipScaf} $refFa > $med{refClip}"); 
-	&exe_cmd("$tools{pl_clipScaf} $qryFa > $med{qryClip}"); 
+	&exe_cmd("$tools{pl_clipScaf} -min_outLen 500 $qryFa > $med{qryClip}"); 
 
 	&exe_cmd("$tools{pl_addTag2fa} Ref $med{refClip} > $med{refCtg}"); 
 	&exe_cmd("$tools{pl_addTag2fa} Qry $med{qryClip} > $med{qryCtg}"); 

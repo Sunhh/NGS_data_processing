@@ -6,14 +6,25 @@ use warnings;
 use ReadInSeqSunhh; 
 use DealFastaSunhh; 
 use LogInforSunhh; 
+use Getopt::Long; 
 
 !@ARGV and die "perl $0 in.scf.fa\n"; 
 
-my $chk_len = 10e3; 
-my $max_gap = 700; 
-my $min_noN = 100; 
-my $min_clust_len = 3e3; 
-my $min_outLen = 100; 
+my %opts; 
+GetOptions(\%opts, 
+	"chk_len:i", 
+	"max_gap:i", 
+	"min_noN:i", 
+	"min_clust_len:i", 
+	"min_outLen:i", 
+	"help!"
+); 
+
+my $chk_len = (defined $opts{chk_len}) ? $opts{chk_len} : 10e3; 
+my $max_gap = (defined $opts{max_gap}) ? $opts{max_gap} : 700; 
+my $min_noN = (defined $opts{min_noN}) ? $opts{min_noN} : 100; 
+my $min_clust_len = (defined $opts{min_clust_len}) ? $opts{min_clust_len} :  3e3; 
+my $min_outLen = (defined $opts{min_outLen}) ? $opts{min_outLen} : 100; 
 
 my $srh_pat = '[ATGCatgc]+'; 
 
