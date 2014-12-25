@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 use strict;
 use warnings; 
+use LogInforSunhh; 
 use Getopt::Long;
 
 my %opts;
@@ -305,7 +306,7 @@ sub seqWithBlk {
 	if ( $ta1[1] eq 'f' ) {
 		if ( $ta2[3] < $prev_Scf_E ) {
 			# Bad case 1a : Impossible. 
-			die "Bad case 1: $!\n"; 
+			&stopErr( "Bad case 1: $!\n" ); 
 		} elsif ( $ta2[3] == $prev_Scf_E ) {
 			return ('', $prev_Scf_E); 
 		} else {
@@ -591,7 +592,6 @@ sub computeLayout {
 
 		# Exit if there is no following contig (next_tig) defined in %$pair. 
 		( defined $pair->{ $curr_tig->[0] } and defined $pair->{ $curr_tig->[0] }{ $curr_tig->[1] } ) or do { $extension = 0; last EXTENSION; }; 
-
 		
 		my $list = $pair->{ $curr_tig->[0] }{ $curr_tig->[1] }; 
 		my $next_tig = []; 
@@ -685,12 +685,30 @@ sub delete_link2 {
 	my ($srcL, $idxL) = @_; 
 	my $cnt = 0; 
 	for my $k1 ( keys %$idxL ) {
+		my @rm_kkk; 
 		for my $k2 ( keys %{$idxL->{$k1}} ) {
 			exists $srcL->{$k1}{$k2} or next; 
+			for my $scfID_2 ( keys %{$srcL->{$k1}{$k2}} ) {
+				exists $srcL->{$scfID_2}{'f'}{$k1} and push(@rm_kkk, [$scfID_2, 'f', $k1]); 
+				exists $srcL->{$scfID_2}{'r'}{$k1} and push(@rm_kkk, [$scfID_2, 'r', $k1]); 
+			}
 			delete $srcL->{$k1}{$k2}; 
 			$cnt ++; 
 		}
+		for my $tr3 (@rm_kkk) {
+			my ($tk1,$tk2,$tk3) = @$tr3; 
+			exists $srcL->{$tk1}{$tk2}{$tk3} or next; 
+			delete $srcL->{$tk1}{$tk2}{$tk3}; 
+			$cnt ++; 
+		}
 	}
+	my %newL; 
+	for my $k1 (%$srcL) {
+		for my $k2 ( keys %{$srcL->{$k1}} ) {
+			scalar( keys %{$srcL->{$k1}{$k2}} ) > 0 and $newL{$k1}{$k2} = $srcL->{$k1}{$k2}; 
+		}
+	}
+	%$srcL = %newL; 
 	return $cnt; 
 }#End sub delete_link2() 
 
@@ -754,7 +772,3 @@ sub getLinkArray {
 	return \@back; 
 }#End sub getLinkArray() 
 
-sub tsmsg {
-	my $tt = scalar(localtime()); 
-	print STDERR join('', "[$tt]", @_); 
-}
