@@ -13,7 +13,7 @@ use LogInforSunhh;
 !@ARGV and die "perl $0 srcFa dgt.tab.wPP.filtN\n"; 
 
 my $srcFa = shift; 
-my $exeMuscle = "/share/app/Align/muscle/muscle3.8.31_i86linux64"; 
+my $exeMuscle = "/data/Sunhh/src/Align/muscle/muscle3.8.31_i86linux64"; 
 
 my $flank_len = 50; 
 my $min_ident_pos = int($flank_len/2); 
