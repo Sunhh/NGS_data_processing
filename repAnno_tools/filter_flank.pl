@@ -2,6 +2,8 @@
 use strict; 
 use warnings; 
 use LogInforSunhh; 
+use Cwd 'abs_path'; 
+use File::Basename; 
 
 # dgt.tab.wPP.filtN 
 # eleID   eleS    eleE    Str     seqID   LTR1_S  LTR1_E  LTR2_S  LTR2_E  Inner_S Inner_E PBS_S   PBS_E   PPT_S   PPT_E   scfID
@@ -13,7 +15,8 @@ use LogInforSunhh;
 !@ARGV and die "perl $0 srcFa dgt.tab.wPP.filtN\n"; 
 
 my $srcFa = shift; 
-my $exeMuscle = "/data/Sunhh/src/Align/muscle/muscle3.8.31_i86linux64"; 
+my $path2Me = dirname( abs_path($0) ); 
+my $exeMuscle = "$path2Me/muscle3.8.31_i86linux64"; 
 
 my $flank_len = 50; 
 my $min_ident_pos = int($flank_len/2); 
