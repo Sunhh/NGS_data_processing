@@ -80,5 +80,41 @@ sub ins_calc {
 	return \%back; 
 }
 
+# Given (\@list_of_ele, $n_in_class), return all permutations by array. Return ([@perm1_of_ele], [@perm2], ...)
+sub permutations {
+	my ($list, $n) = @_; 
+	$n = $n // scalar(@$list); 
+	$n > @$list and return ($list); 
+	$n <= 1 and return(map {[$_]} @$list); 
+	my @perm; 
+	for my $i (0 .. $#$list) {
+		my @rest = @$list; 
+		my $val = splice(@rest, $i, 1); 
+		for ( &permutations(\@rest, $n-1) ) {
+			push(@perm, [$val, @$_]); 
+		}
+	}
+	return @perm; 
+}#sub permutations() 
+
+# Given (\@list_of_ele, $n_in_class), return all combinations by array. Return ([@comb1_of_ele], [@comb2_of_ele], ...) 
+sub combinations {
+	my ($list, $n) = @_; 
+	$n = $n // scalar(@$list); 
+	$n > @$list and return ($list); 
+	$n <= 1 and return(map {[$_]} @$list); 
+	my @comb; 
+	for (my $i=0; $i+$n<=@$list; $i++) {
+		my $val = $list->[$i]; 
+		my @rest = @$list[$i+1 .. $#$list]; 
+		for (&combinations(\@rest, $n-1)) {
+			push(@comb, [$val, @$_]); 
+		}
+	}
+	return @comb; 
+}#sub combinations
+
+
+
 1; 
 
