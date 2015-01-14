@@ -620,7 +620,7 @@ sub cnt_genotype {
 			$tb eq 'N' and do { $lmiss++; $imiss[$i_idx]++; next; }; 
 			( $tb =~ m/\*/ or $tb =~ m/\+/) and next; 
 			length($tb) <= 2 or next; 
-			defined $IUPAC_b2d{$tb} or next; 
+			defined $IUPAC_b2d{$tb} or do { $lmiss++; $imiss[$i_idx]++; next; }; 
 			my @tc = @{$IUPAC_d2b{ $IUPAC_b2d{$tb} }}; 
 			if ( scalar(@tc) == 1 ) {
 				$cnt{$tc[0]} += 2; 
@@ -630,7 +630,7 @@ sub cnt_genotype {
 				$cnt{$tc[1]} ++; 
 				$sum += 2; 
 			} else {
-				die "tb=$tb\n"; 
+				$lmiss++; $imiss[$i_idx]++; next; 
 			}
 		}
 		push(@{$self->{'cnt_alleleCnt'}}, \%cnt);   # {[ATGC]=>value} recording counts of allele, 
