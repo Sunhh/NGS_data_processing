@@ -130,7 +130,7 @@ sub newSubObj {
 	
 	# Setting title / header / chrCol / posCol 
 	# By Key 
-	for my $kk (qw/header filename FH skip header chrColN posColN refColN chrColID posColID skipColN is_single chrIDrel/) {
+	for my $kk (qw/header filename FH skip header chrColN posColN refColN chrColID posColID skipColN chrIDrel/) {
 		defined $self->{$kk} and $new_obj->{$kk} = $self->{$kk}; 
 	}
 	# By Row 
@@ -338,7 +338,8 @@ sub writeTbl {
 		}# for (data_arr)
 	} elsif ( $parm{'fmt'} =~ m/^illu(?:mina)$/i ) {
 		$self->{header} or &stopErr("[Err] Illumina format needs [header] line to assign [chr] and [pos] as well as [name] columns.\n"); 
-		( defined $self->{'is_single'} and $self->{'is_single'} == 1 ) or $self->SingleCharData('maxAlleleN'=>2); 
+		# ( defined $self->{'is_single'} and $self->{'is_single'} == 1 ) or $self->SingleCharData('maxAlleleN'=>2); 
+		$self->SingleCharData('maxAlleleN'=>2); 
 		$parm{'max2Allele'} = $parm{'max2Allele'} // 0; 
 		$parm{'max2Allele'} and $self->max2Allele(); 
 		defined $self->{'chrIDrel'} or $self->{'chrIDrel'} = {}; 
