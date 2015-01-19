@@ -8,9 +8,35 @@ use strict;
 use warnings; 
 use Statistics::Descriptive; 
 use Exporter qw(import);
-our @EXPORT = qw(ins_calc);
+our @EXPORT = qw(ins_calc ovl_len);
 our @EXPORT_OK = qw();
 
+
+sub ovl_len {
+	my ($s1, $e1, $s2, $e2) = @_; 
+	($s1, $e1) = sort {$a <=> $b} ($s1, $e1); 
+	($s2, $e2) = sort {$a <=> $b} ($s2, $e2); 
+	if ($e1 < $s2 or $s1 > $e2) {
+		return 0; 
+	} else {
+		return &min($e1, $e2) - &max($s1, $s2) + 1; 
+	}
+}
+
+sub min {
+	my $min = shift; 
+	for (@_) {
+		$min > $_ and $min = $_; 
+	}
+	return $min; 
+}
+sub max {
+	my $max = shift; 
+	for (@_) {
+		$max < $_ and $max = $_; 
+	}
+	return $max; 
+}
 
 # Function: ins_avg ()
 # Description: For calculating insert sizes. 
@@ -23,7 +49,14 @@ our @EXPORT_OK = qw();
 #              keys = qw(Q1 Q3 interval_low interval_high interval_mean interval_median interval_var interval_stdev limit_low limit_high)
 sub ins_calc {
 	my $r_arr = shift; 
+	my $min_val_number = shift // 1; 
 	my %back; 
+	if (scalar(@$r_arr) < $min_val_number) {
+		for my $ta (qw/Q1 Q3 interval_low interval_high interval_mean interval_median interval_var interval_stdev limit_low limit_high/) {
+			$back{$ta} = ''; 
+		}
+		return \%back; 
+	}
 	my $stat = Statistics::Descriptive::Full->new();
 	$stat->add_data(@$r_arr); 
 	$back{'Q1'} = $stat->quantile(1); 
@@ -46,6 +79,42 @@ sub ins_calc {
 	$stat->clear(); 
 	return \%back; 
 }
+
+# Given (\@list_of_ele, $n_in_class), return all permutations by array. Return ([@perm1_of_ele], [@perm2], ...)
+sub permutations {
+	my ($list, $n) = @_; 
+	$n = $n // scalar(@$list); 
+	$n > @$list and return ($list); 
+	$n <= 1 and return(map {[$_]} @$list); 
+	my @perm; 
+	for my $i (0 .. $#$list) {
+		my @rest = @$list; 
+		my $val = splice(@rest, $i, 1); 
+		for ( &permutations(\@rest, $n-1) ) {
+			push(@perm, [$val, @$_]); 
+		}
+	}
+	return @perm; 
+}#sub permutations() 
+
+# Given (\@list_of_ele, $n_in_class), return all combinations by array. Return ([@comb1_of_ele], [@comb2_of_ele], ...) 
+sub combinations {
+	my ($list, $n) = @_; 
+	$n = $n // scalar(@$list); 
+	$n > @$list and return ($list); 
+	$n <= 1 and return(map {[$_]} @$list); 
+	my @comb; 
+	for (my $i=0; $i+$n<=@$list; $i++) {
+		my $val = $list->[$i]; 
+		my @rest = @$list[$i+1 .. $#$list]; 
+		for (&combinations(\@rest, $n-1)) {
+			push(@comb, [$val, @$_]); 
+		}
+	}
+	return @comb; 
+}#sub combinations
+
+
 
 1; 
 

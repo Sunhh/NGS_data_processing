@@ -45,6 +45,7 @@ GetOptions(\%opts,
 	"kSrch_idx:s","kSrch_idxCol:s","kSrch_srcCol:s","kSrch_drop!", "kSrch_line!", # Similar to linux command join, without joining and with more index columns. Combined from uniqComb.pl 
 	"dR2dN!", 
 	"col_head!", 
+	"chID_RefLis:s", "chID_Row!", "chID_OldColN:i", "chID_NewColN:i", "chID_skipH:i", "chID_RowColN:i", # Change Column/Row names according to reference. 
 	"help!");
 sub usage {
 
@@ -96,6 +97,8 @@ command:perl $0 <STDIN|parameters>
                     So the raw NULL cells will remain unchanged! 
 
   "kSrch_idx:s","kSrch_idxCol:s","kSrch_srcCol:s","kSrch_drop!", "kSrch_line!", # Similar to linux command join, without joining and with more index columns. Combined from uniqComb.pl 
+
+  "chID_RefLis:s", "chID_Row!", "chID_OldColN:i", "chID_NewColN:i", "chID_skipH:i", "chID_RowColN:i", # Change Column/Row names according to reference.
 
   -symbol         Defining the symbol to divide data.Default is "\\t";
   -dR2dN          [Boolean] Change \\r to \\n in files. 
@@ -178,6 +181,8 @@ if ( &goodVar($opts{col_sort}) ) {
 
 &showHeader() if ( $opts{col_head} ); 
 
+&chRowColName() if ( defined $opts{chID_RefLis} ); 
+
 for (@InFp) {
 	close ($_);
 }
@@ -186,6 +191,53 @@ for (@InFp) {
 ######################################################################
 ## sub-routines for functions. 
 ######################################################################
+
+
+# change table's name according to reference list. 
+sub chRowColName {
+	$opts{chID_OldColN} = $opts{chID_OldColN} // 0; 
+	$opts{chID_NewColN} = $opts{chID_NewColN} // 1; 
+	$opts{chID_skipH} = $opts{chID_skipH} // 0; 
+	my $is_rowID = (defined $opts{chID_Row}) ? 1 : 0 ; 
+	$opts{chID_RowColN} = $opts{chID_RowColN} // 0; 
+
+	my $lisFH = &openFH($opts{chID_RefLis}, '<'); 
+	my %old2new; 
+	while (<$lisFH>) {
+		chomp; 
+		my @ta = split(/\t/, $_); 
+		$old2new{ $ta[ $opts{chID_OldColN} ] } = $ta[ $opts{chID_NewColN} ]; 
+	}
+	close ($lisFH); 
+	
+	for my $fh ( @InFp ) {
+		my $cur_n = -1; 
+		while (<$fh>) {
+			chomp; 
+			if ( $. <= $opts{chID_skipH} ) {
+				print STDOUT "$_\n"; 
+				next; 
+			} else {
+				$cur_n ++; 
+			}
+	
+			if ( $is_rowID ) {
+				my @ta = split(/\t/, $_); 
+				$ta[$opts{chID_RowColN}] = $old2new{ $ta[$opts{chID_RowColN}] } // $ta[$opts{chID_RowColN}] ; 
+				print STDOUT join("\t", @ta)."\n"; 
+			} elsif ( $cur_n == 0 ) {
+				my @ta = split(/\t/, $_); 
+				for my $tb (@ta) {
+					$tb = $old2new{$tb} // $tb; 
+				}
+				print STDOUT join("\t", @ta)."\n"; 
+			} else {
+				print STDOUT "$_\n"; 
+			}
+		}# End while 
+	}#End for 
+	return 0; 
+}# sub chRowColName () 
 
 # Show header column-number of a file. 
 sub showHeader {
