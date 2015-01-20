@@ -32,7 +32,7 @@ GetOptions(\%opts,
 	"reverse!",
 	"col_sort:s",
 	"col_uniq:s","col_reps:s","col_repCount:s", # uniq/repeat columns pick.
-	"col_stat:i",
+	"col_stat:i", "col_stat_asINS!", 
 	"symbol:s",
 	"best_uniqCol:s","select_col:s","select_rule:s","best_rep:s","best_disOrdCol!", 
 	"UniqColLine:s",
@@ -67,6 +67,7 @@ command:perl $0 <STDIN|parameters>
   -col_repCount   Show col repeat times.
 
   -col_stat<int>  Get Sum, Mean, Median, Min, Max of the Column;
+  -col_stat_asINS Add ins_calc() functioin to calculate Mean like bwa. 
   -reverse        reverse the file lines order.
 
   -best_uniqCol   1st column is 0; col_1[,col_2...]
@@ -776,8 +777,17 @@ sub colStat{
 		my $i2 = $i1-1;
 		$median = ($SortData[$i1]+$SortData[$i2])/2;
 	}# get median
-	print STDOUT "SUM\tMEAN\tMEDIAN\tMIN\tMAX\tCount\tNoNull\n"; 
-	print STDOUT "$total\t$mean\t$median\t$min\t$max\t",scalar @SortData,"\t$useful_count\n";
+	if ( $opts{'col_stat_asINS'} ) {
+		use mathSunhh; 
+		my $bh = &ins_calc(\@Data); 
+		my @add_tk = qw/interval_mean interval_median interval_stdev interval_low interval_high limit_low limit_high/; 
+		my @add_tv = @{$bh}{@add_tk}; 
+		print STDOUT join("\t", qw/SUM MEAN MEDIAN MIN MAX Count NoNull/, @add_tk)."\n"; 
+		print STDOUT join("\t", $total, $mean, $median, $min, $max, scalar @SortData, $useful_count, @add_tv)."\n"; 
+	} else {
+		print STDOUT "SUM\tMEAN\tMEDIAN\tMIN\tMAX\tCount\tNoNull\n"; 
+		print STDOUT "$total\t$mean\t$median\t$min\t$max\t",scalar @SortData,"\t$useful_count\n";
+	}
 }
 
 ######################################################################
