@@ -345,7 +345,8 @@ sub writeTbl {
 		defined $self->{'chrIDrel'} or $self->{'chrIDrel'} = {}; 
 		for (my $i=0; $i<@{$self->{'data_arr'}}; $i++) {
 			my @to_ar; 
-			my ($chrNum) = &guessChrNum( $self->{'chrColV'}[$i] ,$self->{'chrIDrel'} ); 
+			my $chrNum ; 
+			($chrNum, $self->{'chrIDrel'}) = &guessChrNum( $self->{'chrColV'}[$i] ,$self->{'chrIDrel'} ); 
 			my $posNum = $self->{'posColV'}[$i]; 
 			@to_ar = ("s${chrNum}_${posNum}", $chrNum, $posNum); 
 			print $ofh join("\t", @to_ar); 
@@ -530,7 +531,8 @@ HH
 		my $oMfh; 
 		$oMfh = &openFH( $parm{'omapfile'}, '>' ); 
 		for (my $i=0; $i<@{$self->{chrColV}}; $i++) {
-			my ($chrNum) = &guessChrNum( $self->{'chrColV'}[$i] ,$self->{'chrIDrel'} ); 
+			my $chrNum; 
+			($chrNum, $self->{'chrIDrel'}) = &guessChrNum( $self->{'chrColV'}[$i] ,$self->{'chrIDrel'} ); 
 			my $posNum = $self->{'posColV'}[$i]; 
 			print {$oMfh} join("\t", $chrNum, "s${chrNum}_${posNum}", 0, $posNum)."\n"; 
 		}
@@ -580,6 +582,15 @@ sub guessChrNum {
 				defined $back_hash{n2c}{$back_id} or last; 
 				$back_id ++; 
 			}
+		}
+		if ( defined $raw_hash->{n2c}{$back_id} ) {
+			&tsmsg("[Err] Already defined relationship between Num:[$back_id] to ID:[$raw_id]!\n"); 
+			$back_id = 1; 
+			while (1) {
+				defined $back_hash{n2c}{$back_id} or last; 
+				$back_id ++; 
+			}
+			&tsmsg("[Err] Now re-assign a new Num:[$back_id] for ID:[$raw_id]\n"); 
 		}
 		$raw_hash->{c2n}{$raw_id} = $back_id; 
 		$raw_hash->{n2c}{$back_id} = $raw_id; 
