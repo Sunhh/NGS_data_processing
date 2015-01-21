@@ -434,8 +434,10 @@ sub tbl2ped {
 sub tbl2seq {
 	my $self = shift; 
 	my %parm = @_; 
+	&tsmsg("[Msg] Preparing data.\n"); 
 	defined $self->{'data_arr'} or $self->readTbl(); 
 	$parm{'onlyATGC'} = $parm{'onlyATGC'} // 0; 
+	&tsmsg("[Msg] Formatting data.\n"); 
 	( defined $self->{'is_single'} and $self->{'is_single'} == 1 ) or $self->SingleCharData('onlyATGC'=>$parm{'onlyATGC'}); 
 	my $ofh = ( defined $parm{'ofile'} ) ? &openFH($parm{'ofile'}, '>') : \*STDOUT ; 
 	$parm{'rm_noVar'} = $parm{'rm_noVar'} // 0; 
@@ -451,6 +453,7 @@ sub tbl2seq {
 	}
 	$parm{'rm_noVar'} and $self->rm_noVar(); 
 	
+	&tsmsg("[Msg] Generating sequences.\n"); 
 	my @hh = @{$self->{'title'}}; # Sequence's IDs 
 	my @seqs;                     # Sequences string. 
 	my ($n_tax, $n_char) = (0,0); 
@@ -532,6 +535,7 @@ HH
 			print {$oMfh} join("\t", $chrNum, "s${chrNum}_${posNum}", 0, $posNum)."\n"; 
 		}
 		close ($oMfh); 
+		&tsmsg("[Msg] omapfile=$parm{'omapfile'} written.\n"); 
 		
 		for (my $i=0; $i<@hh; $i++) {
 			my $pedID = $hh[$i]; 
@@ -620,7 +624,7 @@ sub cnt_genotype {
 			$tb eq 'N' and do { $lmiss++; $imiss[$i_idx]++; next; }; 
 			( $tb =~ m/\*/ or $tb =~ m/\+/) and next; 
 			length($tb) <= 2 or next; 
-			defined $IUPAC_b2d{$tb} or next; 
+			defined $IUPAC_b2d{$tb} or do { $lmiss++; $imiss[$i_idx]++; next; }; 
 			my @tc = @{$IUPAC_d2b{ $IUPAC_b2d{$tb} }}; 
 			if ( scalar(@tc) == 1 ) {
 				$cnt{$tc[0]} += 2; 
@@ -630,7 +634,7 @@ sub cnt_genotype {
 				$cnt{$tc[1]} ++; 
 				$sum += 2; 
 			} else {
-				die "tb=$tb\n"; 
+				$lmiss++; $imiss[$i_idx]++; next; 
 			}
 		}
 		push(@{$self->{'cnt_alleleCnt'}}, \%cnt);   # {[ATGC]=>value} recording counts of allele, 
