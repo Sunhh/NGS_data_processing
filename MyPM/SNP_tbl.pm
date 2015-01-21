@@ -434,8 +434,10 @@ sub tbl2ped {
 sub tbl2seq {
 	my $self = shift; 
 	my %parm = @_; 
+	&tsmsg("[Msg] Preparing data.\n"); 
 	defined $self->{'data_arr'} or $self->readTbl(); 
 	$parm{'onlyATGC'} = $parm{'onlyATGC'} // 0; 
+	&tsmsg("[Msg] Formatting data.\n"); 
 	( defined $self->{'is_single'} and $self->{'is_single'} == 1 ) or $self->SingleCharData('onlyATGC'=>$parm{'onlyATGC'}); 
 	my $ofh = ( defined $parm{'ofile'} ) ? &openFH($parm{'ofile'}, '>') : \*STDOUT ; 
 	$parm{'rm_noVar'} = $parm{'rm_noVar'} // 0; 
@@ -451,6 +453,7 @@ sub tbl2seq {
 	}
 	$parm{'rm_noVar'} and $self->rm_noVar(); 
 	
+	&tsmsg("[Msg] Generating sequences.\n"); 
 	my @hh = @{$self->{'title'}}; # Sequence's IDs 
 	my @seqs;                     # Sequences string. 
 	my ($n_tax, $n_char) = (0,0); 
@@ -532,6 +535,7 @@ HH
 			print {$oMfh} join("\t", $chrNum, "s${chrNum}_${posNum}", 0, $posNum)."\n"; 
 		}
 		close ($oMfh); 
+		&tsmsg("[Msg] omapfile=$parm{'omapfile'} written.\n"); 
 		
 		for (my $i=0; $i<@hh; $i++) {
 			my $pedID = $hh[$i]; 
