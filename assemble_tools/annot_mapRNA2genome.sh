@@ -48,11 +48,11 @@ then
 	inRd1=""
 	for tmpID in ${files[@]}
 	do
-		if [ -n $inRd1 ]
+		if [ $inRd1 != "" ]
 		then
-			inRd1="${inRd1},$inDir$tmpID"
+			inRd1="${inRd1},$tmpID"
 		else
-			inRd1="$inDir$tmpID"
+			inRd1="$tmpID"
 		fi
 	done
 	# Running programs. 
