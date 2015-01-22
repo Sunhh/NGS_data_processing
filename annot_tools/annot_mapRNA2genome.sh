@@ -26,7 +26,7 @@ para_cl="-p $cpuN --min-intron-length 30 --min-frags-per-transfrag 5 "
 
 inDir="reads"
 inFileLis="inFileLis"
-if [ $inDir != "" ]
+if [ "$inDir" != "" ]
 then
 	inDir="$inDir/"
 fi
@@ -39,16 +39,16 @@ done <"$inFileLis"
 
 ### Running 
 # Yi recommanded to merge all reads together and run tophat only one time. 
-if [ $mode == "pair" ]
+if [ "$mode" == "pair" ]
 then
 	exit 1; 
-elif [ $mode = "single" ]
+elif [ "$mode" = "single" ]
 then
 	# Prepare input reads' list 
 	inRd1=""
 	for tmpID in ${files[@]}
 	do
-		if [ $inRd1 != "" ]
+		if [ "$inRd1" != "" ]
 		then
 			inRd1="${inRd1},$tmpID"
 		else
