@@ -10,22 +10,22 @@ function tsmsg {
 }
 
 ### Settings of EXEs 
-dirCuff="/home/Sunhh/src/Annotation/Cufflinks/cufflinks-2.2.1.Linux_x86_64"
+dirCuff="/data/Sunhh/src/Annot/Cufflinks/cufflinks-2.2.1.Linux_x86_64"
 path_tophat2="tophat2"
 
 mode="single"
 
 ### Settings of Personal data
-cpuN=15
-dbBwt2="db/P1Genom_Gt5h.scf.fa"
+cpuN=60
+dbBwt2="db/PG1All_v2_Scf.unmask.fa"
 dbTag="toP1G"
 
-oPref="AllToP1G"
-para_th="-p $cpuN --library-type=fr-firststrand --read-mismatches 0 --splice-mismatches 0 --min-intron-length 30"
+oPref="AllToPG1"
+para_th="-p $cpuN --library-type=fr-firststrand --read-mismatches 1 --splice-mismatches 0 --min-intron-length 30"
 para_cl="-p $cpuN --min-intron-length 30 --min-frags-per-transfrag 5 "
 
 inDir="reads"
-inFileLis="inFileLis"
+inFileLis="cult_inLis"
 if [ "$inDir" != "" ]
 then
 	inDir="$inDir/"
