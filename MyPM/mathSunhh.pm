@@ -12,6 +12,7 @@ our @EXPORT = qw(ins_calc ovl_len);
 our @EXPORT_OK = qw();
 
 
+# Function : return overlapped length of to regions [$s1,$e1] and [$s2,$e2]
 sub ovl_len {
 	my ($s1, $e1, $s2, $e2) = @_; 
 	($s1, $e1) = sort {$a <=> $b} ($s1, $e1); 
@@ -26,6 +27,8 @@ sub ovl_len {
 sub min {
 	my $min = shift; 
 	for (@_) {
+		defined $_ or next; 
+		defined $min or $min = $_; 
 		$min > $_ and $min = $_; 
 	}
 	return $min; 
@@ -33,6 +36,8 @@ sub min {
 sub max {
 	my $max = shift; 
 	for (@_) {
+		defined $_ or next; 
+		defined $max or $max = $_; 
 		$max < $_ and $max = $_; 
 	}
 	return $max; 
