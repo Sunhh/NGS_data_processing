@@ -32,6 +32,7 @@ GetOptions(\%opts,
 	"protKLfile:s", "onlyComplete!", 
 	"noAddTgt!", 
 	"outFile:s", 
+	"outAug!", 
 ); 
 
 sub usage {
@@ -43,6 +44,8 @@ sub usage {
 # -onlyComplete   Only output complete aligned models. 
 #
 # -noAddTgt       Not add target_name to mRNA element again. 
+#
+# -outAug         Output augustus format gff for training with gff2gbSmallDNA.pl. 
 # 
 # -outFile        [filename] file to create and write. 
 ##########################################################################################
@@ -67,6 +70,7 @@ if ( defined $opts{'protKLfile'} or defined $opts{'onlyComplete'} ) {
 my $oFH = ( defined $opts{'outFile'} ) ? &openFH($opts{'outFile'}, '>') : \*STDOUT ; 
 
 my @geneLines; 
+my $mID = ''; 
 while (<>) {
 	m/^#/ and next; 
 	m/^\s*$/ and next; 
@@ -79,16 +83,28 @@ while (<>) {
 			&rm_bad1st(\@geneLines); 
 			&writeComplete($oFH, \@geneLines, \%k2l_prot, $opts{'onlyComplete'});
 			@geneLines = (); 
+			$mID = ''; 
 		}
-		$ta[8] =~ s!^ID=([^\s;]+)(?:;Parent=([^\s;]+))?(?:;Name=([^\s;]+))?;?$!ID=$1! or &stopErr("[Err] 2: $_\n"); 
-		$ta[1] = "blastx"; 
-		$ta[2] = "protein_match"; 
-		push(@geneLines, [[@ta], '']); 
+		if ( $opts{'outAug'} ) {
+			$ta[8] =~ s!^ID=([^\s;]+)(?:;Parent=([^\s;]+))?(?:;Name=([^\s;]+))?;?$!transcript_id \"$1\"! or &stopErr("[Err] 2: $_\n"); 
+			$mID = $1; 
+			push(@geneLines, [[@ta], '']); 
+		} else {
+			$ta[8] =~ s!^ID=([^\s;]+)(?:;Parent=([^\s;]+))?(?:;Name=([^\s;]+))?;?$!ID=$1! or &stopErr("[Err] 2: $_\n"); 
+			$ta[1] = "blastx"; 
+			$ta[2] = "protein_match"; 
+			push(@geneLines, [[@ta], '']); 
+		}
 	} elsif ( $ta[2] eq 'cds' or $ta[2] eq 'match_part' ) {
-		$ta[8] =~ s!^(ID=[^\s;]+;Parent=[^\s;]+)(?:;Name=[^\s;]+)?(;Target=(\S+) (\d+) (\d+) [+-]);?$!$1$2! or &stopErr("[Err] 5: $_\n"); 
-		$ta[1] = "blastx"; 
-		$ta[2] = "match_part"; 
-		push(@geneLines, [[@ta], $3, [$4, $5] ]); 
+		if ( $opts{'outAug'} ) {
+			$ta[8] =~ s!^(?:ID=[^\s;]+;)?Parent=([^\s;]+)(?:;Name=[^\s;]+)?(;Target=(\S+) (\d+) (\d+) [+-]);?$!transcript_id \"$1\"$2! or &stopErr("[Err] 5: $_\n"); 
+			push(@geneLines, [[@ta], $3, [$4, $5] ]); 
+		} else {
+			$ta[8] =~ s!^(ID=[^\s;]+;Parent=[^\s;]+)(?:;Name=[^\s;]+)?(;Target=(\S+) (\d+) (\d+) [+-]);?$!$1$2! or &stopErr("[Err] 5: $_\n"); 
+			$ta[1] = "blastx"; 
+			$ta[2] = "match_part"; 
+			push(@geneLines, [[@ta], $3, [$4, $5] ]); 
+		}
 	} else {
 		$ta[2] eq 'gene' and next; 
 		&stopErr("[Err] 1: $_\n"); 
