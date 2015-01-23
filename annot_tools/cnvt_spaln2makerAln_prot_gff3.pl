@@ -30,6 +30,7 @@ my %opts;
 GetOptions(\%opts, 
 	"help!", 
 	"protKLfile:s", "onlyComplete!", 
+	"noAddTgt!", 
 	"outFile:s", 
 ); 
 
@@ -40,6 +41,8 @@ sub usage {
 #
 # -protKLfile     [filename] key\\tlength for protein. 
 # -onlyComplete   Only output complete aligned models. 
+#
+# -noAddTgt       Not add target_name to mRNA element again. 
 # 
 # -outFile        [filename] file to create and write. 
 ##########################################################################################
@@ -70,19 +73,19 @@ while (<>) {
 	m/^>/ and last; 
 	chomp; 
 	my @ta = split(/\t/, $_); 
-	if ( $ta[2] eq 'mRNA' ) {
+	if ( $ta[2] eq 'mRNA' or $ta[2] eq 'protein_match' ) {
 		if ( scalar(@geneLines) > 0 ) {
-			&add_tgt(\@geneLines); 
+			$opts{'noAddTgt'} or &add_tgt(\@geneLines); 
 			&rm_bad1st(\@geneLines); 
 			&writeComplete($oFH, \@geneLines, \%k2l_prot, $opts{'onlyComplete'});
 			@geneLines = (); 
 		}
-		$ta[8] =~ s!^ID=([^\s;]+);Parent=([^\s;]+);Name=([^\s;]+)$!ID=$1! or &stopErr("[Err] 2: $_\n"); 
+		$ta[8] =~ s!^ID=([^\s;]+)(?:;Parent=([^\s;]+))?(?:;Name=([^\s;]+))?;?$!ID=$1! or &stopErr("[Err] 2: $_\n"); 
 		$ta[1] = "blastx"; 
 		$ta[2] = "protein_match"; 
 		push(@geneLines, [[@ta], '']); 
-	} elsif ( $ta[2] eq 'cds' ) {
-		$ta[8] =~ s!^(ID=[^\s;]+;Parent=[^\s;]+;)Name=[^\s;]+;(Target=(\S+) (\d+) (\d+) [+-])$!$1$2! or &stopErr("[Err] 5: $_\n"); 
+	} elsif ( $ta[2] eq 'cds' or $ta[2] eq 'match_part' ) {
+		$ta[8] =~ s!^(ID=[^\s;]+;Parent=[^\s;]+)(?:;Name=[^\s;]+)?(;Target=(\S+) (\d+) (\d+) [+-]);?$!$1$2! or &stopErr("[Err] 5: $_\n"); 
 		$ta[1] = "blastx"; 
 		$ta[2] = "match_part"; 
 		push(@geneLines, [[@ta], $3, [$4, $5] ]); 
@@ -93,7 +96,7 @@ while (<>) {
 }
 
 if ( scalar(@geneLines) > 0 ) {
-	&add_tgt(\@geneLines); 
+	$opts{'noAddTgt'} or &add_tgt(\@geneLines); 
 	&rm_bad1st(\@geneLines); 
 	&writeComplete($oFH, \@geneLines, \%k2l_prot, $opts{'onlyComplete'});
 	@geneLines = (); 
@@ -110,7 +113,7 @@ sub writeComplete {
 
 		my $prevE = 0;
 		for ( my $i=1; $i<@$ar; $i++ ) {
-			$ar->[$i][0][8] =~ m/;Target=$tgt (\d+) (\d+) [+\-]\s*$/ or &stopErr("[Err] 2: $ar->[$i][0][8]\n");
+			$ar->[$i][0][8] =~ m/;Target=$tgt (\d+) (\d+) [+\-][\s;]*$/ or &stopErr("[Err] 2: $ar->[$i][0][8]\n");
 			my ($curS, $curE) = ($1, $2);
 			$curS == $prevE + 1 or do { $is_complete = 0; last; } ;
 			$prevE = $curE;
