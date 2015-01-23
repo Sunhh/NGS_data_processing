@@ -22,8 +22,46 @@
 use strict; 
 use warnings; 
 use LogInforSunhh; 
+use Getopt::Long; 
+use fileSunhh; 
 
--t and !@ARGV and die "perl $0 in.spaln.gff3\n"; 
+my %opts; 
+
+GetOptions(\%opts, 
+	"help!", 
+	"protKLfile:s", "onlyComplete!", 
+	"outFile:s", 
+); 
+
+sub usage {
+	print <<UU;
+##########################################################################################
+# perl $0 in.spaln.gff3
+#
+# -protKLfile     [filename] key\\tlength for protein. 
+# -onlyComplete   Only output complete aligned models. 
+# 
+# -outFile        [filename] file to create and write. 
+##########################################################################################
+UU
+	exit 1; 
+}
+
+-t and !@ARGV and &usage(); 
+$opts{'help'} and &usage(); 
+
+my %k2l_prot; 
+if ( defined $opts{'protKLfile'} or defined $opts{'onlyComplete'} ) {
+	my $fh = &openFH( $opts{'protKLfile'}, '<' ); 
+	while (<$fh>) {
+		chomp; m/^\s*$/ and next; 
+		my @ta = split(/\t/, $_); 
+		$k2l_prot{$ta[0]} = $ta[1]; 
+	}
+	close($fh); 
+}
+
+my $oFH = ( defined $opts{'outFile'} ) ? &openFH($opts{'outFile'}, '>') : \*STDOUT ; 
 
 my @geneLines; 
 while (<>) {
@@ -36,9 +74,7 @@ while (<>) {
 		if ( scalar(@geneLines) > 0 ) {
 			&add_tgt(\@geneLines); 
 			&rm_bad1st(\@geneLines); 
-			for my $ar (@geneLines) {
-				print STDOUT join("\t", @{$ar->[0]}) . "\n"; 
-			}
+			&writeComplete($oFH, \@geneLines, \%k2l_prot, $opts{'onlyComplete'});
 			@geneLines = (); 
 		}
 		$ta[8] =~ s!^ID=([^\s;]+);Parent=([^\s;]+);Name=([^\s;]+)$!ID=$1! or &stopErr("[Err] 2: $_\n"); 
@@ -59,11 +95,37 @@ while (<>) {
 if ( scalar(@geneLines) > 0 ) {
 	&add_tgt(\@geneLines); 
 	&rm_bad1st(\@geneLines); 
-	for my $ar (@geneLines) {
-		print STDOUT join("\t", @{$ar->[0]}) . "\n"; 
-	}
+	&writeComplete($oFH, \@geneLines, \%k2l_prot, $opts{'onlyComplete'});
 	@geneLines = (); 
 }
+
+sub writeComplete {
+	my ($fh, $ar, $hr_prot, $should_complete) = @_; 
+	( defined $should_complete and $should_complete ) or $should_complete = 0; 
+
+	my $tgt = $ar->[1][1]; 
+	if ( $should_complete ) {
+		( defined $hr_prot->{$tgt} and $hr_prot->{$tgt} > 0 ) or &stopErr("[Err] tgt [$tgt] length err.\n");
+		my $is_complete = 1;
+
+		my $prevE = 0;
+		for ( my $i=1; $i<@$ar; $i++ ) {
+			$ar->[$i][0][8] =~ m/;Target=$tgt (\d+) (\d+) [+\-]\s*$/ or &stopErr("[Err] 2: $ar->[$i][0][8]\n");
+			my ($curS, $curE) = ($1, $2);
+			$curS == $prevE + 1 or do { $is_complete = 0; last; } ;
+			$prevE = $curE;
+		}
+		$prevE == $hr_prot->{$tgt} or $is_complete = 0;
+		$is_complete == 0 and return; 
+	}
+
+	for (my $i=0; $i<@$ar; $i++) {
+		print {$fh} join("\t", @{$ar->[$i][0]})."\n";
+	}
+	return 0;
+}
+
+
 
 sub add_tgt {
 	my $ar = shift; 
