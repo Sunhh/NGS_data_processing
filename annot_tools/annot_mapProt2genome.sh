@@ -57,4 +57,6 @@ do
 	medGff+=("${qryFa}.med.gff3")
 done
 
-exe_cmd "gff3_merge -l -o all_spaln2genom_prot.fmt.gff3 ${medGff[@]}"
+medGffLine="${medGff[@]}"
+exe_cmd "gff3_merge -l -o $outFmtGff $medGffLine"
+
