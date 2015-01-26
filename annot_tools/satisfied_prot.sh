@@ -10,7 +10,7 @@ function tsmsg {
 }
 
 pl_bpTrans=$HOME/tools/github/NGS_data_processing/bp0_2_bp6.pl
-pl_slctGff=$HOME/tools/github/NGS_data_processing/assemble_tools/slct_maker_gff3.pl
+pl_slctGff=$HOME/tools/github/NGS_data_processing/annot_tools/slct_maker_gff3.pl
 
 dbPath=prot_db/uniprot_sprot_plants.fas
 dbTag="Sprot"
