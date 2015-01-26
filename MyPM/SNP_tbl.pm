@@ -448,7 +448,9 @@ sub tbl2seq {
 	$parm{'fmt'} = $parm{'fmt'} // 'fasta'; 
 	defined $self->{'chrIDrel'} and $self->{'chrIDrel'} = {}; 
 	if ( $parm{'fmt'} =~ m/^ped$/i ) {
+		&tsmsg("[Msg] Limiting only two alleles per site.\n"); 
 		$self->max2Allele('force_single'=>1); # 
+		&tsmsg("[Msg] Removing no variation sites.\n"); 
 		$self = $self->rm_noVar(); 
 		$parm{'omapfile'} = $parm{'omapfile'} // 'oo.map' ; 
 	}
@@ -471,6 +473,7 @@ sub tbl2seq {
 	}
 	
 	### Different format to output. 
+	&tsmsg("[Msg] Output files.\n"); 
 	if ($parm{'fmt'} =~ m/^fa(?:s(?:ta))?$/i) {
 		for (my $i=0; $i<@hh; $i++) {
 			my $ts = $seqs[$i]; 
