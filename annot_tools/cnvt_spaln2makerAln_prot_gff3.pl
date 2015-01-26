@@ -32,6 +32,8 @@ GetOptions(\%opts,
 	"protKLfile:s", "onlyComplete!", 
 	"noAddTgt!", 
 	"outFile:s", 
+	"outAug!", 
+	"scafKLfile:s", "trimOverflow!", 
 ); 
 
 sub usage {
@@ -43,6 +45,11 @@ sub usage {
 # -onlyComplete   Only output complete aligned models. 
 #
 # -noAddTgt       Not add target_name to mRNA element again. 
+#
+# -outAug         Output augustus format gff for training with gff2gbSmallDNA.pl. 
+#
+# -trimOverflow   Remove scaffold regions overflowing the maximum length of scaffold. 
+# -scafKLfile     [filename] key\\tlength for scaffold. 
 # 
 # -outFile        [filename] file to create and write. 
 ##########################################################################################
@@ -52,6 +59,17 @@ UU
 
 -t and !@ARGV and &usage(); 
 $opts{'help'} and &usage(); 
+
+my %k2l_scaf; 
+if ( defined $opts{'scafKLfile'} or defined $opts{'trimOverflow'} ) {
+	my $fh = &openFH( $opts{'scafKLfile'}, '<' ); 
+	while (<$fh>) {
+		chomp; m/^\s*$/ and next; 
+		my @ta = split(/\t/, $_); 
+		$k2l_scaf{$ta[0]} = $ta[1]; 
+	}
+	close($fh); 
+}
 
 my %k2l_prot; 
 if ( defined $opts{'protKLfile'} or defined $opts{'onlyComplete'} ) {
@@ -67,6 +85,7 @@ if ( defined $opts{'protKLfile'} or defined $opts{'onlyComplete'} ) {
 my $oFH = ( defined $opts{'outFile'} ) ? &openFH($opts{'outFile'}, '>') : \*STDOUT ; 
 
 my @geneLines; 
+my $mID = ''; 
 while (<>) {
 	m/^#/ and next; 
 	m/^\s*$/ and next; 
@@ -77,18 +96,31 @@ while (<>) {
 		if ( scalar(@geneLines) > 0 ) {
 			$opts{'noAddTgt'} or &add_tgt(\@geneLines); 
 			&rm_bad1st(\@geneLines); 
-			&writeComplete($oFH, \@geneLines, \%k2l_prot, $opts{'onlyComplete'});
+			$opts{'trimOverflow'} and &trim_overflow(\@geneLines, \%k2l_scaf, $opts{'trimOverflow'}); 
+			&writeComplete($oFH, \@geneLines, \%k2l_prot, $opts{'onlyComplete'}); 
 			@geneLines = (); 
+			$mID = ''; 
 		}
-		$ta[8] =~ s!^ID=([^\s;]+)(?:;Parent=([^\s;]+))?(?:;Name=([^\s;]+))?;?$!ID=$1! or &stopErr("[Err] 2: $_\n"); 
-		$ta[1] = "blastx"; 
-		$ta[2] = "protein_match"; 
-		push(@geneLines, [[@ta], '']); 
+		if ( $opts{'outAug'} ) {
+			$ta[8] =~ s!^ID=([^\s;]+)(?:;Parent=([^\s;]+))?(?:;Name=([^\s;]+))?;?$!transcript_id \"$1\"! or &stopErr("[Err] 2: $_\n"); 
+			$mID = $1; 
+			push(@geneLines, [[@ta], '']); 
+		} else {
+			$ta[8] =~ s!^ID=([^\s;]+)(?:;Parent=([^\s;]+))?(?:;Name=([^\s;]+))?;?$!ID=$1! or &stopErr("[Err] 2: $_\n"); 
+			$ta[1] = "blastx"; 
+			$ta[2] = "protein_match"; 
+			push(@geneLines, [[@ta], '']); 
+		}
 	} elsif ( $ta[2] eq 'cds' or $ta[2] eq 'match_part' ) {
-		$ta[8] =~ s!^(ID=[^\s;]+;Parent=[^\s;]+)(?:;Name=[^\s;]+)?(;Target=(\S+) (\d+) (\d+) [+-]);?$!$1$2! or &stopErr("[Err] 5: $_\n"); 
-		$ta[1] = "blastx"; 
-		$ta[2] = "match_part"; 
-		push(@geneLines, [[@ta], $3, [$4, $5] ]); 
+		if ( $opts{'outAug'} ) {
+			$ta[8] =~ s!^(?:ID=[^\s;]+;)?Parent=([^\s;]+)(?:;Name=[^\s;]+)?(;Target=(\S+) (\d+) (\d+) [+-]);?$!transcript_id \"$1\"$2! or &stopErr("[Err] 5: $_\n"); 
+			push(@geneLines, [[@ta], $3, [$4, $5] ]); 
+		} else {
+			$ta[8] =~ s!^(ID=[^\s;]+;Parent=[^\s;]+)(?:;Name=[^\s;]+)?(;Target=(\S+) (\d+) (\d+) [+-]);?$!$1$2! or &stopErr("[Err] 5: $_\n"); 
+			$ta[1] = "blastx"; 
+			$ta[2] = "match_part"; 
+			push(@geneLines, [[@ta], $3, [$4, $5] ]); 
+		}
 	} else {
 		$ta[2] eq 'gene' and next; 
 		&stopErr("[Err] 1: $_\n"); 
@@ -98,6 +130,7 @@ while (<>) {
 if ( scalar(@geneLines) > 0 ) {
 	$opts{'noAddTgt'} or &add_tgt(\@geneLines); 
 	&rm_bad1st(\@geneLines); 
+	$opts{'trimOverflow'} and &trim_overflow(\@geneLines, \%k2l_scaf, $opts{'trimOverflow'}); 
 	&writeComplete($oFH, \@geneLines, \%k2l_prot, $opts{'onlyComplete'});
 	@geneLines = (); 
 }
@@ -128,7 +161,32 @@ sub writeComplete {
 	return 0;
 }
 
+sub trim_overflow {
+	my ($ar, $hr_scaf, $should_trim) = @_; 
+	( defined $should_trim and $should_trim ) or $should_trim = 0; 
 
+	$should_trim == 0 and return 0;
+
+	my ($gen_s, $gen_e); 
+	my $scaf_id = $ar->[0][0][0]; 
+	defined $hr_scaf->{$scaf_id} or &stopErr("[Err] No length for scaffold [$scaf_id]\n"); 
+	my $scaf_len = $hr_scaf->{$scaf_id}; 
+	for (my $i=1; $i<@$ar; $i++) {
+		if ( $ar->[$i][0][3] > $scaf_len ) {
+			&tsmsg("[Err] We met a bad element!\n"); 
+			&tsmsg("[Err] scaff_len{$scaf_id} = $scaf_len\n"); 
+			&tsmsg("[Err] ", join("\t", @{$ar->[$i][0]}), "\n"); 
+			&stopErr("[Err] \n"); 
+		} elsif ( $ar->[$i][0][4] > $scaf_len ) {
+			$ar->[$i][0][4] = $scaf_len ; 
+		}
+		defined $gen_s or $gen_s = $ar->[$i][0][3]; 
+		defined $gen_e or $gen_e = $ar->[$i][0][4]; 
+		$gen_s < $ar->[$i][0][3] and $gen_s = $ar->[$i][0][3]; 
+		$gen_e > $ar->[$i][0][4] and $gen_e = $ar->[$i][0][4]; 
+	}
+	return 0; 
+}# trim_overflow
 
 sub add_tgt {
 	my $ar = shift; 
