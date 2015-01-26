@@ -46,8 +46,8 @@ exe_cmd "perl $pl_randSplit $in_gb $testNum"
 exe_cmd "perl $pl_newSpec --species=$orgName"
 #echo "vim /workdir/laopopo/src/Annot/maker/maker/exe/augustus/config/species/$orgName/${orgName}_parameters.cfg"
 #echo "Set stopCodonExcludedFromCDS to false , because our self genbank includes stop codon."
-exe_cmd "$exe_etrain --species=$orgName --stopCodonExcludedFromCDS=false ${in_gb}.train 1>etrain_train.std 2>etrain_train.err"
 #exe_cmd "perl $pl_optPara --cpus=50 --species=$orgName ${in_gb}.train 1>opt_train.std 2>opt_train.err"
+exe_cmd "$exe_etrain --species=$orgName --stopCodonExcludedFromCDS=false ${in_gb}.train 1>etrain_train.std 2>etrain_train.err"
 
 ## Test the first model by an ab initial prediction
 exe_cmd "$exe_augustus --species=$orgName ${in_gb}.test > goodTrain_dbGood_firsttest.out"
