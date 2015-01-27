@@ -7,10 +7,101 @@ package mathSunhh;
 use strict; 
 use warnings; 
 use Statistics::Descriptive; 
+use Scalar::Util qw(looks_like_number);
 use Exporter qw(import);
 our @EXPORT = qw(ins_calc ovl_len);
 our @EXPORT_OK = qw();
 
+
+############################################################
+#  Methods
+############################################################
+
+sub new {
+	my $class = shift; 
+	my $self = {}; 
+	bless $self, $class; 
+	
+	$self->_initialize(); 
+	
+	return $self; 
+}
+
+sub _initialize {
+	my $self = shift; 
+	my %parm = @_; 
+	return; 
+}
+
+# Function: return a list of windows in hash reference according to given [window_size, window_step, total_start, total_end]
+# return value: \%back_wind; 
+#  'keys'  => values
+#  'info' => {'ttl_start/ttl_end/wind_size/wind_step/minRatio/windSloci' => values} 
+#  'loci'  => {
+#               'wind_start_position' => [start_pos, end_pos, interval_len]
+#             }
+#  
+sub setup_windows {
+	my $self = shift; 
+	my %parm = @_; 
+	$parm{'ttl_start'} = $parm{'ttl_start'} // 1; 
+	$parm{'ttl_end'}   = $parm{'ttl_end'}   // 99999999; 
+	$parm{'wind_size'} = $parm{'wind_size'} // 1000; 
+	$parm{'wind_step'} = $parm{'wind_step'} // $parm{'wind_size'}; 
+	$parm{'minRatio'}  = $parm{'minRatio'}  // 0; 
+	my %back_wind; 
+	for (qw/ttl_start ttl_end wind_size wind_step minRatio/) {
+		$back_wind{'info'}{$_} = $parm{$_}; 
+	}
+	my $min_windSize = int($parm{'minRatio'}*$parm{'wind_size'}); 
+	$min_windSize < $parm{'minRatio'}*$parm{'wind_size'} and $min_windSize ++; 
+	$min_windSize == 0 and $min_windSize = 1;  
+	
+	for (my $si=$parm{'ttl_start'}; $si+$min_windSize-1 <= $parm{'ttl_end'}; $si += $parm{'wind_step'}) {
+		my $ei = $si + $parm{'wind_size'}-1; 
+		$ei > $parm{'ttl_end'} and $ei = $parm{'ttl_end'}; 
+		my $cur_len = $ei-$si+1; 
+		$back_wind{'loci'}{$si} = [$si, $ei, $cur_len]; 
+		push(@{$back_wind{'info'}{'windSloci'}}, $si); 
+	}
+	return \%back_wind; 
+}# sub setup_windows
+
+# Function: given a position, return an array reference recording all start_positions of windows that this position locates in. 
+# return values: \@back_si = [si_1, si_2, si_3, ...]
+#  Here "si" should be a key of %{$parm{'wind_hash'}{loci}}; 
+sub map_windows {
+	my $self = shift; 
+	my %parm = @_; 
+	my $posi = $parm{'posi'} // $parm{'position'} // &stopErr("[Err] No position assigned.\n"); 
+	Scalar::Util::looks_like_number( $posi ) or &stopErr("[Err] input position [$posi] is not like a number.\n"); 
+	$posi = int($posi); 
+	if (defined $parm{'wind_hash'}) {
+		for ( qw/ttl_start ttl_end wind_size wind_step minRatio/ ) {
+			$parm{$_} = $parm{$_} // $parm{'wind_hash'}{'info'}{$_} // undef(); 
+		}
+	}
+	$parm{'ttl_start'} = $parm{'ttl_start'} // 1; 
+	$parm{'ttl_end'}   = $parm{'ttl_end'}   // 99999999; 
+	$parm{'wind_size'} = $parm{'wind_size'} // 1000; 
+	$parm{'wind_step'} = $parm{'wind_step'} // $parm{'wind_size'}; 
+	$parm{'minRatio'}  = $parm{'minRatio'}  // 0; 
+	
+	my @back_si; 
+	my $resid = ($posi-$parm{'ttl_start'}) % $parm{'wind_step'}; 
+	my $end_si = $posi - $resid; 
+	
+	my $min_windSize = int($parm{'minRatio'}*$parm{'wind_size'}); 
+	$min_windSize < $parm{'minRatio'}*$parm{'wind_size'} and $min_windSize ++; 
+	$min_windSize == 0 and $min_windSize = 1;  
+	
+	for (my $si=$end_si; $si+$parm{'wind_size'}-1>=$posi && $si >= $parm{'ttl_start'}; $si-=$parm{'wind_step'}) {
+		$si+$min_windSize-1 <= $parm{'ttl_end'} or next; 
+		push(@back_si, $si); 
+	}
+	
+	return \@back_si; 
+}# sub map_windows 
 
 # Function : return overlapped length of to regions [$s1,$e1] and [$s2,$e2]
 sub ovl_len {

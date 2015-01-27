@@ -671,6 +671,72 @@ sub skipLine {
 }# sub skipLine
 
 #######################################################
+# Independent methods. 
+#######################################################
+
+#  Check if there is any variant in given \@array, and return 0-noVariant 1-HasVariant; 
+#  Input ( 'arr'  =>["AA", "a", "N", "*", "A+C", ...], 
+#          'mode' =>'single/skipN'/'skipIndel'/'skipHete'/
+#        )
+sub chk_VarInArray {
+	my $self = shift; 
+	my %parm = @_; 
+	defined $parm{'arr'} or &stopErr("[Err] No array information asigned.\n"); 
+	my @arr = @{$parm{'arr'}}; 
+	$parm{'mode'} = $parm{'mode'} // 'simple'; 
+	$parm{'mode'} = lc($parm{'mode'}); 
+	if ( $parm{'mode'} eq 'simple' or $parm{'mode'} eq 'skipn' ) {
+		my $baseRef = ''; 
+		my $is_var = 0; 
+		for (@arr) {
+			$_ =~ m/n/i and next; 
+			$_ = uc(@_); 
+			$baseRef eq '' and $baseRef = $_; 
+			$baseRef ne $_ and do { $is_var = 1; last; }; 
+		}
+		return $is_var; 
+	} elsif ( $parm{'mode'} eq 'skipindel' ) {
+		my $baseRef = ''; 
+		my $is_var = 0; 
+		for (@arr) {
+			$_ =~ m/n/i and next; 
+			$_ =~ m/\*|\+/i and next; 
+			$_ = uc(@_); 
+			$baseRef eq '' and $baseRef = $_; 
+			$baseRef ne $_ and do { $is_var = 1; last; }; 
+		}
+		return $is_var; 
+	} elsif ( $parm{'mode'} eq 'skiphete' ) {
+		my $baseRef = ''; 
+		my $is_var = 0; 
+		for (@arr) {
+			$_ =~ m/n/i and next; 
+			$_ =~ m/^[ATGC]\1*$/i or next; 
+			$_ = uc(@_); 
+			$baseRef eq '' and $baseRef = $_; 
+			$baseRef ne $_ and do { $is_var = 1; last; }; 
+		}
+		return $is_var; 
+	} elsif ( $parm{'mode'} eq 'onlyhomo' or $parm{'mode'} eq 'skipindelhete' or $parm{'mode'} eq 'skipheteindel' ) {
+		my $baseRef = ''; 
+		my $is_var = 0; 
+		for (@arr) {
+			$_ =~ m/n/i and next; 
+			$_ =~ m/\*|\+/i and next; 
+			$_ =~ m/^[ATGC]\1*$/i or next; 
+			$_ = uc(@_); 
+			$baseRef eq '' and $baseRef = $_; 
+			$baseRef ne $_ and do { $is_var = 1; last; }; 
+		}
+		return $is_var; 
+	} else {
+		&stopErr("[Err] Bad mode type [$parm{'mode'}].\n"); 
+	}
+	return undef(); 
+}# sub rm_noVar () 
+
+
+#######################################################
 # Internal sub-routine. 
 #######################################################
 
