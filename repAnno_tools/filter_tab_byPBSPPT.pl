@@ -25,7 +25,7 @@ while (<>) {
 	my ($eleID, $seqID, $scfID) = @ta[0,4,15]; 
 	my $pbs_olap = &olapLen( $inner_s, $inner_e, $pbs_s, $pbs_e ); 
 	my $ppt_olap = &olapLen( $inner_s, $inner_e, $ppt_s, $ppt_e ); 
-	my $pbs_dist = &minDist( $inner_s, $inner_e, $pbs_s, $pbs_e ); 
+	my $pbs_dist = &minDist( $inner_s, $inner_e, $pbs_s, $pbs_e ); # Here I use internal_region start/end to measure distance, because internal_region is 1bp close to the LTR_region boundary. 
 	my $ppt_dist = &minDist( $inner_s, $inner_e, $ppt_s, $ppt_e ); 
 	my $is_good = 0; 
 	&good_lt( $pbs_dist, $max_dist_to_ltr ) and &good_gt( $pbs_olap, $minR_inInclRegion * ($pbs_e-$pbs_s+1) ) and $is_good = 1; 
