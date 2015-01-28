@@ -9,26 +9,54 @@ use LogInforSunhh;
 use Exporter qw(import);
 
 # our @EXPORT = qw(tsmsg stopErr exeCmd);
-our @EXPORT = qw(openFH);
+our @EXPORT = qw(openFH renameByPat);
 our @EXPORT_OK = qw();
 
 my %goodFileType = qw(
-	<	read
-	>	write
-	read	read
-	write	write
-	<gz	readGZ
-	>gz	writeGZ
-	<bz2	readBZ2
-	>bz2	writeBZ2
-	readGZ	readGZ
-	writeGZ	writeGZ
-	readBZ2	readBZ2
-	writeBZ2	writeBZ2
+	<           read
+	>           write
+	read        read
+	write       write
+	<gz         readGZ
+	>gz         writeGZ
+	<bz2        readBZ2
+	>bz2        writeBZ2
+	readGZ      readGZ
+	writeGZ     writeGZ
+	readBZ2     readBZ2
+	writeBZ2    writeBZ2
 ); 
 
 # Check if there is gzip/bzip2 software in current system. 
 my ($has_gzip, $has_bzip2) = (File::Which::which("gzip"), File::Which::which("bzip2")); 
+
+# Rename files by pattern. 
+# &renameByPat( [$file1, $file2, ...], $old_pattern, $new_pattern )
+#  
+sub renameByPat {
+	my ($infile, $pat_old, $pat_new) = @_; 
+	my @inFiles; 
+	if ( ! (ref($infile)) ) {
+		push(@inFiles, $infile); 
+	} elsif ( ref($infile) eq 'ARRAY' ) {
+		push(@inFiles, @$infile); 
+	} elsif ( ref($infile) eq 'SCALAR' ) {
+		push(@inFiles, $$infile); 
+	} else {
+		&stopErr("[Err] Input file [$infile] not recognized!\n"); 
+	}
+	
+	my @backList; # ( [old_name_1, new_name_1], [old_name_2, new_name_2], ... )
+	for my $infileID ( @inFiles ) {
+		defined $infileID and -e $infileID  or do { &tsmsg("[Err] input file [$infileID] not found. Skipping\n"); next; }; 
+		my $outfileID = $infileID; 
+		$outfileID =~ s!$pat_old!$pat_new!; 
+		&tsmsg("[Msg] Rename file from [$infileID] to [$outfileID] .\n"); 
+		rename($infileID, $outfileID); 
+		push(@backList, [$infileID, $outfileID]); 
+	}
+	return \@backList; 
+}# sub renameByPat() 
 
 
 # Open file and return file handle one at a time. 
