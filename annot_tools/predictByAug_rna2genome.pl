@@ -23,7 +23,7 @@ GetOptions(\%opts,
 	"inDir:s", "inRdLis:s", "faRd!", 
 	"genomFasMsk:s", "genomFasRaw:s", 
 	"oPref:s", 
-	"path_tophat2:s", "mode:s", "dbBwt2:s", "para_th:s", "exex_flank:i", 
+	"path_tophat2:s", "mode:s", "dbBwt2:s", "para_th:s", "para_cl:s", "dir_cuff:s", "exex_flank:i", 
 	"dir_aug:s", "species:s", "chunk_overlap:i", "chunk_size:i", "min_ctg_len:i", "aug_utr!"
 ); 
 $opts{'stepLis'} = $opts{'stepLis'} // ''; 
@@ -35,9 +35,11 @@ $opts{'inDir'} = $opts{'inDir'} // '';
 $opts{'inRdLis'} = $opts{'inRdLis'} // 'cult_inLis' ; 
 $opts{'oPref'} = $opts{'oPref'} // 'oPref'; 
 $opts{'path_tophat2'} = $opts{'path_tophat2'} // 'tophat2'; 
+$opts{'dir_cuff'} = $opts{'dir_cuff'} // "/data/Sunhh/src/Annot/Cufflinks/cufflinks-2.2.1.Linux_x86_64"; 
 $opts{'mode'} = $opts{'mode'} // 'single'; 
 $opts{'dbBwt2'} = $opts{'dbBwt2'} // 'db/bwt2_db'; 
 $opts{'para_th'} = $opts{'para_th'} // "--library-type=fr-firststrand --read-mismatches 1 --splice-mismatches 0 --min-intron-length 30"; 
+$opts{'para_cl'} = $opts{'para_cl'} // "--min-intron-length 30 --min-frags-per-transfrag 5"; 
 $opts{'path_samtools'} = $opts{'path_samtools'} // 'samtools'; 
 $opts{'dir_aug'} = $opts{'dir_aug'} // "/data/Sunhh/src/Annot/maker/maker/exe/augustus"; 
 $opts{'species'} = $opts{'species'} // 'arabidopsis'; 
@@ -135,6 +137,7 @@ if ( defined $need_step{1} ) {
 	# Step1 : Run tophat2 to align all reads to reference genome. 
 	#  Out information from step1 : 
 	#   $step1_oBam = "${step1_oDir}/accepted_hits.bam"; 
+	&if_redo("step1/$opts{'oPref'}_thout/", $step1_oBam) and &exeCmd("$opts{'path_tophat2'} $opts{'para_th'} -o step1/$opts{'oPref'}_thout $opts{'dbBwt2'} "); 
 }# End if ( need_step 1 ) 
 
 my $step2_oAug = 'step1/aug1.out'; 
