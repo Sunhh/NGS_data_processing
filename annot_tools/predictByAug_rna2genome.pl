@@ -97,7 +97,7 @@ HH
 	exit 1; 
 }
 
-$opts{'help'} or &usage(); 
+$opts{'help'} and &usage(); 
 defined $opts{'stepLis'} or &usage(); 
 
 
