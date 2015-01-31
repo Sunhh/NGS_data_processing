@@ -11,6 +11,7 @@ use File::Path qw(make_path remove_tree);
 use IPC::Open3; 
 use Symbol; 
 use Parallel::ForkManager; 
+use Cwd 'abs_path'; 
 
 use Getopt::Long; 
 my %opts; 
@@ -22,7 +23,7 @@ GetOptions(\%opts,
 	"inDir:s", "inRdLis:s", "faRd!", 
 	"genomFasMsk:s", "genomFasRaw:s", 
 	"oPref:s", 
-	"path_tophat2:s", "mode:s", "dbBwt2:s", "para_th:s", 
+	"path_tophat2:s", "mode:s", "dbBwt2:s", "para_th:s", "exex_flank:i", 
 	"dir_aug:s", "species:s", "chunk_overlap:i", "chunk_size:i", "min_ctg_len:i", "aug_utr!"
 ); 
 $opts{'stepLis'} = $opts{'stepLis'} // ''; 
@@ -47,6 +48,7 @@ $opts{'chunk_size'} = $opts{'chunk_size'} // 1000000;
 $opts{'min_ctg_len'} = $opts{'min_ctg_len'} // 200; 
 $opts{'samtools_cpu'} = $opts{'samtools_cpu'} // 1; 
 $opts{'samtools_mem'} = $opts{'samtools_mem'} // ''; 
+$opts{'exex_flank'} = $opts{'exex_flank'} // 150; 
 
 sub usage {
 	print STDOUT <<HH;
@@ -88,6 +90,7 @@ sub usage {
 #   -dbBwt2           [db/bwt2_db] 
 #
 #   -para_th          [--library-type=fr-firststrand --read-mismatches 1 --splice-mismatches 0 --min-intron-length 30]
+#   -exex_flank       [150] Should be no less than read length. 
 #   -chunk_overlap    [50000]
 #   -chunk_size       [1000000]
 #   -min_ctg_len      [200]
@@ -98,7 +101,7 @@ HH
 }
 
 $opts{'help'} and &usage(); 
-defined $opts{'stepLis'} or &usage(); 
+( defined $opts{'stepLis'} and $opts{'stepLis'} ne '' ) or &usage(); 
 
 
 
@@ -108,14 +111,30 @@ for my $tk (split(//, $opts{'stepLis'})) {
 }
 
 
+my @rdFiles; 
+{
+	my $inFh = &openFH($opts{'inRdLis'}, "<"); 
+	while (<$inFh>) {
+		chomp; 
+		my @ta = split(/\s+/, $_); 
+		if ( $ta[0] =~ m!^/! ) {
+			push(@rdFiles, $ta[0]); 
+		} elsif ( defined $opts{'inDir'} and $opts{'inDir'} ne '' ) {
+			# push(@rdFiles, Cwd::abs_path("$opts{'inDir'}/$ta[0]")); 
+			push(@rdFiles, "$opts{'inDir'}/$ta[0]"); 
+		} else {
+			push(@rdFiles, $ta[0]); 
+		}
+	}
+	close ($inFh); 
+}
+
 my $step1_oDir = "step1/$opts{'oPref'}_thout"; 
 my $step1_oBam = "${step1_oDir}/accepted_hits.bam"; 
-my @rdFiles; 
 if ( defined $need_step{1} ) {
 	# Step1 : Run tophat2 to align all reads to reference genome. 
 	#  Out information from step1 : 
 	#   $step1_oBam = "${step1_oDir}/accepted_hits.bam"; 
-	
 }# End if ( need_step 1 ) 
 
 my $step2_oAug = 'step1/aug1.out'; 
@@ -191,7 +210,7 @@ if ( defined $need_step{3} ) {
 	  . " | sort -u > step1/introns.lst "
 	); 
 	# intron2exex.pl --introns=introns.lst --seq=genome.masked.fa --exex=exex.fa --map=map.psl
-	&if_redo("step1/exex.fa", "step1/map.psl") and &exeCmd("$opts{'dir_aug'}/scripts/intron2exex.pl --introns=step1/introns.lst --seq=$opts{'genomFasMsk'} --exex=step1/exex.fa --map=step1/map.psl"); 
+	&if_redo("step1/exex.fa", "step1/map.psl") and &exeCmd("perl $opts{'dir_aug'}/scripts/intron2exex.pl --flank=$opts{'exex_flank'} --introns=step1/introns.lst --seq=$opts{'genomFasMsk'} --exex=step1/exex.fa --map=step1/map.psl"); 
 	# bowtie2-build exex.fa your_species_exex1
 	my @chk_bt2_files; 
 	for my $suff (qw/.1.bt2 .2.bt2 .3.bt2 .4.bt2 .rev.1.bt2 .rev.2.bt2/) {
@@ -201,8 +220,9 @@ if ( defined $need_step{3} ) {
 	# bowtie2 -x your_species_exex1 -U rnaseq.fastq -S bowtie.sam
 	my $smT_para = ''; 
 	$opts{'samtools_cpu'} > 1 and $smT_para .= " -\@ $opts{'samtools_cpu'}"; 
-	&if_redo("step1/bowtie.F.sam") and &exeCmd("$opts{'path_bwt2'} " . ( ($opts{'faRd'}) ? ' -f ' : ' -q ' ) . " -x step1/exex.fa -U " . join(",", @rdFiles) 
-	  . " | $opts{path_samtools} view $smT_para -S -F 4 -o step1/bowtie.F.sam -"); 
+	my $tmp_rdLis = join(',', @rdFiles); 
+	&if_redo("step1/bowtie.F.sam") and &exeCmd("$opts{'path_bwt2'} -p $opts{'cpuN'} " . ( ($opts{'faRd'}) ? ' -f ' : ' -q ' ) . " -x step1/exex.fa -U $tmp_rdLis " . " | $opts{path_samtools} view $smT_para -S -F 4 -o step1/bowtie.F.sam -"); 
+	undef($tmp_rdLis); 
 	# samMap.pl bowtie.F.sam map.psl > bowtie.global.sam
 	&if_redo("step1/bowtie.global.sam") and &exeCmd("$opts{dir_aug}/scripts/samMap.pl step1/bowtie.F.sam step1/map.psl > step1/bowtie.global.sam"); 
 	# discard intron containing alignments from the original bam file
@@ -231,8 +251,12 @@ if ( defined $need_step{3} ) {
 	# samtools sort both.sf.bam both.ssf
 	# bam2hints --intronsonly --in=both.ssf.bam --out=hints.2.gff
 	&if_redo("step2/both.ssf.bam") and &exeCmd("$opts{'path_samtools'} sort $smT_para step1/both.sf.bam step2/both.ssf"); 
-	&if_redo("step2/hints.2.gff") and &exeCmd("$opts{'dir_aug'}/auxprogs/bam2hints/bam2hints --intronsonly --in=step2/both.ssf.bam --out=step2/hints.2.gff"); 
+	&if_redo("step2/hints.2.gff.ip") and &exeCmd("$opts{'dir_aug'}/auxprogs/bam2hints/bam2hints --intronsonly --in=step2/both.ssf.bam --out=step2/hints.2.gff.ip"); 
 	$smT_para = ''; 
+	&if_redo("step2/both.ssf.wig") and &exeCmd("$opts{'dir_aug'}/auxprogs/bam2wig/bam2wig step2/both.ssf.bam > step2/both.ssf.wig"); 
+	&if_redo("step2/hints.ep.gff") and &exeCmd("cat step2/both.ssf.wig | perl $opts{'dir_aug'}/scripts/wig2hints.pl --width=10 --margin=10 --minthresh=2 --minscore=4 --prune=0.1 --src=W --type=ep --UCSC=unstranded.track --radius=4.5 --pri=4 --strand=\".\" > step2/hints.ep.gff"); 
+	&if_redo("step2/hints.2.gff") and &exeCmd("cat step2/hints.ep.gff step2/hints.2.gff.ip > step2/hints.2.gff"); 
+
 	### Maybe include "exonparthints" and "UTR" models to improve the prediciton. 
 	### Later. 
 	&if_redo("step2/extrinsic.cfg") and &exeCmd("cp $opts{'cfgEx_aug'} step2/extrinsic.cfg"); 
