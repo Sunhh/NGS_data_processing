@@ -1,6 +1,8 @@
 #! /usr/bin/perl
+use strict; 
+use warnings; 
 
-$usage = "rmlowcomfromMSP.pl mtca BFfile\n";
+my $usage = "rmlowcomfromMSP.pl mtca BFfile\n";
 
 if (@ARGV < 2) {die $usage;}
 
@@ -8,33 +10,35 @@ if (@ARGV < 2) {die $usage;}
 
 open(RM, "$ARGV[0]") || die "Cannot open $ARGV[0]";
 
-
+my $ct = 0; 
+my ($lpr, $lseq) = ('', ''); 
+my (%pr, %seq); 
 while (<RM>) {
-     if (/^>(\S+)\s+(\S+)\s*/) {
-	 if ($1 ne $lpr && $2 ne $lseq) {
-	 	$pr{$ct} = $1;
-	$seq{$ct} = $2;
-	$ct ++;
-	 }
-	 $lpr = $1;
-	 $lseq = $2;
-     }
+	if (/^>(\S+)\s+(\S+)\s*/) {
+		unless ($1 eq $lpr && $2 eq $lseq) {
+			$pr{$ct} = $1;
+			$seq{$ct} = $2;
+			$ct ++;
+		}
+		$lpr = $1;
+		$lseq = $2;
+	}
 }
-
 
 open(MSP, "$ARGV[1]") || die "Cannot open $ARGV[1]";
 while (<MSP>) {
-         if (/^\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+(\S+)\s+\d+\s+\d+\s+\d+\s+(\S+)\s*/) {
-	    	     if (&comparison) {
-		 print;
-	     }
+	if (/^\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+(\S+)\s+\d+\s+\d+\s+\d+\s+(\S+)\s*/) {
+		if (&comparison) {
+			print;
+		}
 	}
 }
 close MSP;
 
 sub comparison  {
-    foreach $key (keys %pr){
-  if ($1 eq $seq{$key} && $2 eq $pr{$key} ) 	
-  { return 1;}
-      }
-  }
+	foreach my $key (keys %pr){
+		if ($1 eq $seq{$key} && $2 eq $pr{$key} ) { return 1; }
+	}
+}
+
+
