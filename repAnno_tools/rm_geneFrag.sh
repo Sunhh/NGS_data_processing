@@ -18,7 +18,7 @@ do
 	exe_cmd "blastx -evalue 1e-5 -db uniprot_sprot_plants_rmTransProt.fa -query $inLib -num_threads 40 -out ${inLib}.toPDB.bx0"
 	exe_cmd "perl /share/app/Annotation/repeatmodeler/ProtExcluder1.1/ProtExcluder.pl ${inLib}.toPDB.bx0 $inLib"
 	exe_cmd "mv ${inLib}noProtFinal Final/"
-	exe_cmd "mv ${inLib}.toPDB.bx0* ${inLib}.ssi ${inLib}libnPr MED/"
+	exe_cmd "mv ${inLib}.toPDB.bx0* ${inLib}.ssi ${inLib}nPr MED/"
 done
 
 tsmsg "[Rec] All done."; 
