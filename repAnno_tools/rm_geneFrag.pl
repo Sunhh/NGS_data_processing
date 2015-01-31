@@ -111,8 +111,9 @@ for my $fn (@inLibs) {
 			$diffN > 0 and &exeCmd("perl $opts{'pl_dealFa'} ${tmp_file}noProtFinal -drawByList -drawList saved.kl -drawWhole -drawLcol 0 -dropMatch > $tmp_file"); 
 			$diffN > 0 and &exeCmd("perl $opts{'pl_dealFa'} ${tmp_file} -attr key:len > prev_kl"); 
 		}
-		&exeCmd("rm ${tmp_file}.toPDB.bx0* ${tmp_file}.ssi ${tmp_file}nPr"); 
+		&exeCmd("rm ${tmp_file}.toPDB.bx0* ${tmp_file}.ssi ${tmp_file}nPr temp"); 
 	}
+	&exeCmd("rm prev_kl curr_kl"); 
 	# &exeCmd("mv ${tmp_file}noProtFinal Final/${fn}noProtFinal"); 
 	&exeCmd("mv $resultFn Final/"); 
 }
