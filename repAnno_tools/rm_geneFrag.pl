@@ -94,12 +94,12 @@ for my $fn (@inLibs) {
 		open SS,'>',"saved.kl" or &stopErr("[Err] Failed to open file saved.kl. $!\n"); 
 		my $saveN = 0; 
 		for my $tk (keys %curr_kl) {
-			if ( defined $prev_kl{$tk} and $prev_kl{$tk} eq $curr_kl{$tk} ) {
+			defined $prev_kl{$tk} or &stopErr("[Err] Changed seq id [$tk].\n"); 
+			if ( $prev_kl{$tk} eq $curr_kl{$tk} ) {
 				delete $prev_kl{$tk}; 
 				$saveN ++; 
 				print SS "$tk\n"; 
 			}
-			defined $prev_kl{$tk} or &stopErr("[Err] Changed seq id [$tk].\n"); 
 		} 
 		close SS; 
 		my $diffN = scalar(keys %prev_kl); 
