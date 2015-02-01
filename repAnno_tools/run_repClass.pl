@@ -36,8 +36,9 @@ $opts{'tagUnknown'} = $opts{'tagUnknown'} // 'LTR';
 
 $opts{'help'} and &usage(); 
 defined $opts{'inFa'} and -e $opts{'inFa'} or &usage(); 
-$opts{'out'} = $opts{'out'} // "$opts{'out'}.classified"; 
+$opts{'out'} = $opts{'out'} // "$opts{'inFa'}.classified"; 
 
+&tsmsg("[Rec] Begin $0\n"); 
 
 my $tmp_file = 'tmp_toClass.fa'; 
 unlink($tmp_file); 
@@ -49,7 +50,7 @@ unless ( $opts{'noChopID'} ) {
 		chomp; 
 		if (m/^>/) {
 			m/^>(\S+)/ or &stopErr("[Err] Bad format of $_\n"); 
-			$_ = $1; 
+			$_ = ">$1"; 
 			s!\#.*$!!; 
 		}
 		print OO "$_\n"; 
@@ -84,4 +85,4 @@ while (<FF>) {
 close BB; 
 close FF; 
 
-
+&tsmsg("[Rec] Finish $0\n"); 
