@@ -23,7 +23,7 @@ GetOptions(\%opts,
 	"inDir:s", "inRdLis:s", "faRd!", 
 	"genomFasMsk:s", "genomFasRaw:s", 
 	"oPref:s", 
-	"path_tophat2:s", "mode:s", "dbBwt2:s", "para_th:s", "exex_flank:i", 
+	"path_tophat2:s", "mode:s", "dbBwt2:s", "para_th:s", "para_cl:s", "dir_cuff:s", "exex_flank:i", 
 	"dir_aug:s", "species:s", "chunk_overlap:i", "chunk_size:i", "min_ctg_len:i", "aug_utr!"
 ); 
 $opts{'stepLis'} = $opts{'stepLis'} // ''; 
@@ -35,9 +35,11 @@ $opts{'inDir'} = $opts{'inDir'} // '';
 $opts{'inRdLis'} = $opts{'inRdLis'} // 'cult_inLis' ; 
 $opts{'oPref'} = $opts{'oPref'} // 'oPref'; 
 $opts{'path_tophat2'} = $opts{'path_tophat2'} // 'tophat2'; 
+$opts{'dir_cuff'} = $opts{'dir_cuff'} // "/data/Sunhh/src/Annot/Cufflinks/cufflinks-2.2.1.Linux_x86_64"; 
 $opts{'mode'} = $opts{'mode'} // 'single'; 
 $opts{'dbBwt2'} = $opts{'dbBwt2'} // 'db/bwt2_db'; 
 $opts{'para_th'} = $opts{'para_th'} // "--library-type=fr-firststrand --read-mismatches 1 --splice-mismatches 0 --min-intron-length 30"; 
+$opts{'para_cl'} = $opts{'para_cl'} // "--min-intron-length 30 --min-frags-per-transfrag 5"; 
 $opts{'path_samtools'} = $opts{'path_samtools'} // 'samtools'; 
 $opts{'dir_aug'} = $opts{'dir_aug'} // "/data/Sunhh/src/Annot/maker/maker/exe/augustus"; 
 $opts{'species'} = $opts{'species'} // 'arabidopsis'; 
@@ -74,6 +76,7 @@ sub usage {
 #   -path_bamtools    [bamtools] path to bamtools bin. 
 #
 #   -path_tophat2     [tophat2]
+#   -dir_cuff         [/data/Sunhh/src/Annot/Cufflinks/cufflinks-2.2.1.Linux_x86_64]
 #
 #   -dir_aug          [/data/Sunhh/src/Annot/maker/maker/exe/augustus]
 #   -species          [arabidopsis]
@@ -90,6 +93,7 @@ sub usage {
 #   -dbBwt2           [db/bwt2_db] 
 #
 #   -para_th          [--library-type=fr-firststrand --read-mismatches 1 --splice-mismatches 0 --min-intron-length 30]
+#   -para_cl          [--min-intron-length 30 --min-frags-per-transfrag 5]
 #   -exex_flank       [150] Should be no less than read length. 
 #   -chunk_overlap    [50000]
 #   -chunk_size       [1000000]
@@ -135,6 +139,11 @@ if ( defined $need_step{1} ) {
 	# Step1 : Run tophat2 to align all reads to reference genome. 
 	#  Out information from step1 : 
 	#   $step1_oBam = "${step1_oDir}/accepted_hits.bam"; 
+	&tsmsg("[Rec] Start stepLis=1\n"); 
+	my $tmp_rdLis = join(',', @rdFiles); 
+	&if_redo("step1/$opts{'oPref'}_thout/", $step1_oBam) and &exeCmd("$opts{'path_tophat2'} $opts{'para_th'} -o step1/$opts{'oPref'}_thout $opts{'dbBwt2'} $tmp_rdLis "); 
+	undef($tmp_rdLis); 
+	&tsmsg("[Rec] Finish stepLis=1\n"); 
 }# End if ( need_step 1 ) 
 
 my $step2_oAug = 'step1/aug1.out'; 
@@ -145,6 +154,7 @@ if ( defined $need_step{2} ) {
 	## samtools sort -@ 10 -m 10G AllToPG1_thout/accepted_hits.bam step1/both.ssf
 	## $opts{'dir_aug'}/auxprogs/bam2hints/bam2hints
 	## 
+	&tsmsg("[Rec] Start stepLis=2\n"); 
 	-d 'step1' or &stopErr("[Err] No step1 directory found!\n"); 
 	# samtools sort output_directory/accepted_hits.sf.bam both.ssf
 	my $smT_para = ''; 
@@ -195,11 +205,13 @@ if ( defined $need_step{2} ) {
 	  'dir_SoutAug' => 'step1/SoutAugDir', 
 	  'joblist' => 'step1/jobs.lst'
 	); 
+	&tsmsg("[Rec] Finish stepLis=2\n"); 
 }# End Step2 : aug_step1 
 
 if ( defined $need_step{3} ) {
 	# Step3 : The second run of augustus. 
 	#  Input : $step2_oAug , $step2_hint 
+	&tsmsg("[Rec] Start stepLis=3\n"); 
 	-d 'step2' or mkdir('step2', 0755); 
 	# cat aug1.out | tee aug.prelim.gff | grep -P "\tintron\t" > aug1.introns.gff
 	&if_redo("step1/aug1.introns.gff") and &exeCmd("cat $step2_oAug | grep -P \"\\tintron\\t\" > step1/aug1.introns.gff"); 
@@ -282,6 +294,7 @@ if ( defined $need_step{3} ) {
 	  'dir_SoutAug' => 'step2/SoutAugDir', 
 	  'joblist' => 'step2/jobs.lst'
 	); 
+	&tsmsg("[Rec] Finish stepLis=3\n"); 
 }
 
 ##########################################################################################
@@ -365,6 +378,7 @@ sub multiRunAug {
 		&exeCmd($jobcmd); 
 		$pm->finish; 
 	}#End foreach ( parallel joblist )
+	$pm->wait_all_children; 
 	&if_redo( "$parm{'joblist'}.ok" ) and &exeCmd("echo \'\' > $parm{'joblist'}.ok"); 
 	
 	if ( &if_redo( "$parm{'outAug'}" ) ) { 

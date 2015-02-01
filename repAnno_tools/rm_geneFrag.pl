@@ -24,7 +24,7 @@ chomp($opts{'pl_dealFa'});
 $opts{'pl_ProtExcluder'} = $opts{'pl_ProtExcluder'} // `echo \$HOME/tools/github/NGS_data_processing/repAnno_tools/ProtExcluder1.1/ProtExcluder.pl`; 
 chomp($opts{'pl_ProtExcluder'}); 
 
-$opts{'evalue'} = $opts{'evalue'} // 1e-5; 
+$opts{'evalue'} = $opts{'evalue'} // 1e-2; 
 $opts{'cpuN'} = $opts{'cpuN'} // 1; 
 $opts{'dbProt'} = $opts{'dbProt'} // 'uniprot_sprot_plants_rmTransProt.fa'; 
 
