@@ -233,8 +233,8 @@ if ( defined $need_step{3} ) {
 	# cat header.txt bowtie.global.sam > bowtie.global.h.sam
 	# samtools view -bS -o bowtie.global.h.bam bowtie.global.h.sam
 	&if_redo("step1/header.txt") and &exeCmd("$opts{'path_samtools'} view $smT_para -H $step1_oBam > step1/header.txt"); 
-	&if_redo("bowtie.global.h.bam") and &exeCmd("cat step1/header.txt step1/bowtie.global.sam " 
-	  ." | $opts{'path_samtools'} view $smT_para -Bs -o bowtie.global.h.bam -"
+	&if_redo("step1/bowtie.global.h.bam") and &exeCmd("cat step1/header.txt step1/bowtie.global.sam " 
+	  ." | $opts{'path_samtools'} view $smT_para -bS -o step1/bowtie.global.h.bam -"
 	); 
 	# join bam files
 	# bamtools merge -in bowtie.global.h.bam -in output_directory/accepted_hits.noN.bam -out both.bam
