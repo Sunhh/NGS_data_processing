@@ -24,6 +24,8 @@ sub usage {
 #
 # -out           [inFa.classified]
 #
+# -noChopID      [boolean] Do not chop ID if given. 
+#
 ################################################################################
 HH
 	exit 1; 
