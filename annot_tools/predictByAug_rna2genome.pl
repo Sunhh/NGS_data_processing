@@ -378,6 +378,7 @@ sub multiRunAug {
 		&exeCmd($jobcmd); 
 		$pm->finish; 
 	}#End foreach ( parallel joblist )
+	$pm->wait_all_children; 
 	&if_redo( "$parm{'joblist'}.ok" ) and &exeCmd("echo \'\' > $parm{'joblist'}.ok"); 
 	
 	if ( &if_redo( "$parm{'outAug'}" ) ) { 
