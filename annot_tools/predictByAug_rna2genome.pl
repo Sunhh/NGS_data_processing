@@ -255,14 +255,14 @@ if ( defined $need_step{3} ) {
 	$smT_para = ''; 
 	$opts{'samtools_cpu'} > 1 and $smT_para .= " -\@ $opts{'samtools_cpu'}"; 
 	$opts{'samtools_mem'} ne '' and $smT_para .= " -m $opts{'samtools_mem'}"; 
-	&if_redo("both.bam both.s.bam") and &exeCmd("$opts{'path_samtools'} sort $smT_para -n both.bam both.s"); 
+	&if_redo("step2/both.s.bam") and &exeCmd("$opts{'path_samtools'} sort $smT_para -n step1/both.bam step2/both.s"); 
 	# filterBam --uniq --paired --in both.s.bam --out both.sf.bam
 	#  --paired should be omitted when using single-end reads. 
 	my $tmp_pair = ($opts{'mode'} eq 'single') ? '' : '--paired' ; 
-	&if_redo("step1/both.sf.bam") and &exeCmd("$opts{'dir_aug'}/auxprogs/filterBam/bin/filterBam --uniq --in step2/both.s.bam --out step1/both.sf.bam"); 
+	&if_redo("step2/both.sf.bam") and &exeCmd("$opts{'dir_aug'}/auxprogs/filterBam/bin/filterBam --uniq --in step2/both.s.bam --out step2/both.sf.bam"); 
 	# samtools sort both.sf.bam both.ssf
 	# bam2hints --intronsonly --in=both.ssf.bam --out=hints.2.gff
-	&if_redo("step2/both.ssf.bam") and &exeCmd("$opts{'path_samtools'} sort $smT_para step1/both.sf.bam step2/both.ssf"); 
+	&if_redo("step2/both.ssf.bam") and &exeCmd("$opts{'path_samtools'} sort $smT_para step2/both.sf.bam step2/both.ssf"); 
 	&if_redo("step2/hints.2.gff.ip") and &exeCmd("$opts{'dir_aug'}/auxprogs/bam2hints/bam2hints --intronsonly --in=step2/both.ssf.bam --out=step2/hints.2.gff.ip"); 
 	$smT_para = ''; 
 	&if_redo("step2/both.ssf.wig") and &exeCmd("$opts{'dir_aug'}/auxprogs/bam2wig/bam2wig step2/both.ssf.bam > step2/both.ssf.wig"); 
