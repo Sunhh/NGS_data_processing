@@ -62,7 +62,7 @@ exe_cmd "$exe_etrain --species=generic --stopCodonExcludedFromCDS=false $in_raw_
 exe_cmd "cat etrain_findErr.err | perl -pe 's/.*in sequence (\\S+): .*/\$1/' > dropgenes.lst"
 exe_cmd "perl $pl_filtGene dropgenes.lst $in_raw_gb > $in_gb"
 exe_cmd "perl $pl_randSplit $in_gb $testNum"
-#exe_cmd "perl $pl_newSpec --species=$orgName"
+exe_cmd "perl $pl_newSpec --species=$orgName"
 #echo "vim /workdir/laopopo/src/Annot/maker/maker/exe/augustus/config/species/$orgName/${orgName}_parameters.cfg"
 #echo "Set stopCodonExcludedFromCDS to false , because our self genbank includes stop codon."
 
