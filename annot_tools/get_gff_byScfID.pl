@@ -5,18 +5,19 @@ use LogInforSunhh;
 
 use Getopt::Long; 
 my %opts; 
-Getoptions(\%opts, 
+GetOptions(\%opts, 
 	"help!", 
 	"faF:s", "gffF:s", 
 	"scfID:s", "suff:s", 
 ); 
-my $faF  = $opts{'faF'} // 'PG1All_v2_Scf.unmask.fa'; 
+my $faF  = $opts{'faF'} // 'PG1All_v2_Scf.unmsk.fa'; 
 my $gffF = $opts{'gffF'} // 'r1_all.gff3'; 
 
 my $id = $opts{'scfID'} // shift; 
 
 my $add = $opts{'suff'} // ''; 
 
+defined $id or die "perl $0 -scfID scfID\n"; 
 
 open F,'<',"$gffF" or die; 
 open O,'>',"cur$add.gff3" or die; 
