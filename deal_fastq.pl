@@ -63,6 +63,8 @@ perl $0 in.fastq
 
 -rdKey        [Boolean] Keep only the first non-blank characters for read key if given. 
 
+-randSlct     [1.0] Random select reads/pairs to a subset of ratio from (0-1]. 
+
 #******* Instruction of this program *********#
 HELP
 	exit(1); 
@@ -81,6 +83,7 @@ GetOptions(\%opts,
 	"rd_Num!", "rd_LenHist!", "rd_LenHist_pmin!", "rd_LenHist_range:s", "rd_LenHist_name:s", 
 	"frag:s", "frag_r!", "frag_c!", 
 	"search:s", "srch_strand:s", "srch_back:s", "srch_drop!", "srch_max!", 
+	"randSlct:f", 
 	"help!", 
 ); 
 
@@ -134,10 +137,42 @@ my %good_str = qw(
 &fragmentRd() if ( defined $opts{frag} and $opts{frag} ne '' ); 
 &searchPattern() if ( defined $opts{search} and $opts{search} ne '' ); 
 &rd_LenHist() if ( $opts{rd_LenHist} ); 
+&randSlct() if ( defined $opts{'randSlct'} ); 
 
 #****************************************************************#
 #--------------Subprogram------------Start-----------------------#
 #****************************************************************#
+
+# -randSlct     [1]
+# -paired       
+sub randSlct {
+	$opts{'randSlct'} >= 1 and &stopErr("[Err] No need to select.\n"); 
+	$opts{'randSlct'} <= 0 and &stopErr("[Err] Bad setting [$opts{'randSlct'}]\n"); 
+	if ( $opts{'paired'} ) {
+		for (my $i=0; $i<@InFp; $i+=2) {
+			my $fh1 = $InFp[$i];
+			my $fh2 = $InFp[$i+1];
+			RD: 
+			while ( !eof($fh1) and !eof($fh2) ) {
+				my $rdRec1 = &get_fq_record($fh1);
+				my $rdRec2 = &get_fq_record($fh2);
+				rand(1) <= $opts{'randSlct'} or next; 
+				print STDOUT "\@$rdRec1->{id}$rdRec1->{seq}+\n$rdRec1->{qual}\n"; 
+				print STDOUT "\@$rdRec2->{id}$rdRec2->{seq}+\n$rdRec2->{qual}\n"; 
+			}#End while() RD:
+		}
+	} else {
+		for (my $i=0; $i<@InFp; $i++) {
+			my $fh1 = $InFp[$i]; 
+			RD: 
+			while ( !eof($fh1) ) {
+				my $rdRec1 = &get_fq_record($fh1);
+				rand(1) <= $opts{'randSlct'} or next; 
+				print STDOUT "\@$rdRec1->{id}$rdRec1->{seq}+\n$rdRec1->{qual}\n"; 
+			}#End while() RD:
+		}
+	}
+}#End randSlct() 
 
 # -search       [String] Pattern to search in read. 
 # -srch_strand  [f/r/b] forward/reverse/both. 

@@ -711,7 +711,7 @@ sub chk_VarInArray {
 		my $is_var = 0; 
 		for (@arr) {
 			$_ =~ m/n/i and next; 
-			$_ =~ m/^[ATGC]\1*$/i or next; 
+			$_ =~ m/^([ATGC])\1*$/i or next; 
 			$_ = uc(@_); 
 			$baseRef eq '' and $baseRef = $_; 
 			$baseRef ne $_ and do { $is_var = 1; last; }; 
@@ -723,7 +723,7 @@ sub chk_VarInArray {
 		for (@arr) {
 			$_ =~ m/n/i and next; 
 			$_ =~ m/\*|\+/i and next; 
-			$_ =~ m/^[ATGC]\1*$/i or next; 
+			$_ =~ m/^([ATGC])\1*$/i or next; 
 			$_ = uc(@_); 
 			$baseRef eq '' and $baseRef = $_; 
 			$baseRef ne $_ and do { $is_var = 1; last; }; 

@@ -3,6 +3,8 @@ package LogInforSunhh;
 
 use strict; 
 use warnings; 
+use IPC::Open3; 
+use Symbol; 
 use Exporter qw(import);
 
 our @EXPORT = qw(tsmsg stopErr exeCmd);
@@ -38,5 +40,25 @@ sub exeCmd {
 		}
 	}
 }#End exeCmd 
+
+### This is a method to monitor process in perl. 
+### Copied from maker perl script, and edited minor. 
+sub run {
+	my $command = shift; 
+	( defined $command and $command ne '' ) or return; 
+	&tsmsg("[CMD] $command\n"); 
+	my ($CHLD_IN, $CHLD_OUT, $CHLD_ERR) = (gensym, gensym, gensym); 
+	my $pid = open3( $CHLD_IN, $CHLD_OUT, $CHLD_ERR, $command ); 
+	{
+		local $/ = \1; 
+		while ( my $line = <$CHLD_ERR> ) {
+			print STDERR $line; 
+		}
+	}
+	waitpid $pid, 0; 
+	&stopErr("[Err] Cmd failed: $command\n") if $? != 0; 
+	return; 
+}# End sub run. 
+
 
 1; 

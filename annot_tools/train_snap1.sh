@@ -14,15 +14,18 @@ export PATH="$PATH:$dir_snap"
 # in_gff=r1_maker.gff3
 in_gff=r1_maker_good.gff3
 org_name=SPG
-ohmm_name=SPG.snap1Good.hmm
+useTag="use"
+ohmm_name=SPG.snap1Good.${useTag}.hmm
 
 exe_cmd "maker2zff -x 0 $in_gff"
+# exe_cmd "maker2zff -x 0 -o 1 -c 1 -l 30 $in_gff"
 exe_cmd "fathom genome.ann genome.dna -validate   > genome.fat_valid"
 exe_cmd "fathom genome.ann genome.dna -gene-stats > genome.fat_stats"
 exe_cmd "fathom -categorize 1000 genome.ann genome.dna"
-exe_cmd "fathom uni.ann uni.dna -validate   > uni.fat_valid"
-exe_cmd "fathom uni.ann uni.dna -gene-stats > uni.fat_stats"
-exe_cmd "fathom -export 1000 -plus uni.ann uni.dna"
+exe_cmd "cat uni.dna wrn.dna > use.dna ; cat uni.ann wrn.ann > use.ann"
+exe_cmd "fathom ${useTag}.ann ${useTag}.dna -validate   > ${useTag}.fat_valid"
+exe_cmd "fathom ${useTag}.ann ${useTag}.dna -gene-stats > ${useTag}.fat_stats"
+exe_cmd "fathom -export 1000 -plus ${useTag}.ann ${useTag}.dna"
 exe_cmd "fathom export.ann export.dna -validate   > export.fat_valid"
 exe_cmd "fathom export.ann export.dna -gene-stats > export.fat_stats"
 exe_cmd "mkdir parameters"
