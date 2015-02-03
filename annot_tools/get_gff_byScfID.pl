@@ -10,14 +10,27 @@ GetOptions(\%opts,
 	"faF:s", "gffF:s", 
 	"scfID:s", "suff:s", 
 ); 
+sub usage {
+	print <<HH; 
+################################################################################
+# perl $0 -scfID scfID -suff ''
+# 
+# -faF    [input.scf.fa]
+# -gffF   [all.gff3]
+################################################################################
+HH
+	exit 1; 
+}
+
+$opts{'help'} and &usage(); 
+
 my $faF  = $opts{'faF'} // 'PG1All_v2_Scf.unmsk.fa'; 
-my $gffF = $opts{'gffF'} // 'r1_all.gff3'; 
+my $gffF = $opts{'gffF'} // 'r2_all.gff3'; 
 
 my $id = $opts{'scfID'} // shift; 
-
 my $add = $opts{'suff'} // ''; 
 
-defined $id or die "perl $0 -scfID scfID\n"; 
+defined $id or &usage(); 
 
 open F,'<',"$gffF" or die; 
 open O,'>',"cur$add.gff3" or die; 
