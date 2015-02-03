@@ -1,4 +1,7 @@
 #!/usr/bin/perl -w
+# 20150203 There is a bug when it meets a single base exon. It will set the strand to '-' without judging. 
+#   I haven't fix this bug, and my fix is simply supposing all genes are plus strand. 
+#
 # This is a script copied from github 'genome-scripts'. 
 # And edited to accept a list indicating not to include them. 
 
@@ -83,7 +86,7 @@ while (<$fh>) {
 	if( @f != 4 && @f != 9 ) {
 		die "input does not appear to be ZFF";
 	}
-	my $strand = $f[1] < $f[2] ? '1' : '-1';
+	my $strand = $f[1] <= $f[2] ? '1' : '-1';
 	if ($strand < 0) {($f[1], $f[2]) = ($f[2], $f[1])}
 	my $id = pop @f;
 #	warn("start,end are $f[1], $f[2]\n");
