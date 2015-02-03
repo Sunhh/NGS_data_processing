@@ -9,7 +9,7 @@ function tsmsg {
 	echo "[$(date)]$1"
 }
 
-dir_aug='/workdir/laopopo/src/Annot/maker/maker/exe/augustus'
+dir_aug='/data/Sunhh/src/Annot/maker/maker/exe/augustus'
 
 export PATH="$PATH:$dir_aug/bin/"
 

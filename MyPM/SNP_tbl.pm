@@ -116,14 +116,15 @@ sub _initialize {
 sub newSubObj {
 	my $self = shift; 
 	my %parm = @_; 
-	$parm{'RowN'} = $parm{'RowN'} // []; 
-	$parm{'ColN'} = $parm{'ColN'} // []; 
+	$parm{'RowN'} = $parm{'RowN'} // [-1]; 
+	$parm{'ColN'} = $parm{'ColN'} // [-1]; 
 	my $new_obj = {}; 
 	bless $new_obj, ref($self); # I don't know other better metod. 
 	
 	# Setting data_arr
-	@{$parm{'RowN'}} == 0 and $parm{'RowN'} = [ 0 .. $#{$self->{'data_arr'}}    ]; 
-	@{$parm{'ColN'}} == 0 and $parm{'ColN'} = [ 0 .. $#{$self->{'data_arr'}[0]} ]; 
+	defined $parm{'RowN'}[0] and $parm{'RowN'}[0] == -1 and $parm{'RowN'} = [ 0 .. $#{$self->{'data_arr'}}    ]; 
+	defined $parm{'ColN'}[0] and $parm{'ColN'}[0] == -1 and $parm{'ColN'} = [ 0 .. $#{$self->{'data_arr'}[0]} ]; 
+	$new_obj->{'data_arr'} = []; 
 	for my $idx1 ( @{$parm{'RowN'}} ) {
 		push(@{$new_obj->{'data_arr'}}, [ @{$self->{'data_arr'}[$idx1]}[ @{$parm{'ColN'}} ] ]); 
 	}
@@ -155,10 +156,12 @@ sub rm_lmiss {
 	my %parm = @_; 
 	$parm{'maxAllow'} = $parm{'maxAllow'} // 0.10; # Default 10% 
 	$self->cnt_genotype(); 
+	$parm{'ttl_indvN'} = $parm{'ttl_indvN'} // $#{$self->{'data_arr'}[0]}+1 ;
+	my $min_indvN = $parm{'ttl_indvN'} * $parm{'maxAllow'} ; 
 	my $new_obj; 
 	my @goodRows; 
 	for (my $i=0; $i<@{$self->{'cnt_lmiss'}}; $i++) {
-		$self->{'cnt_lmiss'}[$i] >= $parm{'maxAllow'} and push(@goodRows, $i); 
+		$self->{'cnt_lmiss'}[$i] <= $min_indvN and push(@goodRows, $i); 
 	}
 	$new_obj = $self->newSubObj('RowN'=>\@goodRows); 
 	return $new_obj; 
