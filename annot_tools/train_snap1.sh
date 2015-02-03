@@ -17,6 +17,7 @@ org_name=SPG
 ohmm_name=SPG.snap1Good.hmm
 
 exe_cmd "maker2zff -x 0 $in_gff"
+# exe_cmd "maker2zff -x 0 -o 1 -c 1 -l 30 $in_gff"
 exe_cmd "fathom genome.ann genome.dna -validate   > genome.fat_valid"
 exe_cmd "fathom genome.ann genome.dna -gene-stats > genome.fat_stats"
 exe_cmd "fathom -categorize 1000 genome.ann genome.dna"
