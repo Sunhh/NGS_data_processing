@@ -236,7 +236,7 @@ if ( defined $need_step{3} ) {
 	&if_redo("step1/bowtie.F.sam") and &exeCmd("$opts{'path_bwt2'} -p $opts{'cpuN'} " . ( ($opts{'faRd'}) ? ' -f ' : ' -q ' ) . " -x step1/exex.fa -U $tmp_rdLis " . " | $opts{path_samtools} view $smT_para -S -F 4 -o step1/bowtie.F.sam -"); 
 	undef($tmp_rdLis); 
 	# samMap.pl bowtie.F.sam map.psl > bowtie.global.sam
-	&if_redo("step1/bowtie.global.sam") and &exeCmd("$opts{dir_aug}/scripts/samMap.pl step1/bowtie.F.sam step1/map.psl > step1/bowtie.global.sam"); 
+	&if_redo("step1/bowtie.global.sam") and &exeCmd("$opts{dir_aug}/scripts/samMap.pl step1/bowtie.F.sam step1/map.psl $opts{'exex_flank'} > step1/bowtie.global.sam"); 
 	# discard intron containing alignments from the original bam file
 	# bamtools filter -in accepted_hits.bam -out output_directory/accepted_hits.noN.bam 
 	#  -script operation_N_filter.txt
