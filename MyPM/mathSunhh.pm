@@ -157,6 +157,8 @@ sub ins_calc {
 	}
 	my $stat = Statistics::Descriptive::Full->new();
 	$stat->add_data(@$r_arr); 
+	$back{'SUM'} = $stat->sum(); 
+	$back{'COUNT'} = $stat->count(); 
 	$back{'Q1'} = $stat->quantile(1); 
 	$back{'Q3'} = $stat->quantile(3); 
 	$back{'interval_low'}  = $back{'Q1'} - 2 * ($back{'Q3'}-$back{'Q1'}); 
