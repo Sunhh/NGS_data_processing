@@ -96,7 +96,7 @@ $input{dgt_gff} = "$input{refFa}.gff99.dgt";
 &exeCmd("perl $tool{pl_deal_fasta} dgt.tab.wPP.filtN.filtFlank.full_LTR.fa -drawByList -drawWhole -dropMatch -drawLcol 0 -drawList dgt.tab.wPP.filtN.filtFlank.full_LTR.fa.kl.toRM > notMasked.full_LTR.fa"); 
 &exeCmd("perl $tool{pl_build_Examplar_byFa} notMasked.full_LTR.fa 1>stdout.build_examplar_notMsk 2>stderr.build_examplar_notMsk"); 
 ## Combine both examplars. 
-&exeCmd("cat woNest.fullLTR.examplars notMasked.full_LTR.fa.examplars > LTR99.lib"); 
+&exeCmd("cat woNest.fullLTR.examplars notMasked.full_LTR.fa.examplars | perl $tool{pl_deal_fasta} -frag_head -frag_width 80 -frag 0-0 | perl $tool{pl_deal_fasta} -chopKey \':\\d+\-\\d+\$' > LTR99.lib"); 
 
 ### Sub routines. 
 sub getPath {

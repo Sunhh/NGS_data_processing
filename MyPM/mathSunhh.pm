@@ -99,6 +99,8 @@ sub map_windows {
 		$si+$min_windSize-1 <= $parm{'ttl_end'} or next; 
 		push(@back_si, $si); 
 	}
+
+	@back_si = reverse(@back_si); 
 	
 	return \@back_si; 
 }# sub map_windows 
@@ -155,6 +157,10 @@ sub ins_calc {
 	}
 	my $stat = Statistics::Descriptive::Full->new();
 	$stat->add_data(@$r_arr); 
+	$back{'SUM'} = $stat->sum(); 
+	$back{'COUNT'} = $stat->count(); 
+	$back{'MEAN'} = $stat->mean(); 
+	$back{'MEDIAN'} = $stat->median(); 
 	$back{'Q1'} = $stat->quantile(1); 
 	$back{'Q3'} = $stat->quantile(3); 
 	$back{'interval_low'}  = $back{'Q1'} - 2 * ($back{'Q3'}-$back{'Q1'}); 
