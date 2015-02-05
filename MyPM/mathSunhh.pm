@@ -99,6 +99,8 @@ sub map_windows {
 		$si+$min_windSize-1 <= $parm{'ttl_end'} or next; 
 		push(@back_si, $si); 
 	}
+
+	@back_si = reverse(@back_si); 
 	
 	return \@back_si; 
 }# sub map_windows 
