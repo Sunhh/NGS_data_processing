@@ -3,7 +3,7 @@ use strict;
 use warnings; 
 
 my %h; 
-print STDERR join("\t", qw/seqID scfID/)."\m"; 
+print STDERR join("\t", qw/seqID scfID/)."\n"; 
 while (<>) {
 	if ( m/^>/ ) {
 		m/^>(\S+) \(dbseq\-nr (\d+)\) \[(\d+),(\d+)\]$/ or die "$_\n"; 

@@ -114,7 +114,7 @@ $input{ref_dbLTR} = "TRIM99_named.lib";
 &exeCmd("perl $tool{pl_build_Examplar_byFa} notMasked.full_LTR.fa 1>stdout.build_examplar_notMsk 2>stderr.build_examplar_notMsk"); 
 
 ## Combine both examplars. 
-&exeCmd("cat woNest.fullLTR.examplars notMasked.full_LTR.fa.examplars > TRIM85.lib"); 
+&exeCmd("cat woNest.fullLTR.examplars notMasked.full_LTR.fa.examplars | perl $tool{pl_deal_fasta} -frag_head -frag_width 80 -frag 0-0 | perl $tool{pl_deal_fasta} -chopKey \':\\d+\-\\d+\$' > TRIM85.lib"); 
 
 ### Sub routines.
 sub getPath {
