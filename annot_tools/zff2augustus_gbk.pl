@@ -86,7 +86,7 @@ while (<$fh>) {
 	if( @f != 4 && @f != 9 ) {
 		die "input does not appear to be ZFF";
 	}
-	my $strand = $f[1] <= $f[2] ? '1' : '-1';
+	my $strand = $f[1] < $f[2] ? '1' : '-1';
 	if ($strand < 0) {($f[1], $f[2]) = ($f[2], $f[1])}
 	my $id = pop @f;
 #	warn("start,end are $f[1], $f[2]\n");

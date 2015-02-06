@@ -15,6 +15,7 @@ export PATH="$PATH:$dir_aug/bin/"
 
 
 pl_zff2augustus=$HOME/tools/github/NGS_data_processing/annot_tools/zff2augustus_gbk.pl
+pl_fixZff2Aug=$HOME/tools/github/NGS_data_processing/annot_tools/fix_1bpLoc_by_zff2Gb.pl
 para_rmLis=""
 pl_gff2gb=$dir_aug/scripts/gff2gbSmallDNA.pl
 pl_randSplit=$dir_aug/scripts/randomSplit.pl
@@ -57,7 +58,8 @@ exe_cmd "rm ${in_genom_pep}.phr ${in_genom_pep}.pin ${in_genom_pep}.psq"
 # exe_cmd "cat etrain_findStop.err | perl -pe 's/.*in sequence (\\S+): .*/\$1/' > dropgenes.lst"
 # exe_cmd "perl $pl_filtGene dropgenes.lst $in_raw_gb > $in_gb"
 
-exe_cmd "perl $pl_zff2augustus $para_rmLis > $in_raw_gb"
+exe_cmd "perl $pl_zff2augustus $para_rmLis > $in_raw_gb.raw"
+exe_cmd "perl $pl_fixZff2Aug ${in_raw_gb}.raw > $in_raw_gb"
 exe_cmd "$exe_etrain --species=generic --stopCodonExcludedFromCDS=false $in_raw_gb 1>etrain_findErr.std 2>etrain_findErr.err"
 exe_cmd "cat etrain_findErr.err | perl -pe 's/.*in sequence (\\S+): .*/\$1/' > dropgenes.lst"
 exe_cmd "perl $pl_filtGene dropgenes.lst $in_raw_gb > $in_gb"
