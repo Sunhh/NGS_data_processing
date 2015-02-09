@@ -15,6 +15,7 @@ GetOptions(\%opts,
 	"idxGff:s", 
 	"srcGff:s", 
 	"ovl_ratio:f", 
+	"min_AED:f", "min_eAED:f", 
 ); 
 
 sub usage {
@@ -23,6 +24,9 @@ sub usage {
 # perl $0 -srcGff gene_models.gff -idxGff repeat_loc.gff 
 # 
 # -ovl_ratio      [0.5] Maximum overlap ratio to keep a gene model. 
+#
+# -min_AED        [1.1]
+# -min_eAED       [1.1]
 # 
 # -help 
 ################################################################################
@@ -33,6 +37,9 @@ HH
 defined $opts{'srcGff'} or &usage(); 
 defined $opts{'idxGff'} or &usage(); 
 $opts{'ovl_ratio'} = $opts{'ovl_ratio'} // 0.5; 
+$opts{'min_AED'} = $opts{'min_AED'} // 0; 
+$opts{'min_eAED'} = $opts{'min_eAED'} // 0; 
+
 
 my $srcFh = &openFH($opts{'srcGff'}, '<'); 
 my $idxFh = &openFH($opts{'idxGff'}, '<'); 
@@ -110,9 +117,20 @@ if (scalar(@src_geneL) > 0) {
 sub is_notOvl {
 	my ($ar, $hr, $ovl_ratio) = @_; 
 	defined $ovl_ratio or &stopErr("[Err] Overlap ratio needed.\n"); 
+	my $bad_AED  = shift; 
+	my $bad_eAED = shift; 
+	
 	my $ttl_base = 0; 
 	my $ovl_base = 0; 
 	for my $r1 (@$ar) {
+		if ( defined $bad_AED and $r1->[1] eq 'mRNA' ) {
+			$r1->[0][8] =~ m/;_AED=([\d.e]+);/ or &stopErr("[Err] No _AED in [$r1->[0][8]]\n"); 
+			$1 < $bad_AED or return 0; 
+		}
+		if ( defined $bad_eAED and $r1->[1] eq 'mRNA' ) {
+			$r1->[0][8] =~ m/;_eAED=([\d.e]+);/ or &stopErr("[Err] No _eAED in [$r1->[0][8]]\n"); 
+			$1 < $bad_eAED or return 0; 
+		}
 		$r1->[1] eq 'CDS' or next; 
 		my ($c_chr, $cs, $ce) = (@{$r1->[0]}[0, 3,4]); 
 		$ttl_base += ($ce-$cs+1); 
