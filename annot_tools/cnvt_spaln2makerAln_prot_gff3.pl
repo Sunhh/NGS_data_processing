@@ -111,7 +111,7 @@ while (<>) {
 			$ta[2] = "protein_match"; 
 			push(@geneLines, [[@ta], '']); 
 		}
-	} elsif ( $ta[2] eq 'cds' or $ta[2] eq 'match_part' ) {
+	} elsif ( $ta[2] eq 'cds' or $ta[2] eq 'exon' or $ta[2] eq 'match_part' ) {
 		if ( $opts{'outAug'} ) {
 			$ta[8] =~ s!^(?:ID=[^\s;]+;)?Parent=([^\s;]+)(?:;Name=[^\s;]+)?(;Target=(\S+) (\d+) (\d+) [+-]);?$!transcript_id \"$1\"$2! or &stopErr("[Err] 5: $_\n"); 
 			push(@geneLines, [[@ta], $3, [$4, $5] ]); 

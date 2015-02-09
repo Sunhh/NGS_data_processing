@@ -40,7 +40,6 @@ $opts{'ovl_ratio'} = $opts{'ovl_ratio'} // 0.5;
 $opts{'min_AED'}  = $opts{'min_AED'}  // 1.1; 
 $opts{'min_eAED'} = $opts{'min_eAED'} // 1.1; 
 
-
 my $srcFh = &openFH($opts{'srcGff'}, '<'); 
 my $idxFh = &openFH($opts{'idxGff'}, '<'); 
 
@@ -90,18 +89,22 @@ while (<$srcFh>) {
 	m/^>/ and last; 
 	chomp; 
 	my @ta = split(/\t/, $_); 
-	if ($ta[2] eq 'mRNA') {
+	if ($ta[2] eq 'gene') { 
 		if (scalar(@src_geneL) > 0) {
 			&is_notOvl(\@src_geneL, \%rep_loc, $opts{'ovl_ratio'}, $opts{'min_AED'}, $opts{'min_eAED'}) and &out_gL(\@src_geneL); 
+			@src_geneL = (); 
 		}
-		@src_geneL = (); 
+		push(@src_geneL, [[@ta], 'gene']); 
+	} elsif ($ta[2] eq 'mRNA') {
+		if (scalar(@src_geneL) > 1) {
+			&is_notOvl(\@src_geneL, \%rep_loc, $opts{'ovl_ratio'}, $opts{'min_AED'}, $opts{'min_eAED'}) and &out_gL(\@src_geneL); 
+			@src_geneL = (); 
+		}
 		push(@src_geneL, [[@ta], 'mRNA']); 
 	} elsif ( $ta[2] eq 'CDS' ) {
 		push(@src_geneL, [[@ta], 'CDS']); 
 	} elsif ( $ta[2] =~ m/^(exon|five_prime_UTR|three_prime_UTR)$/ ) {
 		push(@src_geneL, [[@ta], $ta[2]]); 
-	} elsif ( $ta[2] =~ m/^gene$/ ) { 
-		next; 
 	} else {
 		&stopErr("[Err] Bad line: $_\n"); 
 	}
@@ -115,19 +118,17 @@ if (scalar(@src_geneL) > 0) {
 &tsmsg("[Rec] All done.\n"); 
 ########################################################################### 
 sub is_notOvl {
-	my ($ar, $hr, $ovl_ratio) = @_; 
+	my ($ar, $hr, $ovl_ratio, $bad_AED, $bad_eAED) = @_; 
 	defined $ovl_ratio or &stopErr("[Err] Overlap ratio needed.\n"); 
-	my $bad_AED  = shift; 
-	my $bad_eAED = shift; 
 	
 	my $ttl_base = 0; 
 	my $ovl_base = 0; 
 	for my $r1 (@$ar) {
-		if ( defined $bad_AED and $r1->[0][1] eq 'mRNA' ) {
+		if ( defined $bad_AED and $r1->[1] eq 'mRNA' ) {
 			$r1->[0][8] =~ m/;_AED=([\+\-\d.e]+);/ or &stopErr("[Err] No _AED in [$r1->[0][8]]\n"); 
 			$1 < $bad_AED or return 0; 
 		}
-		if ( defined $bad_eAED and $r1->[0][1] eq 'mRNA' ) {
+		if ( defined $bad_eAED and $r1->[1] eq 'mRNA' ) {
 			$r1->[0][8] =~ m/;_eAED=([\+\-\d.e]+);/ or &stopErr("[Err] No _eAED in [$r1->[0][8]]\n"); 
 			$1 < $bad_eAED or return 0; 
 		}
