@@ -50,7 +50,7 @@ my $idxFh = &openFH($opts{'idxGff'}, '<');
 # S401083_pilon   AUGUSTUS        match_part      595     807     0.99    -       0       ID=0:g1.t1.c2;Parent=0:g1.t1;
 # S401083_pilon   AUGUSTUS        match_part      1269    1412    0.91    -       0       ID=0:g1.t1.c3;Parent=0:g1.t1;
 
-&tsmsg("[Err] Reading repeat loci.\n"); 
+&tsmsg("[Rec] Reading repeat loci.\n"); 
 my %rep_loc; 
 while (<$idxFh>) {
 	m/^#/ and next; 
