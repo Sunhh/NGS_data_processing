@@ -43,8 +43,8 @@ my $idxFh = &openFH($opts{'idxGff'}, '<');
 # S401083_pilon   AUGUSTUS        match_part      595     807     0.99    -       0       ID=0:g1.t1.c2;Parent=0:g1.t1;
 # S401083_pilon   AUGUSTUS        match_part      1269    1412    0.91    -       0       ID=0:g1.t1.c3;Parent=0:g1.t1;
 
+&tsmsg("[Err] Reading repeat loci.\n"); 
 my %rep_loc; 
-
 while (<$idxFh>) {
 	m/^#/ and next; 
 	m/^\s*$/ and next; 
@@ -75,7 +75,7 @@ sub merged_loc {
 }
 
 
-
+&tsmsg("[Rec] Reading gene models.\n"); 
 my @src_geneL; 
 while (<$srcFh>) {
 	m/^#/ and next; 
@@ -91,7 +91,7 @@ while (<$srcFh>) {
 		push(@src_geneL, [[@ta], 'mRNA']); 
 	} elsif ( $ta[2] eq 'CDS' ) {
 		push(@src_geneL, [[@ta], 'CDS']); 
-	} elsif ( $ta[2] =~ m/^(mRNA|exon|five_prime_UTR|three_prime_UTR)$/ ) {
+	} elsif ( $ta[2] =~ m/^(gene|exon|five_prime_UTR|three_prime_UTR)$/ ) {
 		push(@src_geneL, [[@ta], $ta[2]]); 
 	} else {
 		&stopErr("[Err] Bad line: $_\n"); 
@@ -103,7 +103,8 @@ if (scalar(@src_geneL) > 0) {
 	@src_geneL = (); 
 }
 
-
+&tsmsg("[Rec] All done.\n"); 
+########################################################################### 
 sub is_notOvl {
 	my ($ar, $hr, $ovl_ratio) = @_; 
 	defined $ovl_ratio or &stopErr("[Err] Overlap ratio needed.\n"); 
