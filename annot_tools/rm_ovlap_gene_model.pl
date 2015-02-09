@@ -33,7 +33,6 @@ HH
 defined $opts{'srcGff'} or &usage(); 
 defined $opts{'idxGff'} or &usage(); 
 $opts{'ovl_ratio'} = $opts{'ovl_ratio'} // 0.5; 
--t and !@ARGV and &usage(); 
 
 my $srcFh = &openFH($opts{'srcGff'}, '<'); 
 my $idxFh = &openFH($opts{'idxGff'}, '<'); 
