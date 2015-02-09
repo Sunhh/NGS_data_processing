@@ -92,7 +92,7 @@ while (<$srcFh>) {
 	my @ta = split(/\t/, $_); 
 	if ($ta[2] eq 'mRNA') {
 		if (scalar(@src_geneL) > 0) {
-			&is_notOvl(\@src_geneL, \%rep_loc, $opts{'ovl_ratio'}) or &out_gL(\@src_geneL); 
+			&is_notOvl(\@src_geneL, \%rep_loc, $opts{'ovl_ratio'}) and &out_gL(\@src_geneL); 
 		}
 		@src_geneL = (); 
 		push(@src_geneL, [[@ta], 'mRNA']); 
@@ -108,7 +108,7 @@ while (<$srcFh>) {
 }
 
 if (scalar(@src_geneL) > 0) {
-	&is_notOvl(\@src_geneL, \%rep_loc, $opts{'ovl_ratio'}) or &out_gL(\@src_geneL); 
+	&is_notOvl(\@src_geneL, \%rep_loc, $opts{'ovl_ratio'}) and &out_gL(\@src_geneL); 
 	@src_geneL = (); 
 }
 
