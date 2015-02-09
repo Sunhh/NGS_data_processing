@@ -141,7 +141,13 @@ sub is_notOvl {
 			$ovl_base += ( mathSunhh::min($r2->[1], $ce) - mathSunhh::max($r2->[0], $cs) + 1 ); 
 		}
 	}
-	if ( $ovl_base <= $ttl_base * $ovl_ratio ) {
+	if ( $ovl_ratio == 0 ) {
+		if ( $ovl_base > 0 ) {
+			return 0; 
+		} else {
+			return 1; 
+		}
+	} elsif ( $ovl_base <= $ttl_base * $ovl_ratio ) {
 		return 1; 
 	} else {
 		return 0; 
