@@ -91,8 +91,10 @@ while (<$srcFh>) {
 		push(@src_geneL, [[@ta], 'mRNA']); 
 	} elsif ( $ta[2] eq 'CDS' ) {
 		push(@src_geneL, [[@ta], 'CDS']); 
-	} elsif ( $ta[2] =~ m/^(gene|exon|five_prime_UTR|three_prime_UTR)$/ ) {
+	} elsif ( $ta[2] =~ m/^(exon|five_prime_UTR|three_prime_UTR)$/ ) {
 		push(@src_geneL, [[@ta], $ta[2]]); 
+	} elsif ( $ta[2] =~ m/^gene$/ ) { 
+		next; 
 	} else {
 		&stopErr("[Err] Bad line: $_\n"); 
 	}
