@@ -37,8 +37,8 @@ HH
 defined $opts{'srcGff'} or &usage(); 
 defined $opts{'idxGff'} or &usage(); 
 $opts{'ovl_ratio'} = $opts{'ovl_ratio'} // 0.5; 
-$opts{'min_AED'} = $opts{'min_AED'} // 0; 
-$opts{'min_eAED'} = $opts{'min_eAED'} // 0; 
+$opts{'min_AED'}  = $opts{'min_AED'}  // 1.1; 
+$opts{'min_eAED'} = $opts{'min_eAED'} // 1.1; 
 
 
 my $srcFh = &openFH($opts{'srcGff'}, '<'); 
@@ -123,11 +123,11 @@ sub is_notOvl {
 	my $ttl_base = 0; 
 	my $ovl_base = 0; 
 	for my $r1 (@$ar) {
-		if ( defined $bad_AED and $r1->[1] eq 'mRNA' ) {
+		if ( defined $bad_AED and $r1->[0][1] eq 'mRNA' ) {
 			$r1->[0][8] =~ m/;_AED=([\+\-\d.e]+);/ or &stopErr("[Err] No _AED in [$r1->[0][8]]\n"); 
 			$1 < $bad_AED or return 0; 
 		}
-		if ( defined $bad_eAED and $r1->[1] eq 'mRNA' ) {
+		if ( defined $bad_eAED and $r1->[0][1] eq 'mRNA' ) {
 			$r1->[0][8] =~ m/;_eAED=([\+\-\d.e]+);/ or &stopErr("[Err] No _eAED in [$r1->[0][8]]\n"); 
 			$1 < $bad_eAED or return 0; 
 		}
