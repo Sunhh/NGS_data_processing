@@ -1,4 +1,4 @@
-pl_dropB="/home/Sunhh/tools/github/NGS_data_processing/drop_dup_both_end.pl"
+pl_dropB="$HOME/tools/github/NGS_data_processing/drop_dup_both_end.pl"
 
 subseqL=0
 subseqS=0
