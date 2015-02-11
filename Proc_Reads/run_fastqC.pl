@@ -9,6 +9,7 @@ use Getopt::Long;
 my %opts; 
 GetOptions(\%opts, 
 	"help!", 
+	"cpuN:i", 
 	"path_fqC:s", 
 	"path_montage:s", 
 	"para_fqC:s", 
@@ -16,7 +17,7 @@ GetOptions(\%opts,
 	"inFqLis:s", 
 	"outDir:s", 
 	"noSummary!", 
-	"cpuN:i", 
+	"onlySummary!", "pref_summ:s", 
 ); 
 sub usage {
 	print <<HH; 
@@ -32,6 +33,7 @@ sub usage {
 # -cpuN      [10]
 #
 # -noSummary [] Generate summary if not given.
+# -onlySummary   []
 #
 # -path_montage  [/path/to/montage] For summary usage. 
 # -pref_summ     [pref]
@@ -71,11 +73,19 @@ my $inFq_string = join(" ", @inFqFiles);
 &tsmsg("[Rec] Total ", scalar(@inFqFiles), " input files to be processed.\n"); 
 
 -d $opts{'outDir'} or mkdir($opts{'outDir'}, 0755); 
-&exeCmd("$opts{path_fqC} $opts{para_fqC} --threads $opts{'cpuN'} -o $opts{'outDir'} $inFq_string"); 
+$opts{'onlySummary'} or &exeCmd("$opts{path_fqC} $opts{para_fqC} --threads $opts{'cpuN'} -o $opts{'outDir'} $inFq_string"); 
 
 unless ( $opts{'noSummary'} ) {
 	chdir($opts{'outDir'}); 
-	
+	my $sumDir = "00.Summary"; 
+	-d $sumDir or mkdir($sumDir, 0755); 
+	&exeCmd("$opts{path_montage} -label '\%d\%f' */*/per_base_quality.png             -tile 2x -frame 5 -shadow -geometry '+2+2>' $sumDir/$opts{pref_summ}_FqC_perBpQual.jpg"); 
+	&exeCmd("$opts{path_montage} -label '\%d\%f' */*/sequence_length_distribution.png -tile 2x -frame 5 -shadow -geometry '+2+2>' $sumDir/$opts{pref_summ}_FqC_RdLenDistr.jpg"); 
+	&exeCmd("$opts{path_montage} -label '\%d\%f' */*/per_sequence_gc_content.png      -tile 2x -frame 5 -shadow -geometry '+2+2>' $sumDir/$opts{pref_summ}_FqC_perSeqGC.jpg"); 
+	&exeCmd("$opts{path_montage} -label '\%d\%f' */*/per_base_sequence_content.png    -tile 2x -frame 5 -shadow -geometry '+2+2>' $sumDir/$opts{pref_summ}_FqC_perBpSeqCont.jpg"); 
+	&exeCmd("$opts{path_montage} -label '\%d\%f' */*/per_base_n_content.png           -tile 2x -frame 5 -shadow -geometry '+2+2>' $sumDir/$opts{pref_summ}_FqC_perBpNCont.jpg"); 
+	&exeCmd("$opts{path_montage} -label '\%d\%f' */*/duplication_levels.png           -tile 2x -frame 5 -shadow -geometry '+2+2>' $sumDir/$opts{pref_summ}_FqC_DuplicLvl.jpg"); 
+	&exeCmd("$opts{path_montage} -label '\%d\%f' */*/per_sequence_quality.png         -tile 2x -frame 5 -shadow -geometry '+2+2>' $sumDir/$opts{pref_summ}_FqC_perSeqQual.jpg"); 
 }
 
 &tsmsg("[Rec] All done.\n"); 
