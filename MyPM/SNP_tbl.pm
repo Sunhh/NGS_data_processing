@@ -15,8 +15,8 @@ use fileSunhh;
 #  6. get_tv()      : Get Transversion SNP sites obj when 'type' is set as 'tv' (default). (type can be 'ts/tv/un')
 #  7. readTbl()     : Shoud be used at first. Generate 'data_arr' Read in the whole SNP table. Maybe edit to read a subset in the future. 
 #  8. is_tstv()     : Generate 'is_tstv' indicating if this site is 'ts'-transition, 'tv'-transversion, or 'un'-unknown(maybe more than two alleles)
-#  9. SingleChar()  : Return a Single character for given DNA_base(s). 
-#  10. SingleCharData() : Reformat the whole SNP table ('data_arr') to SingleChar format. 
+#  9. SingleChar()  : Return a Single character for given DNA_base(s). &SingleChar( 'onlyATGC'=>0, 'maxAlleleN'=>0 ) 
+#  10. SingleCharData() : Reformat the whole SNP table ('data_arr') to SingleChar format. &SingleCharData( 'onlyATGC'=>0, 'maxAlleleN'=>0 )
 #  11. writeTbl()   : Output SNP table within current 'data_arr'. 'fmt' can be SNP/illumina. 
 #  12. max2Allele() : Edit 'data_arr' to allow only Top2 counted allele per SNP site (line). Use 'force_single'=>1 to force reformat singleChar. 
 #  13. tbl2illumina() : Output a table in illumina format. 'wrapTitle' could control if we wrap title with '"'; 
@@ -156,7 +156,7 @@ sub rm_lmiss {
 	my %parm = @_; 
 	$parm{'maxAllow'} = $parm{'maxAllow'} // 0.10; # Default 10% 
 	$self->cnt_genotype(); 
-	$parm{'ttl_indvN'} = $parm{'ttl_indvN'} // $#{$self->{'data_arr'}[0]}+1 ;
+	$parm{'ttl_indvN'} = $parm{'ttl_indvN'} // $#{$self->{'data_arr'}[0]}+1 ; 
 	my $min_indvN = $parm{'ttl_indvN'} * $parm{'maxAllow'} ; 
 	my $new_obj; 
 	my @goodRows; 
@@ -736,7 +736,7 @@ sub chk_VarInArray {
 		&stopErr("[Err] Bad mode type [$parm{'mode'}].\n"); 
 	}
 	return undef(); 
-}# sub rm_noVar () 
+}# sub chk_VarInArray () 
 
 
 #######################################################

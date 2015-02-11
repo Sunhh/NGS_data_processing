@@ -49,7 +49,7 @@ suppressMessages({
   library(foreach)
   library(iterators)
   library(doMC)
-  registerDoMC(core=20)
+  registerDoMC(core=30)
   .mcoptions <- list(preschedule=TRUE, set.seed=FALSE)
 }) # End suppressMessages
 
@@ -140,7 +140,7 @@ suppressMessages({
 # .default.qual.opts: 低质量相关参数
 .get.qual.opts <- function(
 		min.qual   = 20, min.length = 40, wind.size  = 4, 
-		java_cmd_pre = 'java -cp /home/Sunhh/src/trimmomatic/ org.usadellab.trimmomatic.Trimmomatic ', # For WWZ server. 
+		java_cmd_pre = 'java -cp /home/laopopo/tools/github/NGS_data_processing/trimmomatic/ org.usadellab.trimmomatic.Trimmomatic ', # For WWZ server. 
 #		java_cmd_pre = 'java -cp /home/Sunhh/tools/clean_reads/trimmomatic/ org.usadellab.trimmomatic.Trimmomatic ', # For Penguin server. 
 		java_cores = -1, 
 		... 

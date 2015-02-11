@@ -111,7 +111,7 @@ while (<>) {
 			$ta[2] = "protein_match"; 
 			push(@geneLines, [[@ta], '']); 
 		}
-	} elsif ( $ta[2] eq 'cds' or $ta[2] eq 'match_part' ) {
+	} elsif ( $ta[2] eq 'cds' or $ta[2] eq 'exon' or $ta[2] eq 'match_part' ) {
 		if ( $opts{'outAug'} ) {
 			$ta[8] =~ s!^(?:ID=[^\s;]+;)?Parent=([^\s;]+)(?:;Name=[^\s;]+)?(;Target=(\S+) (\d+) (\d+) [+-]);?$!transcript_id \"$1\"$2! or &stopErr("[Err] 5: $_\n"); 
 			push(@geneLines, [[@ta], $3, [$4, $5] ]); 
@@ -201,7 +201,8 @@ sub add_tgt {
 }
 sub rm_bad1st {
 	my $ar = shift; 
-	if ( $ar->[1][2][1] == 0 or $ar->[1][2][1] < $ar->[1][2][0] ) {
+	# if ( $ar->[1][2][1] == 0 or $ar->[1][2][1] < $ar->[1][2][0] ) {
+	if ( $ar->[1][2][1] == 0 ) {
 		my ($min, $max) = (-1, -1); 
 		for ( my $i=2; $i<@$ar; $i++ ) {
 			$min == -1 and $min = $ar->[$i][0][3]; 
