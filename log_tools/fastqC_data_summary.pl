@@ -18,7 +18,7 @@ for my $file (@ARGV) {
 			$dataInfo{$file}{Encoding} = $ta[1]; 
 		} elsif ($ta[0] eq 'Total Sequences') {
 			$dataInfo{$file}{seqN} = $ta[1]; 
-		} elsif ($ta[0] eq 'Filtered Sequences') {
+		} elsif ($ta[0] eq 'Filtered Sequences' or $ta[0] eq 'Sequences flagged as poor quality') {
 			$dataInfo{$file}{filtN} = $ta[1]; 
 		} elsif ($ta[0] eq 'Sequence length') {
 			$dataInfo{$file}{seqLen} = $ta[1]; 
