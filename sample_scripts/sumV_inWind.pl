@@ -9,8 +9,8 @@ my %opts;
 GetOptions(\%opts, 
 	"help!", 
 	"wind_length:i", "wind_start:i", "wind_end:i", "wind_step:i", 
-	"colN:i", 
-	"maxLine:i", 
+	"chr_colN:i", "pos_colN:i", "cnt_colN:i", 
+	"maxLine:i", "showAll!", "trimTail!", 
 ); 
 
 -t and !@ARGV and &usage(); 
@@ -28,7 +28,12 @@ sub usage {
 #  -wind_start     [1]
 #  -wind_end       [9999999]
 #
-#  -colN           [2]
+#  -chr_colN       [0]
+#  -pos_colN       [1]
+#  -cnt_colN       [] Count will be always 1 if not given this column number. 
+#
+#  -showAll        [] Show all windows if given. 
+#  -trimTail       [] Trim tailing windows. 
 #
 #  -maxLine        [-1]
 ################################################################################
@@ -47,46 +52,66 @@ $opts{'wind_end'} = $opts{'wind_end'} // 9999999;
 $opts{'min_r2'} = $opts{'min_r2'} // 0; 
 $opts{'wind_step'} = $opts{'wind_step'} // $opts{'wind_length'}; 
 $opts{'maxLine'} = $opts{'maxLine'} // -1; 
-$opts{'colN'} = $opts{'colN'} // 2; 
+$opts{'chr_colN'} = $opts{'chr_colN'} // 0 ;
+$opts{'pos_colN'} = $opts{'pos_colN'} // 1 ;
+# $opts{'cnt_colN'} = $opts{'cnt_colN'} ;
 
 ## Setup windows. 
 my $mm = mathSunhh->new(); 
 
 #  CHR_A         BP_A        SNP_A  CHR_B         BP_B        SNP_B           R2
 #      1         1284      s1_1284      1         1906      s1_1906    0.0801282
+&tsmsg("[Rec] Reading file.\n"); 
 my $inLine = 0; 
 my %chr_wind; 
 while (<>) {
+	$. % 1e6 == 1 and &tsmsg("[Msg] Reading [$.] line(s).\n"); 
 	chomp; m/^\s*$/ and next; 
 	my @ta = split(/\s+/, $_); 
-	$ta[0] eq 'chr' and next; 
-	defined $chr_wind{$ta[0]} or $chr_wind{$ta[0]} = $mm->setup_windows(
-	  'ttl_start'=>$opts{'wind_start'}, 
-	  'ttl_end' => $opts{'wind_end'}, 
+	my ( $chrV, $posV ) = @ta[ $opts{'chr_colN'}, $opts{'pos_colN'} ]; 
+	$chrV eq 'chr' and next; 
+	my $cntV = ( defined $opts{'cnt_colN'} ) ? $ta[ $opts{'cnt_colN'} ] : 1 ; 
+	defined $chr_wind{$chrV} or $chr_wind{$chrV} = $mm->setup_windows(
+	  'ttl_start' => $opts{'wind_start'}, 
+	  'ttl_end'   => $opts{'wind_end'}, 
 	  'wind_size' => $opts{'wind_length'}, 
 	  'wind_step' => $opts{'wind_step'}, 
-	  'minRatio' => 0 
+	  'minRatio'  => 0 
 	); 
 	
 	$opts{'maxLine'} > 0 and $inLine > $opts{'maxLine'} and last; 
-	my $dist = $ta[1]; 
-	my (@wind_i) = @{ $mm->map_windows( 'posi' => $dist , 'wind_hash' => $chr_wind{$ta[0]} ) }; 
+	my (@wind_i) = @{ $mm->map_windows( 'posi' => $posV , 'wind_hash' => $chr_wind{$chrV} ) }; 
 	for my $ti ( @wind_i ) {
-		push(@{$chr_wind{$ta[0]}{'vv'}{$ti}}, $ta[$opts{'colN'}]); 
+		push(@{$chr_wind{$chrV}{'vv'}{$ti}}, $cntV); 
 	}
 	$inLine ++; 
+}
+&tsmsg("[Rec] Writing table.\n"); 
+
+my %endIdx; 
+if ( $opts{'trimTail'} ) {
+	for my $chrID ( sort keys %chr_wind ) {
+		my @idx = @{$chr_wind{$chrID}{'info'}{'windSloci'}} ; 
+		my $last_i = -1; 
+		for ( my $last_i = $#idx; $last_i >= 0 ; $last_i -- ) {
+			defined $chr_wind{$chrID}{'vv'}{ $idx[$last_i] } and last; 
+		}
+		$endIdx{$chrID} = ($last_i == -1) ? 'stop' : $idx[$last_i] ; 
+	}
 }
 
 print STDOUT join("\t", qw/ChromID WindS WindE SUM COUNT MEAN/)."\n"; 
 for my $chrID ( sort keys %chr_wind ) {
 	for my $ti ( @{$chr_wind{$chrID}{'info'}{'windSloci'}} ) {
-		defined $chr_wind{$chrID}{'vv'}{$ti} or next; 
+		$opts{'showAll'} or defined $chr_wind{$chrID}{'vv'}{$ti} or next; 
+		$opts{'trimTail'} and ( $endIdx{$chrID} eq 'stop' or $endIdx{$chrID} < $ti ) and last; 
 		my %ins_back = %{ mathSunhh::ins_calc( $chr_wind{$chrID}{'vv'}{$ti} ) }; 
 		for my $tk (qw/MEAN/) {
-			$ins_back{$tk} = sprintf("%.4f", $ins_back{$tk}); 
+			$ins_back{$tk} ne '' and $ins_back{$tk} = sprintf("%.4f", $ins_back{$tk}); 
 		}
 		print STDOUT join("\t", $chrID, @{$chr_wind{$chrID}{'loci'}{$ti}}[0,1], @ins_back{qw/SUM COUNT MEAN/})."\n"; 
 	}
 }
+&tsmsg("[Rec] All done.\n"); 
 
 
