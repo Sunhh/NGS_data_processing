@@ -93,8 +93,8 @@ my %endIdx;
 if ( $opts{'trimTail'} ) {
 	for my $chrID ( sort keys %chr_wind ) {
 		my @idx = @{$chr_wind{$chrID}{'info'}{'windSloci'}} ; 
-		my $last_i = -1; 
-		for ( my $last_i = $#idx; $last_i >= 0 ; $last_i -- ) {
+		my $last_i = $#idx; 
+		for ( ; $last_i >= 0 ; $last_i -- ) {
 			defined $chr_wind{$chrID}{'vv'}{ $idx[$last_i] } and last; 
 		}
 		$endIdx{$chrID} = ($last_i == -1) ? 'stop' : $idx[$last_i] ; 
