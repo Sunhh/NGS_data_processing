@@ -106,7 +106,7 @@ for my $chrID ( sort keys %chr_wind ) {
 	for my $ti ( @{$chr_wind{$chrID}{'info'}{'windSloci'}} ) {
 		$opts{'showAll'} or defined $chr_wind{$chrID}{'vv'}{$ti} or next; 
 		$opts{'trimTail'} and ( $endIdx{$chrID} eq 'stop' or $endIdx{$chrID} < $ti ) and last; 
-		defined $chr_wind{$chrID} or $chr_wind{$chrID} = []; 
+		defined $chr_wind{$chrID}{'vv'}{$ti} or $chr_wind{$chrID}{'vv'}{$ti} = []; 
 		my %ins_back = %{ mathSunhh::ins_calc( $chr_wind{$chrID}{'vv'}{$ti} ) }; 
 		for my $tk (qw/MEAN/) {
 			$ins_back{$tk} ne '' and $ins_back{$tk} = sprintf("%.4f", $ins_back{$tk}); 

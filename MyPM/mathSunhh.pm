@@ -149,8 +149,8 @@ sub ins_calc {
 	my $r_arr = shift; 
 	my $min_val_number = shift // 1; 
 	my %back; 
-	if (scalar(@$r_arr) < $min_val_number) {
-		for my $ta (qw/Q1 Q3 interval_low interval_high interval_mean interval_median interval_var interval_stdev limit_low limit_high/) {
+	if ( (! defined $r_arr) or scalar(@$r_arr) < $min_val_number) {
+		for my $ta (qw/SUM COUNT MEAN MEDIAN Q1 Q3 interval_low interval_high interval_mean interval_median interval_var interval_stdev limit_low limit_high/) {
 			$back{$ta} = ''; 
 		}
 		return \%back; 
