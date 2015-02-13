@@ -201,7 +201,8 @@ sub add_tgt {
 }
 sub rm_bad1st {
 	my $ar = shift; 
-	if ( $ar->[1][2][1] == 0 or $ar->[1][2][1] < $ar->[1][2][0] ) {
+	# if ( $ar->[1][2][1] == 0 or $ar->[1][2][1] < $ar->[1][2][0] ) {
+	if ( $ar->[1][2][1] == 0 ) {
 		my ($min, $max) = (-1, -1); 
 		for ( my $i=2; $i<@$ar; $i++ ) {
 			$min == -1 and $min = $ar->[$i][0][3]; 
