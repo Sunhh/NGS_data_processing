@@ -11,6 +11,7 @@ GetOptions(\%opts,
 	"wind_length:i", "wind_start:i", "wind_end:i", "wind_step:i", 
 	"chr_colN:i", "pos_colN:i", "cnt_colN:i", 
 	"maxLine:i", "showAll!", "trimTail!", 
+	"skipHN:i", 
 ); 
 
 -t and !@ARGV and &usage(); 
@@ -36,6 +37,7 @@ sub usage {
 #  -trimTail       [] Trim tailing windows. 
 #
 #  -maxLine        [-1]
+#  -skipHN         [0] Skip header lines number. 
 ################################################################################
 HH
 	exit 1; 
@@ -54,6 +56,7 @@ $opts{'wind_step'} = $opts{'wind_step'} // $opts{'wind_length'};
 $opts{'maxLine'} = $opts{'maxLine'} // -1; 
 $opts{'chr_colN'} = $opts{'chr_colN'} // 0 ;
 $opts{'pos_colN'} = $opts{'pos_colN'} // 1 ;
+$opts{'skipHN'} = $opts{'skipHN'} // 0; 
 # $opts{'cnt_colN'} = $opts{'cnt_colN'} ;
 
 ## Setup windows. 
@@ -64,7 +67,10 @@ my $mm = mathSunhh->new();
 &tsmsg("[Rec] Reading file.\n"); 
 my $inLine = 0; 
 my %chr_wind; 
+my $ln_cnt = 0; 
 while (<>) {
+	$ln_cnt ++; 
+	$ln_cnt > $opts{'skipHN'} or next; 
 	$. % 1e6 == 1 and &tsmsg("[Msg] Reading [$.] line(s).\n"); 
 	chomp; m/^\s*$/ and next; 
 	my @ta = split(/\s+/, $_); 
@@ -72,6 +78,7 @@ while (<>) {
 	$chrV =~ m/^chr$/i and next; 
 	my $cntV = ( defined $opts{'cnt_colN'}  ) ? $ta[ $opts{'cnt_colN'} ] : 1 ; 
 	my $posV = ( $opts{'pos_colN'} == -9999 ) ? $cntV : $ta[ $opts{'pos_colN'} ] ; 
+	( defined $cntV and $cntV ne '' ) or next; 
 	defined $chr_wind{$chrV} or $chr_wind{$chrV} = $mm->setup_windows(
 	  'ttl_start' => $opts{'wind_start'}, 
 	  'ttl_end'   => $opts{'wind_end'}, 
