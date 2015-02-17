@@ -23,7 +23,7 @@ use shadow_AED;
 use FastaSeq;
 use Carp;
 
-use LogInforSunhh; 
+# use LogInforSunhh; # Sunhh 
 
 $Storable::forgive_me = 1;
 
@@ -1070,7 +1070,7 @@ sub annotate_stats {
 	    $g->{AED}       = $AED;
 	    $g->{eAED}      = $eAED;
 
-warn "setAED: AED=$g->{'AED'} eAED=$g->{'eAED'} g_name=$g->{'g_name'} gSE=$g->{'g_start'} $g->{'g_end'}\n"; 
+# warn "setAED: AED=$g->{'AED'} eAED=$g->{'eAED'} g_name=$g->{'g_name'} gSE=$g->{'g_start'} $g->{'g_end'}\n"; # Sunhh
 
 	    push(@{$annotations{$key}}, $g);
 	}
@@ -1280,11 +1280,11 @@ sub best_annotations {
 
 		if($p !~ /2genome$/ && $g->{g_strand} == 1){
 		    push(@$p_list, $g) if(($AED < 1 && $low <= $thresh) || $p eq 'model_gff');
-warn "p_strand: AED=$AED eAED=$eAED thresh=$thresh SE=$g->{'g_start'} $g->{'g_end'}\n"; 
+# warn "p_strand: AED=$AED eAED=$eAED thresh=$thresh SE=$g->{'g_start'} $g->{'g_end'}\n"; # Sunhh
 		}
 		elsif($p !~ /2genome$/ && $g->{g_strand} == -1) {
 		    push(@$m_list, $g) if(($AED < 1 && $low <= $thresh) || $p eq 'model_gff');
-warn "m_strand: AED=$AED eAED=$eAED thresh=$thresh SE=$g->{'g_start'} $g->{'g_end'}\n"; 
+# warn "m_strand: AED=$AED eAED=$eAED thresh=$thresh SE=$g->{'g_start'} $g->{'g_end'}\n"; # Sunhh
 		}
 		elsif($g->{g_strand} == 1){
 		    #separate est2genome and protein2genome genes
@@ -1303,34 +1303,38 @@ warn "m_strand: AED=$AED eAED=$eAED thresh=$thresh SE=$g->{'g_start'} $g->{'g_en
 	#remove low scoring overlaping genes
 #	@$p_list  = sort {crit1($a) <=> crit1($b) || crit2($a) <=> crit2($b) || crit3($a) <=> crit3($b) || crit4($b) <=> crit4($a)} @$p_list;
 #	@$m_list  = sort {crit1($a) <=> crit1($b) || crit2($a) <=> crit2($b) || crit3($a) <=> crit3($b) || crit4($b) <=> crit4($a)} @$m_list;
-	@$p_list  = sort {crit2($a) <=> crit2($b) || crit1($a) <=> crit1($b) || crit3($a) <=> crit3($b) || crit4($b) <=> crit4($a)} @$p_list;
-	@$m_list  = sort {crit2($a) <=> crit2($b) || crit1($a) <=> crit1($b) || crit3($a) <=> crit3($b) || crit4($b) <=> crit4($a)} @$m_list;
+	@$p_list  = sort {crit2($a) <=> crit2($b) || crit1($a) <=> crit1($b) || crit3($a) <=> crit3($b) || crit4($b) <=> crit4($a)} @$p_list; # Sunhh
+	@$m_list  = sort {crit2($a) <=> crit2($b) || crit1($a) <=> crit1($b) || crit3($a) <=> crit3($b) || crit4($b) <=> crit4($a)} @$m_list; # Sunhh
 	push(@$p_list, @p_est2g); #est2genome added to end, will only appear if nothing else overlaps
 	push(@$m_list, @m_est2g); #est2genome added to end, will only appear if nothing else overlaps
-warn "\n"; 
-for my $tm (@$p_list) {
-	my ($s,$e) = _g_coding_start_end($tm); 
-	warn "p_All: AED=$tm->{'AED'} eAED=$tm->{'eAED'} abAED=$tm->{'abAED'} SE=$s $e\n"; 
-}
-for my $tm (@$m_list) {
-	my ($s,$e) = _g_coding_start_end($tm); 
-	warn "m_All: AED=$tm->{'AED'} eAED=$tm->{'eAED'} abAED=$tm->{'abAED'} SE=$s $e\n"; 
-}
-warn "\n"; 
-
+# Sunhh : Start 
+# warn "\n"; 
+# for my $tm (@$p_list) {
+# 	my ($s,$e) = _g_coding_start_end($tm); 
+# 	warn "p_All: AED=$tm->{'AED'} eAED=$tm->{'eAED'} abAED=$tm->{'abAED'} SE=$s $e\n"; 
+# }
+# for my $tm (@$m_list) {
+# 	my ($s,$e) = _g_coding_start_end($tm); 
+# 	warn "m_All: AED=$tm->{'AED'} eAED=$tm->{'eAED'} abAED=$tm->{'abAED'} SE=$s $e\n"; 
+# }
+# warn "\n"; 
+# 
+# Sunhh : End
 	$p_list = _best($p_list, $CTL_OPT);
 	$m_list = _best($m_list, $CTL_OPT);
 
-warn "\n"; 
-for my $tm (@$p_list) {
-	my ($s,$e) = _g_coding_start_end($tm); 
-	warn "p_best: AED=$tm->{'AED'} eAED=$tm->{'eAED'} abAED=$tm->{'abAED'} SE=$s $e\n"; 
-}
-for my $tm (@$m_list) {
-	my ($s,$e) = _g_coding_start_end($tm); 
-	warn "m_best: AED=$tm->{'AED'} eAED=$tm->{'eAED'} abAED=$tm->{'abAED'} SE=$s $e\n"; 
-}
-warn "\n"; 
+# Sunhh : Start
+# warn "\n"; 
+# for my $tm (@$p_list) {
+# 	my ($s,$e) = _g_coding_start_end($tm); 
+# 	warn "p_best: AED=$tm->{'AED'} eAED=$tm->{'eAED'} abAED=$tm->{'abAED'} SE=$s $e\n"; 
+# }
+# for my $tm (@$m_list) {
+# 	my ($s,$e) = _g_coding_start_end($tm); 
+# 	warn "m_best: AED=$tm->{'AED'} eAED=$tm->{'eAED'} abAED=$tm->{'abAED'} SE=$s $e\n"; 
+# }
+# warn "\n"; 
+# Sunhh : End
 
 	#almost final  sets
 	push(@p_keepers, @$p_list);
@@ -1355,36 +1359,42 @@ warn "\n";
 	    _trim_UTR_if_overlap($g1, $g2);
 	}
     }
-warn "\n"; 
-for my $tm (@p_keepers) {
-	my ($s,$e) = _g_coding_start_end($tm); 
-	warn "p_corr: AED=$tm->{'AED'} eAED=$tm->{'eAED'} abAED=$tm->{'abAED'} SE=$s $e\n"; 
-}
-for my $tm (@m_keepers) {
-	my ($s,$e) = _g_coding_start_end($tm); 
-	warn "m_corr: AED=$tm->{'AED'} eAED=$tm->{'eAED'} abAED=$tm->{'abAED'} SE=$s $e\n"; 
-}
-warn "\n"; 
+# Sunhh : Start
+# warn "\n"; 
+# for my $tm (@p_keepers) {
+# 	my ($s,$e) = _g_coding_start_end($tm); 
+# 	warn "p_corr: AED=$tm->{'AED'} eAED=$tm->{'eAED'} abAED=$tm->{'abAED'} SE=$s $e\n"; 
+# }
+# for my $tm (@m_keepers) {
+# 	my ($s,$e) = _g_coding_start_end($tm); 
+# 	warn "m_corr: AED=$tm->{'AED'} eAED=$tm->{'eAED'} abAED=$tm->{'abAED'} SE=$s $e\n"; 
+# }
+# warn "\n"; 
+# Sunhh : End
 
     #remove CDS competition on opposite strand
     my $final;
     if($CTL_OPT->{organism_type} eq 'eukaryotic'){
        $final = remove_CDS_competitors(\@p_keepers, \@m_keepers);
-warn "\n"; 
-for my $tm (@$final) {
-	my ($s,$e) = _g_coding_start_end($tm); 
-	warn "final: AED=$tm->{'AED'} eAED=$tm->{'eAED'} abAED=$tm->{'abAED'} SE=$s $e\n"; 
-}
-warn "\n"; 
+# Sunhh : Start
+# warn "\n"; 
+# for my $tm (@$final) {
+# 	my ($s,$e) = _g_coding_start_end($tm); 
+# 	warn "final: AED=$tm->{'AED'} eAED=$tm->{'eAED'} abAED=$tm->{'abAED'} SE=$s $e\n"; 
+# }
+# warn "\n"; 
+# Sunhh : End
     }
     else{
        $final = [@p_keepers, @m_keepers];
-warn "\n"; 
-for my $tm (@$final) {
-	my ($s,$e) = _g_coding_start_end($tm); 
-	warn "final: AED=$tm->{'AED'} eAED=$tm->{'eAED'} abAED=$tm->{'abAED'} SE=$s $e\n"; 
-}
-warn "\n"; 
+# Sunhh : Start
+# warn "\n"; 
+# for my $tm (@$final) {
+# 	my ($s,$e) = _g_coding_start_end($tm); 
+# 	warn "final: AED=$tm->{'AED'} eAED=$tm->{'eAED'} abAED=$tm->{'abAED'} SE=$s $e\n"; 
+# }
+# warn "\n"; 
+# Sunhh : End
     }
 
     return $final;
@@ -2327,7 +2337,7 @@ sub load_transcript_stats {
 	my $seq          = shift;
 	my $CTL_OPT      = shift;
 
-&tsmsg("ld_trans_stats: Start.\n"); 
+# &tsmsg("ld_trans_stats: Start.\n"); # Sunhh
 
 	my $f               = $struct->{hit};
 	my $p_base          = $struct->{p_base};
@@ -2358,7 +2368,7 @@ sub load_transcript_stats {
 	my $eAED = shadow_AED::get_eAED(\@bag, $f, $seq);
 	my $qi   = maker::quality_index::get_transcript_qi($f,$evi,$offset,$len_3_utr,$l_trans);
 
-&tsmsg("evid_AED: AED=$AED eAED=$eAED qi=$qi\n"); 
+# &tsmsg("evid_AED: AED=$AED eAED=$eAED qi=$qi\n"); # Sunhh 
 
 	#put stats in hit for match processing
 	if($CTL_OPT->{pred_stats}){
@@ -2385,12 +2395,14 @@ sub load_transcript_stats {
 		$p_base->{_eAED} = shadow_AED::get_eAED(\@bag, $p_base, $seq);
 		$p_base->{_QI} = maker::quality_index::get_transcript_qi($p_base,$evi,$p_offset,$p_len_3_utr,$p_l_trans);
 
-my $alg = $p_base->algorithm; 
-&tsmsg("pb_AED: AED=$p_base->{_AED} eAED=$p_base->{_eAED} qi= $p_base->{_QI} alg=$alg\n"); 
+# my $alg = $p_base->algorithm; # Sunhh
+# &tsmsg("pb_AED: AED=$p_base->{_AED} eAED=$p_base->{_eAED} qi= $p_base->{_QI} alg=$alg\n"); # Sunhh
 
 		$p_struct->{AED} = $p_base->{_AED};
 		$p_struct->{eAED} = $p_base->{_eAED};
 		$p_struct->{t_qi} = $p_base->{_QI};
+$p_struct->{'AED'} < $AED and $AED = $p_struct->{'AED'}; # Sunhh
+$p_struct->{'eAED'} < $eAED and $eAED = $p_struct->{'eAED'}; # Sunhh
 	    }
 	}
 
@@ -2423,8 +2435,8 @@ my $alg = $p_base->algorithm;
 	$struct->{AED}  = $AED;
 	$struct->{eAED} = $eAED;
 
-&tsmsg("ld_trans_stats: AED=$AED eAED=$eAED t_id=$t_id E=$struct->{'t_end'} t_id=$struct->{t_id}\n"); 
-&tsmsg("ld_trans_stats: End.\n"); 
+# &tsmsg("ld_trans_stats: AED=$AED eAED=$eAED t_id=$t_id E=$struct->{'t_end'} t_id=$struct->{t_id}\n"); # Sunhh 
+# &tsmsg("ld_trans_stats: End.\n"); # Sunhh 
 
 	return $struct;
 }
@@ -3086,8 +3098,8 @@ sub get_non_overlaping_abinits {
    my @keepers;
    #Sunhh# @p_keepers  = sort {crit1($a) <=> crit1($b) || crit2($a) <=> crit2($b) || crit3($a) <=> crit3($b) || crit4($b) <=> crit4($a)} @p_keepers;
    #Sunhh# @m_keepers  = sort {crit1($a) <=> crit1($b) || crit2($a) <=> crit2($b) || crit3($a) <=> crit3($b) || crit4($b) <=> crit4($a)} @m_keepers;
-   @p_keepers  = sort {crit2($a) <=> crit2($b) || crit1($a) <=> crit1($b) || crit3($a) <=> crit3($b) || crit4($b) <=> crit4($a)} @p_keepers;
-   @m_keepers  = sort {crit2($a) <=> crit2($b) || crit1($a) <=> crit1($b) || crit3($a) <=> crit3($b) || crit4($b) <=> crit4($a)} @m_keepers;
+   @p_keepers  = sort {crit2($a) <=> crit2($b) || crit1($a) <=> crit1($b) || crit3($a) <=> crit3($b) || crit4($b) <=> crit4($a)} @p_keepers; # Sunhh
+   @m_keepers  = sort {crit2($a) <=> crit2($b) || crit1($a) <=> crit1($b) || crit3($a) <=> crit3($b) || crit4($b) <=> crit4($a)} @m_keepers; # Sunhh
    push(@keepers, @{_best(\@p_keepers)});
    push(@keepers, @{_best(\@m_keepers)});
 

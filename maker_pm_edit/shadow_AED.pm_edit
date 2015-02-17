@@ -5,14 +5,13 @@ package shadow_AED;
 use strict;
 use Carp;
 use Bit::Vector;
-
-use LogInforSunhh; # Sunhh 
+# use LogInforSunhh; # Sunhh 
 
 sub get_abAED{
     my $hits = shift;
     my $tran = shift;
 
-&tsmsg("get_abAED: Start\n"); 
+# &tsmsg("get_abAED: Start\n"); # Sunhh
 
     my $sum = 0;
     $tran->{_touch}++; #keeps self from being counted in score
@@ -25,8 +24,8 @@ sub get_abAED{
 	delete($h->{_touch});
     }
 
-my $rr = ( !@$hits ) ? 1 : $sum/@$hits ; 
-&tsmsg("get_abAED: End. abAED=$rr\n"); 
+# my $rr = ( !@$hits ) ? 1 : $sum/@$hits ; # Sunhh
+# &tsmsg("get_abAED: End. abAED=$rr\n"); # Sunhh
 
     return 1 if(! @$hits);
     return $sum/@$hits;
@@ -339,6 +338,25 @@ sub get_AED { # Sunhh
    my ($hits, $tran) = @_; # Sunhh 
    my $sum_AED = 0; # Sunhh 
    my $cnt_AED = 0; # Sunhh 
+
+# Sunhh : Start 
+# my $is_o = 0; 
+# my $tS = $tran->start('query'); 
+# my $tE = $tran->end('query'); 
+# my $tID = $tran->{'_tran_id'}; 
+# $tS <= 48490 and $tE >= 30266 and $is_o = 1; 
+# &tsmsg("get_AED_Start: SE=$tS $tE\n"); 
+# if ($is_o == 1) {
+# 	my @tt_hsps; 
+# 	defined $tran->hsps() and @tt_hsps = $tran->hsps(); 
+# 	for my $hsp (@tt_hsps) {
+# 		my $sss = $hsp->start('query'); 
+# 		my $eee = $hsp->end('query'); 
+# 		&tsmsg("get_AED_HSP: SE=$sss $eee\n"); 
+# 	}
+# }
+# Sunhh : End
+
    for my $hit (@$hits) { # Sunhh 
      my ($sn, $sp) = get_SN_SP([$hit], $tran); # Sunhh 
      $sum_AED += ( 1 - ($sn+$sp)/2 ); # Sunhh 
@@ -346,10 +364,7 @@ sub get_AED { # Sunhh
    } # Sunhh 
    my $AED = ( $cnt_AED == 0 ) ? 1 : $sum_AED/$cnt_AED ; # Sunhh 
 
-my $tS = $tran->start('query'); 
-my $tE = $tran->end('query'); 
-my $tID = $tran->{'_tran_id'}; 
-&tsmsg("get_AED: SE=$tS $tE AED=$AED cnt_AED=$cnt_AED _tran_id=$tID\n"); 
+# &tsmsg("get_AED: SE=$tS $tE AED=$AED cnt_AED=$cnt_AED _tran_id=$tID\n"); # Sunhh
 
    return $AED; #Sunhh 
 }# Sunhh
@@ -405,7 +420,6 @@ sub get_SN_SP {
    foreach my $hsp (@hsps){
       my $s = $hsp->start('query') - $offset;
       my $e = $hsp->end('query') - $offset;
-      
       #array space coors
       confess "ERROR: Start value not permited!!\n" if($s >= $length || $s < 0);
       confess "ERROR: End value not permited!!\n" if($e < 0 || $e >= $length);
