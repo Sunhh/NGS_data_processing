@@ -29,8 +29,8 @@ sub usage {
 #  -wind_start     [1]
 #  -wind_end       [9999999]
 #
-#  -chr_colN       [0] -9999 means there is no chr_colN being used. 
-#  -pos_colN       [1] -9999 means there is no pos_colN being used, then setup windows from cnt_colN
+#  -chr_colN       [0] 999999 means there is no chr_colN being used. 
+#  -pos_colN       [1] 999999 means there is no pos_colN being used, then setup windows from cnt_colN
 #  -cnt_colN       [] Count will be always 1 if not given this column number. 
 #
 #  -showAll        [] Show all windows if given. 
@@ -74,10 +74,10 @@ while (<>) {
 	$. % 1e6 == 1 and &tsmsg("[Msg] Reading [$.] line(s).\n"); 
 	chomp; m/^\s*$/ and next; 
 	my @ta = split(/\s+/, $_); 
-	my $chrV = ( $opts{'chr_colN'} == -9999 ) ? 0     : $ta[ $opts{'chr_colN'} ] ; 
+	my $chrV = ( $opts{'chr_colN'} == 999999 ) ? 0     : $ta[ $opts{'chr_colN'} ] ; 
 	$chrV =~ m/^chr$/i and next; 
 	my $cntV = ( defined $opts{'cnt_colN'}  ) ? $ta[ $opts{'cnt_colN'} ] : 1 ; 
-	my $posV = ( $opts{'pos_colN'} == -9999 ) ? $cntV : $ta[ $opts{'pos_colN'} ] ; 
+	my $posV = ( $opts{'pos_colN'} == 999999 ) ? $cntV : $ta[ $opts{'pos_colN'} ] ; 
 	( defined $cntV and $cntV ne '' ) or next; 
 	defined $chr_wind{$chrV} or $chr_wind{$chrV} = $mm->setup_windows(
 	  'ttl_start' => $opts{'wind_start'}, 
