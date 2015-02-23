@@ -70,15 +70,18 @@ sub newNumber {
 		}
 		$self->{'safeNumber'}{'max'} = $newN; 
 		$self->{'safeNumber'}{'has'}{$newN} = 1; 
+		$self->{'safeNumber'}{'lastN'} = $newN; 
 		return $newN; 
 	} else {
 		my $newN = 1; 
 		$self->{'safeNumber'}{'min'} = $newN; 
 		$self->{'safeNumber'}{'max'} = $newN; 
 		$self->{'safeNumber'}{'has'}{$newN} = 1; 
+		$self->{'safeNumber'}{'lastN'} = $newN; 
 		return $newN; 
 	}
 }# newNumber() 
+
 
 # Function : Trace back all offsprings from root ID according to sub_routine_reference given. 
 #            Be aware that if the offspring has the same ID of rootID, this function will terminate!!! 
