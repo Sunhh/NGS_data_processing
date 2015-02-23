@@ -33,6 +33,45 @@ sub _initialize {
 	return; 
 }
 
+# Function : Trace back all offsprings from root ID according to sub_routine_reference given. 
+#            Be aware that if the offspring has the same ID of rootID, this function will terminate!!! 
+#            This is used to avoid infinite cycles caused by relationship: rootID is a child of rootID. 
+# Input    : ( $rootID, sub { return @offspring; }, 'unique'=>1 )
+# Output   : [offspring1, offspring2, ...]
+sub offspringArray {
+	my $self = shift;
+	my $rootID = shift;  # rootID from which to find offsprings. 
+	my $coderef = shift; # reference of subroutine which return a array of offspring list. 
+	my %parm = @_; 
+	$parm{'unique'} = $parm{'unique'} // 1; 
+
+	my @cIDs;            # All Children IDs. 
+	my @off1 = ( &$coderef( $rootID ) ); # Offsprings directly from rootID. 
+	scalar(@off1) == 0 and return [];
+	my %haveID ; 
+	$haveID{$rootID} = 1; 
+
+	for my $cID ( @off1 ) {
+		defined $haveID{$cID} and next; 
+		push(@cIDs, $cID);
+		my @ccIDs = grep { !(defined $haveID{$_}) } @{ $self->offspringArray( $cID, $coderef, %parm ) };
+		push(@cIDs, @ccIDs);
+	}
+
+	if ( $parm{'unique'} ) {
+		my %usedID; 
+		my @bIDs; 
+		for my $cID (@cIDs) {
+			defined $usedID{$cID} or push(@bIDs, $cID); 
+			$usedID{$cID} = 1; 
+		}
+		@cIDs = @bIDs; 
+	}
+
+	return [@cIDs];
+}# _allChild()
+
+
 # Function: return a list of windows in hash reference according to given [window_size, window_step, total_start, total_end]
 # return value: \%back_wind; 
 #  'keys'  => values
