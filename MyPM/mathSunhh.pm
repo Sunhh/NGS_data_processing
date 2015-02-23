@@ -36,6 +36,7 @@ sub _initialize {
 }
 
 # Function : Construct 'safeNumber' hash to store not used numbers in the same object. 
+#            It seems that this number is not only unique in the same object, but also unique in all objects in the same module calling this mathSunhh.pm module. 
 # Input    : Null 
 # Return   : A new number not used before. 
 sub newNumber {
