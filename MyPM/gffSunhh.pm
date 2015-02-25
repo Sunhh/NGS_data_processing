@@ -10,6 +10,15 @@ use mathSunhh;
 ##########################################################
 
 my $mathObj = mathSunhh->new(); 
+my %str2num = qw(
+  +      1
+  -     -1
+  1      1
+  -1    -1
+  plus   1
+  minus -1
+  0     -1 
+); 
 
 ##########################################################
 #########  Methods. 
@@ -29,12 +38,113 @@ sub _initialize {
 	my $self = shift; 
 }
 
+=head2 write_gff3File ( 'outFH'=>$file_handle // $FH_of_outFile // \*STDOUT, 'outFile'=>$outFileName, 'writeMode'=>'>', 
+  'seq_href'=>$out2_of_read_gff3File() , 'seq_width'=>60, 'seqIDs_aref'=>[@seqIDs_to_output], 
+  'gff3_href'=>$out1_of_read_gff3File(), 'topIDs_aref'=>[keys %{$gff3_href->{'lineN_group'}}], 
+  'sort_by'=>'raw/lineNum/str_posi/position'
+)
+
+Required : 
+  'gff3_href'
+=cut
 sub write_gff3File {
 	my $self = shift; 
+	### Step1. Setting parameters
 	my %parm = $self->_setHashFromArr(\@_); 
-	my (, $lineN2line_href); 
-	if () {
+	
+	##  Require {'outFH'} or {'outFile'} defined. 
+	my $fh; 
+	defined $parm{'outFH'} and $fh = $parm{'outFH'}; 
+	$parm{'writeMode'} = $parm{'writeMode'} // '>'; 
+	defined $fh or $fh = ( defined $parm{'outFile'} ) ? &fileSunhh::openFH( $parm{'outFile'}, $parm{'writeMode'}) : \*STDOUT ; 
+	
+	my $seq_href = $parm{'seq_href'} // undef(); 
+	my $seqIDs_aref; 
+	defined $seq_href and $seqIDs_aref = 
+	  $parm{'seqIDs_aref'} 
+	  // 
+	  [ sort { length($seq_href->{$b}) <=> length($seq_href->{$a}) ||  $a cmp $b } keys %$seq_href ]; 
+	my $seq_width = $parm{'seq_width'} // 60; 
+	
+	
+	my $gff3_href = $parm{'gff3_href'} // &stopErr("[Err] Must provide 'gff3_href' which is out[0] of sub read_gff3File()\n"); 
+	my $lineN_group_href = $gff3_href->{'lineN_group'}; 
+	my $lineN2line_href = $gff3_href->{'lineN2line'}; 
+	### Step2. Group_topIDs are sorted by line number in default. 
+	###   If we want to sort Group_topIDs by other method such as chromID/position, 
+	###   we should sort it out of this subroutine, and define {'topIDs_aref'}. 
+	my $topIDs_aref = $parm{'topIDs_aref'} // [ sort { $lineN_group_href->{$a}{'curLn'}[0]<=>$lineN_group_href->{$b}{'curLn'}[0] } keys %$lineN_group_href ]; 
+	$parm{'sort_by'} = $parm{'sort_by'} // 'lineNum'; # Could be Raw/lineNum/str_posi/position
+	$parm{'sort_by'} = lc($parm{'sort_by'}); 
+	
+	for my $topID ( @$topIDs_aref ) {
+		### Step3. Use $parm{'sort_by'} to control the way to sort lines within groups. 
+		my @grp_lines; 
+		push(@grp_lines, [$lineN2line_href->{$_}, $_] ) for ( grep { defined $gff3_href->{'lineN2hash'}{$_} } @{ $lineN_group_href->{$topID}{'parLn'} } ); 
+		push(@grp_lines, [$lineN2line_href->{$_}, $_] ) for ( grep { defined $gff3_href->{'lineN2hash'}{$_} } @{ $lineN_group_href->{$topID}{'curLn'} } ); 
+		push(@grp_lines, [$lineN2line_href->{$_}, $_] ) for ( grep { defined $gff3_href->{'lineN2hash'}{$_} } @{ $lineN_group_href->{$topID}{'offLn'} } ); 
+		if ( $parm{'sort_by'} eq 'raw' ) {
+			; 
+		} elsif ( $parm{'sort_by'} =~ m/^linenum/i ) {
+			@grp_lines = sort { $a->[1] <=> $b->[1] } @grp_lines; 
+		} elsif ( $parm{'sort_by'} =~ m/^str_posi/i) {
+			# Get strand information (1/-1, 'u' for unknown). 
+			my $str = 'u'; 
+			for my $ar ( @grp_lines ) {
+				defined $gff3_href->{'lineN2hash'}{$ar->[1]}{'strand'} or next; 
+				$gff3_href->{'lineN2hash'}{$ar->[1]}{'strand'} eq '.' and next; 
+				defined $str2num{ lc($gff3_href->{'lineN2hash'}{$ar->[1]}{'strand'}) } or &stopErr("[Err] Unknown strand [$gff3_href->{'lineN2hash'}{$ar->[1]}{'strand'}]\n"); 
+				$str = $str2num{ lc($gff3_href->{'lineN2hash'}{$ar->[1]}{'strand'}) }; 
+				last; 
+			}
+			$str eq 'u' and do { &tsmsg("[Wrn] Strand of [$gff3_href->{'lineN2hash'}{'attrib'}{'attribText'}] missed, set as [+/plus].\n"); $str = 1; }; 
+			if ( $str == 1 ) {
+				@grp_lines = 
+				sort {  
+				     $gff3_href->{'lineN2hash'}{$a->[1]}{'seqID'} cmp $gff3_href->{'lineN2hash'}{$b->[1]}{'seqID'}
+				  || $gff3_href->{'lineN2hash'}{$a->[1]}{'start'} <=> $gff3_href->{'lineN2hash'}{$b->[1]}{'start'}
+				  || $gff3_href->{'lineN2hash'}{$a->[1]}{'end'}   <=> $gff3_href->{'lineN2hash'}{$b->[1]}{'end'}
+				  || $gff3_href->{'lineN2hash'}{$a->[1]}{'type'}  cmp $gff3_href->{'lineN2hash'}{$b->[1]}{'type'}
+				} @grp_lines; 
+			} elsif ( $str == -1 ) {
+				@grp_lines = 
+				sort {  
+				     $gff3_href->{'lineN2hash'}{$a->[1]}{'seqID'} cmp $gff3_href->{'lineN2hash'}{$b->[1]}{'seqID'}
+				  || $gff3_href->{'lineN2hash'}{$b->[1]}{'end'}   <=> $gff3_href->{'lineN2hash'}{$a->[1]}{'end'}
+				  || $gff3_href->{'lineN2hash'}{$b->[1]}{'start'} <=> $gff3_href->{'lineN2hash'}{$a->[1]}{'start'}
+				  || $gff3_href->{'lineN2hash'}{$b->[1]}{'type'}  cmp $gff3_href->{'lineN2hash'}{$a->[1]}{'type'}
+				} @grp_lines; 
+			} else {
+				&stopErr("[Err] Why here!\n"); 
+			}
+		} elsif ( $parm{'sort_by'} =~ m/^position/i) {
+			@grp_lines = 
+			sort {  
+			     $gff3_href->{'lineN2hash'}{$a->[1]}{'seqID'} cmp $gff3_href->{'lineN2hash'}{$b->[1]}{'seqID'}
+			  || $gff3_href->{'lineN2hash'}{$a->[1]}{'start'} <=> $gff3_href->{'lineN2hash'}{$b->[1]}{'start'}
+			  || $gff3_href->{'lineN2hash'}{$a->[1]}{'end'}   <=> $gff3_href->{'lineN2hash'}{$b->[1]}{'end'}
+			  || $gff3_href->{'lineN2hash'}{$a->[1]}{'type'}  cmp $gff3_href->{'lineN2hash'}{$b->[1]}{'type'}
+			} @grp_lines; 
+		} else {
+			&stopErr("[Err] Unknown 'sort_by'=>[$parm{'sort_by'}] which should be one of 'raw/linenum/str_posi/position'\n"); 
+		}
+		
+		### Step4. Write each line to file handle $fh
+		print {$fh} $_->[0]."\n" for ( @grp_lines ); 
+		
+	}# for my $topID ( @$topIDs_aref )
+	
+	if ( defined $seq_href ) {
+		### Step5. Write fasta sequences if required. 
+		print {$fh} "##FASTA\n"; 
+		for my $seqID (@$seqIDs_aref) {
+			my $tseq = $seq_href->{$seqID}; 
+			$tseq =~ s!(.{$seq_width})!$1\n!g; chomp($tseq); 
+			print {$fh} ">$seqID\n$tseq\n"; 
+		}
 	}
+	
+	return ; 
 }# write_gff3File() 
 
 
@@ -49,11 +159,15 @@ Function :
 Read in gff3 file by file handle or file name given. 
            It use {'lineN2line'} to record line text, {'lineN2hash'} to record feature related information, 
             and {'lineN_group'} to record {$topID} as key 
-            and {$topID}{'parLn/offLn'} (array_ref) as values for parent/child line numbers. 
+            and {$topID}{'parLn/curLn/offLn'} (array_ref) as values for parent/self/child line numbers. 
            When meeting duplicated feature IDs, it will add ":$lineNum" to the original featID until it is unique. 
             In this way, this line may fail to be grouped as a parent if it has a child feature line. 
            Empty or commented lines (m/^\s*(#|$)/) are not collected in $back_gff{'lineN_group'} hash_ref, 
             but exist in $back_gff{'lineN2line'} with {'lineN2hash'} as undef(). 
+
+Required : 
+  'gffFH' || 'gffFile'
+
 Return   : (\%back_gff, \%back_seq)
  In %back_gff : 
   {'lineN2line'}{$lineNum} = $line_txt; 
@@ -64,7 +178,7 @@ Return   : (\%back_gff, \%back_seq)
    Here $featID = $ID_in_attribute or $lineNum if not assigned. 
   {'PID2CID'}{$parent_featID}{$child_featID} = 1; 
   {'CID2PID'}{$child_featID}{$parent_featID} = 1; 
-  {'lineN_group'}{$topID}{'parLn/offLn'} = [@lineNumbers]; 
+  {'lineN_group'}{$topID}{'parLn/curLn/offLn'} = [@lineNumbers]; 
  In %back_seq : 
   {'seqID'} = $fasta_seq_woBlank  
 
@@ -73,8 +187,10 @@ sub read_gff3File {
 	my $self = shift; 
 	my %parm = $self->_setHashFromArr(\@_); 
 	### Step1. Setting parameters. 
+	$parm{'debug'} = $parm{'debug'} // 0; 
 	##   'saveFa' is used to keep fasta sequences in gff3 file into %back_seq hash. 
 	$parm{'saveFa'} = $parm{'saveFa'} // 0; 
+	
 	##   Set the top hierarchy (featID should be in lower case!) to group features. 
 	##   I plan to add the features who are parents of top_hier to the first group I output. 
 	##   Some possible values:          
@@ -85,7 +201,7 @@ sub read_gff3File {
 	##     match:match_part
 	##     protein_match/expressed_sequence_match:match_part
 	my %top_hier; 
-	$self->_setTypeHash(\%top_hier, [qw/mrna match protein_match expressed_sequence_match/]); 
+	$self->_setTypeHash(\%top_hier, [ map { lc($_) } qw/mrna match protein_match expressed_sequence_match/]); 
 	if ( defined $parm{'top_hier'} ) {
 		%top_hier = (); 
 		$top_hier{lc($_)} = $parm{'top_hier'}->{$_} foreach (keys %{$parm{'top_hier'}}); 
@@ -150,7 +266,7 @@ sub read_gff3File {
 		RE_CHK_FEATID_DUP: 
 		if ( exists $back_gff{'ID2lineN'}{$featID} ) {
 			my $new_featID = "${featID}:$lineNum"; 
-			&tsmsg("[Wrn] Two lines have the same featID [$featID]. The latter one is changed to [$new_featID]. But it may still cause error.\n"); 
+			$parm{'debug'} and &tsmsg("[Wrn] Two lines have the same featID [$featID]. The latter one is changed to [$new_featID]. But it may still cause error.\n"); 
 			$featID = $new_featID; 
 			goto RE_CHK_FEATID_DUP; 
 		}# Check featID duplication. 
@@ -211,7 +327,7 @@ sub read_gff3File {
 	###  %uniq_top_featID stores all good top-parents' featID. 
 	###  %lineN_group stores all line numbers of good topID and their parents and children. 
 	###  The keys of %lineN_group are the keys in %uniq_top_featID, 
-	###   and the values are {$topID}{'parLn'/'offLn'} ; 
+	###   and the values are {$topID}{'parLn'/'curLn'/'offLn'} ; 
 	###   And %lineN_group is stored in $back_gff{'lineN_group'} as \%lineN_group; 
 	##   Find out all featID in top level. 
 	my %top_featID; # {PID} => hier_number 
@@ -306,6 +422,7 @@ sub read_gff3File {
 		}
 		$lineN_group{$topID}{'parLn'} = \@par1_lineN; # Offsprings 
 		$lineN_group{$topID}{'offLn'} = \@off1_lineN; # Parents. 
+		$lineN_group{$topID}{'curLn'} = [ $back_gff{'ID2lineN'}{$topID} ]; 
 		
 		$group_lineN{ $back_gff{'ID2lineN'}{$topID} } = 1; 
 	}# End for my $topID 
@@ -554,13 +671,13 @@ sub _getAttrHash {
 				} elsif ( $val =~ m/^F(alse)?$/i ) {
 					$backH{'is_circular'} = 0; 
 				} else {
-					&tsmsg("[Wrn] Unknown is_circular value [$val]\n"); 
+					$parm{'debug'} and &tsmsg("[Wrn] Unknown is_circular value [$val]\n"); 
 				}
 			} elsif ( $tag eq 'alias' ) {
 				$backH{'alias'} = $backH{'alias'} // {}; 
 				$self->_setTypeHash( $backH{'alias'}, $self->_txt2Array('txt'=>$val, 'sepSym'=>",")  ); 
 			} else {
-				&tsmsg("[Wrn] Skip unknown attribute_tag [$tag=$val]\n"); 
+				$parm{'debug'} and &tsmsg("[Wrn] Skip unknown attribute_tag [$tag=$val]\n"); 
 			}
 		}# End for (my $i=0; $i<@tv_pairs; $i+=2)  
 	}# End if () 
@@ -592,9 +709,9 @@ sub _txt2Array {
 sub _setParmType {
 	my $self = shift; 
 	my %parm = $self->_setHashFromArr(\@_); 
-	defined $parm{'type2include'}  or &_setTypeHash('', $parm{'type2include'},   [ qw/match match_part/ ]); 
-	defined $parm{'type2separate'} or &_setTypeHash('', $parm{'type2separate'},  [ qw/match/ ]); 
-	defined $parm{'type2check'}    or &_setTypeHash('', $parm{'type2check'},     [ sort { $parm{'type2include'}{$a} <=> $parm{'type2include'}{$b} || $a cmp $b } keys %{$parm{'type2include'}} ]); 
+	defined $parm{'type2include'}  or &_setTypeHash('', [ map { lc($_) } @{$parm{'type2include'}}  ],  [ qw/match match_part/ ]); 
+	defined $parm{'type2separate'} or &_setTypeHash('', [ map { lc($_) } @{$parm{'type2separate'}} ],  [ qw/match/ ]); 
+	defined $parm{'type2check'}    or &_setTypeHash('', [ map { lc($_) } @{$parm{'type2check'}}    ],  [ map { lc($_) } sort { $parm{'type2include'}{$a} <=> $parm{'type2include'}{$b} || $a cmp $b } keys %{$parm{'type2include'}} ]); 
 	return; 
 }# _setParmType()
 
@@ -611,7 +728,7 @@ sub _setTypeHash {
 	$aa ++; 
 	for my $ar (@_) {
 		( defined $ar and scalar(@$ar) > 0 ) or next; 
-		$hr->{lc($_)} = $aa++ for ( grep { !(defined $hr->{lc($_)}) } @$ar ) ; 
+		$hr->{ $_ } = $aa++ for ( grep { !(defined $hr->{ $_ }) } @$ar ) ; 
 		( defined $ar and scalar(@$ar) > 0 ) and last; 
 	}
 	return; 

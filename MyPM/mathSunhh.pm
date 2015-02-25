@@ -9,7 +9,7 @@ use warnings;
 use Statistics::Descriptive; 
 use Scalar::Util qw(looks_like_number);
 use Exporter qw(import);
-our @EXPORT = qw(ins_calc ovl_len);
+our @EXPORT = qw(ins_calc);
 our @EXPORT_OK = qw();
 
 use LogInforSunhh; 
@@ -35,10 +35,18 @@ sub _initialize {
 	return; 
 }
 
-# Function : Construct 'safeNumber' hash to store not used numbers in the same object. 
-#            It seems that this number is not only unique in the same object, but also unique in all objects in the same module calling this mathSunhh.pm module. 
-# Input    : Null 
-# Return   : A new number not used before. 
+=head2 newNumber ( 'other_safeNumber'=>[$mathSunhhObj->{'safeNumber'}, ...], 'onlyMerge'=>0, 'debug'=>0 )
+
+Required : Null 
+
+Function : Construct 'safeNumber' hash to store not used numbers in the same object. 
+            It seems that this number is not only unique in the same object, but also unique in all objects in the same module calling this mathSunhh.pm module. 
+
+Input    : Null 
+
+Return   : A new number not used before. 
+
+=cut
 sub newNumber {
 	my $self = shift; 
 	my %parm = @_; 
@@ -82,12 +90,21 @@ sub newNumber {
 	}
 }# newNumber() 
 
+=head2 offspringArray( $rootID, $code_reference_of_function, 'unique'=>1 )
 
-# Function : Trace back all offsprings from root ID according to sub_routine_reference given. 
-#            Be aware that if the offspring has the same ID of rootID, this function will terminate!!! 
-#            This is used to avoid infinite cycles caused by relationship: rootID is a child of rootID. 
-# Input    : ( $rootID, sub { return @offspring; }, 'unique'=>1 )
-# Output   : [offspring1, offspring2, ...]
+Required : 
+  $rootID
+  $code_reference_of_function : sub { return [@arr_value_as_next_self_loop] }
+
+Function : Trace back all offsprings from root ID according to sub_routine_reference given. 
+           Be aware that if the offspring has the same ID of rootID, this function will terminate!!! 
+           This is used to avoid infinite cycles caused by relationship: rootID is a child of rootID. 
+
+Input    : ( $rootID, sub { return @offspring; }, 'unique'=>1 )
+
+Output   : [offspring1, offspring2, ...]
+
+=cut
 sub offspringArray {
 	my $self = shift;
 	my $rootID = shift;  # rootID from which to find offsprings. 
@@ -121,15 +138,23 @@ sub offspringArray {
 	return [@cIDs];
 }# _allChild()
 
+=head2 setup_windows( 'ttl_start'=>1, 'ttl_end'=>99999999, 'wind_size'=>1000, 'wind_step'=> // 'wind_size', 
+  'minRatio'=> 0
+)
 
-# Function: return a list of windows in hash reference according to given [window_size, window_step, total_start, total_end]
-# return value: \%back_wind; 
-#  'keys'  => values
-#  'info' => {'ttl_start/ttl_end/wind_size/wind_step/minRatio/windSloci' => values} 
-#  'loci'  => {
-#               'wind_start_position' => [start_pos, end_pos, interval_len]
-#             }
-#  
+Required: 
+ 
+
+Function: return a list of windows in hash reference according to given [window_size, window_step, total_start, total_end]
+
+Return  : \%back_wind; 
+ 'keys'  => values
+ 'info' => {'ttl_start/ttl_end/wind_size/wind_step/minRatio/windSloci' => values} 
+ 'loci'  => {
+              'wind_start_position' => [start_pos, end_pos, interval_len]
+            }
+ 
+=cut
 sub setup_windows {
 	my $self = shift; 
 	my %parm = @_; 
@@ -156,9 +181,22 @@ sub setup_windows {
 	return \%back_wind; 
 }# sub setup_windows
 
-# Function: given a position, return an array reference recording all start_positions of windows that this position locates in. 
-# return values: \@back_si = [si_1, si_2, si_3, ...]
-#  Here "si" should be a key of %{$parm{'wind_hash'}{loci}}; 
+=head2 map_windows ( 'posi/position'=>Integer, 'wind_hash'=>setup_windows->(), 
+  'ttl_start'=>1, 'ttl_end'=>99999999, 'wind_size'=>1000, 'wind_step'=>'wind_size', 'minRatio'=>0
+)
+
+Required: 
+ 'posi/position'
+
+Function: 
+ Given a position, return an array reference recording all start_positions of windows that this position locates in. 
+ 'wind_hash' will mask 'ttl_*' and 'wind_size/wind_step'. 
+
+Return  : 
+ \@back_si = [si_1, si_2, si_3, ...]
+ Here "si" should be a key of %{$parm{'wind_hash'}{loci}}; 
+
+=cut
 sub map_windows {
 	my $self = shift; 
 	my %parm = @_; 
@@ -194,8 +232,18 @@ sub map_windows {
 	return \@back_si; 
 }# sub map_windows 
 
-# Function : return overlapped length of to regions [$s1,$e1] and [$s2,$e2]
+
+=head2 ovl_len( $start1, $end1, $start2, $end2 )
+
+Required: 
+ ( $start1, $end1, $start2, $end2 )
+
+Function : 
+ return overlapped length of to regions [$start1,$end1] and [$start2,$end2]
+
+=cut
 sub ovl_len {
+	my $self = shift; 
 	my ($s1, $e1, $s2, $e2) = @_; 
 	($s1, $e1) = sort {$a <=> $b} ($s1, $e1); 
 	($s2, $e2) = sort {$a <=> $b} ($s2, $e2); 
@@ -206,6 +254,11 @@ sub ovl_len {
 	}
 }
 
+=head2 min(@numbers)
+
+Function: This is not a method, but a sub-routine()
+
+=cut
 sub min {
 	my $min = shift; 
 	for (@_) {
@@ -215,6 +268,12 @@ sub min {
 	}
 	return $min; 
 }
+
+=head2 max(@numbers)
+
+Function: This is not a method, but a sub-routine()
+
+=cut
 sub max {
 	my $max = shift; 
 	for (@_) {
@@ -225,15 +284,22 @@ sub max {
 	return $max; 
 }
 
-# Function: ins_avg ()
-# Description: For calculating insert sizes. 
-#              Following Heng Li's bwa method (Estimating Insert Size Distribution). 
-#              But the max/min distance of INS are only using 6 * sigma values. 
-#              http://linux.die.net/man/1/bwa
-#              BWA estimates the insert size distribution per 256*1024 read pairs. It first collects pairs of reads with both ends mapped with a single-end quality 20 or higher and then calculates median (Q2), lower and higher quartile (Q1 and Q3). It estimates the mean and the variance of the insert size distribution from pairs whose insert sizes are within interval [Q1-2(Q3-Q1), Q3+2(Q3-Q1)]. The maximum distance x for a pair considered to be properly paired (SAM flag 0x2) is calculated by solving equation Phi((x-mu)/sigma)=x/L*p0, where mu is the mean, sigma is the standard error of the insert size distribution, L is the length of the genome, p0 is prior of anomalous pair and Phi() is the standard cumulative distribution function. For mapping Illumina short-insert reads to the human genome, x is about 6-7 sigma away from the mean. Quartiles, mean, variance and x will be printed to the standard error output.
-# Input      : (\@ins_value_array)
-# Output     : (\%hash_of_values) 
-#              keys = qw(SUM COUNT MEAN MEDIAN Q1 Q3 interval_low interval_high interval_mean interval_median interval_var interval_stdev limit_low limit_high)
+=head2 ins_avg( \@numbers, $min_valid_number_count )
+
+Function: This is not a method, but a sub-routine(). 
+
+Description: For calculating insert sizes. 
+             Following Heng Li's bwa method (Estimating Insert Size Distribution). 
+             But the max/min distance of INS are only using 6 * sigma values. 
+             http://linux.die.net/man/1/bwa
+             BWA estimates the insert size distribution per 256*1024 read pairs. It first collects pairs of reads with both ends mapped with a single-end quality 20 or higher and then calculates median (Q2), lower and higher quartile (Q1 and Q3). It estimates the mean and the variance of the insert size distribution from pairs whose insert sizes are within interval [Q1-2(Q3-Q1), Q3+2(Q3-Q1)]. The maximum distance x for a pair considered to be properly paired (SAM flag 0x2) is calculated by solving equation Phi((x-mu)/sigma)=x/L*p0, where mu is the mean, sigma is the standard error of the insert size distribution, L is the length of the genome, p0 is prior of anomalous pair and Phi() is the standard cumulative distribution function. For mapping Illumina short-insert reads to the human genome, x is about 6-7 sigma away from the mean. Quartiles, mean, variance and x will be printed to the standard error output.
+
+Input      : (\@ins_value_array)
+
+Output     : (\%hash_of_values) 
+             keys = qw(SUM COUNT MEAN MEDIAN Q1 Q3 interval_low interval_high interval_mean interval_median interval_var interval_stdev limit_low limit_high)
+
+=cut
 sub ins_calc {
 	my $r_arr = shift; 
 	my $min_val_number = shift // 1; 
@@ -271,7 +337,13 @@ sub ins_calc {
 	return \%back; 
 }
 
-# Given (\@list_of_ele, $n_in_class), return all permutations by array. Return ([@perm1_of_ele], [@perm2], ...)
+=head2 permutations( \@list_of_element, $number_of_list ) 
+
+This is not a method, but a sub-routine. 
+
+Given (\@list_of_ele, $n_in_class), return all permutations by array. Return ([@perm1_of_ele], [@perm2], ...)
+
+=cut
 sub permutations {
 	my ($list, $n) = @_; 
 	$n = $n // scalar(@$list); 
@@ -288,7 +360,13 @@ sub permutations {
 	return @perm; 
 }#sub permutations() 
 
-# Given (\@list_of_ele, $n_in_class), return all combinations by array. Return ([@comb1_of_ele], [@comb2_of_ele], ...) 
+=head2 combinations(\@list_of_ele, $n_in_class)
+
+This is not a method, but a sub-routine. 
+
+Given (\@list_of_ele, $n_in_class), return all combinations by array. Return ([@comb1_of_ele], [@comb2_of_ele], ...) 
+
+=cut
 sub combinations {
 	my ($list, $n) = @_; 
 	$n = $n // scalar(@$list); 
