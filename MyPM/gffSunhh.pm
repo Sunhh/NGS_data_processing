@@ -29,27 +29,47 @@ sub _initialize {
 	my $self = shift; 
 }
 
-# Function : 
-# Input    : ('gffFH'=>&fileSunhh::openFH("in.gff3", "<"), 
-#             'gffFile'=>"in.gff3", 
-#             'saveFa'=>0, 
-#             'debug'=>0, 
-#             'top_hier'=>{ 'mrna'=>1, 'match'=>2, 'protein_match'=>3, 'expressed_sequence_match'=>4 }
-#            )
-# Return   : (\%back_gff, \%back_seq)
-#  In %back_gff : 
-#   {'lineN2line'}{$lineNum} = $line_txt; 
-#   {'lineN2hash'}{$lineNum} = undef()     - for absent or skipped (blank of commented) lines 
-#                              \%line_hash - for good gff3 lines parsed by $self->parse_line(); 
-#   {'ID2lineN'}{$featID} = $lineNum; 
-#   {'lineN2ID'}{$lineNum} = $featID; 
-#    Here $featID = $ID_in_attribute or $lineNum if not assigned. 
-#   {'PID2CID'}{$parent_featID}{$child_featID} = 1; 
-#   {'CID2PID'}{$child_featID}{$parent_featID} = 1; 
-#  In %back_seq : 
-#   {'seqID'} = $fasta_seq_woBlank 
-# Edit here. 
-sub read_gff {
+sub write_gff3File {
+	my $self = shift; 
+	my %parm = $self->_setHashFromArr(\@_); 
+	my (, $lineN2line_href); 
+	if () {
+	}
+}# write_gff3File() 
+
+
+=head2 read_gff3File ('gffFH'=>&fileSunhh::openFH("in.gff3", "<"), 
+            'gffFile'=>"in.gff3", 
+            'saveFa'=>0, 
+            'debug'=>0, 
+            'top_hier'=>{ 'mrna'=>1, 'match'=>2, 'protein_match'=>3, 'expressed_sequence_match'=>4 }
+           )
+
+Function : 
+Read in gff3 file by file handle or file name given. 
+           It use {'lineN2line'} to record line text, {'lineN2hash'} to record feature related information, 
+            and {'lineN_group'} to record {$topID} as key 
+            and {$topID}{'parLn/offLn'} (array_ref) as values for parent/child line numbers. 
+           When meeting duplicated feature IDs, it will add ":$lineNum" to the original featID until it is unique. 
+            In this way, this line may fail to be grouped as a parent if it has a child feature line. 
+           Empty or commented lines (m/^\s*(#|$)/) are not collected in $back_gff{'lineN_group'} hash_ref, 
+            but exist in $back_gff{'lineN2line'} with {'lineN2hash'} as undef(). 
+Return   : (\%back_gff, \%back_seq)
+ In %back_gff : 
+  {'lineN2line'}{$lineNum} = $line_txt; 
+  {'lineN2hash'}{$lineNum} = undef()     - for absent or skipped (blank of commented) lines 
+                             \%line_hash - for good gff3 lines parsed by $self->parse_line(); 
+  {'ID2lineN'}{$featID} = $lineNum; 
+  {'lineN2ID'}{$lineNum} = $featID; 
+   Here $featID = $ID_in_attribute or $lineNum if not assigned. 
+  {'PID2CID'}{$parent_featID}{$child_featID} = 1; 
+  {'CID2PID'}{$child_featID}{$parent_featID} = 1; 
+  {'lineN_group'}{$topID}{'parLn/offLn'} = [@lineNumbers]; 
+ In %back_seq : 
+  {'seqID'} = $fasta_seq_woBlank  
+
+=cut
+sub read_gff3File {
 	my $self = shift; 
 	my %parm = $self->_setHashFromArr(\@_); 
 	### Step1. Setting parameters. 
@@ -301,7 +321,7 @@ sub read_gff {
 	$back_gff{'lineN_group'} = \%lineN_group; 
 	
 	return (\%back_gff, \%back_seq); 
-}# read_gff() 
+}# read_gff3File() 
 
 
 # Input  : ( 'ta'=>[ split(/\t/, $gff_line) ], 'line'=>$gff_line )
