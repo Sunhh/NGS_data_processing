@@ -254,6 +254,45 @@ sub ovl_len {
 	}
 }
 
+sub compare_region_list {
+	my $self = shift; 
+	my $list1 = shift; 
+	my $list2 = shift; 
+}# compare_region_list()
+
+=head2 _setHashFromArr($keyVal_aref)
+
+Required: $keyVal_aref
+
+Function: @{$keyVal_aref} contain ( key1, val1, key2, val2, ... ) pairs. 
+          It will skip the latter duplicated keyN. 
+
+Return  : %back_hash
+  In %back_hash : 
+   {keyN} => valN
+
+=cut
+sub _setHashFromArr {
+	my $self = shift; 
+	my $arr_ref = shift; 
+	my %back_hash; 
+	for (my $i=0; $i<@$arr_ref; $i+=2) {
+		my $val; 
+		if (exists $arr_ref->[$i+1]) {
+			$val = $arr_ref->[$i+1]; 
+		} else {
+			exists $back_hash{$arr_ref->[$i]} or &tsmsg("[Wrn] Input array is not even! Use undef() for key [", $arr_ref->[$i],"]\n"); 
+			$val = undef(); 
+		}
+		exists $back_hash{$arr_ref->[$i]} or $back_hash{$arr_ref->[$i]} = $val; 
+	}
+	return(%back_hash); 
+}# _setHashFromArr() 
+
+############################################################
+#  Sub-routines. 
+############################################################
+
 =head2 min(@numbers)
 
 Function: This is not a method, but a sub-routine()

@@ -739,6 +739,18 @@ sub _setEleParm {
 	return; 
 }# _setEleParm()
 
+=head2 _setHashFromArr($keyVal_aref)
+
+Required: $keyVal_aref
+
+Function: @{$keyVal_aref} contain ( key1, val1, key2, val2, ... ) pairs. 
+          It will skip the latter duplicated keyN. 
+
+Return  : %back_hash
+  In %back_hash : 
+   {keyN} => valN
+
+=cut
 sub _setHashFromArr {
 	my $self = shift; 
 	my $arr_ref = shift; 

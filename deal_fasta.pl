@@ -127,6 +127,10 @@ Usage: $0  <fasta_file | STDIN>
   -fa2fqQChar         [Character] Character used for quality line in fastq output. 
   -fq2fa              [Boolean] Transform fastq format to fasta format. 
 
+  -replaceID          [Boolean] Replace fasta seqID
+  -replaceIDlist      [filename] file recording oldID and newID. 
+  -replaceIDcol       [0,1] "oldID_col,newID_col"
+
 #******* Instruction of this program *********#
 HELP
 	exit (1); 
@@ -149,6 +153,7 @@ GetOptions(\%opts,"help!","cut:i","details!","cut_dir:s","cut_prefix:s",
 	"keep_len:s", 
 	"baseCount!", 
 	"fa2fq!", "fa2fqQChar:s", "fq2fa!", 
+	"replaceID!", "replaceIDlist:s", "replaceIDcol:s", 
 	);
 &usage if ($opts{"help"}); 
 !@ARGV and -t and &usage; 
@@ -209,6 +214,7 @@ my %goodStr = qw(
 &baseCount() if ( $opts{baseCount} ); 
 &fa2fq() if ( $opts{fa2fq} ); 
 &fq2fa() if ( $opts{fq2fa} ); 
+&replaceID() if ( $opts{'replaceID'} ); 
 
 for (@InFp) {
 	close ($_); 
@@ -223,6 +229,31 @@ for (@InFp) {
 #****************************************************************#
 #--------------Subprogram------------Start-----------------------#
 #****************************************************************#
+
+# 2015-02-26
+#	"replaceID!", "replaceIDlist:s", "replaceIDcol:s", 
+sub replaceID {
+	my $lisFh = &openFH( $opts{'replaceIDlist'}, '<' ); 
+	$opts{'replaceIDcol'} = $opts{'replaceIDcol'} // '0,1'; 
+	my ( $cOLD, $cNEW ) = map { int($_) } &parseCol( $opts{'replaceIDcol'} ); 
+	my %old2new; 
+	while (<$lisFh>) {
+		chomp; m/^\s*$/ and next; 
+		my @ta = split(/\t/, $_); 
+		my ($idO, $idN) = @ta[$cOLD, $cNEW]; 
+		$old2new{ $idO } = $idN; 
+	}
+	close($lisFh); 
+	for my $fh ( @InFp ) {
+		for ( my ($relHR, $get) = &get_fasta_seq($fh); defined $relHR; ($relHR, $get) = &get_fasta_seq($fh) ) {
+			my $kO = $relHR->{'key'}; 
+			my $kN = $kO; 
+			defined $old2new{ $kO } and $kN = $old2new{ $kO }; 
+			defined $old2new{ $kO } and $relHR->{'head'} =~ s!^$kO\b!$kN!; 
+			print STDOUT ">$relHR->{'head'}\n$relHR->{'seq'}\n"; 
+		}
+	}
+}#End sub replaceID
 
 # 2014-03-18
 sub fa2fq {
