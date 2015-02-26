@@ -122,7 +122,7 @@ Usage: $0  <fasta_file | STDIN>
 
   -keep_len           "min_len-max_len". Extract sequences whose lengths are between min_len and max_len. 
   -baseCount          [Boolean] Calculate A/T/G/C/N numbers in sequences. 
-  -baseCountByWind    [filename] File of window list. 
+  -baseCountByWind    [filename] File of window list. Format: "ChromID\\tWindS\\tWindE\\n"
 
   -fa2fq              [Boolean] Transform fasta format to fastq format. 
   -fa2fqQChar         [Character] Character used for quality line in fastq output. 
