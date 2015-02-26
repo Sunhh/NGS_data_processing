@@ -421,11 +421,11 @@ sub mergeLocBlk {
 	return \@back_blk; 
 }# mergeLocBlk() 
 
-=head2 _setHashFromArr($keyVal_aref)
+=head2 _setHashFromArr(@keyVal_array)
 
-Required: $keyVal_aref
+Required: @keyVal_array
 
-Function: @{$keyVal_aref} contain ( key1, val1, key2, val2, ... ) pairs. 
+Function: @keyVal_array contain ( key1, val1, key2, val2, ... ) pairs. 
           It will skip the latter duplicated keyN. 
 
 Return  : %back_hash
@@ -435,17 +435,16 @@ Return  : %back_hash
 =cut
 sub _setHashFromArr {
 	my $self = shift; 
-	my $arr_ref = shift; 
 	my %back_hash; 
-	for (my $i=0; $i<@$arr_ref; $i+=2) {
+	for (my $i=0; $i<@_; $i+=2) {
 		my $val; 
-		if (exists $arr_ref->[$i+1]) {
-			$val = $arr_ref->[$i+1]; 
+		if (exists $_[$i+1]) {
+			$val = $_[$i+1]; 
 		} else {
-			exists $back_hash{$arr_ref->[$i]} or &tsmsg("[Wrn] Input array is not even! Use undef() for key [", $arr_ref->[$i],"]\n"); 
+			exists $back_hash{$_[$i]} or &tsmsg("[Wrn] Input array is not even! Use undef() for key [", $_[$i],"]\n"); 
 			$val = undef(); 
 		}
-		exists $back_hash{$arr_ref->[$i]} or $back_hash{$arr_ref->[$i]} = $val; 
+		exists $back_hash{$_[$i]} or $back_hash{$_[$i]} = $val; 
 	}
 	return(%back_hash); 
 }# _setHashFromArr() 

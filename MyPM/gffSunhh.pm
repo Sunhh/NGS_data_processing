@@ -50,7 +50,21 @@ sub _initialize {
 )
 
 Required : 
-  'gff3_href'
+  'gff3_href' is required, which is the first output of function ->read_gff3File(); 
+
+Function : Output gff3 lines to file or file handle (Output to STDOUT in default). 
+ 'writeMode' should be used together with 'outFile'. 
+ 'seq_href' will be attached to the gff3 file when given. 
+ 'seqIDs_aref' controls the seqIDs to be output, 'seq_width' is the line width. 
+ 'topIDs_aref' controls the topIDs to be output, in this way we can output topIDs 1by1. 
+   In default, I will sort all topIDs by the order of input gff3 file (by lineNum). 
+ 'sort_by' changes the order of output lines within a topID, 
+   'raw'      with no change, 
+   'lineNum'  with the order of input gff3 file. 
+   'str_posi' with the order specific to strand, 
+     small to large for "+" ; 
+     large to small for "-" ; 
+   'position' with the order small to large. 
 
 =cut
 sub write_gff3File {
