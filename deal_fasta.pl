@@ -122,6 +122,7 @@ Usage: $0  <fasta_file | STDIN>
 
   -keep_len           "min_len-max_len". Extract sequences whose lengths are between min_len and max_len. 
   -baseCount          [Boolean] Calculate A/T/G/C/N numbers in sequences. 
+  -baseCountByWind    [filename] File of window list. Format: "ChromID\\tWindS\\tWindE\\n"
 
   -fa2fq              [Boolean] Transform fasta format to fastq format. 
   -fa2fqQChar         [Character] Character used for quality line in fastq output. 
@@ -152,7 +153,7 @@ GetOptions(\%opts,"help!","cut:i","details!","cut_dir:s","cut_prefix:s",
 	"maskByList!", "maskList:s", "maskType:s", "elseMask!", 
 	"drawByList!", "drawList:s", "drawLcol:s", "drawWhole!", "drawIDmatch!", "dropMatch!", 
 	"keep_len:s", 
-	"baseCount!", 
+	"baseCount!", "baseCountByWind:s", 
 	"fa2fq!", "fa2fqQChar:s", "fq2fa!", 
 	"replaceID!", "replaceIDlist:s", "replaceIDcol:s", "replaceIDadd!", 
 	);
@@ -285,25 +286,67 @@ sub fq2fa {
 
 # 2014-02-25 baseCount
 sub baseCount {
-	print STDOUT join("\t", qw/Key A T G C N O All/)."\n";
-	for my $fh (@InFp) {
-		for ( my ($relHR, $get) = &get_fasta_seq($fh); defined $relHR; ($relHR, $get) = &get_fasta_seq($fh) ) {
-			$relHR->{seq} =~ s/\s//g; 
-			my $all = length($relHR->{seq}); 
-			if ($all > 0) {
-				my $ba = ($relHR->{seq} =~ tr/Aa/Aa/); 
-				my $bt = ($relHR->{seq} =~ tr/Tt/Tt/); 
-				my $bg = ($relHR->{seq} =~ tr/Gg/Gg/); 
-				my $bc = ($relHR->{seq} =~ tr/Cc/Cc/);
-				my $bn = ($relHR->{seq} =~ tr/Nn/Nn/);
-				my $bother = $all - $ba - $bt - $bg - $bc - $bn;
-				print STDOUT join("\t", $relHR->{key}, $ba, $bt, $bg, $bc, $bn, $bother, $all)."\n";
-			}else{
-				print STDOUT join("\t", $relHR->{key}, 0,0,0,0,0,0,0)."\n"; 
+	if ( $opts{'baseCountByWind'} ) {
+		my $is_oHead = 0; 
+		# print STDOUT join("\t", qw/Key A T G C N O All OtherCols/)."\n"; 
+		my %seq; 
+		for my $fh (@InFp) {
+			for ( my ($relHR, $get) = &get_fasta_seq($fh); defined $relHR; ($relHR, $get) = &get_fasta_seq($fh) ) {
+				$relHR->{seq} =~ s/\s//g; 
+				$seq{ $relHR->{'key'} } = $relHR->{'seq'}; 
+			}#End for my ($relHR, $get)
+		}#End for my $fh
+		
+		my $fh = &openFH( $opts{'baseCountByWind'}, '<' ); 
+		while (<$fh>) {
+			chomp; 
+			my @ta = split(/\t/, $_); 
+			if ( $ta[0] eq 'ChromID' ) {
+				$is_oHead == 0 and print STDOUT join("\t", qw/Key A T G C N O All/, $_)."\n"; 
+				$is_oHead = 1; 
+				next; 
 			}
-		}#End for my ($relHR, $get)
-	}#End for my $fh
-	
+			my ($id, $s, $e) = @ta[0,1,2]; 
+			if ( defined $seq{$id} ) {
+				my $seqLen = length($seq{$id}); 
+				if ( $s > $seqLen ) {
+					print STDOUT join("\t", $id, qw/0 0 0 0 0 0 0/, $_)."\n"; 
+					next; 
+				}
+				$e > $seqLen and $e = $seqLen; 
+				my $subseq = substr( $seq{$id}, $s-1, $e-$s+1 ); 
+				my $ba = ( $subseq =~ tr/Aa/Aa/ ); 
+				my $bt = ( $subseq =~ tr/Tt/Tt/ ); 
+				my $bg = ( $subseq =~ tr/Gg/Gg/ ); 
+				my $bc = ( $subseq =~ tr/Cc/Cc/ ); 
+				my $bn = ( $subseq =~ tr/Nn/Nn/ ); 
+				my $bother = $e-$s+1 - $ba - $bt - $bg - $bc - $bn; 
+				print STDOUT join("\t", $id, $ba, $bt, $bg, $bc, $bn, $bother, $e-$s+1, $_)."\n"; 
+			} else {
+				print STDOUT join("\t", $id, qw/0 0 0 0 0 0 0/, $_)."\n"; 
+			}
+		}
+		close($fh); 
+	} else {
+		print STDOUT join("\t", qw/Key A T G C N O All/)."\n";
+		for my $fh (@InFp) {
+			for ( my ($relHR, $get) = &get_fasta_seq($fh); defined $relHR; ($relHR, $get) = &get_fasta_seq($fh) ) {
+				$relHR->{seq} =~ s/\s//g; 
+				my $all = length($relHR->{seq}); 
+				if ($all > 0) {
+					my $ba = ($relHR->{seq} =~ tr/Aa/Aa/); 
+					my $bt = ($relHR->{seq} =~ tr/Tt/Tt/); 
+					my $bg = ($relHR->{seq} =~ tr/Gg/Gg/); 
+					my $bc = ($relHR->{seq} =~ tr/Cc/Cc/);
+					my $bn = ($relHR->{seq} =~ tr/Nn/Nn/);
+					my $bother = $all - $ba - $bt - $bg - $bc - $bn;
+					print STDOUT join("\t", $relHR->{key}, $ba, $bt, $bg, $bc, $bn, $bother, $all)."\n";
+				}else{
+					print STDOUT join("\t", $relHR->{key}, 0,0,0,0,0,0,0)."\n"; 
+				}
+			}#End for my ($relHR, $get)
+		}#End for my $fh
+	}
 }# sub baseCount
 
 # 2014-02-25 extract sequences by length
