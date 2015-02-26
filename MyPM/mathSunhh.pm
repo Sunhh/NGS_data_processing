@@ -338,7 +338,7 @@ sub compare_number_list {
 		@srt_lis1 = map { [ sort { $a<=>$b } @$_ ] } @srt_lis1; 
 		@srt_lis2 = map { [ sort { $a<=>$b } @$_ ] } @srt_lis2; 
 		for my $a1 (@srt_lis1) {
-			my ($s1, $e2) = @$a1; 
+			my ($s1, $e1) = @$a1; 
 			for my $a2 (@srt_lis2) {
 				my ($s2, $e2) = @$a2; 
 				my ($ovl_len, $ovl_loc) = $self->ovl_region($s1, $e1, $s2, $e2); 
@@ -360,7 +360,7 @@ sub compare_number_list {
 				my ($s1, $e1) = @$a1; 
 				for my $a3 (@ovlLoc) {
 					my ($s3, $e3) = @$a3; 
-					my ( $ov1_o1, $ovl_o2 ) = $self->ovl_region($s1, $e1, $s3, $e3); 
+					my ( $ovl_o1, $ovl_o2 ) = $self->ovl_region($s1, $e1, $s3, $e3); 
 					if ( $ovl_o1 > 0 ) {
 						$s1 <= $ovl_o2->[0]-1 and push(@spec1, [$s1, $ovl_o2->[0]-1]); 
 						$e1 >= $ovl_o2->[1]+1 and push(@spec1, [$ovl_o2->[1]+1, $e1]); 
@@ -375,7 +375,7 @@ sub compare_number_list {
 				my ($s1, $e1) = @$a1; 
 				for my $a3 (@ovlLoc) {
 					my ($s3, $e3) = @$a3; 
-					my ( $ov1_o1, $ovl_o2 ) = $self->ovl_region($s1, $e1, $s3, $e3); 
+					my ( $ovl_o1, $ovl_o2 ) = $self->ovl_region($s1, $e1, $s3, $e3); 
 					if ( $ovl_o1 > 0 ) {
 						$s1 <= $ovl_o2->[0]-1 and push(@spec2, [$s1, $ovl_o2->[0]-1]); 
 						$e1 >= $ovl_o2->[1]+1 and push(@spec2, [$ovl_o2->[1]+1, $e1]); 

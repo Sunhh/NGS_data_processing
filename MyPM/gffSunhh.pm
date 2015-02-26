@@ -23,6 +23,11 @@ my %str2num = qw(
 ##########################################################
 #########  Methods. 
 ##########################################################
+=head1 gffSunhh->new()
+
+Open an object of gffSunhh. 
+
+=cut
 sub new {
 	my $class = shift; 
 	
@@ -46,6 +51,7 @@ sub _initialize {
 
 Required : 
   'gff3_href'
+
 =cut
 sub write_gff3File {
 	my $self = shift; 
@@ -745,6 +751,7 @@ Required: $keyVal_aref
 
 Function: @{$keyVal_aref} contain ( key1, val1, key2, val2, ... ) pairs. 
           It will skip the latter duplicated keyN. 
+          This function has been added to mathSunhh.pm; 
 
 Return  : %back_hash
   In %back_hash : 
