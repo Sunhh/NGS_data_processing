@@ -393,7 +393,7 @@ sub compare_number_list {
 	} else {
 		&stopErr("[Err] Unknown 'compare'=[$parm{'compare'}]\n"); 
 	}
-}# compare_region_list()
+}# compare_number_list()
 
 =head2 mergeLocBlk( [ [s1,e1], [s2,e2], ... ], [[s21,e21], [s22, e22], ... ] )
 
