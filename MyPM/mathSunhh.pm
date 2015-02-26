@@ -31,7 +31,7 @@ sub new {
 
 sub _initialize {
 	my $self = shift; 
-	my %parm = @_; 
+	my %parm = $self->_setHashFromArr(@_); 
 	return; 
 }
 
@@ -49,7 +49,7 @@ Return   : A new number not used before.
 =cut
 sub newNumber {
 	my $self = shift; 
-	my %parm = @_; 
+	my %parm = $self->_setHashFromArr(@_); 
 	$parm{'debug'} = $parm{'debug'} // 0; 
 	$parm{'onlyMerge'} = $parm{'onlyMerge'} // 0; 
 	if ( defined $parm{'other_safeNumber'} ) {
@@ -109,7 +109,7 @@ sub offspringArray {
 	my $self = shift;
 	my $rootID = shift;  # rootID from which to find offsprings. 
 	my $coderef = shift; # reference of subroutine which return a array of offspring list. 
-	my %parm = @_; 
+	my %parm = $self->_setHashFromArr(@_); 
 	$parm{'unique'} = $parm{'unique'} // 1; 
 
 	my @cIDs;            # All Children IDs. 
@@ -157,7 +157,7 @@ Return  : \%back_wind;
 =cut
 sub setup_windows {
 	my $self = shift; 
-	my %parm = @_; 
+	my %parm = $self->_setHashFromArr(@_); 
 	$parm{'ttl_start'} = $parm{'ttl_start'} // 1; 
 	$parm{'ttl_end'}   = $parm{'ttl_end'}   // 99999999; 
 	$parm{'wind_size'} = $parm{'wind_size'} // 1000; 
@@ -199,7 +199,7 @@ Return  :
 =cut
 sub map_windows {
 	my $self = shift; 
-	my %parm = @_; 
+	my %parm = $self->_setHashFromArr(@_); 
 	my $posi = $parm{'posi'} // $parm{'position'} // &stopErr("[Err] No position assigned.\n"); 
 	Scalar::Util::looks_like_number( $posi ) or &stopErr("[Err] input position [$posi] is not like a number.\n"); 
 	$posi = int($posi); 
@@ -233,32 +233,193 @@ sub map_windows {
 }# sub map_windows 
 
 
-=head2 ovl_len( $start1, $end1, $start2, $end2 )
+#=head2 ovl_len( $start1, $end1, $start2, $end2 )
+#
+#Required: 
+# ( $start1, $end1, $start2, $end2 )
+#
+#Function : 
+# return overlapped length of to regions [$start1,$end1] and [$start2,$end2]
+#
+#=cut
+#sub ovl_len {
+#	my $self = shift; 
+#	my ($s1, $e1, $s2, $e2) = @_; 
+#	($s1, $e1) = sort {$a <=> $b} ($s1, $e1); 
+#	($s2, $e2) = sort {$a <=> $b} ($s2, $e2); 
+#	if ($e1 < $s2 or $s1 > $e2) {
+#		return 0; 
+#	} else {
+#		return &min($e1, $e2) - &max($s1, $s2) + 1; 
+#	}
+#}
+=head2 ovl_region( $start1, $end1, $start2, $end2 )
 
-Required: 
- ( $start1, $end1, $start2, $end2 )
+Required: ($start1, $end1, $start2, $end2)
 
-Function : 
- return overlapped length of to regions [$start1,$end1] and [$start2,$end2]
+Function: Check overlapping region
+
+Return  : [ $overlapped_bp_length, [ ovl_start, ovl_end ] ]
 
 =cut
-sub ovl_len {
+sub ovl_region {
 	my $self = shift; 
 	my ($s1, $e1, $s2, $e2) = @_; 
-	($s1, $e1) = sort {$a <=> $b} ($s1, $e1); 
-	($s2, $e2) = sort {$a <=> $b} ($s2, $e2); 
-	if ($e1 < $s2 or $s1 > $e2) {
-		return 0; 
+	$s1 > $e1 and ($s1, $e1) = ($e1, $s1); 
+	$s2 > $e2 and ($s2, $e2) = ($e2, $s2); 
+	if ( $e1 < $s2 or $s1 > $e2 ) {
+		return [0, []]; 
 	} else {
-		return &min($e1, $e2) - &max($s1, $s2) + 1; 
+		my $ee = &min($e1, $e2); 
+		my $ss = &max($s1, $s2); 
+		return [ $ee - $ss + 1, [$ss, $ee] ]; 
 	}
-}
+}# ovl_region(); 
 
-sub compare_region_list {
+=head2 compare_number_list( $sePair_list1, $sePair_list2, 
+ 'compare'=>'same/ovl/nonovl', 
+ 'sort'=>'0/single/pair'
+)
+
+Required : 
+ $sePair_list1 : [ [s11,e11], [s12,e12], ... ]
+ $sePair_list2 : [ [s21,e21], [s22,e22], ... ]
+
+Return   : 
+ Case 'compare'='same'   : 1/0 : 1 for yes_same, 2 for no_different. 
+ Case 'compare'='ovl'    : ( $ovlLen_nonDup, $ovlCnt_mayDup, \@ovlLoc ) 
+                         : @ovlLoc=([overlap_S1, overlap_E1], [overlap_S2, overlap_E2], 
+ Case 'compare'='nonovl' : ( [@spec1], [@spec2] ) 
+                         : @spec1=( [nonOvl_lis1_S1, nonOvl_lis1_E1], [nonOvl_lis1_S1, nonOvl_lis1_E1], ... )
+						 : @spec2=( [nonOvl_lis2_S1, nonOvl_lis2_E1], [nonOvl_lis2_S1, nonOvl_lis2_E1], ... )
+
+Function : 
+ Case 'sort'='0'         : Use the input order in list1/list2; 
+ Case 'sort'='single'    : Sort numbers from small to large one by one; 
+ Case 'sort'='pair'      : Sort numbers from small to large as pairs, but no sorting within any pair. 
+
+=cut
+sub compare_number_list {
 	my $self = shift; 
 	my $list1 = shift; 
 	my $list2 = shift; 
+	my %parm = $self->_setHashFromArr(@_); 
+	$parm{'compare'} = $parm{'compare'} // 'same'; # same/ovl/nonovl
+	$parm{'compare'} = lc( $parm{'compare'} ); 
+	$parm{'sort'} = $parm{'sort'} // 0; # 0/single/pair
+	$parm{'sort'} = lc( $parm{'sort'} ); 
+	my (@srt_lis1, @srt_lis2); 
+	
+	if ($parm{'sort'} =~ m/^s(ingle)?$/) {
+		@srt_lis1 = sort { $a <=> $b } @$list1; 
+		@srt_lis2 = sort { $a <=> $b } @$list2; 
+	} elsif ( $parm{'sort'} =~ m/^p(air(ed)?)?$/) {
+		scalar( @$list1 ) % 2 == 0 or &stopErr("[Err] Input list1 is not even.\n"); 
+		scalar( @$list2 ) % 2 == 0 or &stopErr("[Err] Input list2 is not even.\n"); 
+		for (my $i=0; $i<@$list1; $i+=2) { push(@srt_lis1, [ @{$list1}[$i, $i+1] ]); } 
+		for (my $i=0; $i<@$list2; $i+=2) { push(@srt_lis2, [ @{$list2}[$i, $i+1] ]); }
+		@srt_lis1 = map { @$_ } sort { $a->[0] <=> $b->[0] || $a->[1] <=> $b->[1] } @srt_lis1; 
+		@srt_lis2 = map { @$_ } sort { $a->[0] <=> $b->[0] || $a->[1] <=> $b->[1] } @srt_lis2; 
+	} elsif ($parm{'sort'} eq '0') {
+		@srt_lis1 = @$list1; 
+		@srt_lis2 = @$list2; 
+	} else {
+		&stopErr("[Err] Unknown 'sort' value [$parm{'sort'}]\n"); 
+	}
+	
+	if ( $parm{'compare'} eq 'same' ) {
+		$#srt_lis1 == $#srt_lis2 or return 0; 
+		my $str_lis1 = join("\t", @srt_lis1); 
+		my $str_lis2 = join("\t", @srt_lis2); 
+		return ( ($str_lis1 eq $str_lis2) ? 1 : 0 ); 
+	} elsif ( $parm{'compare'} eq 'ovl' or $parm{'compare'} eq 'nonovl' ) { 
+		my ( $ovlLen, $ovlCnt ) = 0; 
+		my @ovlLoc; 
+		@srt_lis1 = map { [ sort { $a<=>$b } @$_ ] } @srt_lis1; 
+		@srt_lis2 = map { [ sort { $a<=>$b } @$_ ] } @srt_lis2; 
+		for my $a1 (@srt_lis1) {
+			my ($s1, $e2) = @$a1; 
+			for my $a2 (@srt_lis2) {
+				my ($s2, $e2) = @$a2; 
+				my ($ovl_len, $ovl_loc) = $self->ovl_region($s1, $e1, $s2, $e2); 
+				$ovl_len > 0 and do { $ovlCnt ++; push( @ovlLoc, [@$ovl_loc] );  }; 
+			}
+		}
+		# Merge @ovlLoc blocks
+		@ovlLoc = @{ $self->mergeLocBlk(\@ovlLoc) }; 
+		
+		if ( $parm{'compare'} eq 'ovl' ) {
+			for my $a1 (@ovlLoc) {
+				$ovlLen += ( $a1->[1] - $a1->[0] + 1 ); 
+			}
+			return( $ovlLen, $ovlCnt, \@ovlLoc ); 
+		} elsif ( $parm{'compare'} eq 'nonovl' ) {
+			# Search for non-overlap regions. 
+			my @spec1; 
+			for my $a1 (@srt_lis1) {
+				my ($s1, $e1) = @$a1; 
+				for my $a3 (@ovlLoc) {
+					my ($s3, $e3) = @$a3; 
+					my ( $ov1_o1, $ovl_o2 ) = $self->ovl_region($s1, $e1, $s3, $e3); 
+					if ( $ovl_o1 > 0 ) {
+						$s1 <= $ovl_o2->[0]-1 and push(@spec1, [$s1, $ovl_o2->[0]-1]); 
+						$e1 >= $ovl_o2->[1]+1 and push(@spec1, [$ovl_o2->[1]+1, $e1]); 
+					} else {
+						push(@spec1, [ $s1, $e1 ]); 
+					}
+					$ovl_o1 > 0 and next; 
+				}
+			}#End for my $a1 : @spec1
+			my @spec2; 
+			for my $a1 (@srt_lis2) {
+				my ($s1, $e1) = @$a1; 
+				for my $a3 (@ovlLoc) {
+					my ($s3, $e3) = @$a3; 
+					my ( $ov1_o1, $ovl_o2 ) = $self->ovl_region($s1, $e1, $s3, $e3); 
+					if ( $ovl_o1 > 0 ) {
+						$s1 <= $ovl_o2->[0]-1 and push(@spec2, [$s1, $ovl_o2->[0]-1]); 
+						$e1 >= $ovl_o2->[1]+1 and push(@spec2, [$ovl_o2->[1]+1, $e1]); 
+					} else {
+						push(@spec2, [ $s1, $e1 ]); 
+					}
+					$ovl_o1 > 0 and next; 
+				}
+			}#End for my $a1 : @spec2
+			return ( [@spec1], [@spec2] ); 
+		} else {
+			&stopErr("[Err] Why here! 'compare'=$parm{'compare'}\n"); 
+		}
+		return ($ovlLen, $ovlCnt, \@ovlLoc); 
+	} else {
+		&stopErr("[Err] Unknown 'compare'=[$parm{'compare'}]\n"); 
+	}
 }# compare_region_list()
+
+=head2 mergeLocBlk( [ [s1,e1], [s2,e2], ... ], [[s21,e21], [s22, e22], ... ] )
+
+Return  : [[ss1, ee1], [ss2, ee2], ...]
+
+=cut 
+sub mergeLocBlk {
+	my $self = shift; 
+	my @back_blk; 
+	for my $blk_arr (@_) {
+		my @srt_blk = sort { $a->[0] <=> $b->[0] || $a->[1] <=> $b->[1] } map { [ sort { $a <=> $b } @$_ ] } @$blk_arr; 
+		for my $a1 (@srt_blk) {
+			my ($s, $e) = @$a1; 
+			if ( scalar(@back_blk) > 0 ) {
+				if ( $back_blk[-1][1] <= $s ) {
+					$e > $back_blk[-1][1] and $back_blk[-1][1] = $e; 
+				} else {
+					push(@back_blk, [$s, $e]); 
+				}
+			} else {
+				@back_blk = ([$s, $e]); 
+			}
+		}
+	}
+	return \@back_blk; 
+}# mergeLocBlk() 
 
 =head2 _setHashFromArr($keyVal_aref)
 
@@ -293,37 +454,45 @@ sub _setHashFromArr {
 #  Sub-routines. 
 ############################################################
 
-=head2 min(@numbers)
+=head1 min(@numbers)
 
 Function: This is not a method, but a sub-routine()
 
 =cut
 sub min {
 	my $min = shift; 
+	unless ( ref($min) eq 'SCALAR' ) {
+		ref($min) eq 'mathSunhh' or &stopErr("[Err] min() input should be an array of number.\n"); 
+		$min = shift; 
+	}
 	for (@_) {
 		defined $_ or next; 
 		defined $min or $min = $_; 
 		$min > $_ and $min = $_; 
 	}
 	return $min; 
-}
+}# min() 
 
-=head2 max(@numbers)
+=head1 max(@numbers)
 
 Function: This is not a method, but a sub-routine()
 
 =cut
 sub max {
 	my $max = shift; 
+	unless ( ref($max) eq 'SCALAR' ) {
+		ref($max) eq 'mathSunhh' or &stopErr("[Err] max() input should be an array of number.\n"); 
+		$max = shift; 
+	}
 	for (@_) {
 		defined $_ or next; 
 		defined $max or $max = $_; 
 		$max < $_ and $max = $_; 
 	}
 	return $max; 
-}
+}# max() 
 
-=head2 ins_avg( \@numbers, $min_valid_number_count )
+=head1 ins_calc( \@numbers, $min_valid_number_count )
 
 Function: This is not a method, but a sub-routine(). 
 
@@ -341,6 +510,10 @@ Output     : (\%hash_of_values)
 =cut
 sub ins_calc {
 	my $r_arr = shift; 
+	unless ( ref($r_arr) eq 'ARRAY' ) {
+		ref($r_arr) eq 'mathSunhh' or &stopErr("[Err] ins_calc() input-1st should be an array reference.\n"); 
+		$r_arr = shift; 
+	}
 	my $min_val_number = shift // 1; 
 	my %back; 
 	if ( (! defined $r_arr) or scalar(@$r_arr) < $min_val_number) {
@@ -374,9 +547,9 @@ sub ins_calc {
 	$back{'limit_high'} = $back{'interval_mean'} + 6 * $back{'interval_stdev'}; 
 	$stat->clear(); 
 	return \%back; 
-}
+}# ins_calc() 
 
-=head2 permutations( \@list_of_element, $number_of_list ) 
+=head1 permutations( \@list_of_element, $number_of_list ) 
 
 This is not a method, but a sub-routine. 
 
@@ -384,7 +557,12 @@ Given (\@list_of_ele, $n_in_class), return all permutations by array. Return ([@
 
 =cut
 sub permutations {
-	my ($list, $n) = @_; 
+	my $list = shift; 
+	unless ( ref($list) eq 'ARRAY' ) {
+		ref($list) eq 'mathSunhh' or &stopErr("[Err] permutations() input-1st should be an array reference.\n"); 
+		$list = shift; 
+	}
+	my $n = shift; 
 	$n = $n // scalar(@$list); 
 	$n > @$list and return ($list); 
 	$n <= 1 and return(map {[$_]} @$list); 
@@ -399,7 +577,7 @@ sub permutations {
 	return @perm; 
 }#sub permutations() 
 
-=head2 combinations(\@list_of_ele, $n_in_class)
+=head1 combinations(\@list_of_ele, $n_in_class)
 
 This is not a method, but a sub-routine. 
 
@@ -407,7 +585,12 @@ Given (\@list_of_ele, $n_in_class), return all combinations by array. Return ([@
 
 =cut
 sub combinations {
-	my ($list, $n) = @_; 
+	my $list = shift; 
+	unless ( ref($list) eq 'ARRAY' ) {
+		ref($list) eq 'mathSunhh' or &stopErr("[Err] combinations() input-1st should be an array reference.\n"); 
+		$list = shift; 
+	}
+	my $n = shift; 
 	$n = $n // scalar(@$list); 
 	$n > @$list and return ($list); 
 	$n <= 1 and return(map {[$_]} @$list); 
