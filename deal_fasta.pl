@@ -130,6 +130,7 @@ Usage: $0  <fasta_file | STDIN>
   -replaceID          [Boolean] Replace fasta seqID
   -replaceIDlist      [filename] file recording oldID and newID. 
   -replaceIDcol       [0,1] "oldID_col,newID_col"
+  -replaceIDadd       [Boolean] keep old ID in head line if given. 
 
 #******* Instruction of this program *********#
 HELP
@@ -153,7 +154,7 @@ GetOptions(\%opts,"help!","cut:i","details!","cut_dir:s","cut_prefix:s",
 	"keep_len:s", 
 	"baseCount!", 
 	"fa2fq!", "fa2fqQChar:s", "fq2fa!", 
-	"replaceID!", "replaceIDlist:s", "replaceIDcol:s", 
+	"replaceID!", "replaceIDlist:s", "replaceIDcol:s", "replaceIDadd!", 
 	);
 &usage if ($opts{"help"}); 
 !@ARGV and -t and &usage; 
@@ -249,7 +250,11 @@ sub replaceID {
 			my $kO = $relHR->{'key'}; 
 			my $kN = $kO; 
 			defined $old2new{ $kO } and $kN = $old2new{ $kO }; 
-			defined $old2new{ $kO } and $relHR->{'head'} =~ s!^$kO\b!$kN!; 
+			if ( $opts{'replaceIDadd'} ) {
+				$relHR->{'head'} = "$kN $relHR->{'head'}"; 
+			} else {
+				defined $old2new{ $kO } and $relHR->{'head'} =~ s!^$kO\b!$kN!; 
+			}
 			print STDOUT ">$relHR->{'head'}\n$relHR->{'seq'}\n"; 
 		}
 	}
