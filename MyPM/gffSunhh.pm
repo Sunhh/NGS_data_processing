@@ -70,7 +70,7 @@ Function : Output gff3 lines to file or file handle (Output to STDOUT in default
 sub write_gff3File {
 	my $self = shift; 
 	### Step1. Setting parameters
-	my %parm = $self->_setHashFromArr(\@_); 
+	my %parm = $self->_setHashFromArr(@_); 
 	
 	##  Require {'outFH'} or {'outFile'} defined. 
 	my $fh; 
@@ -167,6 +167,40 @@ sub write_gff3File {
 	return ; 
 }# write_gff3File() 
 
+sub ovl_between_gff3 {
+	my $self = shift; 
+	my $set1_href = shift; 
+	my $set2_href = shift; 
+	my %parm = $self->_setHashFromArr(@_); 
+	my (@topID1, @topID2); 
+	if ( defined $parm{'topID1'} ) {
+		@topID1 = @{$parm{'topID1'}}; 
+	} else {
+		@topID1 = keys %{$set1_href}; 
+	}
+	if ( defined $parm{'topID2'} ) {
+		@topID2 = @{$parm{'topID2'}}; 
+	} else {
+		@topID2 = keys %{$set2_href}; 
+	}
+	
+	my %type2include; 
+	defined $parm{'type2include'} and %type2include = $self->_setTypeHash(); 
+	
+}# ovl_between_gff3
+=head2 ovl_between_gff3( \%gff3_hash_set1, \%gff3_hash_set2, 
+ 'topID1'=>[id1_in_set1, id2_in_set1, ...]
+ 'topID2'=>[id1_in_set2, id2_in_set2, ...]
+ 'type2include'=>[feature_type1, feature_type2, ... ], 
+ 
+)
+
+Function : 
+ Compare gff3 models between two gff3 sets. 
+ 
+
+=cut
+
 
 =head2 read_gff3File ('gffFH'=>&fileSunhh::openFH("in.gff3", "<"), 
             'gffFile'=>"in.gff3", 
@@ -205,7 +239,7 @@ Return   : (\%back_gff, \%back_seq)
 =cut
 sub read_gff3File {
 	my $self = shift; 
-	my %parm = $self->_setHashFromArr(\@_); 
+	my %parm = $self->_setHashFromArr(@_); 
 	### Step1. Setting parameters. 
 	$parm{'debug'} = $parm{'debug'} // 0; 
 	##   'saveFa' is used to keep fasta sequences in gff3 file into %back_seq hash. 
@@ -483,7 +517,7 @@ sub read_gff3File {
 #   For forward strand features, phase is counted from the start field. For reverse strand features, phase is counted from the end field.
 sub parse_line {
 	my $self = shift; 
-	my %parm = $self->_setHashFromArr(\@_); 
+	my %parm = $self->_setHashFromArr(@_); 
 	my @ta; 
 	if ( defined $parm{'ta'} ) {
 		@ta = @{$parm{'ta'}}; 
@@ -522,7 +556,7 @@ sub _allChild {
 	my $self = shift; 
 	my $pID = shift; 
 	my $p2c_hash = shift; # { {parentID} => {childID} => 1 } 
-	my %parm = $self->_setHashFromArr(\@_); 
+	my %parm = $self->_setHashFromArr(@_); 
 	$parm{'unique'} = $parm{'unique'} // 1; 
 	return [ @{ $mathObj->offspringArray( $pID, sub { return keys %{ $p2c_hash->{$_[0]} }; }, %parm) } ]; 
 }# _allChild()
@@ -535,7 +569,7 @@ sub _allTopParent {
 	my $self = shift; 
 	my $cID = shift; 
 	my $c2p_hash = shift; # { {childID} => {parentID} => 1 }
-	my %parm = $self->_setHashFromArr(\@_); 
+	my %parm = $self->_setHashFromArr(@_); 
 	$parm{'unique'} = $parm{'unique'} // 1; 
 	my @top1 = @{ $mathObj->offspringArray( $cID, sub { return keys %{ $c2p_hash->{$_[0]} }; }, %parm) }; 
 	my @back_topID; 
@@ -556,7 +590,7 @@ sub _allTopParent {
 sub _addParentID {
 	my $self = shift; 
 	my $bkH = shift; 
-	my %parm = $self->_setHashFromArr(\@_); 
+	my %parm = $self->_setHashFromArr(@_); 
 	my %typeIsCOT; # type that is child of tranID; 
 	%typeIsCOT = qw(
 	  cds    1
@@ -609,7 +643,7 @@ sub _addParentID {
 #   {'alias'} => {Val}=>nn (Alias=)
 sub _getAttrHash {
 	my $self = shift; 
-	my %parm = $self->_setHashFromArr(\@_); 
+	my %parm = $self->_setHashFromArr(@_); 
 	$parm{'debug'} = $parm{'debug'} // 1; 
 	defined $parm{'attribText'} or &stopErr("[Err] no {attribText} for _getAttrHash()\n"); 
 	
@@ -707,7 +741,7 @@ sub _getAttrHash {
 
 sub _txt2Array {
 	my $self = shift; 
-	my %parm = $self->_setHashFromArr(\@_); 
+	my %parm = $self->_setHashFromArr(@_); 
 	defined $parm{'txt'} or return [] ; 
 	$parm{'sepSym'} = $parm{'sepSym'} // "\t"; 
 	my $sepSym = $parm{'sepSym'}; 
@@ -728,16 +762,20 @@ sub _txt2Array {
 # Function : Set default values for $parm{qw/type2include type2separate type2check/}; 
 sub _setParmType {
 	my $self = shift; 
-	my %parm = $self->_setHashFromArr(\@_); 
+	my %parm = $self->_setHashFromArr(@_); 
 	defined $parm{'type2include'}  or &_setTypeHash('', [ map { lc($_) } @{$parm{'type2include'}}  ],  [ qw/match match_part/ ]); 
 	defined $parm{'type2separate'} or &_setTypeHash('', [ map { lc($_) } @{$parm{'type2separate'}} ],  [ qw/match/ ]); 
 	defined $parm{'type2check'}    or &_setTypeHash('', [ map { lc($_) } @{$parm{'type2check'}}    ],  [ map { lc($_) } sort { $parm{'type2include'}{$a} <=> $parm{'type2include'}{$b} || $a cmp $b } keys %{$parm{'type2include'}} ]); 
 	return; 
 }# _setParmType()
 
-# Input  : ($hashRef_to_setup, $arrayRef1_as_keys, $arrayRef2_as_keys, ...)
-# Return : undef() 
-# Function: Use @$arrayRef1_as_keys as keys to fill %$hashRef_to_setup; 
+=head2 _setTypeHash( $hashRef_to_setup, $arrayRef1_as_keys, $arrayRef2_as_keys, ... )
+
+Return : undef() 
+
+Function: Use @$arrayRef1_as_keys as keys to fill %$hashRef_to_setup; 
+
+=cut
 sub _setTypeHash {
 	my $self = shift; 
 	my $hr = shift; 
@@ -759,11 +797,11 @@ sub _setEleParm {
 	return; 
 }# _setEleParm()
 
-=head2 _setHashFromArr($keyVal_aref)
+=head2 _setHashFromArr(@keyVal_array)
 
-Required: $keyVal_aref
+Required: @keyVal_array
 
-Function: @{$keyVal_aref} contain ( key1, val1, key2, val2, ... ) pairs. 
+Function: @keyVal_array contain ( key1, val1, key2, val2, ... ) pairs. 
           It will skip the latter duplicated keyN. 
           This function has been added to mathSunhh.pm; 
 
@@ -774,19 +812,19 @@ Return  : %back_hash
 =cut
 sub _setHashFromArr {
 	my $self = shift; 
-	my $arr_ref = shift; 
 	my %back_hash; 
-	for (my $i=0; $i<@$arr_ref; $i+=2) {
+	for (my $i=0; $i<@_; $i+=2) {
 		my $val; 
-		if (exists $arr_ref->[$i+1]) {
-			$val = $arr_ref->[$i+1]; 
+		if (exists $_[$i+1]) {
+			$val = $_[$i+1]; 
 		} else {
-			exists $back_hash{$arr_ref->[$i]} or &tsmsg("[Wrn] Input array is not even! Use undef() for key [", $arr_ref->[$i],"]\n"); 
+			exists $back_hash{$_[$i]} or &tsmsg("[Wrn] Input array is not even! Use undef() for key [", $_[$i],"]\n"); 
 			$val = undef(); 
 		}
-		exists $back_hash{$arr_ref->[$i]} or $back_hash{$arr_ref->[$i]} = $val; 
+		exists $back_hash{$_[$i]} or $back_hash{$_[$i]} = $val; 
 	}
 	return(%back_hash); 
 }# _setHashFromArr() 
+
 
 1; 
