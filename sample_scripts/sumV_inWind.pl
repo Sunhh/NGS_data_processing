@@ -38,6 +38,8 @@ sub usage {
 #
 #  -maxLine        [-1]
 #  -skipHN         [0] Skip header lines number. 
+#
+#  -symbol         ['\t']
 ################################################################################
 HH
 	exit 1; 
@@ -57,6 +59,8 @@ $opts{'maxLine'} = $opts{'maxLine'} // -1;
 $opts{'chr_colN'} = $opts{'chr_colN'} // 0 ;
 $opts{'pos_colN'} = $opts{'pos_colN'} // 1 ;
 $opts{'skipHN'} = $opts{'skipHN'} // 0; 
+my $symbol = "\t"; 
+defined $opts{'symbol'} and $symbol = $opts{'symbol'}; 
 # $opts{'cnt_colN'} = $opts{'cnt_colN'} ;
 
 ## Setup windows. 
@@ -73,7 +77,7 @@ while (<>) {
 	$ln_cnt > $opts{'skipHN'} or next; 
 	$. % 1e6 == 1 and &tsmsg("[Msg] Reading [$.] line(s).\n"); 
 	chomp; m/^\s*$/ and next; 
-	my @ta = split(/\s+/, $_); 
+	my @ta = split(/$symbol/o, $_); 
 	my $chrV = ( $opts{'chr_colN'} == 999999 ) ? 0     : $ta[ $opts{'chr_colN'} ] ; 
 	$chrV =~ m/^chr$/i and next; 
 	my $cntV = ( defined $opts{'cnt_colN'}  ) ? $ta[ $opts{'cnt_colN'} ] : 1 ; 
