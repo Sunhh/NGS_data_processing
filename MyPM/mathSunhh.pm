@@ -35,6 +35,43 @@ sub _initialize {
 	return; 
 }
 
+
+=head2 repArr (\@units, 'each'=>1, 'times'=>1, 'length'=>\@units) 
+
+Required : \@units
+
+Function : A repeat function similar to rep() in R. 
+           First apply 'each', then apply 'times', and at least apply 'length'; 
+
+Return   : \@repeated_eles 
+
+=cut
+sub repArr {
+	my $self = shift; 
+	my $ref_arr = shift; 
+	my %parm = $self->_setHashFromArr(@_); 
+	$parm{'each'} = $parm{'each'} // 1; 
+	$parm{'times'} = $parm{'times'} // 1; 
+	$parm{'length'} = $parm{'length'} // ( ($#$ref_arr+1) * $parm{'each'} * $parm{'times'} ); 
+	$parm{'length'} > 0 or return []; 
+	my @each_arr; 
+	for my $te (@$ref_arr) {
+		push( @each_arr, ( $te ) x $parm{'each'} ); 
+	}
+	my @time_arr; 
+	for ( my $i=0; $i<$parm{'times'}; $i++ ) {
+		push(@time_arr, @each_arr); 
+	}
+	my @back_arr; 
+	for ( my ($i, $time_idx) = (0,0) ; $i<$parm{'length'}; $i++ ) {
+		$time_idx > $#time_arr and $time_idx -= ( $#time_arr + 1 ); 
+		push(@back_arr, $time_arr[$time_idx]); 
+		$time_idx ++; 
+	}
+	return \@back_arr; 
+}# End repArr() 
+
+
 =head2 newNumber ( 'other_safeNumber'=>[$mathSunhhObj->{'safeNumber'}, ...], 'onlyMerge'=>0, 'debug'=>0 )
 
 Required : Null 
