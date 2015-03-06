@@ -66,6 +66,7 @@ sub renameByPat {
 sub openFH ($$) {
 	my $f = shift; 
 	my $type = shift; 
+	defined $f or &stopErr("[Err] file name not defined in openFH()\n"); 
 	defined $type or $type = 'read'; 
 	defined $goodFileType{$type} or &stopErr("[Err]Unknown open method tag [$type].\n"); 
 	$type = $goodFileType{$type}; 
