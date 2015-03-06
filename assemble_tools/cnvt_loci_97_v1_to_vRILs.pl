@@ -27,6 +27,22 @@ GetOptions(\%opts,
 ); 
 
 
+sub usage {
+	print <<HH; 
+################################################################################
+# perl $0 input_merged.1col
+#
+# -scf2chr_lis1    [scaf_to_chr_list1] Chr1    scaffold619     R       4198471 4893635
+# -scf2chr_lis2    [scaf_to_chr_list2] chr1    scaffold1481    F       1       1224693
+################################################################################
+HH
+	exit 1; 
+}
+
+$opts{'help'} and &usage(); 
+defined $opts{'scf2chr_lis1'} or &usage(); 
+defined $opts{'scf2chr_lis2'} or &usage(); 
+
 my %str2num; 
 %str2num = qw(
  1       1
