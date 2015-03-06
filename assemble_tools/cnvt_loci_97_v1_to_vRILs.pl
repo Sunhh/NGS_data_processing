@@ -63,10 +63,10 @@ while (<$lfh1>) {
 	my @ta = split(/\t/, $_); 
 	my ($chrID, $scfID, $strand, $cS, $cE) = @ta; 
 	$strand = lc($strand); 
-	defined $str2num{$strand} or die "strand=$strand unknown\n"; 
+	defined $str2num{$strand} or do { &tsmsg("[Wrn] strand [$strand] unknown. Skip line: $_\n"); next; }; 
 	$strand = $str2num{$strand}; 
 	$cS > $cE and ($cS, $cE) = ($cE, $cS); 
-	push(@{$c2s_1{$chrID}{'loci'}{$scfID}}, [ $strand, $cS, $cE, $cE-$cS+1 ]); 
+	$c2s_1{$chrID}{'loci'}{$scfID} = [ $strand, $cS, $cE, $cE-$cS+1 ]; 
 	push(@{$c2s_1{$chrID}{'list'}}, $scfID); 
 	$s2c_1{$scfID} = [ $chrID, $strand, $cS, $cE, $cE-$cS+1 ]; 
 }
@@ -77,10 +77,10 @@ while (<$lfh2>) {
 	my @ta = split(/\t/, $_); 
 	my ($chrID, $scfID, $strand, $cS, $cE) = @ta; 
 	$strand = lc($strand); 
-	defined $str2num{$strand} or die "strand=$strand unknown\n"; 
+	defined $str2num{$strand} or do { &tsmsg("[Wrn] strand [$strand] unknown. Skip line: $_\n"); next; }; 
 	$strand = $str2num{$strand}; 
 	$cS > $cE and ($cS, $cE) = ($cE, $cS); 
-	push(@{$c2s_2{$chrID}{'loci'}{$scfID}}, [ $strand, $cS, $cE, $cE-$cS+1 ]); 
+	$c2s_2{$chrID}{'loci'}{$scfID} = [ $strand, $cS, $cE, $cE-$cS+1 ]; 
 	push(@{$c2s_2{$chrID}{'list'}}, $scfID); 
 	$s2c_2{$scfID} = [ $chrID, $strand, $cS, $cE, $cE-$cS+1 ]; 
 }
@@ -95,7 +95,11 @@ for my $chrID (keys %c2s_2) {
 	@{$c2s_2{$chrID}{'list'}} = sort { $c2s_2{$chrID}{'loci'}{$a}[1] <=>$c2s_2{$chrID}{'loci'}{$b}[1]  } @{$c2s_2{$chrID}{'list'}}; 
 }
 
+my $chrID_cN = 0; 
+my $chrPos_cN = 1; 
+my $base_cN = 2; 
 while (<>) {
+	$. % 100e3 == 1 and &tsmsg("[Msg] $. lines.\n"); 
 	chomp; 
 	if ( m/^\s*($|#)/ ) {
 		print STDOUT "$_\n"; 
@@ -106,12 +110,13 @@ while (<>) {
 		print STDOUT "$_\n"; 
 		next; 
 	}
-	my ($chrID, $chrPos) = @ta[0,1]; 
+	my ($chrID, $chrPos) = @ta[$chrID_cN,$chrPos_cN]; 
 	defined $c2s_1{$chrID} or &stopErr("[Err] Undefined chrID=[$chrID] in list 1\n"); 
-	my ($scfID, $scfPos, $scfStr) = &chrPosInScf($chrID, $chrPos, \%c2s_1, 1); 
-	my ($v2_chrID, $v2_chrPos, $v2_chrStr) = &scfPosInChr($scfID, $scfPos, $scfStr); 
+	my ($scfID, $scfPos, $scfStr) = &chrPosToScf($chrID, $chrPos, \%c2s_1, 1); 
+	$scfID eq '' and &stopErr("[Err] No scf infor for [$chrID $chrPos]. line: $_\n"); 
+	my ($v2_chrID, $v2_chrPos, $v2_chrStr) = &scfPosToChr($scfID, $scfPos, \%s2c_2, $scfStr); 
 	if ( $v2_chrStr == -1 ) {
-		for my $tb (@ta[2 .. $#ta]) {
+		for my $tb (@ta[$base_cN .. $#ta]) {
 			$tb =~ tr/acgturykmbvdhACGTURYKMBVDHwWsSnN/tgcaayrmkvbhdTGCAAYRMKVBHDwWsSnN/; 
 			$tb = reverse($tb); 
 			# $tb =~ s/^([ATGCN]+)(\*|\+)([ATGCN]+)$/$3$2$1/; 
@@ -121,18 +126,20 @@ while (<>) {
 	} else {
 		&stopErr("[Err] Bad v2_chrStr [$v2_chrStr]\n"); 
 	}
+	$ta[$chrID_cN] = $v2_chrID; 
+	$ta[$chrPos_cN] = $v2_chrPos; 
 	print STDOUT join("\t", @ta)."\n"; 
 }
 
-sub chrPosInScf {
+sub chrPosToScf {
 	my ($chrID, $chrPos, $c2s_href, $chrStr) = @_; 
 	defined $chrStr or $chrStr = 1; 
 	defined $c2s_href->{$chrID} or &stopErr("[Err] chrID [$chrID] not defined in c2s_href\n"); 
 	for my $scfID (@{$c2s_href->{$chrID}{'list'}}) {
-		$c2s_href->{$chrID}{'loci'}{$scfID}[1] > $chrPos and next; 
-		$c2s_href->{$chrID}{'loci'}{$scfID}[3] < $chrPos and next; 
-		my $back_scfID = $scfID; 
 		my ( $strand, $cS, $cE, $scfLen ) = @{ $c2s_href->{$chrID}{'loci'}{$scfID} };
+		$cS > $chrPos and next; 
+		$cE < $chrPos and next; 
+		my $back_scfID = $scfID; 
 		my $back_scfPos = ''; 
 		my $back_scfStr = $chrStr; 
 		$back_scfStr =~ m/^0+$/ and $back_scfStr = 1; 
@@ -144,13 +151,12 @@ sub chrPosInScf {
 		} else {
 			&stopErr("[Err] unknown strand number [$strand]\n"); 
 		}
-		
 		return ( $back_scfID, $back_scfPos, $back_scfStr ); 
 	}
-	return ['', '', '']; 
+	return ('', '', ''); 
 }
 
-sub scfPosInChr {
+sub scfPosToChr {
 	my ( $scfID, $scfPos, $s2c_href, $scfStr ) = @_; 
 	defined $scfStr or $scfStr = 1; 
 	defined $s2c_href->{$scfID} or &stopErr("[Err] [$scfID] not defined in s2c_href\n"); 
