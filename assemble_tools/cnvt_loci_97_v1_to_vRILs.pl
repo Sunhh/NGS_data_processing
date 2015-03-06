@@ -113,7 +113,7 @@ while (<>) {
 	my ($chrID, $chrPos) = @ta[$chrID_cN,$chrPos_cN]; 
 	defined $c2s_1{$chrID} or &stopErr("[Err] Undefined chrID=[$chrID] in list 1\n"); 
 	my ($scfID, $scfPos, $scfStr) = &chrPosToScf($chrID, $chrPos, \%c2s_1, 1); 
-	$scfID eq '' and &stopErr("[Err] No scf infor for [$chrID $chrPos]. line: $_\n"); 
+	$scfID eq '' and do { &tsmsg("[Err] No scf infor for [$chrID $chrPos]. Skip line: $_\n"); next; }; 
 	my ($v2_chrID, $v2_chrPos, $v2_chrStr) = &scfPosToChr($scfID, $scfPos, \%s2c_2, $scfStr); 
 	if ( $v2_chrStr == -1 ) {
 		for my $tb (@ta[$base_cN .. $#ta]) {
