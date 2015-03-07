@@ -4,6 +4,8 @@ use warnings;
 
 use LogInforSunhh; 
 
+-t and !@ARGV and die "perl $0 in.SNP.effect > in.SNP.effect.modest\n"; 
+
 my %order = qw(
   Failed   0
   1.3      1
@@ -31,6 +33,10 @@ while (<>) {
 	my @ta1 = split(/,/, $ee); 
 	my @class; 
 	my $is_failed = 0; 
+	my $special_type = ''; 
+	if ($ta1[0] !~ m/:/) {
+		$special_type = shift(@ta1); 
+	}
 	for my $tb (@ta1) {
 		my @tc = split(/:/, $tb); 
 		defined $tc[1] or die "tb=|$tb|\n"; 
@@ -50,6 +56,16 @@ while (<>) {
 			$count{$class[0][0]} ++; 
 			$modest = $class[0][1]; 
 			$type = $class[0][0]; 
+		}
+	} elsif ( $special_type ne '' ) {
+		if ( $class[0][0] =~ m/^3\./ ) {
+			$type = "${special_type}_coding"; 
+			$count{$type} ++; 
+			$modest = "$class[0][1]:$type"; 
+		} else {
+			$type = $class[0][1]; 
+			$count{$type} ++; 
+			$modest = $type; 
 		}
 	} else {
 		$count{$class[0][0]} ++; 
