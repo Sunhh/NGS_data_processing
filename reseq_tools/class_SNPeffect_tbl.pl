@@ -63,9 +63,9 @@ while (<>) {
 			$count{$type} ++; 
 			$modest = "$class[0][1]:$type"; 
 		} else {
-			$type = $class[0][1]; 
+			$type = $class[0][0]; 
 			$count{$type} ++; 
-			$modest = $type; 
+			$modest = $class[0][1]; 
 		}
 	} else {
 		$count{$class[0][0]} ++; 
