@@ -36,8 +36,8 @@ my $cdsfile = '/share/app/watermelon/share/V6_WM_20100930/GeneAnnotation/V6_WM_C
 my $gfffile = '/share/app/watermelon/share/V6_WM_20100930/GeneAnnotation/watermelon_v6.scaffold.glean.1015.gff.150_filter.gff_CHRloc'; 
 
 
-$cdsfile = '/data/Sunhh/database/Watermelon/WM97/WM97_v6.cds.fasta';
-$gfffile = '/data/Sunhh/database/Watermelon/WM97/WM97_v6.annot.gff3';
+$cdsfile = 'WCGV2p1_annot.gff.cds.fa';
+$gfffile = 'WCGV2p1_annot.gff';
 
 open CDS,'<',"$cdsfile" or die; 
 my (%cdsseq, $tkey); 
@@ -61,19 +61,37 @@ while (<GFF>) {
 	my @ta = split(/\t/, $_); 
 	my ($cid, $t1, $ts, $te, $tstrand, $tname) = @ta[0, 2, 3, 4, 6, 8]; 
 	if ($t1 eq 'mRNA') {
-		$tname =~ s/^ID=([^;=\s]+);$/$1/ or die "Failed $tname\n"; 
+		$tname =~ s/^ID=([^;=\s]+)/$1/ or die "Failed $tname\n"; 
+		$tname = $1; 
 		defined $cdsseq{$tname} or die "No cdsseq for $tname\n"; 
 		push(@{$anno{$cid}}, [[$ts,$te], $tstrand, [], $tname, length($cdsseq{$tname}), $cdsseq{$tname}]); 
 	}elsif ($t1 eq 'CDS') {
-		$tname =~ s/^Parent=([^;=\s]+);$/$1/ or die "Failed1 $tname\n"; 
+		$tname =~ s/Parent=([^;=\s]+)/$1/ or die "Failed1 $tname\n"; 
+		$tname = $1; 
 		$anno{$cid}[-1][3] eq $tname or die "Diff GenID in: $anno{$cid}[-1][3] eq $tname\n"; 
 		push(@{$anno{$cid}[-1][2]}, [$ts, $te]); 
 	}else{
-		$t1 eq 'gene' and next; 
+		$t1 =~ m/^gene|exon|three_prime_UTR|five_prime_UTR$/i and next; 
 		die "Line:$_\n$t1\n"; 
 	}
 }
 close GFF; 
+
+# Get new mRNA start,end
+for my $cid (keys %anno) {
+	for my $t_arr_1 ( @{$anno{$cid}} ) {
+		my ($max, $min) = (-1, -1); 
+		for my $tse ( @{$t_arr_1->[2]} ) {
+			my ($ts, $te) = @$tse; 
+			$max == -1 and $max = $te; 
+			$min == -1 and $min = $ts; 
+			$max < $te and $max = $te; 
+			$min > $ts and $min = $ts; 
+		}
+		$t_arr_1->[0] = [ $min, $max ]; 
+	}
+}
+
 
 SNP_LINE: 
 while (<>) {
