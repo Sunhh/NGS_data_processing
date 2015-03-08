@@ -7,7 +7,7 @@ use IPC::Open3;
 use Symbol; 
 use Exporter qw(import);
 
-our @EXPORT = qw(tsmsg stopErr exeCmd);
+our @EXPORT = qw(tsmsg stopErr exeCmd exeCmd_1cmd);
 our @EXPORT_OK = qw();
 
 
