@@ -24,7 +24,7 @@ sub new {
 	my $self = {}; 
 	bless $self, $class; 
 	
-	$self->_initialize(); 
+	$self->_initialize(@_); 
 	
 	return $self; 
 }

@@ -24,6 +24,30 @@ sub stopErr {
 }#End stopErr() 
 
 # Execute command with system and time record. 
+sub exeCmd_1cmd {
+	my $cmd = shift; 
+	my $is_print = shift; 
+	$is_print //= 0; 
+	
+	&tsmsg("[CMD] $cmd\n"); 
+	if ( $is_print != 0 ) {
+		&tsmsg("[CMD_print]$cmd\n"); 
+		return; 
+	}
+	if ( system($cmd) == 0 ) {
+		&tsmsg("[CMD_done]\n"); 
+	} else {
+		if ( $? == -1 ) {
+			&tsmsg("[CMD_err] Failed to execute: $!\n"); 
+		} elsif ( $? & 127 ) {
+			&tsmsg("[CMD_err] Child died with signal ", $? & 127, ", ", ($? & 128)? 'with' : 'without', "coredump\n"); 
+		} else {
+			&tsmsg("[CMD_err] Child exited with value ", $? >> 8, "\n"); 
+		}
+	}
+}#End exeCmd 
+
+# Execute command with system and time record. 
 sub exeCmd {
 	for my $cmd ( @_ ) {
 		&tsmsg("[CMD] $cmd\n"); 

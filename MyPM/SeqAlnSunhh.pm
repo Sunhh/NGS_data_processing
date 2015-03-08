@@ -7,10 +7,17 @@ use strict;
 use warnings; 
 use LogInforSunhh; 
 use Exporter qw(import); 
+use mathSunhh; # For usage of mathSunhh->_setHashFromArr(); 
+my $ms=mathSunhh->new(); 
 
 our @EXPORT = qw(olap_e2e_A2B); 
 our @EXPORT_OK; 
 
+############################################################
+#  Basic settings. 
+############################################################
+
+## For olap_e2e_A2B() sub-routine. 
 # define the scores for match, mismatch and indel:
 my %para; 
 $para{match_score} = 2; 
@@ -20,18 +27,226 @@ $para{gapextend_score} = -2;
 $para{opt_tail} = 0; 
 $para{opt_head} = 0; 
 
-## Do not distinguish "N" or other special words. 
-## Input  : (sequenceA, sequenceB [, {%para}])
-## Output : { qw/(start|end)(A|B) aln_len aln_ident count seqA_aln seqB_aln seqC_aln/ => values }
-##          startA, endA : start and end positions of seqA aligned; 
-##          startB, endB : start and end positions of seqB aligned; 
-##          aln_len      : length of aligned region (including gap)
-##          aln_ident    : (length of match bases) / aln_len
-##          seqA_aln     : alignment in seqA
-##          seqB_aln     : alignemtn in seqB
-##          seqC_aln     : Consensus signs between seqA_aln and seqB_aln. "." - same, "D" - diff, "-" - gap. 
+
+
+############################################################
+#  Methods
+############################################################
+sub new {
+	my $class = shift; 
+	my $self = {}; 
+	bless $self, $class; 
+
+	$self->_initialize(@_); 
+
+	return $self; 
+}
+sub _initialize {
+	my $self = shift; 
+	my %parm = $ms->_setHashFromArr(@_); 
+	return; 
+}
+
+
+=head2 bwaAln( inFq1=>$inFq1, aln_type=>'PE', %parameters_for_bwaPE_or_bwaSE_function )
+
+Description   : Invoke bwaPE()/bwaSE() to run bwa alignment. 
+
+Input         : 
+  aln_type : Default 'PE' = paired alignment. Can be 'SE' = single alignments. 
+
+=cut
+
+sub bwaAln {
+	my $self = shift; 
+	my %parm = $ms->_setHashFromArr(@_); 
+	$parm{'aln_type'} //= 'PE'; 
+	if ( $parm{'aln_type'} eq 'PE' ) {
+		$self->bwaPE(%parm); 
+	} elsif ( $parm{'aln_type'} eq 'SE' ) {
+		$self->bwaSE(%parm); 
+	} else {
+		&tsmsg("[Err] Unknown aln_type [$parm{'aln_type'}]\n"); 
+	}
+}# bwaAln() 
+
+=head2 bwaPE( inFq1=>$inFq1, inFq2=>$inFq2, step2do=>['all'], db=>$bwa_aln_db, dbTag=>'toDB', 
+  oBamPre=>'bwaPEOutPre', 
+  exe_bwa=>'bwa', exe_samtools=>'samtools', 
+  para_aln=>'', para_sampe=>'', 
+  para_bamSort=>'', 
+  para_sam2bam=>'', 
+  printCmd=>0, 
+)
+
+Description   : Please note that I don't check the file existence! 
+
+Input         : 
+  step2do : Could be [ qw/all aln_r1 aln_r2 sampe bam_sort bam_index rm_sai rm_rawbam sampe2bam sampe2sam sam2bam rm_rawsam/ ]
+            Here 'all' means qw/aln_r1 aln_r2 sampe bam_sort bam_index rm_sai rm_rawbam/
+  printCmd: 0 (default) indicates we carry out each command. 1 indicates we only print command with tag [CMD_print]. 
+
+=cut
+sub bwaPE {
+	my $self = shift; 
+	my %parm = $ms->_setHashFromArr(@_); 
+	( ( defined $parm{'inFq1'} or defined $parm{'inFq2'} ) and defined $parm{'db'} ) or &stopErr("[Err] Three paramters must be defined: inFq1/inFq2/db in function bwaPE()\n"); 
+	$parm{'step2do'} //= ['all']; 
+	$parm{'dbTag'} //= 'toDB'; 
+	$parm{'exe_bwa'} //= 'bwa'; 
+	$parm{'exe_samtools'} //= 'samtools'; 
+	$parm{'para_aln'} //= ''; # Recommanded : -t $cpuN -n 0.03 -o 1 -e 2
+	$parm{'para_sampe'} //= ''; # Recommanded : 
+	$parm{'para_bamSort'} //= ''; # Recommanded : -@ $cpuN -m $mem_limit
+	$parm{'para_sam2bam'} //= ''; 
+	$parm{'oBamPre'} //= 'bwaPEOutPre'; 
+	$parm{'printCmd'} //= 0; 
+
+	# Setting file names. 
+	my $inFq1 = $parm{'inFq1'}; 
+	my $inFq2 = $parm{'inFq2'}; 
+	my $oBamPre = $parm{'oBamPre'}; 
+	my $db = $parm{'db'}; 
+	my $dbTag = $parm{'dbTag'}; 
+	my $oSai1 = "${inFq1}.${dbTag}.sai"; 
+	my $oSai2 = "${inFq2}.${dbTag}.sai"; 
+
+	for my $t_step ( @{$parm{'step2do'}} ) {
+		my @steps = (lc($t_step)); 
+		$t_step eq 'all' and @steps = (qw/aln_r1 aln_r2 sampe bam_sort bam_index rm_sai rm_rawbam/); 
+		for my $c_step ( @steps ) {
+			if      ( $c_step eq 'aln_r1' ) {
+				&exeCmd_1cmd("$parm{'exe_bwa'} aln $parm{'para_aln'} -f $oSai1 $db $inFq1", $parm{'printCmd'}); 
+			} elsif ( $c_step eq 'aln_r2' ) {
+				&exeCmd_1cmd("$parm{'exe_bwa'} aln $parm{'para_aln'} -f $oSai2 $db $inFq2", $parm{'printCmd'}); 
+			} elsif ( $c_step eq 'sampe' ) { 
+				&exeCmd_1cmd("$parm{'exe_bwa'} sampe $parm{'para_sampe'} $db $oSai1 $oSai2 $inFq1 $inFq2 | $parm{'exe_samtools'} view $parm{'para_sam2bam'} -bSh -o $oBamPre.bam -", $parm{'printCmd'}); 
+			} elsif ( $c_step eq 'sampe2bam' ) {
+				&exeCmd_1cmd("$parm{'exe_bwa'} sampe $parm{'para_sampe'} $db $oSai1 $oSai2 $inFq1 $inFq2 | $parm{'exe_samtools'} view $parm{'para_sam2bam'} -bSh -o $oBamPre.bam -", $parm{'printCmd'}); 
+			} elsif ( $c_step eq 'sampe2sam' ) {
+				&exeCmd_1cmd("$parm{'exe_bwa'} sampe $parm{'para_sampe'} $db $oSai1 $oSai2 $inFq1 $inFq2 > $oBamPre.sam", $parm{'printCmd'}); 
+			} elsif ( $c_step eq 'sam2bam' ) {
+				&exeCmd_1cmd("$parm{'exe_samtools'} view $parm{'para_sam2bam'} -bSh -o $oBamPre.bam $oBamPre.sam", $parm{'printCmd'}); 
+			} elsif ( $c_step eq 'bam_sort' ) {
+				&exeCmd_1cmd("$parm{'exe_samtools'} sort $parm{'para_bamSort'} $oBamPre.bam $oBamPre.srt", $parm{'printCmd'}); 
+			} elsif ( $c_step eq 'bam_index' ) {
+				&exeCmd_1cmd("$parm{'exe_samtools'} index $oBamPre.srt.bam", $parm{'printCmd'}); 
+			} elsif ( $c_step eq 'rm_sai' ) {
+				my @file_list = grep { -f $_ } ( $oSai1, $oSai2 ); 
+				$#file_list > -1 and &exeCmd_1cmd("rm " . join(" ", @file_list), $parm{'printCmd'}); 
+			} elsif ( $c_step eq 'rm_rawbam' ) {
+				-f "$oBamPre.bam" and &exeCmd_1cmd("rm $oBamPre.bam", $parm{'printCmd'}); 
+			} elsif ( $c_step eq 'rm_rawsam' ) {
+				-f "$oBamPre.sam" and &exeCmd_1cmd("rm $oBamPre.sam", $parm{'printCmd'}); 
+			} else {
+				&tsmsg("[Err] Unknown step [$c_step]\n"); 
+			}
+		}
+	}
+
+	return; 
+}# End bwaPE() 
+
+=head2 bwaSE( inFq1=>$inFq1, , step2do=>['all'], db=>$bwa_aln_db, dbTag=>'toDB', 
+  oBamPre=>'bwaSEOutPre', 
+  exe_bwa=>'bwa', exe_samtools=>'samtools', 
+  para_aln=>'', para_samse=>'', 
+  para_bamSort=>'', 
+  para_sam2bam=>'', 
+  printCmd=>0, 
+)
+Description   : Please note that I don't check the file existence! 
+
+Input         : 
+  step2do : Could be [ qw/all aln_r1 samse bam_sort bam_index rm_sai rm_rawbam samse2sam sam2bam rm_rawsam/ ]
+            Here 'all' means qw/aln_r1 samse bam_sort bam_index rm_sai rm_rawbam/
+  printCmd: 0 (default) indicates we carry out each command. 1 indicates we only print command with tag [CMD_print]. 
+
+=cut
+sub bwaSE {
+	my $self = shift; 
+	my %parm = $ms->_setHashFromArr(@_); 
+	( ( defined $parm{'inFq1'} ) and defined $parm{'db'} ) or &stopErr("[Err] Three paramters must be defined: inFq1/db in function bwaSE()\n"); 
+	$parm{'step2do'} //= ['all']; 
+	$parm{'dbTag'} //= 'toDB'; 
+	$parm{'exe_bwa'} //= 'bwa'; 
+	$parm{'exe_samtools'} //= 'samtools'; 
+	$parm{'para_aln'} //= ''; 
+	$parm{'para_samse'} //= ''; 
+	$parm{'para_bamSort'} //= ''; 
+	$parm{'para_sam2bam'} //= ''; 
+	$parm{'oBamPre'} //= 'bwaSEOutPre'; 
+	$parm{'printCmd'} //= 0; 
+
+	# Setting file names. 
+	my $inFq1 = $parm{'inFq1'}; 
+	my $oBamPre = $parm{'oBamPre'}; 
+	my $db = $parm{'db'}; 
+	my $dbTag = $parm{'dbTag'}; 
+	my $oSai1 = "${inFq1}.${dbTag}.sai"; 
+
+	for my $t_step ( @{$parm{'step2do'}} ) {
+		my @steps = (lc($t_step)); 
+		$t_step eq 'all' and @steps = (qw/aln_r1 samse bam_sort bam_index rm_sai rm_rawbam/); 
+		for my $c_step ( @steps ) {
+			if      ( $c_step eq 'aln_r1' ) {
+				&exeCmd_1cmd("$parm{'exe_bwa'} aln $parm{'para_aln'} -f $oSai1 $db $inFq1", $parm{'printCmd'}); 
+			} elsif ( $c_step eq 'samse' ) { 
+				&exeCmd_1cmd("$parm{'exe_bwa'} samse $parm{'para_samse'} $db $oSai1 $inFq1 | $parm{'exe_samtools'} view $parm{'para_sam2bam'} -bSh -o $oBamPre.bam -", $parm{'printCmd'}); 
+			} elsif ( $c_step eq 'samse2bam' ) {
+				&exeCmd_1cmd("$parm{'exe_bwa'} samse $parm{'para_samse'} $db $oSai1 $inFq1 | $parm{'exe_samtools'} view $parm{'para_sam2bam'} -bSh -o $oBamPre.bam -", $parm{'printCmd'}); 
+			} elsif ( $c_step eq 'samse2sam' ) {
+				&exeCmd_1cmd("$parm{'exe_bwa'} samse $parm{'para_samse'} $db $oSai1 $inFq1 > $oBamPre.sam", $parm{'printCmd'}); 
+			} elsif ( $c_step eq 'sam2bam' ) {
+				&exeCmd_1cmd("$parm{'exe_samtools'} view $parm{'para_sam2bam'} -bSh -o $oBamPre.bam $oBamPre.sam", $parm{'printCmd'}); 
+			} elsif ( $c_step eq 'bam_sort' ) {
+				&exeCmd_1cmd("$parm{'exe_samtools'} sort $parm{'para_bamSort'} $oBamPre.bam $oBamPre.srt", $parm{'printCmd'}); 
+			} elsif ( $c_step eq 'bam_index' ) {
+				&exeCmd_1cmd("$parm{'exe_samtools'} index $oBamPre.srt.bam", $parm{'printCmd'}); 
+			} elsif ( $c_step eq 'rm_sai' ) {
+				my @file_list = grep { -f $_ } ( $oSai1 ); 
+				$#file_list > -1 and &exeCmd_1cmd("rm " . join(" ", @file_list), $parm{'printCmd'}); 
+			} elsif ( $c_step eq 'rm_rawbam' ) {
+				-f "$oBamPre.bam" and &exeCmd_1cmd("rm $oBamPre.bam", $parm{'printCmd'}); 
+			} elsif ( $c_step eq 'rm_rawsam' ) {
+				-f "$oBamPre.sam" and &exeCmd_1cmd("rm $oBamPre.sam", $parm{'printCmd'}); 
+			} else {
+				&tsmsg("[Err] Unknown step [$c_step]\n"); 
+			}
+		}
+	}
+
+}# End bwaSE() 
+
+
+
+############################################################
+#  Sub-routines. 
+############################################################
+
+
+=head1 olap_e2e_A2B( $sequenceA, $sequenceB, [, {%para}] )
+
+Description : This function is used to align two sequences from end to end. 
+              Do not distinguish "N" or other special words. 
+
+Output      : { qw/(start|end)(A|B) aln_len aln_ident count seqA_aln seqB_aln seqC_aln/ => values }
+                startA, endA : start and end positions of seqA aligned; 
+                startB, endB : start and end positions of seqB aligned; 
+                aln_len      : length of aligned region (including gap)
+                aln_ident    : (length of match bases) / aln_len
+                seqA_aln     : alignment in seqA
+                seqB_aln     : alignemtn in seqB
+                seqC_aln     : Consensus signs between seqA_aln and seqB_aln. "." - same, "D" - diff, "-" - gap. 
+
+=cut
 sub olap_e2e_A2B {
-	my ($seqA, $seqB, $ref_para) = @_; 
+	my $seqA = shift; 
+	unless ( ref($seqA) eq 'SCALAR' ) {
+		ref($seqA) eq 'SeqAlnSunhh' or &stopErr("[Err] olap_e2e_A2B 1st-input should be a scalar string standing for sequence A.\n"); 
+		$seqA = shift; 
+	}
+	my ($seqB, $ref_para) = @_; 
 	my %loc_para = %para; 
 	if (defined $ref_para and ref($ref_para) eq 'HASH') {
 		for my $tk ( keys %$ref_para ) {
