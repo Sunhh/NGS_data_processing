@@ -29,11 +29,11 @@ sub exeCmd_1cmd {
 	my $is_print = shift; 
 	$is_print //= 0; 
 	
-	&tsmsg("[CMD] $cmd\n"); 
 	if ( $is_print != 0 ) {
 		&tsmsg("[CMD_print]$cmd\n"); 
 		return; 
 	}
+	&tsmsg("[CMD] $cmd\n"); 
 	if ( system($cmd) == 0 ) {
 		&tsmsg("[CMD_done]\n"); 
 	} else {
