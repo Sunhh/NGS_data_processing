@@ -132,12 +132,25 @@ sub bwaPE {
 			} elsif ( $c_step eq 'bam_index' ) {
 				&exeCmd_1cmd("$parm{'exe_samtools'} index $oBamPre.srt.bam", $parm{'printCmd'}); 
 			} elsif ( $c_step eq 'rm_sai' ) {
-				my @file_list = grep { -f $_ } ( $oSai1, $oSai2 ); 
+				my @file_list; 
+				if ( $parm{'printCmd'} ) {
+					@file_list = ( $oSai1, $oSai2 ); 
+				} else {
+					@file_list = grep { -f $_ } ( $oSai1, $oSai2 ); 
+				}
 				$#file_list > -1 and &exeCmd_1cmd("rm " . join(" ", @file_list), $parm{'printCmd'}); 
 			} elsif ( $c_step eq 'rm_rawbam' ) {
-				-f "$oBamPre.bam" and &exeCmd_1cmd("rm $oBamPre.bam", $parm{'printCmd'}); 
+				if ( $parm{'printCmd'} ) {
+					&exeCmd_1cmd("rm $oBamPre.bam", $parm{'printCmd'}); 
+				} else {
+					-f "$oBamPre.bam" and &exeCmd_1cmd("rm $oBamPre.bam", $parm{'printCmd'}); 
+				}
 			} elsif ( $c_step eq 'rm_rawsam' ) {
-				-f "$oBamPre.sam" and &exeCmd_1cmd("rm $oBamPre.sam", $parm{'printCmd'}); 
+				if ( $parm{'printCmd'} ) {
+					&exeCmd_1cmd("rm $oBamPre.sam", $parm{'printCmd'}); 
+				} else {
+					-f "$oBamPre.sam" and &exeCmd_1cmd("rm $oBamPre.sam", $parm{'printCmd'}); 
+				}
 			} else {
 				&tsmsg("[Err] Unknown step [$c_step]\n"); 
 			}
@@ -204,12 +217,25 @@ sub bwaSE {
 			} elsif ( $c_step eq 'bam_index' ) {
 				&exeCmd_1cmd("$parm{'exe_samtools'} index $oBamPre.srt.bam", $parm{'printCmd'}); 
 			} elsif ( $c_step eq 'rm_sai' ) {
-				my @file_list = grep { -f $_ } ( $oSai1 ); 
+				my @file_list; 
+				if ( $parm{'printCmd'} ) {
+					@file_list = ( $oSai1 ); 
+				} else {
+					@file_list = grep { -f $_ } ( $oSai1 ); 
+				}
 				$#file_list > -1 and &exeCmd_1cmd("rm " . join(" ", @file_list), $parm{'printCmd'}); 
 			} elsif ( $c_step eq 'rm_rawbam' ) {
-				-f "$oBamPre.bam" and &exeCmd_1cmd("rm $oBamPre.bam", $parm{'printCmd'}); 
+				if ( $parm{'printCmd'} ) {
+					&exeCmd_1cmd("rm $oBamPre.bam", $parm{'printCmd'}); 
+				} else {
+					-f "$oBamPre.bam" and &exeCmd_1cmd("rm $oBamPre.bam", $parm{'printCmd'}); 
+				}
 			} elsif ( $c_step eq 'rm_rawsam' ) {
-				-f "$oBamPre.sam" and &exeCmd_1cmd("rm $oBamPre.sam", $parm{'printCmd'}); 
+				if ( $parm{'printCmd'} ) {
+					&exeCmd_1cmd("rm $oBamPre.sam", $parm{'printCmd'}); 
+				} else {
+					-f "$oBamPre.sam" and &exeCmd_1cmd("rm $oBamPre.sam", $parm{'printCmd'}); 
+				}
 			} else {
 				&tsmsg("[Err] Unknown step [$c_step]\n"); 
 			}
