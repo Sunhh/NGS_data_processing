@@ -35,7 +35,7 @@ GetOptions(\%opts,
 	"col_stat:i", "col_stat_asINS!", 
 	"symbol:s",
 	"best_uniqCol:s","select_col:s","select_rule:s","best_rep:s","best_disOrdCol!", 
-	"UniqColLine:s",
+	"UniqColLine:s", "topN:i", 
 	"label_mark:s",
 	"cbind!", "chkColNum!", 
 	"cluster_lines!", "cluster_cols:s", 
@@ -77,6 +77,7 @@ command:perl $0 <STDIN|parameters>
   -best_disOrdCol Do not care the order of uniqCols, so "A\\tB" line will be compared with "B\\tA" line. 
 
   -UniqColLine    output a line with its col=UniqColLine one time.<*,*,*...>
+  -topN           [1] Get the first topN number of lines. 
 
   -label_mark     Marks to be added to label_col. in format \" 001..090::a..z::1[::...]\"
 
@@ -515,12 +516,16 @@ sub LabelTbl {
 sub UniqColLineF{
 	my %uniqLine;
 	my @Cols = &parseCol($opts{UniqColLine});
+	$opts{'topN'} //= 1; 
 	for my $fh (@InFp) {
 		while (<$fh>) {
 			chomp; s/[^\S$symbol]+$//;
 			my @temp = split(/$symbol/o,$_);
 			my $key = join($symbol,@temp[@Cols]);
 			if (defined $uniqLine{$key}) {
+				$uniqLine{$key} ++; 
+				$uniqLine{$key} > $opts{'topN'} and next; 
+				print STDOUT "$_\n"; 
 			}else{
 				$uniqLine{$key} = 1;
 				print STDOUT "$_\n";
