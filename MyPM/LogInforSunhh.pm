@@ -52,7 +52,7 @@ sub exeCmd {
 	for my $cmd ( @_ ) {
 		&tsmsg("[CMD] $cmd\n"); 
 		if ( system($cmd) == 0 ) {
-			&tsmsg("[CMD_done]\n"); 
+			&tsmsg("[CMD_done]$cmd\n"); 
 		} else {
 			if ( $? == -1 ) {
 				&tsmsg("[CMD_err] Failed to execute: $!\n"); 
