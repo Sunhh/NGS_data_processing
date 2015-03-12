@@ -14,7 +14,7 @@ while (<>) {
 	}
 	my $base = uc($ta[2]);
 	my $has_diff = 0;
-	for (my $i=4; $i<@ta; $i++) {
+	for (my $i=3; $i<@ta; $i++) {
 		$ta[$i] = uc($ta[$i]);
 		$ta[$i] eq 'N' and next;
 		$base eq 'N' and $base = $ta[$i];
