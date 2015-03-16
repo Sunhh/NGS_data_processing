@@ -1,0 +1,3 @@
+cat allLTR.lib.noProtFinal.classified use_MITE.lib.noProtFinal.classified ModelerID.lib.noProtFinal Modelerunknown.lib.noProtFinal | deal_fasta.pl -frag_head -frag 0-0 -frag_width 100 | deal_fasta.pl -chopKey ':\d+\-\d+$' | perl -e ' while (<>) { s!\t! !g; print; } ' > allRepeats_v1.lib
+cat allRepeats_v1.lib | deal_fasta.pl -nres 'Unknown$' > KnownRepeats_v1.lib
+
