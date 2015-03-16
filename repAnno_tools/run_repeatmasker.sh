@@ -18,6 +18,6 @@ minLen=100
 
 tsmsg "[Rec] All start."
 
-exe_cmd "$exe_rpmk -x -lib $repLib $seqfile -nolow -norna -no_is -pa $cpuN -a 1>stdout.RepMsk_known 2>stderr.RepMsk_known"
+exe_cmd "$exe_rpmk -s -x -lib $repLib $seqfile -nolow -norna -no_is -pa $cpuN -a 1>stdout.RepMsk_known 2>stderr.RepMsk_known"
 
 tsmsg "[Rec] All done."
