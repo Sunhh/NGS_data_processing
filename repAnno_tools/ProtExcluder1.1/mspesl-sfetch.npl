@@ -32,6 +32,7 @@ while (<MSP>) {
  if ($?) {print $_, "failure\n\n"; $failure++;}
 }
 close MSP;
+-f $ARGV[3] or `echo "" > $ARGV[3]`; 
 
 if ($failure) {
     print "Total failed case: ", $failure;
