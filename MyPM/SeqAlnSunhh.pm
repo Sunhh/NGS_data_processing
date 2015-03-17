@@ -47,6 +47,95 @@ sub _initialize {
 	return; 
 }
 
+=head2 aln_tophat2( inFq1=>[$PE_Fq1, $PE_Fq2, ...], inFq2=>[$PE_Fq2, $PE_Fq2, ...], 
+ index=>$bowtie_index, outDir=>'./tophat_out', para_tophat=>'', printCmd=>0 )
+
+Description   : 
+
+Input         : 
+ inFq1      : Requried. For SE fastq, all files should be given to inFq1. 
+ inFq2      : Provided along with inFq1 for PE fastq. 
+ index      : bowtie2 index built with bowtie2-build
+ para_tophat: For example: '-p $cpuN --library-type=fr-firststrand --read-mismatches 1 --splice-mismatches 0 --min-intron-length 30'
+ outDir     : The directory recording all output. We will use '-o outDir' in '-para_tophat' if it is given. 
+ printCmd   : Only print commands if given. 
+=cut
+sub aln_tophat2 {
+	my $self = shift; 
+	my %parm = $ms->_setHashFromArr(@_); 
+	
+	# Find tophat2 
+	$parm{'exe_tophat'} //= 'tophat'; 
+	# Check tophat version: 
+	my $tophat_version = `$parm{'exe_tophat'} --version`; 
+	chomp($tophat_version); 
+	$tophat_version =~ m/^\s*tophat\s*v2\./i or &tsmsg("[Err]The tophat version is [$tophat_version] instead of v2, which may cause problem!\n"); 
+	
+	# Set Other parameters. 
+	$parm{'para_tophat'} //= ''; 
+	$parm{'printCmd'} //= 0; 
+	$parm{'outDir'} //= './tophat_out'; 
+	if ( $parm{'para_tophat'} =~ s!(?:\-o|\-\-output\-dir)\s+(\S+)(?:\s*$|\s+\-)!! ) {
+		my $replace_dir = $1; 
+		&tsmsg("[Wrn]Replace outDir from [$parm{'outDir'}] to [$replace_dir]\n"); 
+		$parm{'outDir'} = $replace_dir; 
+	}
+	
+	# Separate and group PE/SE fastq files. 
+	$parm{'inFq1'} //= []; 
+	$parm{'inFq2'} //= []; 
+	my $long_idx = $ms->max( $#{$parm{'inFq1'}}, $#{$parm{'inFq2'}} ); 
+	my (@inFqPE1, @inFqPE2, @inFqSE); 
+	for (my $i=0; $i<=$long_idx; $i++) {
+		if ( defined $parm{'inFq1'}[$i] and $parm{'inFq1'}[$i] ne '' ) {
+			if ( defined $parm{'inFq2'}[$i] and $parm{'inFq2'}[$i] ne '' ) {
+				push(@inFqPE1, $parm{'inFq1'}[$i]); 
+				push(@inFqPE2, $parm{'inFq2'}[$i]); 
+			} else {
+				push(@inFqSE, $parm{'inFq1'}[$i]); 
+			}
+		} elsif ( defined $parm{'inFq2'}[$i] and $parm{'inFq2'}[$i] ne '' ) {
+			push(@inFqSE, $parm{'inFq2'}[$i]); 
+		} else {
+			# Faint. 
+		}
+	}
+	
+	# Check bowtie2-index 
+	$parm{'printCmd'} or $self->chk_index( $parm{'index'}, 'type'=>'bowtie2' ); 
+	
+	# Run tophat2 
+	my ($pe_str1, $pe_str2) = ('', ''); 
+	$pe_str1 = join(",", @inFqPE1, @inFqSE); 
+	$pe_str2 = join(",", @inFqPE2); 
+	&exeCmd_1cmd("$parm{'exe_tophat'} $parm{'para_tophat'} --output-dir $parm{'outDir'} $parm{'index'} $pe_str1 $pe_str2", $parm{'printCmd'}); 
+	
+	return; 
+}# aln_tophat2
+
+=head2 chk_index( $index_prefix, 'type'=>'bowtie2' )
+Description   : Check database index files with given 'index_prefix' and database 'type'
+=cut
+sub chk_index {
+	my $self = shift; 
+	my $pref = shift; 
+	my %parm = $ms->_setHashFromArr(@_); 
+	
+	$parm{'type'} //= 'bowtie2'; 
+	$parm{'type'} = lc($parm{'type'}); 
+	if ( $parm{'type'} eq 'bowtie2' ) {
+		for my $suff (qw/.1.bt2 .2.bt2 .3.bt2 .4.bt2 .rev.1.bt2 .rev.2.bt2/) {
+			-e "${pref}${suff}" or do { &tsmsg("[Err] index file [${pref}${suff}] not found.\n"); return 1; }; 
+		}
+		return 0; 
+	} else {
+		&tsmsg("[Err]Unknown database type [$parm{'type'}] for index [$pref]\n"); 
+		return 1; 
+	}
+	# Why here!
+	return 1; 
+}# sub chk_index() 
+
 
 =head2 bwaAln( inFq1=>$inFq1, aln_type=>'PE', %parameters_for_bwaPE_or_bwaSE_function )
 
@@ -466,7 +555,7 @@ sub olap_e2e_A2B {
 	$back{seqA_aln} = $seqA_aln; $back{seqB_aln} = $seqB_aln; 
 	$back{seqC_aln} = $seqC_aln; 
 	return \%back; 
-}#End sub find_overlap_alignment
+}#End sub olap_e2e_A2B
 
 1; # It is important to include this line. 
 
