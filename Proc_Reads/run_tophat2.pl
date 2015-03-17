@@ -49,7 +49,7 @@ $opts{'help'} and &usage();
 for (qw/db/) {
 	$opts{$_} //= 'NA'; 
 }
-$opts{'index'} = $opts{'db'}; 
+# $opts{'index'} = $opts{'db'}; 
 
 $opts{'exe_tophat'}  //= 'tophat'; 
 $opts{'printCmd'}    //= 0; 
@@ -87,6 +87,7 @@ if ($opts{'alnTogether'}) {
 	for ( my $i=0; $i<@batch; $i++ ) {
 		$batch[$i]{'inFq1'} //= ''; 
 		$batch[$i]{'inFq2'} //= ''; 
+		$batch[$i]{'index'} = $batch[$i]{'db'}; 
 		push(@inFqPE1, $batch[$i]{'inFq1'}); 
 		push(@inFqPE2, $batch[$i]{'inFq2'}); 
 	}
@@ -102,6 +103,7 @@ if ($opts{'alnTogether'}) {
 		$batch[$i]{'inFq2'} //= ''; 
 		$batch[$i]{'inFq1'} = [ map { s!^\s+|\s+$!!g; $_ } split(/,/, $batch[$i]{'inFq1'}) ]; 
 		$batch[$i]{'inFq2'} = [ map { s!^\s+|\s+$!!g; $_ } split(/,/, $batch[$i]{'inFq2'}) ]; 
+		$batch[$i]{'index'} = $batch[$i]{'db'}; 
 		$sas->aln_tophat2( %{$batch[$i]} ); 
 		# $sas->aln_tophat2( 'inFq1'=>[ $batch[$i]{'inFq1'} ], 'inFq2'=>[ $batch[$i]{'inFq2'} ], 'index'=>$batch[$i]{'db'}, 'outDir'=>$batch[$i]{'outDir'}, 'para_tophat'=>$batch[$i]{'para_tophat'}, 'printCmd'=>$batch[$i]{'printCmd'}); 
 	}
