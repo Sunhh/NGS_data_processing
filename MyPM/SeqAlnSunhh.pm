@@ -105,9 +105,11 @@ sub aln_tophat2 {
 	$parm{'printCmd'} or $self->chk_index( $parm{'index'}, 'type'=>'bowtie2' ); 
 	
 	# Run tophat2 
-	my ($pe_str1, $pe_str2) = ('', ''); 
+	my ($pe_str1, $pe_str2); 
 	$pe_str1 = join(",", @inFqPE1, @inFqSE); 
 	$pe_str2 = join(",", @inFqPE2); 
+	$pe_str1 //= ''; 
+	$pe_str2 //= ''; 
 	&exeCmd_1cmd("$parm{'exe_tophat'} $parm{'para_tophat'} --output-dir $parm{'outDir'} $parm{'index'} $pe_str1 $pe_str2", $parm{'printCmd'}); 
 	
 	return; 
