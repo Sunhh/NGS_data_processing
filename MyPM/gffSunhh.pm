@@ -631,24 +631,28 @@ sub _addParentID {
 	return; 
 }#_addParentID() 
 
-# Function: Read in Col_9 (attributes) of gff line, and parse the attributes information. 
-#  
-# Input  : ('attribText'=>"$ta[8]", 'debug'=>1)
-# Return : \%backH 
-#  In %backH : 
-#   {'attribText'}   => $ta[8]
-#   {'featID'} => Val (ID=)
-#   {'tranID'} => {Val}=>nn (transcript_id "")
-#   {'geneID'} => {Val}=>nn (gene_id "")
-#   {'featName'} => Val (Name=)
-#   {'parentID'} => {Val}=>nn (Parent=)
-#   {'gapCigars'} => [M/I/D/F/R\d+, ...] (Gap=)
-#   {'derives_from'} => {Val}=>nn (derives_from=)
-#   {'note'} => Val (Note=)
-#   {'dbxref'} => {Val}=>nn (Dbxref=)
-#   {'Ontology_term'} => {Val}=>nn (Ontology_term=)
-#   {'is_circular'} => 1/0 (Is_circular=)
-#   {'alias'} => {Val}=>nn (Alias=)
+=head2 _getAttrHash( 'attribText'=>"$ta[8]", 'debug'=>1 )
+
+Required    : 'attribText'
+
+Function    : Read in Col_9 (attributes) of gff line, and parse the attributes information. 
+
+Return      : \%backH 
+ In %backH : 
+   {'attribText'}   => $ta[8]
+   {'featID'} => Val (ID=)
+   {'tranID'} => {Val}=>nn (transcript_id "")
+   {'geneID'} => {Val}=>nn (gene_id "")
+   {'featName'} => Val (Name=)
+   {'parentID'} => {Val}=>nn (Parent=)
+   {'gapCigars'} => [M/I/D/F/R\d+, ...] (Gap=)
+   {'derives_from'} => {Val}=>nn (derives_from=)
+   {'note'} => Val (Note=)
+   {'dbxref'} => {Val}=>nn (Dbxref=)
+   {'Ontology_term'} => {Val}=>nn (Ontology_term=)
+   {'is_circular'} => 1/0 (Is_circular=)
+   {'alias'} => {Val}=>nn (Alias=)
+=cut
 sub _getAttrHash {
 	my $self = shift; 
 	my %parm = $self->_setHashFromArr(@_); 
