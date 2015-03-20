@@ -1118,8 +1118,8 @@ suppressMessages({
 
 		#   开始运行多线程. lapply() 简化代码, 分别计算list中的每个元素; 
 		invisible(gc())
-		.tsmsg("[Msg]   Begin to run multicore-foreach. trim.junction.pe")
-		.tsmsg("[Msg]     trim.junction.pe.1 Start")
+		.tsmsg("[Msg]   Begin to run multicore-foreach. trim.junction.mp")
+		.tsmsg("[Msg]     trim.junction.mp.1 Start")
 		match.3bands.r1 <- maybe.chunkapply(
 			FUN         = .pattern.rangeSet, 
 			VECTOR.ARGS = list( rd=sread(rd1) ), 
@@ -1129,9 +1129,9 @@ suppressMessages({
 			max.chunks    = max.chunks, 
 			... 
 		)
-		.tsmsg("[Msg]     trim.junction.pe.1 End")
+		.tsmsg("[Msg]     trim.junction.mp.1 End")
 		invisible(gc())
-		.tsmsg("[Msg]     trim.junction.pe.2 Start")
+		.tsmsg("[Msg]     trim.junction.mp.2 Start")
 		match.3bands.r2 <- maybe.chunkapply(
 			FUN         = .pattern.rangeSet, 
 			VECTOR.ARGS = list( rd=sread(rd2) ), 
@@ -1141,8 +1141,8 @@ suppressMessages({
 			max.chunks    = max.chunks, 
 			... 
 		)
-		.tsmsg("[Msg]     trim.junction.pe.2 End")
-		.tsmsg("[Msg]   Finish to run multicore-foreach. trim.junction.pe")
+		.tsmsg("[Msg]     trim.junction.mp.2 End")
+		.tsmsg("[Msg]   Finish to run multicore-foreach. trim.junction.mp")
 		
 		width.raw1 <- width(rd1)
 		width.raw2 <- width(rd2)
