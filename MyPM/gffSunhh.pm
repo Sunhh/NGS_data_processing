@@ -495,26 +495,34 @@ sub read_gff3File {
 }# read_gff3File() 
 
 
-# Input  : ( 'ta'=>[ split(/\t/, $gff_line) ], 'line'=>$gff_line )
-# Return : \%backH
-#  In %backH : 
-#   $backH{'seqID'}  = $seqID; 
-#   $backH{'srcID'}  = $srcID; 
-#   $backH{'type'}   = $tType; 
-#   $backH{'start'}  = $tS; 
-#   $backH{'end'}    = $tE; 
-#   $backH{'score'}  = $tScore; 
-#   $backH{'strand'} = $tStr; 
-#   $backH{'phase'}  = $tPhase; 
-#   $backH{'attrib'} = \%attrHash; 
-# Sample format: 
-#  http://gmod.org/wiki/GFF3
-#  http://www.sequenceontology.org/gff3.shtml
-#  S401991_pilon   .       contig  1       99924   .       .       .       ID=S401991_pilon;Name=S401991_pilon
-#  S401991_pilon   maker   gene    60810   79370   .       +       .       ID=maker-S401991_pilon-pred_gff_snap_masked-gene-0.7;Name=maker-S401991_pilon-pred_gff_snap_mask
-#  Col_8:phase(0/1/2)  should be given if Col_3:type is "CDS"; 
-#   For features of type "CDS", the phase indicates where the feature begins with reference to the reading frame. 
-#   For forward strand features, phase is counted from the start field. For reverse strand features, phase is counted from the end field.
+=head2 parse_line( 'ta'=>[ split(/\t/, $gff_line) ], 'line'=>$gff_line )
+
+Required    : 'ta'/'line'
+
+Function    : Parse gff3_line and record them in a hash_reference. 
+
+Return      : \%backH
+ In %backH : 
+   $backH{'seqID'}  = $seqID; 
+   $backH{'srcID'}  = $srcID; 
+   $backH{'type'}   = $tType; 
+   $backH{'start'}  = $tS; 
+   $backH{'end'}    = $tE; 
+   $backH{'score'}  = $tScore; 
+   $backH{'strand'} = $tStr; 
+   $backH{'phase'}  = $tPhase; 
+   $backH{'attrib'} = \%attrHash; 
+
+Sample GFF3 format: 
+ Ref: http://gmod.org/wiki/GFF3
+ Ref: http://www.sequenceontology.org/gff3.shtml
+   S401991_pilon   .       contig  1       99924   .       .       .       ID=S401991_pilon;Name=S401991_pilon
+   S401991_pilon   maker   gene    60810   79370   .       +       .       ID=maker-S401991_pilon-pred_gff_snap_masked-gene-0.7;Name=maker-S401991_pilon-pred_gff_snap_mask
+
+ Col_8:phase(0/1/2)  should be given if Col_3:type is "CDS"; 
+   For features of type "CDS", the phase indicates where the feature begins with reference to the reading frame. 
+   For forward strand features, phase is counted from the start field. For reverse strand features, phase is counted from the end field.
+=cut
 sub parse_line {
 	my $self = shift; 
 	my %parm = $self->_setHashFromArr(@_); 
