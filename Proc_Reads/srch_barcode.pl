@@ -18,6 +18,7 @@ for my $f (@ARGV) {
 	my %cnt_n1; 
 	my %cnt_n2; 
 	my $fh = &openFH($f, '<'); 
+	print STDERR "Searching file [$f]\n"; 
 	while (my $id = <$fh>) {
 		$cnt_found >= 10000 and last; 
 		my $seq = <$fh>; 
