@@ -1,5 +1,9 @@
 #!/usr/bin/perl
 # This is used to remove redundant protein sequences from given file. 
+# Reference : 
+#   http://www.molecularevolution.org/molevolfiles/exercises/augustus/training.html
+# Maybe next : 
+#   https://www.biostars.org/p/14100/
 use strict; 
 use warnings; 
 use LogInforSunhh; 
@@ -40,6 +44,7 @@ my $outfmt = "-outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qen
 
 &exeCmd_1cmd("makeblastdb -dbtype prot -in $opts{'prot_qry'}"); 
 &exeCmd_1cmd("blastp -query $opts{'prot_qry'} -db $opts{'prot_qry'} -out $opts{'opref'}.bp6 $opts{'blastp_para'} $outfmt"); 
+&exeCmd_1cmd("rm $opts{'prot_qry'}.phr $opts{'prot_qry'}.pin $opts{'prot_qry'}.psq"); 
 
 # Find good, redundant alignments. 
 open F,'<',"$opts{'opref'}.bp6" or &stopErr("[Err] [$opts{'opref'}.bp6]: $!\n"); 
