@@ -24,7 +24,7 @@ sub usage {
 #
 # -help 
 #
-# -out            [out]
+# -opref          [out]
 # -prot_db        [nr]
 # -topNhits       [5] I don't want to use too high because the protein database may 
 #                     not be very reliable. 
