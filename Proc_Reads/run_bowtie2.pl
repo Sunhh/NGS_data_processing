@@ -25,8 +25,8 @@ sub usage {
 #  -inFq2 
 #  -para_bwt      [''] Something to consider: '-p cpuN --end-to-end --fast'
 #
-#  -exe_bowtie2       [bowtie]
-#  -exe_bowtie2Build  [bowtie-build]
+#  -exe_bowtie2       [bowtie2]
+#  -exe_bowtie2Build  [bowtie2-build]
 #  -doBuild           [FALSE] Do bowtie-build if given. 
 ######################################################################
 HH
