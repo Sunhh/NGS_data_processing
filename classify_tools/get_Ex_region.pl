@@ -4,7 +4,7 @@ use warnings;
 use mathSunhh; 
 my $ms = mathSunhh->new(); 
 
--t and !@ARGV and die "perl $0 P1R02scaf.nt_bn6.MiORGN_join\n"; 
+-t and !@ARGV and die "perl $0 P1R02scaf.nt_bn6.MiORGN_join 1>sep_ex_lis 2>joined_ex_lis\n"; 
 
 my %merged_blk; 
 my %lines; 
