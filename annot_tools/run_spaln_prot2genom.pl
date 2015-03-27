@@ -79,9 +79,9 @@ if ( $opts{'needIndex'} ) {
 $opts{'aln_type'} //= 'prot2genome'; 
 $opts{'aln_type'} = lc( $opts{'aln_type'} ); 
 if ( $opts{'aln_type'} eq 'prot2genome' ) {
-	$opts{'para_spaln'} //= ' -t1 -M4 -Q7 -O0 -LS -ya012'; 
+	$opts{'para_spaln'} //= ' -t1 -M4 -Q7 -O0 -LS -ya2'; 
 } elsif ( $opts{'aln_type'} eq 'est2genome' ) {
-	$opts{'para_spaln'} //= ' -t1 -M4 -Q7 -O0 -LS -ya012'; 
+	$opts{'para_spaln'} //= ' -t1 -M4 -Q7 -O0 -LS -ya2'; 
 } else {
 	&stopErr("[Err] Unknown -aln_type [$opts{'aln_type'}]\n"); 
 }
