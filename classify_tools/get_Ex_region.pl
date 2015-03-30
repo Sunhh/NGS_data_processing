@@ -31,7 +31,7 @@ while (<>) {
 			if ( $en >= $in+3 ) {
 				$is_ex = 1; $is_in = 0; 
 			} elsif ( $in >= $en+3 ) {
-				$is_in = 1; $is_in = 0; 
+				$is_in = 1; $is_ex = 0; 
 			} else {
 				$is_in = 0; $is_ex = 0; 
 			}
