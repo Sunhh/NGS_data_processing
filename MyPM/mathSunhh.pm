@@ -497,7 +497,7 @@ Function: This is not a method, but a sub-routine()
 =cut
 sub min {
 	my $min = shift; 
-	unless ( ref($min) eq 'SCALAR' ) {
+	unless ( ref($min) eq '' ) {
 		ref($min) eq 'mathSunhh' or &stopErr("[Err] min() input should be an array of number.\n"); 
 		$min = shift; 
 	}
@@ -516,7 +516,7 @@ Function: This is not a method, but a sub-routine()
 =cut
 sub max {
 	my $max = shift; 
-	unless ( ref($max) eq 'SCALAR' ) {
+	unless ( ref($max) eq '' ) {
 		ref($max) eq 'mathSunhh' or &stopErr("[Err] max() input should be an array of number.\n"); 
 		$max = shift; 
 	}
