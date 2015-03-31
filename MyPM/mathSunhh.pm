@@ -7,7 +7,7 @@ package mathSunhh;
 use strict; 
 use warnings; 
 use Statistics::Descriptive; 
-use Scalar::Util qw(looks_like_number);
+use Scalar::Util qw(looks_like_number blessed);
 use Exporter qw(import);
 our @EXPORT = qw(ins_calc);
 our @EXPORT_OK = qw();

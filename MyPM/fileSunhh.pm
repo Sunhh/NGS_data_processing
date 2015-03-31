@@ -30,9 +30,11 @@ my %goodFileType = qw(
 # Check if there is gzip/bzip2 software in current system. 
 my ($has_gzip, $has_bzip2) = (File::Which::which("gzip"), File::Which::which("bzip2")); 
 
-# Rename files by pattern. 
-# &renameByPat( [$file1, $file2, ...], $old_pattern, $new_pattern )
-#  
+=head1 renameByPat( [$file1, $file2, ...], $old_pattern, $new_pattern ) 
+
+Function   : Rename files by pattern. 
+
+=cut
 sub renameByPat {
 	my ($infile, $pat_old, $pat_new) = @_; 
 	my @inFiles; 
@@ -59,10 +61,17 @@ sub renameByPat {
 }# sub renameByPat() 
 
 
-# Open file and return file handle one at a time. 
-# &openFH( $file_to_handle, $handle_type)
-#   "file_to_handle" : filename ended with .gz or .bz2 will be treated in compressed format. 
-#   "handle_type"    : Defined in %goodFileType. Could be (read/write) + (|BZ2|GZ)
+=head1 openFH( $filename, $open_type )
+
+Required   : $filename
+
+Function   : Open file and return file handle one at a time. 
+
+Input      : 
+ $filename  : filename ended with .gz or .bz2 will be treated in compressed format. 
+ $open_type : Defined in %goodFileType. Could be (read/write) + (|BZ2|GZ) 
+
+=cut 
 sub openFH ($$) {
 	my $f = shift; 
 	my $type = shift; 
