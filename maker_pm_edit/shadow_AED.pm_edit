@@ -12,6 +12,7 @@ sub get_abAED{
     my $tran = shift;
 
 # &tsmsg("get_abAED: Start\n"); # Sunhh
+    return 1 if ( ! defined $tran ); # Sunhh 
 
     my $sum = 0;
     $tran->{_touch}++; #keeps self from being counted in score
