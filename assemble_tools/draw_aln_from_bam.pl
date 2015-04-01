@@ -169,10 +169,10 @@ $grps{'readpair'} = $svg->group(
 # Raw scaffoldID ; 
 $grps{'backbone'}->text(
  'x'       => $base_x/2, 
- 'y'       => $base_y_h * 4/5, 
+ 'y'       => $base_y_h * 1/2, 
  -cdata    => "scfID=[$opts{'scfID'}] $opts{'scfS'}-$opts{'scfE'}", 
  'font-weight' => "bold", 
- 'font-size'   => 30, 
+ 'font-size'   => 20, 
  'text-anchor' => 'start', 
 ); 
 
