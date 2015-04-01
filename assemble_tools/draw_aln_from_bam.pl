@@ -166,6 +166,14 @@ $grps{'readpair'} = $svg->group(
 	'font-family'       => 'ArialNarrow'
 ); # Draw read pairs. 
 
+# Raw scaffoldID ; 
+$grps{'backbone'}->text(
+ 'x'       => $base_x/2, 
+ 'y'       => $base_y/2, 
+ -cdata    => "scfID=[$opts{'scfID'}] $opts{'scfS'}-$opts{'scfE'}", 
+ 'font-weight' => "bold", 
+); 
+
 # Draw ticks. 
 for (my $i=0; $i<=$opts{'scfE'}; $i+=$opts{'tickStep'}) {
 	$i >= $opts{'scfS'} or next; 
