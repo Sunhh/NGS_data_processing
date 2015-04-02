@@ -109,11 +109,11 @@ while (<>) {
 	chomp;
 	my @temp = split(/\t/,$_);
 	my ($line,$add);
-	my $tk = join("\t", @temp[@KC2]); 
+	my $tk; 
 	if ( $opts{'rmQuotation'} ) {
-		$tk = join("\t", map { s!^['"]+|['"]+$!!g; $_; } @temp[@KC1]); 
+		$tk = join("\t", map { s!^['"]+|['"]+$!!g; $_; } @temp[@KC2]); 
 	} else {
-		$tk = join("\t", @temp[@KC1]); 
+		$tk = join("\t", @temp[@KC2]); 
 	}
 	if (defined $need{$tk}) {
 		$add = $need{$tk};
