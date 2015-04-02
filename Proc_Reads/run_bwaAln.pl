@@ -45,7 +45,7 @@ sub usage {
 #  -exe_bwa         ['bwa'] in default 
 #  -exe_samtools    ['samtools'] 
 #
-#  -step2do         ['all'] in default. could be assigned multiple times. 
+#  -step2do         ['all'] in default. could be assigned multiple times. qw/all aln_r1 aln_r2 sampe bam_sort bam_index rm_sai rm_rawbam sampe2bam sampe2sam sam2bam rm_rawsam/
 #  
 #  -oBamPre         Prefix of output files. 
 #  -para_aln        [''] used in 'bwa aln'. Could be '-t \$cpuN -n 0.03 -o 1 -e 2'
