@@ -21,6 +21,7 @@ GetOptions(\%opts,
 			"sign:s",
 			"link!", # used for join two files. 
 			"fill:s", 
+			"rmQuotation!", 
 			"help!");
 my $info = <<INFO;
 ############################################################
@@ -31,6 +32,7 @@ perl $0 srchFileToAddTo -keyC1 0 -Col1 0,1,.. -keyC2 0 -Col2 0,1,.. -f1 KeyFile
 -sign       \'yes,no\' used to tag existence for Line2 in Line1, instead of combine columns. 
 -out        Output file name, default to STDOUT. 
 -fill       String used to fill added columns in absent lines. 
+-rmQuotation   Remove quotations in key Cols if given. 
 ############################################################
 INFO
 
@@ -78,8 +80,13 @@ print STDERR "[Stat] Begin to parse -f1 [$file1]. " . scalar(localtime()) . "\n"
 my %need;		# 
 while (<F1>) {
 	chomp;
-	my @temp = split(/\t/,$_);
-	my $tk = join("\t", @temp[@KC1]); 
+	my @temp = split(/\t/,$_); 
+	my $tk; 
+	if ( $opts{'rmQuotation'} ) {
+		$tk = join("\t", map { s!^['"]+|['"]+$!!g; $_; } @temp[@KC1]); 
+	} else {
+		$tk = join("\t", @temp[@KC1]); 
+	}
 	if ($opts{link}) {
 		my @tt; 
 		F1_COL:
@@ -103,6 +110,11 @@ while (<>) {
 	my @temp = split(/\t/,$_);
 	my ($line,$add);
 	my $tk = join("\t", @temp[@KC2]); 
+	if ( $opts{'rmQuotation'} ) {
+		$tk = join("\t", map { s!^['"]+|['"]+$!!g; $_; } @temp[@KC1]); 
+	} else {
+		$tk = join("\t", @temp[@KC1]); 
+	}
 	if (defined $need{$tk}) {
 		$add = $need{$tk};
 	}else{
