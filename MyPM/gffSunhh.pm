@@ -509,7 +509,7 @@ Return      : \%backH
    $backH{'start'}  = $tS; 
    $backH{'end'}    = $tE; 
    $backH{'score'}  = $tScore; 
-   $backH{'strand'} = $tStr; 
+   $backH{'strand'} = $tStr; # '+'/'-'/'.', same to the input gff3 file. 
    $backH{'phase'}  = $tPhase; 
    $backH{'attrib'} = \%attrHash; 
 
