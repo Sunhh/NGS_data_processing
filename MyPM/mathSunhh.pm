@@ -366,8 +366,8 @@ sub compare_number_list {
 	
 	if ( $parm{'compare'} eq 'same' ) {
 		$#srt_lis1 == $#srt_lis2 or return 0; 
-		my $str_lis1 = join("\t", @srt_lis1); 
-		my $str_lis2 = join("\t", @srt_lis2); 
+		my $str_lis1 = join("\t", map { @$_ } @srt_lis1); 
+		my $str_lis2 = join("\t", map { @$_ } @srt_lis2); 
 		return ( ($str_lis1 eq $str_lis2) ? 1 : 0 ); 
 	} elsif ( $parm{'compare'} eq 'ovl' or $parm{'compare'} eq 'nonovl' ) { 
 		my ( $ovlLen, $ovlCnt ) = 0; 
