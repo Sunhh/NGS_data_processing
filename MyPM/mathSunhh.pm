@@ -323,7 +323,7 @@ Required :
  $sePair_list2 : [ [s21,e21], [s22,e22], ... ]
 
 Return   : 
- Case 'compare'='same'   : 1/0 : 1 for yes_same, 2 for no_different. 
+ Case 'compare'='same'   : 1/0 : 1 for yes_same, 0 for different. 
  Case 'compare'='ovl'    : ( $ovlLen_nonDup, $ovlCnt_mayDup, \@ovlLoc ) 
                          : @ovlLoc=([overlap_S1, overlap_E1], [overlap_S2, overlap_E2], 
  Case 'compare'='nonovl' : ( [@spec1], [@spec2] ) 
