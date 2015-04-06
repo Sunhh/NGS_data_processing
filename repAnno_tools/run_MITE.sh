@@ -23,6 +23,9 @@ tsmsg "Start."
 
 # exe_cmd "mkdir running/ Step8/"
 
+[ -d "running" ] || exe_cmd "mkdir running"
+[ -d "Step8" ] || exe_cmd "mkdir Step8"
+
 cd running
 # ln -s ../$refFa .
 
