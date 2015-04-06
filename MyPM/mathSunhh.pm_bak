@@ -296,7 +296,7 @@ Required: ($start1, $end1, $start2, $end2)
 
 Function: Check overlapping region
 
-Return  : ( $overlapped_bp_length, [ ovl_start, ovl_end ] )
+Return  : [ $overlapped_bp_length, [ ovl_start, ovl_end ] ]
 
 =cut
 sub ovl_region {
@@ -305,11 +305,11 @@ sub ovl_region {
 	$s1 > $e1 and ($s1, $e1) = ($e1, $s1); 
 	$s2 > $e2 and ($s2, $e2) = ($e2, $s2); 
 	if ( $e1 < $s2 or $s1 > $e2 ) {
-		return (0, []); 
+		return [0, []]; 
 	} else {
 		my $ee = &min($e1, $e2); 
 		my $ss = &max($s1, $s2); 
-		return ( $ee - $ss + 1, [$ss, $ee] ); 
+		return [ $ee - $ss + 1, [$ss, $ee] ]; 
 	}
 }# ovl_region(); 
 
@@ -346,44 +346,20 @@ sub compare_number_list {
 	$parm{'sort'} = $parm{'sort'} // 0; # 0/single/pair
 	$parm{'sort'} = lc( $parm{'sort'} ); 
 	my (@srt_lis1, @srt_lis2); 
-	for ( @$list1 ) {
-		if ( ref($_) eq "" ) {
-			push(@srt_lis1, $_); 
-		} elsif ( ref($_) eq 'ARRAY' ) {
-			my @ta = @$_; 
-			@ta > 2 and @ta = @ta[0,1]; 
-			push(@srt_lis1, @ta); 
-		} else {
-		}
-	}
-	for ( @$list2 ) {
-		if ( ref($_) eq "" ) {
-			push(@srt_lis2, $_); 
-		} elsif ( ref($_) eq 'ARRAY' ) {
-			my @ta = @$_; 
-			@ta > 2 and @ta = @ta[0,1]; 
-			push(@srt_lis2, @ta); 
-		} else {
-		}
-	}
 	
 	if ($parm{'sort'} =~ m/^s(ingle)?$/) {
-		@srt_lis1 = map { [$_] } sort { $a <=> $b } @srt_lis1; 
-		@srt_lis2 = map { [$_] } sort { $a <=> $b } @srt_lis2; 
+		@srt_lis1 = sort { $a <=> $b } @$list1; 
+		@srt_lis2 = sort { $a <=> $b } @$list2; 
 	} elsif ( $parm{'sort'} =~ m/^p(air(ed)?)?$/) {
-		scalar( @srt_lis1 ) % 2 == 0 or &stopErr("[Err] Input list1 is not even.\n"); 
-		scalar( @srt_lis2 ) % 2 == 0 or &stopErr("[Err] Input list2 is not even.\n"); 
-		my (@tmp_1, @tmp_2); 
-		for (my $i=0; $i<@srt_lis1; $i+=2) { push(@tmp_1, [ @srt_lis1[$i, $i+1] ]); } 
-		for (my $i=0; $i<@srt_lis2; $i+=2) { push(@tmp_2, [ @srt_lis2[$i, $i+1] ]); }
-		@srt_lis1 = sort { $a->[0] <=> $b->[0] || $a->[1] <=> $b->[1] } @tmp_1; 
-		@srt_lis2 = sort { $a->[0] <=> $b->[0] || $a->[1] <=> $b->[1] } @tmp_2; 
+		scalar( @$list1 ) % 2 == 0 or &stopErr("[Err] Input list1 is not even.\n"); 
+		scalar( @$list2 ) % 2 == 0 or &stopErr("[Err] Input list2 is not even.\n"); 
+		for (my $i=0; $i<@$list1; $i+=2) { push(@srt_lis1, [ @{$list1}[$i, $i+1] ]); } 
+		for (my $i=0; $i<@$list2; $i+=2) { push(@srt_lis2, [ @{$list2}[$i, $i+1] ]); }
+		@srt_lis1 = map { @$_ } sort { $a->[0] <=> $b->[0] || $a->[1] <=> $b->[1] } @srt_lis1; 
+		@srt_lis2 = map { @$_ } sort { $a->[0] <=> $b->[0] || $a->[1] <=> $b->[1] } @srt_lis2; 
 	} elsif ($parm{'sort'} eq '0') {
-		my (@tmp_1, @tmp_2); 
-		for (my $i=0; $i<@srt_lis1; $i+=2) { push(@tmp_1, [ @srt_lis1[$i, $i+1] ]); } 
-		for (my $i=0; $i<@srt_lis2; $i+=2) { push(@tmp_2, [ @srt_lis2[$i, $i+1] ]); }
-		@srt_lis1 = @tmp_1; 
-		@srt_lis2 = @tmp_2; 
+		@srt_lis1 = @$list1; 
+		@srt_lis2 = @$list2; 
 	} else {
 		&stopErr("[Err] Unknown 'sort' value [$parm{'sort'}]\n"); 
 	}
