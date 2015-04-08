@@ -52,8 +52,9 @@ for (my $i=0; $i<@inFq1; $i++) {
 	defined $inFq2[$i] or $inFq2[$i] = ''; 
 	( defined $inFq1[$i] and $inFq1[$i] ne '' ) or do { &tsmsg("[Err] Skip -inFq1=[$inFq1[$i]]\n"); next; }; 
 	defined $outF[$i] or $outF[$i] = ''; 
+	$outF[$i] eq '' or $outF[$i] = "-S $outF[$i]"; 
 	if ( $inFq2[$i] eq '' ) {
-		&exeCmd_1cmd("$opts{'exe_bowtie2'} $opts{'para_bwt'} -x $db -U $inFq1[$i] -S $outF[$i]"); 
+		&exeCmd_1cmd("$opts{'exe_bowtie2'} $opts{'para_bwt'} -x $db -U $inFq1[$i] $outF[$i]"); 
 	} else {
 		&exeCmd_1cmd("$opts{'exe_bowtie2'} $opts{'para_bwt'} -x $db -1 $inFq1[$i] -2 $inFq2[$i] $outF[$i]"); 
 	}
