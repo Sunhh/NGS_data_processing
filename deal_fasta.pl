@@ -38,6 +38,7 @@
 ### 2013-11-01 Edit sub openFH() to deal with .gz/.bz2 files. 
 ### 2014-02-25 Add sub keep_len to extract .fa sequences by length. 
 ### 2014-03-12 Add -listSeq to control if output match_seq for -listSite. 
+### 2015-04-09 Add -rmDefinition to keep only sequence ID in the definition line. 
 
 use strict;
 use warnings; 
@@ -105,6 +106,8 @@ Usage: $0  <fasta_file | STDIN>
   -startCodonDist     calc input CDSs\' start codon usage distribution;
   -comma3             output only a comma separated list (no spaces) of atg, gtg, ttg start proportions, in that order
   
+  -rmDefinition       [Boolean] Remove definition except sequence ID. 
+  
   -maskByList         [Boolean] A trigger for masking .fasta sequences by list. 
   -maskList           [Filename] regions to be masked, in format: [seqID Start End]
   -maskType           [X/N/uc/lc] Telling how to modify regions listed. 
@@ -148,6 +151,7 @@ GetOptions(\%opts,"help!","cut:i","details!","cut_dir:s","cut_prefix:s",
 	"listSite:s","listNum:s","listBoth!","listSeq!", 
 	"N50!", "N50_minLen:i", "N50_GenomSize:i", "N50_levels:s", 
 	"chopKey:s","startCodonDist!","comma3!",
+	"rmDefinition!", 
 	"uniqSeq!", 
 	"upper!","lower!", 
 	"maskByList!", "maskList:s", "maskType:s", "elseMask!", 
@@ -207,7 +211,8 @@ my %goodStr = qw(
 &site_list() if(exists $opts{listSite});
 &qual() if (defined $opts{qual} and $opts{qual} ne '');
 &N50() if ($opts{N50});
-&editkey() if ( exists $opts{chopKey} );
+&editkey() if ( exists $opts{chopKey} ); 
+&rmDefinition() if ( exists $opts{'rmDefinition'} ) ; 
 &startCodonDist() if ( defined $opts{startCodonDist} and $opts{startCodonDist} );
 &uniqSeq() if ( $opts{uniqSeq} ) ; 
 &mask_seq_by_list() if ( $opts{maskByList} ); 
@@ -658,6 +663,14 @@ sub editkey {
   	}
   }
 }# end editkey, 用来去掉key中不想要的部分; 2007-9-10 16:31 
+
+sub rmDefinition {
+	for my $fh (@InFp) {
+		for (my ($relHR, $get) = &get_fasta_seq($fh); defined $relHR; ($relHR, $get) = &get_fasta_seq($fh) ) {
+			print STDOUT ">$relHR->{'key'}\n$relHR->{seq}\n"; 
+		}
+	}
+}# End sub rmDefinition()
 
 # 2014-02-25 Extend the usage of N50. 
 sub N50 {
