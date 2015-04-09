@@ -259,7 +259,8 @@ sub replaceID {
 			if ( $opts{'replaceIDadd'} ) {
 				$relHR->{'head'} = "$kN $relHR->{'head'}"; 
 			} else {
-				defined $old2new{ $kO } and $relHR->{'head'} =~ s!^$kO\b!$kN!; 
+				defined $old2new{ $kO } and substr($relHR->{'head'}, 0, length( $kO )) = $kN; 
+				# defined $old2new{ $kO } and $relHR->{'head'} =~ s!^$kO\b!$kN!; 
 			}
 			print STDOUT ">$relHR->{'head'}\n$relHR->{'seq'}\n"; 
 		}
