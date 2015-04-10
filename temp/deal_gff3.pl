@@ -14,25 +14,27 @@ GetOptions(\%opts,
 	
 	# Output files 
 	"out:s", 
+	"sortGffBy:s", # Could be 'raw/lineNum/str_posi/position'
 	"silent!", 
 	
 	# Actions 
-	"seqret!", 
+	"seqret!", # Not added. 
 	
 	"compare2gffC:s", 
-	 "sameAll!", 
-	 "sameIntron!", "sameSingleExon!", 
-	 "rmOvlap!", "rmOvlapLen:i", "rmOvlapRatio1:f", "rmOvlapRatio2:f", "rmOvlapType:s", "rmOvlapStrand:s", 
+	 "sameAll!", # Not added. 
+	 "sameIntron!", "sameSingleExon!", # Finished. 
+	 "rmOvlap!", "rmOvlapLen:i", "rmOvlapRatio1:f", "rmOvlapRatio2:f", "rmOvlapType:s", "rmOvlapStrand:s", # To be improved. 
 	
-	"ovlapLongest!", "ovlapLength:i", "ovlapRatio:f", "ovlapStrand:s", "ovlapFeatType:s", 
-	"islandGene:i", "islandFeatType:s", "islandStrand:s", 
-	"gffret:s", "idType:s", 
-	"listTopID!", 
+	"ovlapLongest!", "ovlapLength:i", "ovlapRatio:f", "ovlapStrand:s", "ovlapFeatType:s", # Finished. 
+	"islandGene:i", "islandFeatType:s", "islandStrand:s", # Finished. 
+	"gffret:s", "idType:s", # FInished. 
+	"listTopID!", # Finished. 
+	"getLoc:s", "joinLoc!", # Doing. Could be mRNA/CDS/gene/intron, others may work but not guaranteed. 
 	
-	"addFaToGff!", 
+	"addFaToGff!", # Finished. 
 	
 	# Filter options. 
-	"extractFeat:s", 
+	"extractFeat:s", # Not used. 
 	"help!", 
 ); 
 
@@ -67,6 +69,14 @@ sub usage {
 #----------------------------------------------------------------------------------------------------
 # -listTopID        [Boolean] 
 #   -idType         [Same to -gff_top_hier if not given]. 
+#----------------------------------------------------------------------------------------------------
+# -getLoc           ['mRNA'] Could be a feature of mRNA/CDS/gene/intron, others may work but not guaranteed. 
+#                     Output a table in format : 
+#                       feat_ID\\tfeatParent_ID\\tchr_ID\\tfeat_Start\\tfeat_End\\tStrand(+/-)
+#                     In which "feat_ID" is defined in feature. 
+#                     If no featParent_ID exists, set featParent_ID=featID
+#   -joinLoc        [Boolean] Output joined table by featParent_ID, the format is like : 
+#                     LengthInFeat\\tfeatParent_ID\\tchrID\\tfeat_Start_min\\tfeat_End_max\\tStrand(+/-)\tfeat_Start_1,feat_End_1;feat_Start2,feat_End_2;...
 #----------------------------------------------------------------------------------------------------
 # -compare2gffC     [] Name of gff3 file (gffC) to compare with. 
 #
@@ -146,6 +156,11 @@ if ( defined $opts{'gffret'} ) {
 if ( defined $opts{'idType'} ) { 
 	$opts{'gff_top_hier'} = {}; 
 	my @ta = grep { $_ ne '' } map { s!^\s+|\s+$!!g; lc($_); } split(/,/, $opts{'idType'}); 
+	$gff_obj->_setTypeHash( $opts{'gff_top_hier'}, \@ta ); 
+}
+if ( defined $opts{'getLoc'} ) {
+	$opts{'gff_top_hier'} = {}; 
+	my @ta = grep { $_ ne '' } map { s!^\s+|\s+$!!g; lc($_); } split(/,/, $opts{'getLoc'}); 
 	$gff_obj->_setTypeHash( $opts{'gff_top_hier'}, \@ta ); 
 }
 $opts{'sortGffBy'} //= 'lineNum'; 
@@ -228,8 +243,69 @@ if ( $opts{'addFaToGff'} ) {
 	$gff_obj->write_gff3File( 'outFH'=>$oFh, 'gff3_href'=>\%in_gff, 'topIDs_aref'=>$kept_topIDs_aref, 'sort_by'=>$opts{'sortGffBy'} ); 
 } elsif ( $opts{'listTopID'} ) {
 	for ( sort { $in_gff{'ID2lineN'}{$a}<=>$in_gff{'ID2lineN'}{$b} } keys %{$in_gff{'lineN_group'}} ) {
-		print {$oFh} "$_\n"; 
+		my $ln = $in_gff{'ID2lineN'}{$_}; 
+		my $outFeatID = $in_gff{'lineN2hash'}{ $ln }{'attrib'}{'featID'} // $_; 
+		print {$oFh} "$outFeatID\n"; 
 	}
+} elsif ( defined $opts{'getLoc'} ) {
+	my @chkTypes = map { lc($_) } split(/,/, $opts{'getLoc'}); 
+	if ( $opts{'joinLoc'} ) {
+		# featParent_ID\\tchr_ID\\tfeat_Start_min\\tfeat_End_max\\tStrand(+/-)\tfeat_Start_1,feat_End_1;feat_Start2,feat_End_2;...
+		print {$oFh} join("\t", qw/LenInFeat ParentID SeqID Start End Strand Blocks/)."\n"; 
+		my %ok_parentID; 
+		for my $featID ( sort { $in_gff{'ID2lineN'}{$a} <=> $in_gff{'ID2lineN'}{$b} } keys %{$in_gff{'lineN_group'}} ) {
+			my $featLn = $in_gff{'ID2lineN'}{$featID}; 
+			defined $in_gff{'lineN2hash'}{$featLn} or next; 
+			my @parentIDs = sort { $a cmp $b } keys %{$in_gff{'CID2PID'}{$featID}}; 
+			@parentIDs > 0 or @parentIDs = ( $featID ); 
+			for my $parentID ( @parentIDs ) {
+				$ok_parentID{$parentID} and next; 
+				my %typeLocLis; 
+				for my $tmp_type (@chkTypes) {
+					%typeLocLis = &id_to_locLis(\%in_gff, $parentID, [$tmp_type]); 
+					if (@{$typeLocLis{'locLis'}} > 0) {
+						# @arr = ( $topID, $typeLocLis{'min'}, $typeLocLis{'max'}, $typeLocLis{'strand'}, $typeLocLis{'featLen'} ); 
+						last; 
+					}
+				}
+				if ( @{$typeLocLis{'locLis'}} > 0 ) {
+					my @ta; 
+					for my $tr ( @{$typeLocLis{'locLis'}} ) {
+						push(@ta, "$tr->[0],$tr->[1]"); 
+					}
+					print {$oFh} join("\t", $typeLocLis{'featLen'}, $parentID, @typeLocLis{qw/scfID min max strand/}, join(";", @ta))."\n"; 
+				} else {
+					# &tsmsg("[Wrn] No information found for parentID [$parentID]\n"); 
+				}
+				$ok_parentID{$parentID} = 1; 
+			}
+		}# End for my $featID
+	} else {
+		# feat_ID\\tfeatParent_ID\\tSeq_ID\\tfeat_Start\\tfeat_End\\tStrand(+/-)
+		print {$oFh} join("\t", qw/FeatID ParentID SeqID Start End Strand/)."\n"; 
+		for my $featID ( sort { $in_gff{'ID2lineN'}{$a} <=> $in_gff{'ID2lineN'}{$b} } keys %{$in_gff{'lineN_group'}} ) {
+			my $featLn = $in_gff{'ID2lineN'}{$featID}; 
+			defined $in_gff{'lineN2hash'}{$featLn} or next; 
+			my $feat_href = $in_gff{'lineN2hash'}{$featLn}; 
+			my $rawFeatID = $feat_href->{'attrib'}{'featID'} // $featID; 
+			my @parentIDs = sort { $a cmp $b } keys %{$in_gff{'CID2PID'}{$featID}}; 
+			@parentIDs > 0 or @parentIDs = ( $featID ); 
+			my %typeLocLis; 
+			for my $tmp_type (@chkTypes) {
+				%typeLocLis = &id_to_locLis(\%in_gff, $featID, [$tmp_type]); 
+				if ( @{$typeLocLis{'locLis'}} > 0 ) {
+					last; 
+				}
+			}
+			@{$typeLocLis{'locLis'}} > 0 or next; 
+			for my $parentID ( @parentIDs ) {
+				for my $tr ( @{$typeLocLis{'locLis'}} ) {
+					print {$oFh} join( "\t", $rawFeatID, $parentID, $typeLocLis{'scfID'}, $tr->[0], $tr->[1], $tr->[2])."\n"; 
+				}
+			}
+		}
+	}# End if ( $opts{'joinLoc'} ) else 
+	
 } else {
 	&tsmsg("[Err] No valid action.\n"); 
 	exit; 
@@ -738,8 +814,12 @@ sub id_to_locLis {
 	my %back_lis = (); 
 	$back_lis{'locLis'} = []; 
 	my @off_lines_hash; 
-	push( @off_lines_hash, map { $gff->{'lineN2hash'}{$_} } grep { defined $gff->{'lineN2hash'}{$_} } @{ $gff->{'lineN_group'}{$featID}{'curLn'} } ); 
-	push( @off_lines_hash, map { $gff->{'lineN2hash'}{$_} } grep { defined $gff->{'lineN2hash'}{$_} } @{ $gff->{'lineN_group'}{$featID}{'offLn'} } ); 
+	# push( @off_lines_hash, map { $gff->{'lineN2hash'}{$_} } grep { defined $gff->{'lineN2hash'}{$_} } @{ $gff->{'lineN_group'}{$featID}{'curLn'} } ); 
+	# push( @off_lines_hash, map { $gff->{'lineN2hash'}{$_} } grep { defined $gff->{'lineN2hash'}{$_} } @{ $gff->{'lineN_group'}{$featID}{'offLn'} } ); 
+	defined $gff->{'lineN2hash'}{$curLn} and push( @off_lines_hash, $gff->{'lineN2hash'}{$curLn} ); 
+	push( @off_lines_hash, 
+	 map { $gff->{'lineN2hash'}{$_} } grep { defined $gff->{'lineN2hash'}{$_} } sort { $a<=>$b } map { $gff->{'ID2lineN'}{$_} } keys %{ $gff->{'PID2CID'}{$featID} }
+	); 
 	if ( @off_lines_hash == 0 ) {
 		&tsmsg("[Wrn] No information found for featID [$featID]\n"); 
 		return (%back_lis); 
