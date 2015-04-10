@@ -342,8 +342,8 @@ sub read_gff3File {
 		} else {
 			# No parentID exists, and we may link it to itself. 
 			# In this way, every feature has child relationship and is a key of 'PID2CID' and 'CID2PID'; 
-			$back_gff{'PID2CID'}{$featID}{$featID} = 1; 
-			$back_gff{'CID2PID'}{$featID}{$featID} = 1; 
+			#$back_gff{'PID2CID'}{$featID}{$featID} = 1; 
+			#$back_gff{'CID2PID'}{$featID}{$featID} = 1; 
 		}
 	}#End while() 
 	### Step3. Remove blanks in %back_seq; 
@@ -425,7 +425,8 @@ sub read_gff3File {
 	##   Add other undefined top IDs. _allTopParent(); 
 	##    This other_featID is not another uniq_top_featID's child or parent. 
 	my %chked_featID = %top_featID; # Any of top_featID has a parent/child/itself in uniq_top_featID. 
-	for my $cID1 ( sort { $back_gff{'ID2lineN'}{$a} <=> $back_gff{'ID2lineN'}{$b} } keys %{$back_gff{'CID2PID'}} ) {
+	# for my $cID1 ( sort { $back_gff{'ID2lineN'}{$a} <=> $back_gff{'ID2lineN'}{$b} } keys %{$back_gff{'CID2PID'}} ) {
+	for my $cID1 ( sort { $back_gff{'ID2lineN'}{$a} <=> $back_gff{'ID2lineN'}{$b} } keys %{$back_gff{'ID2lineN'}} ) {
 		defined $chked_featID{$cID1} and next; # Skip this childID if it had been checked. 
 		my @top1 = @{ $self->_allTopParent( $cID1, $back_gff{'CID2PID'} ) }; # Search for all top-parents of current child ID. 
 		scalar(@top1) == 0 and @top1 = ($cID1); # The $cID1 itself is a top-parent. 
@@ -448,11 +449,13 @@ sub read_gff3File {
 				defined $uniq_top_featID{$cID2} and do { $has_topID = 1; last; }; 
 			}
 			$has_topID and next; 
-			# Checking parents. 
+			## Checking parents. 
 			my @par2 = @{ $self->_allChild( $pID1, $back_gff{'CID2PID'} ) }; 
 			for my $cID2 (@par2) {
 				defined $uniq_top_featID{$cID2} and do { $has_topID = 1; last; }; 
 			}
+			# I wonder here because it should have no parent ID as a top parent. 
+			$has_topID and &stopErr("[Err] Why here! pID1=$pID1\n"); 
 			$has_topID and next; 
 			
 			# Here I use newNumber() which may not be very safe, but I do like it. 
@@ -465,8 +468,8 @@ sub read_gff3File {
 	my %lineN_group; 
 	my %group_lineN; 
 	for my $topID (sort { $uniq_top_featID{$a} <=> $uniq_top_featID{$b} } keys %uniq_top_featID) { 
-		my @par1_lineN = map { $back_gff{'ID2lineN'}{$_} } @{ $self->_allChild( $topID, $back_gff{'CID2PID'} ) }; 
-		my @off1_lineN = map { $back_gff{'ID2lineN'}{$_} } @{ $self->_allChild( $topID, $back_gff{'PID2CID'} ) }; 
+		my @par1_lineN = map { $back_gff{'ID2lineN'}{$_} } grep { $_ ne $topID } @{ $self->_allChild( $topID, $back_gff{'CID2PID'} ) }; 
+		my @off1_lineN = map { $back_gff{'ID2lineN'}{$_} } grep { $_ ne $topID } @{ $self->_allChild( $topID, $back_gff{'PID2CID'} ) }; 
 		if ( scalar(@par1_lineN) > 0 ) {
 			@par1_lineN = sort { $a <=> $b } @par1_lineN; 
 			$group_lineN{ $_ } = 1 for (@par1_lineN); 
@@ -482,6 +485,9 @@ sub read_gff3File {
 		$group_lineN{ $back_gff{'ID2lineN'}{$topID} } = 1; 
 	}# End for my $topID 
 	##   Check if all good (Not skipped) gff3_lines grouped. 
+	# In fact, when a featureID has the same TopParent to an existing topID but is not in parent/offspring chain of any topID, 
+	#  which means this featureID is a brother of a topID, 
+	#  it will be missed in the lineN_group hash. 
 	my @ln_LostInGrp; 
 	my %type_LostInGrp; 
 	for my $ln ( grep { defined $back_gff{'lineN2hash'}{$_} } keys %{$back_gff{'lineN2hash'}}) {
@@ -489,9 +495,15 @@ sub read_gff3File {
 		push(@ln_LostInGrp, $ln); 
 		my $tmp_type = $back_gff{'lineN2hash'}{$ln}{'type'}; 
 		$type_LostInGrp{$tmp_type} ++; 
+		# Add the missed lines to %lineN_group as a single topID; 
+		my $tID = $back_gff{'lineN2ID'}{$ln}; 
+		$lineN_group{$tID}{'parLn'} = []; 
+		$lineN_group{$tID}{'offLn'} = []; 
+		$lineN_group{$tID}{'curLn'} = [ $ln ]; 
+		$group_lineN{ $ln } = 1; 
 	}
 	if ( scalar(@ln_LostInGrp) > 0 ) {
-		&tsmsg("[Wrn] Line numbers not covered by topIDs: ", join(";", sort {$a<=>$b} @ln_LostInGrp), "\n"); 
+		&tsmsg("[Wrn] Line numbers not covered by required topID parent/child chains: ", join(";", sort {$a<=>$b} @ln_LostInGrp), "\n"); 
 		&tsmsg("[Wrn] Their feature types are:\n"); 
 		for my $tmp_type (sort { $type_LostInGrp{$b}<=>$type_LostInGrp{$a} || $a cmp $b } keys %type_LostInGrp) {
 			&tsmsg("[Wrn]   $tmp_type\t$type_LostInGrp{$tmp_type}\n"); 
