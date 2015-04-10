@@ -552,7 +552,9 @@ sub getID_rmOvlap_gff {
 		for my $chrID ( keys %chr2_topID_se_str_len_1 ) {
 			if (!defined $chr2_topID_se_str_len_2{$chrID}) {
 				&tsmsg("[Msg][getID_rmOvlap_gff] No chrID=$chrID found in co_gff\n"); 
-				push(@back_topIDs, @{ $chr2_topID_se_str_len_1{$chrID} }); 
+				for my $tr_1 ( @{ $chr2_topID_se_str_len_1{$chrID} }  ) {
+					push(@back_topIDs, $tr_1->[0]); 
+				}
 				next; 
 			}
 			my @ta_1 = sort { $a->[1]<=>$b->[1] || $a->[2]<=>$b->[2] } @{ $chr2_topID_se_str_len_1{$chrID} }; 
@@ -583,7 +585,9 @@ sub getID_rmOvlap_gff {
 		for my $chrID ( keys %chr2_topID_se_str_len_1 ) {
 			if (!defined $chr2_topID_se_str_len_2{$chrID}) {
 				&tsmsg("[Msg][getID_rmOvlap_gff] No chrID=$chrID found in co_gff\n"); 
-				push(@back_topIDs, @{ $chr2_topID_se_str_len_1{$chrID} }); 
+				for my $tr_1 ( @{ $chr2_topID_se_str_len_1{$chrID} }  ) {
+					push(@back_topIDs, $tr_1->[0]); 
+				}
 				next; 
 			}
 			
