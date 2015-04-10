@@ -385,12 +385,13 @@ sub read_gff3File {
 	###   And %lineN_group is stored in $back_gff{'lineN_group'} as \%lineN_group; 
 	##   Find out all featID in top level. 
 	my %top_featID; # {PID} => hier_number 
-	for my $pID (sort keys %{$back_gff{'PID2CID'}}) {
-		my $lineNum = $back_gff{'ID2lineN'}{$pID}; 
+	for my $tID (keys %{$back_gff{'ID2lineN'}}) {
+		defined $top_featID{$tID} and next; 
+		my $lineNum = $back_gff{'ID2lineN'}{$tID}; 
 		my $lineHR = $back_gff{'lineN2hash'}{$lineNum}; 
 		my $featType = (defined $lineHR) ? lc($lineHR->{'type'}) : 'fake' ; 
 		if ( defined $top_hier{$featType} ) {
-			$top_featID{$pID} = $top_hier{$featType}; 
+			$top_featID{$tID} = $top_hier{$featType}; 
 		}
 	}#End for 
 	##   Remove top_featID who is included by a better featID. 
@@ -482,11 +483,19 @@ sub read_gff3File {
 	}# End for my $topID 
 	##   Check if all good (Not skipped) gff3_lines grouped. 
 	my @ln_LostInGrp; 
+	my %type_LostInGrp; 
 	for my $ln ( grep { defined $back_gff{'lineN2hash'}{$_} } keys %{$back_gff{'lineN2hash'}}) {
-		defined $group_lineN{ $ln } or push(@ln_LostInGrp, $ln); 
+		defined $group_lineN{ $ln } and next; 
+		push(@ln_LostInGrp, $ln); 
+		my $tmp_type = $back_gff{'lineN2hash'}{$ln}{'type'}; 
+		$type_LostInGrp{$tmp_type} ++; 
 	}
 	if ( scalar(@ln_LostInGrp) > 0 ) {
-		&stopErr("[Err] Line numbers that failed to be grouped: ", join(";", @ln_LostInGrp), "\n"); 
+		&tsmsg("[Wrn] Line numbers not covered by topIDs: ", join(";", sort {$a<=>$b} @ln_LostInGrp), "\n"); 
+		&tsmsg("[Wrn] Their feature types are:\n"); 
+		for my $tmp_type (sort { $type_LostInGrp{$b}<=>$type_LostInGrp{$a} || $a cmp $b } keys %type_LostInGrp) {
+			&tsmsg("[Wrn]   $tmp_type\t$type_LostInGrp{$tmp_type}\n"); 
+		}
 	}
 	##   Record this information in back_gff{'lineN_group'}
 	$back_gff{'lineN_group'} = \%lineN_group; 
