@@ -222,6 +222,10 @@ sub chRowColName {
 			} else {
 				$cur_n ++; 
 			}
+			if ( m!^\s*(#|$)! ) {
+				print STDOUT "$_\n"; 
+				next; 
+			}
 	
 			if ( $is_rowID ) {
 				my @ta = split(/\t/, $_); 
