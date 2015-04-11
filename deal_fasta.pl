@@ -38,6 +38,8 @@
 ### 2013-11-01 Edit sub openFH() to deal with .gz/.bz2 files. 
 ### 2014-02-25 Add sub keep_len to extract .fa sequences by length. 
 ### 2014-03-12 Add -listSeq to control if output match_seq for -listSite. 
+### 2015-04-09 Add -rmDefinition to keep only sequence ID in the definition line. 
+### 2015-04-10 Reorder sequences according to an input seqID list. 
 
 use strict;
 use warnings; 
@@ -105,6 +107,8 @@ Usage: $0  <fasta_file | STDIN>
   -startCodonDist     calc input CDSs\' start codon usage distribution;
   -comma3             output only a comma separated list (no spaces) of atg, gtg, ttg start proportions, in that order
   
+  -rmDefinition       [Boolean] Remove definition except sequence ID. 
+  
   -maskByList         [Boolean] A trigger for masking .fasta sequences by list. 
   -maskList           [Filename] regions to be masked, in format: [seqID Start End]
   -maskType           [X/N/uc/lc] Telling how to modify regions listed. 
@@ -119,6 +123,9 @@ Usage: $0  <fasta_file | STDIN>
   -drawIDmatch        [Boolean] Seqs whose IDs contain RawSeqID from drawList will be extracted. 
   -drawWhole          [Boolean] Ignore position (and strand) information if given. Retrieve the whole sequence. 
   -dropMatch          [Boolean] Drop seqs with matching ID. Only useful with -drawWhole . 
+
+  -reorderByList      [Filename] A file with the first column as sequence ID list. 
+                        Then only output ordered fasta sequences in the list. 
 
   -keep_len           "min_len-max_len". Extract sequences whose lengths are between min_len and max_len. 
   -baseCount          [Boolean] Calculate A/T/G/C/N numbers in sequences. 
@@ -148,6 +155,7 @@ GetOptions(\%opts,"help!","cut:i","details!","cut_dir:s","cut_prefix:s",
 	"listSite:s","listNum:s","listBoth!","listSeq!", 
 	"N50!", "N50_minLen:i", "N50_GenomSize:i", "N50_levels:s", 
 	"chopKey:s","startCodonDist!","comma3!",
+	"rmDefinition!", 
 	"uniqSeq!", 
 	"upper!","lower!", 
 	"maskByList!", "maskList:s", "maskType:s", "elseMask!", 
@@ -156,6 +164,7 @@ GetOptions(\%opts,"help!","cut:i","details!","cut_dir:s","cut_prefix:s",
 	"baseCount!", "baseCountByWind:s", 
 	"fa2fq!", "fa2fqQChar:s", "fq2fa!", 
 	"replaceID!", "replaceIDlist:s", "replaceIDcol:s", "replaceIDadd!", 
+	"reorderByList:s", 
 	);
 &usage if ($opts{"help"}); 
 !@ARGV and -t and &usage; 
@@ -207,7 +216,8 @@ my %goodStr = qw(
 &site_list() if(exists $opts{listSite});
 &qual() if (defined $opts{qual} and $opts{qual} ne '');
 &N50() if ($opts{N50});
-&editkey() if ( exists $opts{chopKey} );
+&editkey() if ( exists $opts{chopKey} ); 
+&rmDefinition() if ( exists $opts{'rmDefinition'} ) ; 
 &startCodonDist() if ( defined $opts{startCodonDist} and $opts{startCodonDist} );
 &uniqSeq() if ( $opts{uniqSeq} ) ; 
 &mask_seq_by_list() if ( $opts{maskByList} ); 
@@ -217,6 +227,7 @@ my %goodStr = qw(
 &fa2fq() if ( $opts{fa2fq} ); 
 &fq2fa() if ( $opts{fq2fa} ); 
 &replaceID() if ( $opts{'replaceID'} ); 
+&reorderSeq($opts{'reorderByList'}) if ( defined $opts{'reorderByList'} ); 
 
 for (@InFp) {
 	close ($_); 
@@ -231,6 +242,34 @@ for (@InFp) {
 #****************************************************************#
 #--------------Subprogram------------Start-----------------------#
 #****************************************************************#
+
+# 2015-04-10
+#  "reorderByList:s"
+sub reorderSeq {
+	my $lisFh = &openFH( shift, '<' ); 
+	my %seqOrd; 
+	my $nn = 0; 
+	while (<$lisFh>) {
+		chomp; m/^\s*(#|$)/ and next; 
+		m/^(\S+)/ or next; 
+		$nn ++; 
+		$seqOrd{$1} = $nn; 
+	}
+	close($lisFh); 
+	my %seq; 
+	for my $fh ( @InFp ) {
+		for ( my ($relHR, $get) = &get_fasta_seq($fh); defined $relHR; ($relHR, $get) = &get_fasta_seq($fh) ) {
+			defined $seqOrd{ $relHR->{'key'} } or next; 
+			$seq{ $relHR->{'key'} } = $relHR; 
+		}
+	}
+	for my $tk ( sort { $seqOrd{$a} <=> $seqOrd{$b} } keys %seqOrd ) {
+		defined $seq{$tk} or next; 
+		my $relHR = $seq{$tk}; 
+		print STDOUT ">$relHR->{'head'}\n$relHR->{'seq'}\n"; 
+	}
+}# sub reorderSeq () 
+
 
 # 2015-02-26
 #	"replaceID!", "replaceIDlist:s", "replaceIDcol:s", 
@@ -254,7 +293,8 @@ sub replaceID {
 			if ( $opts{'replaceIDadd'} ) {
 				$relHR->{'head'} = "$kN $relHR->{'head'}"; 
 			} else {
-				defined $old2new{ $kO } and $relHR->{'head'} =~ s!^$kO\b!$kN!; 
+				defined $old2new{ $kO } and substr($relHR->{'head'}, 0, length( $kO )) = $kN; 
+				# defined $old2new{ $kO } and $relHR->{'head'} =~ s!^$kO\b!$kN!; 
 			}
 			print STDOUT ">$relHR->{'head'}\n$relHR->{'seq'}\n"; 
 		}
@@ -658,6 +698,14 @@ sub editkey {
   	}
   }
 }# end editkey, 用来去掉key中不想要的部分; 2007-9-10 16:31 
+
+sub rmDefinition {
+	for my $fh (@InFp) {
+		for (my ($relHR, $get) = &get_fasta_seq($fh); defined $relHR; ($relHR, $get) = &get_fasta_seq($fh) ) {
+			print STDOUT ">$relHR->{'key'}\n$relHR->{seq}\n"; 
+		}
+	}
+}# End sub rmDefinition()
 
 # 2014-02-25 Extend the usage of N50. 
 sub N50 {
