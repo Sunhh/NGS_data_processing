@@ -39,6 +39,7 @@
 ### 2014-02-25 Add sub keep_len to extract .fa sequences by length. 
 ### 2014-03-12 Add -listSeq to control if output match_seq for -listSite. 
 ### 2015-04-09 Add -rmDefinition to keep only sequence ID in the definition line. 
+### 2015-04-10 Reorder sequences according to an input seqID list. 
 
 use strict;
 use warnings; 
@@ -123,6 +124,9 @@ Usage: $0  <fasta_file | STDIN>
   -drawWhole          [Boolean] Ignore position (and strand) information if given. Retrieve the whole sequence. 
   -dropMatch          [Boolean] Drop seqs with matching ID. Only useful with -drawWhole . 
 
+  -reorderByList      [Filename] A file with the first column as sequence ID list. 
+                        Then only output ordered fasta sequences in the list. 
+
   -keep_len           "min_len-max_len". Extract sequences whose lengths are between min_len and max_len. 
   -baseCount          [Boolean] Calculate A/T/G/C/N numbers in sequences. 
   -baseCountByWind    [filename] File of window list. Format: "ChromID\\tWindS\\tWindE\\n"
@@ -160,6 +164,7 @@ GetOptions(\%opts,"help!","cut:i","details!","cut_dir:s","cut_prefix:s",
 	"baseCount!", "baseCountByWind:s", 
 	"fa2fq!", "fa2fqQChar:s", "fq2fa!", 
 	"replaceID!", "replaceIDlist:s", "replaceIDcol:s", "replaceIDadd!", 
+	"reorderByList:s", 
 	);
 &usage if ($opts{"help"}); 
 !@ARGV and -t and &usage; 
@@ -222,6 +227,7 @@ my %goodStr = qw(
 &fa2fq() if ( $opts{fa2fq} ); 
 &fq2fa() if ( $opts{fq2fa} ); 
 &replaceID() if ( $opts{'replaceID'} ); 
+&reorderSeq($opts{'reorderByList'}) if ( defined $opts{'reorderByList'} ); 
 
 for (@InFp) {
 	close ($_); 
@@ -236,6 +242,34 @@ for (@InFp) {
 #****************************************************************#
 #--------------Subprogram------------Start-----------------------#
 #****************************************************************#
+
+# 2015-04-10
+#  "reorderByList:s"
+sub reorderSeq {
+	my $lisFh = &openFH( shift, '<' ); 
+	my %seqOrd; 
+	my $nn = 0; 
+	while (<$lisFh>) {
+		chomp; m/^\s*(#|$)/ and next; 
+		m/^(\S+)/ or next; 
+		$nn ++; 
+		$seqOrd{$1} = $nn; 
+	}
+	close($lisFh); 
+	my %seq; 
+	for my $fh ( @InFp ) {
+		for ( my ($relHR, $get) = &get_fasta_seq($fh); defined $relHR; ($relHR, $get) = &get_fasta_seq($fh) ) {
+			defined $seqOrd{ $relHR->{'key'} } or next; 
+			$seq{ $relHR->{'key'} } = $relHR; 
+		}
+	}
+	for my $tk ( sort { $seqOrd{$a} <=> $seqOrd{$b} } keys %seqOrd ) {
+		defined $seq{$tk} or next; 
+		my $relHR = $seq{$tk}; 
+		print STDOUT ">$relHR->{'head'}\n$relHR->{'seq'}\n"; 
+	}
+}# sub reorderSeq () 
+
 
 # 2015-02-26
 #	"replaceID!", "replaceIDlist:s", "replaceIDcol:s", 
