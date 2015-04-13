@@ -472,7 +472,7 @@ sub mergeLocBlk {
 	for my $a1 (@srt_blk) {
 		my ($s, $e) = @$a1; 
 		if ( scalar(@back_blk) > 0 ) {
-			if ( $back_blk[-1][1] <= $s ) {
+			if ( $back_blk[-1][1] >= $s ) {
 				$e > $back_blk[-1][1] and $back_blk[-1][1] = $e; 
 			} else {
 				push(@back_blk, [$s, $e]); 
