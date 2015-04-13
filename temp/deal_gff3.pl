@@ -20,6 +20,8 @@ GetOptions(\%opts,
 	# Actions 
 	"seqret!", # Not added. 
 	
+	"fixTgt!", # 
+	
 	"compare2gffC:s", 
 	 "sameAll!", # Not added. 
 	 "sameIntron!", "sameSingleExon!", # Finished. 
@@ -62,6 +64,10 @@ sub usage {
 # -addFaToGff       [Boolean] Add -scfFa to the tail of -inGff . 
 #----------------------------------------------------------------------------------------------------
 # -seqret           [Boolean] Retrieve fasta sequence. Not used yet. 
+#
+#----------------------------------------------------------------------------------------------------
+# -fixTgt           [Boolean] Fix coordinates problem in "Target:" section. 
+#                     Change "Target=ID 0 100" to "Target=ID 1 100"
 #
 #----------------------------------------------------------------------------------------------------
 # -gffret           [input_ID_list] I use the first column. 
@@ -305,7 +311,13 @@ if ( $opts{'addFaToGff'} ) {
 			}
 		}
 	}# End if ( $opts{'joinLoc'} ) else 
-	
+} elsif ( $opts{'fixTgt'} ) { 
+	for my $line ( grep {defined $_ and $_ !~ m!^\s*(#|$)!} values %{$in_gff{'lineN2line'}} ) {
+		my @ta = split(/\t/, $line); 
+		$ta[8] =~ s!(Target=\s*\S+\s+)0+(\s+\d+)!${1}1${2}!i; 
+		$line = join("\t", @ta); 
+	}
+	$gff_obj->write_gff3File( 'outFH'=>$oFh, 'gff3_href'=>\%in_gff, 'sort_by'=>$opts{'sortGffBy'} ); 
 } else {
 	&tsmsg("[Err] No valid action.\n"); 
 	exit; 
