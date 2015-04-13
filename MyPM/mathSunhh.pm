@@ -464,19 +464,21 @@ Return  : [[ss1, ee1], [ss2, ee2], ...]
 sub mergeLocBlk {
 	my $self = shift; 
 	my @back_blk; 
+	my @srt_blk; 
 	for my $blk_arr (@_) {
-		my @srt_blk = sort { $a->[0] <=> $b->[0] || $a->[1] <=> $b->[1] } map { [ sort { $a <=> $b } @$_ ] } @$blk_arr; 
-		for my $a1 (@srt_blk) {
-			my ($s, $e) = @$a1; 
-			if ( scalar(@back_blk) > 0 ) {
-				if ( $back_blk[-1][1] <= $s ) {
-					$e > $back_blk[-1][1] and $back_blk[-1][1] = $e; 
-				} else {
-					push(@back_blk, [$s, $e]); 
-				}
+		push(@srt_blk, @$blk_arr); 
+	}
+	@srt_blk = sort { $a->[0] <=> $b->[0] || $a->[1] <=> $b->[1] } map { [ sort { $a <=> $b } @$_ ] } @srt_blk; 
+	for my $a1 (@srt_blk) {
+		my ($s, $e) = @$a1; 
+		if ( scalar(@back_blk) > 0 ) {
+			if ( $back_blk[-1][1] <= $s ) {
+				$e > $back_blk[-1][1] and $back_blk[-1][1] = $e; 
 			} else {
-				@back_blk = ([$s, $e]); 
+				push(@back_blk, [$s, $e]); 
 			}
+		} else {
+			@back_blk = ([$s, $e]); 
 		}
 	}
 	return \@back_blk; 
