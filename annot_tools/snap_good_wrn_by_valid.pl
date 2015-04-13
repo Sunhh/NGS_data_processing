@@ -58,7 +58,7 @@ while (<V>) {
 				$is_good = 0; last CHK_WRN; 
 			} elsif ( $tmp =~ m!^exon\-\d+:short\(\d+\)$! ) {
 				; 
-			} elsif ( $tmp =~ m!^split\-stop$! ) {
+			} elsif ( $tmp =~ m!^split\-(?:stop|start)$! ) {
 				$is_good = 0; last CHK_WRN; 
 			} elsif ( $tmp =~ m!^intron\-\d+:(\w{2})\.\.(\w{2})$! ) {
 				my $intron_seg1 = $1; 
@@ -77,13 +77,15 @@ while (<V>) {
 					last CHK_WRN; 
 				}
 			} else {
-				&stopErr("[Err] Unknown wrn_type: [$tmp]\n"); 
+				$is_good = 0; 
+				&tsmsg("[Err] Unknown wrn_type: [$tmp]\n"); 
+				last CHK_WRN; 
 			}
 		}#End CHK_WRN: 
 		if ( $is_good == 1 ) {
 			$goodModel{$genID} = 1; 
 		}
-	} elsif ( m!^E(init|xon|term)\t! ) {
+	} elsif ( m!^E(init|xon|term|sngl)\t! ) {
 		; 
 	} else {
 		&stopErr("[Err] Unknown line:$_\n"); 
