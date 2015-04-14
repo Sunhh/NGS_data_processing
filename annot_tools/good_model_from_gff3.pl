@@ -64,10 +64,10 @@ my $nonOvl_file = 'non_ovl.combined';
 for (my $i=0; $i<@bgGffs; $i++) {
 	my $bg_gff = $bgGffs[$i]; 
 	my $out_file = "non_ovl.$i"; 
-	# &exeCmd_1cmd("$call_dg -inGff $bg_gff -compare2gffC $opts{'seedGff'} -rmOvlap -rmOvlapLen 1 -rmOvlapType 'CDS,match_part' -rmOvlapStrand Single -out $out_file"); 
+	&exeCmd_1cmd("$call_dg -inGff $bg_gff -compare2gffC $opts{'seedGff'} -rmOvlap -rmOvlapLen 1 -rmOvlapType 'CDS,match_part' -rmOvlapStrand Single -out $out_file"); 
 	push(@out_files, $out_file); 
 }# End for 
-# &exeCmd_1cmd("cat $opts{'seedGff'} @out_files > $nonOvl_file"); 
+&exeCmd_1cmd("cat $opts{'seedGff'} @out_files > $nonOvl_file"); 
 
 # The previous non-overlap gene model file is $nonOvl_file. 
 for (my $i=0; $i<@fl_sizes; $i++) {
