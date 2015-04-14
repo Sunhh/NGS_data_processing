@@ -465,14 +465,18 @@ sub mergeLocBlk {
 	my $self = shift; 
 	my @back_blk; 
 	my @srt_blk; 
+	my @para_array; 
 	for my $blk_arr (@_) {
+		ref($blk_arr) eq '' and do { push(@para_array, $blk_arr); next; }; 
 		push(@srt_blk, @$blk_arr); 
 	}
+	my %parm = $self->_setHashFromArr(@para_array); 
+	$parm{'dist2join'} //= 0; 
 	@srt_blk = sort { $a->[0] <=> $b->[0] || $a->[1] <=> $b->[1] } map { [ sort { $a <=> $b } @$_ ] } @srt_blk; 
 	for my $a1 (@srt_blk) {
 		my ($s, $e) = @$a1; 
 		if ( scalar(@back_blk) > 0 ) {
-			if ( $back_blk[-1][1] >= $s ) {
+			if ( $back_blk[-1][1] >= $s - $parm{'dist2join'} ) {
 				$e > $back_blk[-1][1] and $back_blk[-1][1] = $e; 
 			} else {
 				push(@back_blk, [$s, $e]); 
