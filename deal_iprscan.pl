@@ -38,6 +38,7 @@ GetOptions(\%opts,
 	   "f_superFT:s", 
 	   "f_coil:s", 
 	  "splitXmlByID:s", # Used to prepare input of blast2go pipeline. 
+	   "fitB2G!", 
 	  "showV4convert!", 
 	"out:s", 
 ); 
@@ -92,6 +93,8 @@ sub usage {
 #
 #              -splitXmlByID : [OutDir] Split ips_result.xml into small peices, in the way one ID.xml with one ID protein. 
 #                               OutDir must not exist. 
+#               -fitB2G      : [Boolean] Use this if you are splitting xml files for B2G. 
+#                               This will add another node name 'EBIInterProScanResults'. 
 # -out        [out_file_name] 
 ################################################################################
 HH
@@ -172,6 +175,7 @@ sub splitXmlByID {
 		$status{'is_footer'} = 0; 
 		$status{'is_body'}   = 0; 
 		$status{'ID'} = []; 
+		$opts{'fitB2G'} and $header = '<EBIInterProScanResults>' . "\n"; 
 		while (<$fh>) {
 			if ( $status{'is_header'} == 1 and $_ =~ m!^\s*\<interpro_matches\>\s*$|^\s*$|^\s*\<\?xml(\s+|\>)|^\s*\<protein\-matches(\s+|\>)! ) {
 				$header .= $_; 
@@ -213,6 +217,7 @@ sub splitXmlByID {
 			}
 		}
 		close($fh); 
+		$opts{'fitB2G'} and $footer .= "<\EBIInterProScanResults>\n"; 
 		for my $id (sort keys %id2fn) {
 			open OO,'>>',"$id2fn{$id}" or &stopErr("[Err] Failed to write $id2fn{$id}\n"); 
 			print OO $footer; 
