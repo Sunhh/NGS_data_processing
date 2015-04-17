@@ -33,7 +33,7 @@ HH
 }
 
 $opts{'help'} and &usage(); 
-%opts == 0 and &usage(); 
+(keys %opts) == 0 and &usage(); 
 
 # Basic settings. 
 my %infor; 

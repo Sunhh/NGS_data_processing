@@ -7,6 +7,7 @@ use File::Which;
 # use IO::Zlib; # This package doesn't support bzip2 files. And adding IO::Compress:Bzip2 and IO::Uncompress::Bunzip2 is too many work currently. Not very useful since I am using linux usually. 
 use File::Basename; 
 use File::Copy::Recursive; 
+use File::Copy; 
 use File::Spec::Functions qw( catfile path ); 
 use LogInforSunhh; 
 use Cwd; 
@@ -175,6 +176,18 @@ Invoke File::Copy::Recursive::dircopy
 sub _dircopy {
 	return File::Copy::Recursive::dircopy(@_); 
 }# sub _dircopy() 
+=head1 _abs_path()
 
+Invoke Cwd::abs_path() 
+=cut
+sub _abs_path {
+	return Cwd::abs_path(@_); 
+}# sub _abs_path() 
+=head1 _copy()
+Invoke File::Copy::copy()
+=cut
+sub _copy {
+	return File::Copy::copy(@_); 
+}#sub _copy()
 
 1; 
