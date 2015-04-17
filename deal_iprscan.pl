@@ -38,6 +38,7 @@ GetOptions(\%opts,
 	   "f_superFT:s", 
 	   "f_coil:s", 
 	  "splitXmlByID:s", # Used to prepare input of blast2go pipeline. 
+	  "showV4convert!", 
 	"out:s", 
 ); 
 
@@ -52,11 +53,16 @@ sub usage {
 #              convert : 
 #              -dbXml2GOlist : [Boolean] Convert interpro.xml to GO list 'GO:ID\\tCategory\\tDescription'
 #               -xpath2go    : [/interprodb/interpro/class_list/classification] Normally no need to change. 
+#
 #              -xml5_to_raw4 : [Boolean] Convert interproV5.xml file to interproV4.raw file. [toDo]
+#
+#              -showV4convert: [Boolean] Show the command to convert ipsV4_result from .raw to others. 
+#               -dirV4new    : [/home/Sunhh/iprscan/iprscanV4_wiV5/] This is the new dir of iprV4 for converting files. 
+#
 #              -dbV5_to_dbV4 : [Boolean]
 #               -dirV5       : [/share1/src/iprscan/iprscanV5/interproscan-5.11-51.0/] 
 #               -dirV4old    : [/share1/src/iprscan/iprscanV4/iprscan/] This is the raw dir of iprV4 installation. 
-#               -dirV4new    : [/share1/src/iprscan/iprscanV4/iprscanForCnvt/] This is the new dir of iprV4 for converting files. 
+#               -dirV4new    : [/home/Sunhh/iprscan/iprscanV4_wiV5/] This is the new dir of iprV4 for converting files. 
 #               -hmmconvert  : [/share1/src/HMMER/hmmer-3.1b2-linux-intel-x86_64/binaries/hmmconvert] Try to use the latest one because iprscan will update hmm files. 
 #               -doIndex     : [Boolean] Run \$dirV4new/bin/index_data.pl to index the new database. 
 #               -f_matXML    : [/share1/src/iprscan/iprscanV5/database_ipr_51.0/match_complete.xml.gz] 
@@ -83,6 +89,7 @@ sub usage {
 #               -f_fprint    : [\$dirV5/data/prints/42.0/FingerPRINTShierarchy.db]
 #               -f_superFT   : [\$dirV5/data/superfamily/1.75/model.tab]
 #               -f_coil      : [\$dirV5/data/coils/2.2/new_coil.mat]
+#
 #              -splitXmlByID : [OutDir] Split ips_result.xml into small peices, in the way one ID.xml with one ID protein. 
 #                               OutDir must not exist. 
 # -out        [out_file_name] 
@@ -140,9 +147,16 @@ $goType{'CELLULAR_COMPONENT'} = 'Cellular Component';
 &xml5_to_raw4() if ( $opts{'task'} eq 'convert' and $opts{'xml5_to_raw4'} ); 
 &dbV5_to_dbV4() if ( $opts{'task'} eq 'convert' and $opts{'dbV5_to_dbV4'} ); 
 &splitXmlByID() if ( $opts{'task'} eq 'convert' and defined $opts{'splitXmlByID'} ); 
-
+&showV4convert() if ( $opts{'task'} eq 'convert' and $opts{'showV4convert'} ); 
 
 # Sub-functions
+sub showV4convert {
+	$opts{'dirV4new'} //= '/home/Sunhh/iprscan/iprscanV4_wiV5/'; 
+	-d $opts{'dirV4new'} or &stopErr("[Err] Not valid interproscan V4.8 directory with -dirV4new\n"); 
+	$opts{'dirV4new'} = &fileSunhh::_abs_path( $opts{'dirV4new'} ); 
+	$opts{'dirV4new'} =~ s!/+$!!; 
+	my $pl_cnvt = "$opts{'dirV4new'}/bin/"; 
+}#sub showV4convert () 
 sub splitXmlByID {
 	$opts{'splitXmlByID'} //= 'OutDir'; 
 	$opts{'splitXmlByID'} eq '' and $opts{'splitXmlByID'} = 'OutDir'; 
@@ -210,7 +224,7 @@ sub splitXmlByID {
 sub dbV5_to_dbV4 {
 	$opts{'dirV5'} //= '/share1/src/iprscan/iprscanV5/interproscan-5.11-51.0/'; 
 	$opts{'dirV4old'} //= '/share1/src/iprscan/iprscanV4/iprscan/'; 
-	$opts{'dirV4new'} //= '/share1/src/iprscan/iprscanV4/iprscanForCnvt/'; 
+	$opts{'dirV4new'} //= '/home/Sunhh/iprscan/iprscanV4_wiV5/'; 
 	-e $opts{'dirV4new'} and &stopErr("[Err] Already exists $opts{'dirV4new'}\n"); 
 	mkdir($opts{'dirV4new'}, 0755); 
 	$opts{$_} = fileSunhh::_abs_path($opts{$_}) foreach ( qw/dirV5 dirV4old dirV4new/ ); 
