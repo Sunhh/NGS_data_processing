@@ -12,31 +12,32 @@ GetOptions(\%opts,
 	"task:s", # convert 
 	  "dbXml2GOlist!", "xpath2go:s", 
 	  "xml5_to_raw4!", 
-	 "dbV5_to_dbV4!", 
-	  "dirV5:s", "dirV4old:s", "dirV4new:s", 
-	  "hmmconvert:s", "doIndex!", 
-	  "f_matXML:s", 
-	  "f_matDTD:s", 
-	  "f_iprXML:s", 
-	  "f_iprDTD:s", 
-	  "f_superF:s", 
-	  "f_smrtTh:s", 
-	  "f_smrtDe:s", 
-	  "f_smrtHm:s", 
-	  "f_sfHMM:s", 
-	  "f_prints:s", 
-	  "f_gene3d:s",    
-	  "f_tigrfam:s", 
-	  "f_pfamAH:s", 
-	  "f_pfamAS:s", 
-	  "f_pfamC:s",     
-	  "f_prodom:s", 
-	  "f_panther:s", 
-	  "f_prosEv:s", 
-	  "f_prosite:s", 
-	  "f_fprint:s", 
-	  "f_superFT:s", 
-	  "f_coil:s", 
+	  "dbV5_to_dbV4!", 
+	   "dirV5:s", "dirV4old:s", "dirV4new:s", 
+	   "hmmconvert:s", "doIndex!", 
+	   "f_matXML:s", 
+	   "f_matDTD:s", 
+	   "f_iprXML:s", 
+	   "f_iprDTD:s", 
+	   "f_superF:s", 
+	   "f_smrtTh:s", 
+	   "f_smrtDe:s", 
+	   "f_smrtHm:s", 
+	   "f_sfHMM:s", 
+	   "f_prints:s", 
+	   "f_gene3d:s",    
+	   "f_tigrfam:s", 
+	   "f_pfamAH:s", 
+	   "f_pfamAS:s", 
+	   "f_pfamC:s",     
+	   "f_prodom:s", 
+	   "f_panther:s", 
+	   "f_prosEv:s", 
+	   "f_prosite:s", 
+	   "f_fprint:s", 
+	   "f_superFT:s", 
+	   "f_coil:s", 
+	  "splitXmlByID:s", # Used to prepare input of blast2go pipeline. 
 	"out:s", 
 ); 
 
@@ -82,6 +83,8 @@ sub usage {
 #               -f_fprint    : [\$dirV5/data/prints/42.0/FingerPRINTShierarchy.db]
 #               -f_superFT   : [\$dirV5/data/superfamily/1.75/model.tab]
 #               -f_coil      : [\$dirV5/data/coils/2.2/new_coil.mat]
+#              -splitXmlByID : [OutDir] Split ips_result.xml into small peices, in the way one ID.xml with one ID protein. 
+#                               OutDir must not exist. 
 # -out        [out_file_name] 
 ################################################################################
 HH
@@ -105,7 +108,7 @@ $opts{'task'} //= '';
 
 my %iprV4DbName; 
 $iprV4DbName{'HAMAP'} = 'HAMAP';                        # (V4)HAMAP        (V5)Hamap                 : *High-quality Automated and Manual Annotation of Microbial Proteomes
-$iprV4DbName{'ProDom'} = 'blastprodom';                 # (V4)ProDom team  (V5)ProDom                : ProDom is a comprehensive set of protein domain families automatically generated from the UniProt Knowledge Database.
+$iprV4DbName{'PRODOM'} = 'blastprodom';                 # (V4)ProDom team  (V5)ProDom                : ProDom is a comprehensive set of protein domain families automatically generated from the UniProt Knowledge Database.
 $iprV4DbName{'PROSITE_PROFILES'} = 'ProfileScan';       # (V4)PROSITE      (V5)ProSiteProfiles       : PROSITE consists of documentation entries describing protein domains, families and functional sites as well as associated patterns and profiles to identify them
 $iprV4DbName{'PROSITE_PATTERNS'} = 'PatternScan';       # (V4)PROSITE      (V5)ProSitePatterns       : PROSITE consists of documentation entries describing protein domains, families and functional sites as well as associated patterns and profiles to identify them
 $iprV4DbName{'PRINTS'} = 'FPrintScan';                  # (V4)PRINTS       (V5)PRINTS                : A fingerprint is a group of conserved motifs used to characterise a protein family
@@ -118,11 +121,12 @@ $iprV4DbName{'TIGRFAM'} = 'HMMTigr';                    # (V4)TIGRFAMs     (V5)T
 $iprV4DbName{'COILS'} = 'Coils';                        # (V4)Ncoils       (V5)Coils                 : Prediction of Coiled Coil Regions in Proteins
 # Third party databases installed separately. 
 # No Phobius databse result found.                      #                  (V5)Phobius               : A combined transmembrane topology and signal peptide predictor
+$iprV4DbName{'PHOBIUS'} = 'PHOBIUS'; 
 $iprV4DbName{'SMART'} = 'HMMSmart';                     # (V4)SMART (V5)SMART                 : SMART allows the identification and analysis of domain architectures based on Hidden Markov Models or HMMs
 $iprV4DbName{'TMHMM'} = 'TMHMM';                        # (V4)TMHMM_v2.0 (V5)TMHMM                 : Prediction of transmembrane helices in proteins
-$iprV4DbName{'SignalP_EUK'} = 'SignalP';                # (V4)SignalP_v3.0 (V5)SignalP_EUK           : SignalP (organism type eukaryotes) predicts the presence and location of signal peptide cleavage sites in amino acid sequences for eukaryotes.
-$iprV4DbName{'SignalP_GRAM_POSITIVE'} = 'SignalP';      # (V4)SignalP_v3.0 (V5)SignalP_GRAM_POSITIVE : SignalP (organism type gram-positive prokaryotes) predicts the presence and location of signal peptide cleavage sites in amino acid sequences for gram-positive prokaryotes.
-$iprV4DbName{'SignalP_GRAM_NEGATIVE'} = 'SignalP';      # (V4)SignalP_v3.0 (V5)SignalP_GRAM_NEGATIVE : SignalP (organism type gram-negative prokaryotes) predicts the presence and location of signal peptide cleavage sites in amino acid sequences for gram-negative prokaryotes.
+$iprV4DbName{'SIGNALP_EUK'} = 'SignalP';                # (V4)SignalP_v3.0 (V5)SignalP_EUK           : SignalP (organism type eukaryotes) predicts the presence and location of signal peptide cleavage sites in amino acid sequences for eukaryotes.
+$iprV4DbName{'SIGNALP_GRAM_POSITIVE'} = 'SignalP';      # (V4)SignalP_v3.0 (V5)SignalP_GRAM_POSITIVE : SignalP (organism type gram-positive prokaryotes) predicts the presence and location of signal peptide cleavage sites in amino acid sequences for gram-positive prokaryotes.
+$iprV4DbName{'SIGNALP_GRAM_NEGATIVE'} = 'SignalP';      # (V4)SignalP_v3.0 (V5)SignalP_GRAM_NEGATIVE : SignalP (organism type gram-negative prokaryotes) predicts the presence and location of signal peptide cleavage sites in amino acid sequences for gram-negative prokaryotes.
 # Not known database in V4 but absent in V5. 
 $iprV4DbName{'Non_Seg'} = 'Seg';                        # (V4)Seg          (V5)?                     : Seg replaces low complexity regions in protein sequences with X characters. If a resulting protein sequence is used as a query for a BLAST search, the regions with X characters are ignored.
 # There are also 'pfscan|scanregexp|seg' in interproscanV4 database types pointing to 'PROFILE|PROSITE|SEG', which can not be found in V5 data. But it doesn't matter because there has been 'PROSITE_PROFILES|PROSITE_PATTERNS' in V5. 
@@ -135,9 +139,73 @@ $goType{'CELLULAR_COMPONENT'} = 'Cellular Component';
 &dbXml2GOlist() if ( $opts{'task'} eq 'convert' and $opts{'dbXml2GOlist'} ); 
 &xml5_to_raw4() if ( $opts{'task'} eq 'convert' and $opts{'xml5_to_raw4'} ); 
 &dbV5_to_dbV4() if ( $opts{'task'} eq 'convert' and $opts{'dbV5_to_dbV4'} ); 
+&splitXmlByID() if ( $opts{'task'} eq 'convert' and defined $opts{'splitXmlByID'} ); 
 
 
 # Sub-functions
+sub splitXmlByID {
+	$opts{'splitXmlByID'} //= 'OutDir'; 
+	$opts{'splitXmlByID'} eq '' and $opts{'splitXmlByID'} = 'OutDir'; 
+	-e $opts{'splitXmlByID'} and &stopErr("[Err] Already exists : |$opts{'splitXmlByID'}|\n"); 
+	mkdir($opts{'splitXmlByID'}, 0755); 
+	my $oDir = fileSunhh::_abs_path($opts{'splitXmlByID'}); 
+	my %id2fn; 
+	my $cnt = 0; 
+	for my $fh (@InFp) {
+		my ($header, $footer, $body); 
+		my %status; 
+		$status{'is_header'} = 1; 
+		$status{'is_footer'} = 0; 
+		$status{'is_body'}   = 0; 
+		$status{'ID'} = []; 
+		while (<$fh>) {
+			if ( $status{'is_header'} == 1 and $_ =~ m!^\s*\<interpro_matches\>\s*$|^\s*$|^\s*\<\?xml(\s+|\>)|^\s*\<protein\-matches(\s+|\>)! ) {
+				$header .= $_; 
+			} elsif ( ($status{'is_header'} == 1 or $status{'is_footer'} == 1) and $_ =~ m!^\s*\<protein(\>|\s+)! ) {
+				$status{'is_body'} = 1; 
+				$status{'is_footer'} = 0; 
+				$status{'is_header'} = 0; 
+				$body = $_; 
+				if ( $_ =~ m!\sid=\"([^"\s]+)\"!i ) {
+					push( @{$status{'ID'}} , $1 ); 
+				}
+			} elsif ( $status{'is_body'} == 1 and $_ =~ m!^\s*\<\/protein\>! ) {
+				$body .= $_; 
+				@{$status{'ID'}} == 0 and &stopErr("[Err] No protein ID captured in body:\n$body\n"); 
+				grep { defined $id2fn{ $_ } and &stopErr("[Err] repeated ID $_ to output.\n") } @{$status{'ID'}} ; 
+				for my $id ( @{$status{'ID'}} ) {
+					my $ofn = "$oDir/${id}.xml"; 
+					$id2fn{$id} = $ofn; 
+					open O,'>',"$ofn" or &stopErr("[Err] Failed to write $ofn\n"); 
+					print O "${header}${body}"; 
+					close O; 
+				}
+				$status{'is_body'} = 0; 
+				$body = ''; 
+				$status{'ID'} = []; 
+			} elsif ( $status{'is_body'} == 0 and $_ =~ m!^\s*$! ) {
+				$footer = $_; 
+				$status{'is_footer'} = 1; 
+			} elsif ( $status{'is_body'} == 1 ) {
+				if ( m!^\s*\<xref\s+id=\"([^"\s]+)\"!i ) {
+					push(@{$status{'ID'}}, $1); 
+				}
+				$body .= $_; 
+			} elsif ( $status{'is_footer'} == 1 ) {
+				$footer .= $_; 
+			} else {
+				&stopErr("[Err] Unknown line: $_\n"); 
+			}
+		}
+		close($fh); 
+		for my $id (sort keys %id2fn) {
+			open OO,'>>',"$id2fn{$id}" or &stopErr("[Err] Failed to write $id2fn{$id}\n"); 
+			print OO $footer; 
+			close OO; 
+		}
+	}
+}# End sub splitXmlByID() 
+
 sub dbV5_to_dbV4 {
 	$opts{'dirV5'} //= '/share1/src/iprscan/iprscanV5/interproscan-5.11-51.0/'; 
 	$opts{'dirV4old'} //= '/share1/src/iprscan/iprscanV4/iprscan/'; 
