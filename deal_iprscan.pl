@@ -58,10 +58,12 @@ sub usage {
 #               -dirV4new    : [/share1/src/iprscan/iprscanV4/iprscanForCnvt/] This is the new dir of iprV4 for converting files. 
 #               -hmmconvert  : [/share1/src/HMMER/hmmer-3.1b2-linux-intel-x86_64/binaries/hmmconvert] Try to use the latest one because iprscan will update hmm files. 
 #               -doIndex     : [Boolean] Run \$dirV4new/bin/index_data.pl to index the new database. 
-#               -f_matXML    : [path_to_match_complete.xml] This should be downloaded from iprscan database. Could be with .gz
-#               -f_matDTD    : [path_to_match_complete.dtd]
-#               -f_iprXML    : [path_to_interpro.xml] This should be downloaded from iprscan database. Could be with .gz
-#               -f_iprDTD    : [path_to_interpro.dtd]
+#               -f_matXML    : [/share1/src/iprscan/iprscanV5/database_ipr_51.0/match_complete.xml.gz] 
+#                               This should be downloaded from iprscan database. Could be with .gz
+#               -f_matDTD    : [/share1/src/iprscan/iprscanV5/database_ipr_51.0/match_complete.dtd]
+#               -f_iprXML    : [/share1/src/iprscan/iprscanV5/database_ipr_51.0/interpro.xml.gz] 
+#                               This should be downloaded from iprscan database. Could be with .gz
+#               -f_iprDTD    : [/share1/src/iprscan/iprscanV5/database_ipr_51.0/interpro.dtd]
 #               -f_superF    : [\$dirV5/data/superfamily/1.75/hmmlib_1.75] 
 #               -f_smrtTh    : [\$dirV5/data/smart/6.2/smart.thresholds]
 #               -f_smrtDe    : [\$dirV5/data/smart/6.2/smart.desc]
@@ -88,7 +90,7 @@ HH
 
 # Basic settings. 
 $opts{'help'} and &usage(); 
--t and !@ARGV and &usage(); 
+(keys %opts) == 0 and &usage(); 
 our @InFp = (); 
 if ( !@ARGV ) {
 	@InFp = (\*STDIN); 
@@ -140,16 +142,18 @@ sub dbV5_to_dbV4 {
 	$opts{'dirV5'} //= '/share1/src/iprscan/iprscanV5/interproscan-5.11-51.0/'; 
 	$opts{'dirV4old'} //= '/share1/src/iprscan/iprscanV4/iprscan/'; 
 	$opts{'dirV4new'} //= '/share1/src/iprscan/iprscanV4/iprscanForCnvt/'; 
-	$opts{$_} = fileSunhh::_abs_path($_) foreach ( qw/dirV5 dirV4old dirV4new/ ); 
+	-e $opts{'dirV4new'} and &stopErr("[Err] Already exists $opts{'dirV4new'}\n"); 
+	mkdir($opts{'dirV4new'}, 0755); 
+	$opts{$_} = fileSunhh::_abs_path($opts{$_}) foreach ( qw/dirV5 dirV4old dirV4new/ ); 
 	$opts{'dirV5'} =~ s!/+$!!; 
 	$opts{'dirV4old'} =~ s!/+$!!; 
 	$opts{'dirV4new'} =~ s!/+$!!; 
 	
 	$opts{'hmmconvert'} //= '/share1/src/HMMER/hmmer-3.1b2-linux-intel-x86_64/binaries/hmmconvert'; 
-	$opts{'f_matXML'} //= 'match_complete.xml'; 
-	$opts{'f_matDTD'} //= 'match_complete.dtd'; 
-	$opts{'f_iprXML'} //= 'interpro.xml'; 
-	$opts{'f_iprDTD'} //= 'interpro.dtd'; 
+	$opts{'f_matXML'} //= '/share1/src/iprscan/iprscanV5/database_ipr_51.0/match_complete.xml.gz'; 
+	$opts{'f_matDTD'} //= '/share1/src/iprscan/iprscanV5/database_ipr_51.0/match_complete.dtd'; 
+	$opts{'f_iprXML'} //= '/share1/src/iprscan/iprscanV5/database_ipr_51.0/interpro.xml.gz'; 
+	$opts{'f_iprDTD'} //= '/share1/src/iprscan/iprscanV5/database_ipr_51.0/interpro.dtd'; 
 	$opts{'f_superF'} //= $opts{'dirV5'} . '/data/superfamily/1.75/hmmlib_1.75'; 
 	$opts{'f_smrtTh'} //= $opts{'dirV5'} . '/data/smart/6.2/smart.thresholds'; 
 	$opts{'f_smrtDe'} //= $opts{'dirV5'} . '/data/smart/6.2/smart.desc'; 
@@ -169,9 +173,7 @@ sub dbV5_to_dbV4 {
 	$opts{'f_superFT'} //= $opts{'dirV5'} . '/data/superfamily/1.75/model.tab'; 
 	$opts{'f_coil'}    //= $opts{'dirV5'} . '/data/coils/2.2/new_coil.mat'; 
 
-	# Make dirV4new . 
-	-d $opts{'dirV4new'} and &stopErr("[Err] Already exists $opts{'dirV4new'}\n"); 
-	mkdir($opts{'dirV4new'}, 0755); 
+	# Construct dirV4new . 
 	mkdir("$opts{'dirV4new'}/data/", 0755); 
 	mkdir("$opts{'dirV4new'}/tmp/", 0777); 
 	mkdir("$opts{'dirV4new'}/bin/", 0755); 
@@ -180,8 +182,8 @@ sub dbV5_to_dbV4 {
 		symlink("$opts{'dirV4old'}/$name", "$opts{'dirV4new'}/$name") or &stopErr("[Err] Failed to make link for $name\n"); 
 	}
 	my %binFiles = map { $_=>1 } qw/converter.pl gene3d.pl index_data.pl iprscan iprscan_wrapper.pl meter.pl out2raw.pl pantherScore.pl ProDomBlast3i.pl ResubmitJobs.pl wget.pl/; 
-	opendir DD,"$opts{'dirV4old'}/bin/" or &stopErr("[Err] failed to read bin/\n"); 
-	for my $fn ( readdir(DD) ) {
+	opendir DD,"$opts{'dirV4old'}/bin/" or &stopErr("[Err] failed to read $opts{'dirV4old'}/bin/\n"); 
+	for my $fn ( grep { $_ !~ m!^\.! } readdir(DD) ) {
 		defined $binFiles{$fn} or do { symlink("$opts{'dirV4old'}/bin/$fn", "$opts{'dirV4new'}/bin/$fn") or &stopErr("[Err] Failed to link file $fn\n"); next; }; 
 		open F,'<',"$opts{'dirV4old'}/bin/$fn" or &stopErr("[Err] Failed to read file $fn\n"); 
 		open O,'>',"$opts{'dirV4new'}/bin/$fn" or &stopErr("[Err] Failed to write file $fn\n"); 
@@ -198,7 +200,7 @@ sub dbV5_to_dbV4 {
 	closedir DD; 
 	my %confFiles = map { $_=>1 } qw/sixpack.sh seqret.sh/; 
 	opendir DD,"$opts{'dirV4old'}/conf/" or &stopErr("[Err] failed to read conf/\n"); 
-	for my $fn ( readdir(DD) ) {
+	for my $fn ( grep { $_ !~ m!^\.! } readdir(DD) ) {
 		defined $confFiles{$fn} or do { symlink("$opts{'dirV4old'}/conf/$fn", "$opts{'dirV4new'}/conf/$fn") or &stopErr("[Err] Failed to link file $fn\n"); next; }; 
 		open F,'<',"$opts{'dirV4old'}/conf/$fn" or &stopErr("[Err] Failed to read file $fn\n"); 
 		open O,'>',"$opts{'dirV4new'}/conf/$fn" or &stopErr("[Err] Failed to write file $fn\n"); 
@@ -216,8 +218,8 @@ sub dbV5_to_dbV4 {
 	# Generate data/ in $dirV4new
 	my %out; 
 	$out{'f_matXML'}  //= 'match_complete.xml';
-	$out{'f_iprXML'}  //= 'interpro.xml';
 	$out{'f_matDTD'}  //= 'match_complete.dtd';
+	$out{'f_iprXML'}  //= 'interpro.xml';
 	$out{'f_iprDTD'}  //= 'interpro.dtd';
 	$out{'f_superF'}  //= 'superfamily.hmm'; 
 	$out{'f_smrtTh'}  //= 'smart.thresholds'; 
@@ -251,6 +253,13 @@ sub dbV5_to_dbV4 {
 		( defined $fn and $fn ne '' ) or do { &tsmsg("[Err] No source file: $opts{$fnk}\n"); next; }; 
 		if ( $fnk eq 'f_superFT' ) {
 			&exeCmd_1cmd("cut -f 1 $opts{$fnk} > $out{$fnk}"); 
+			next; 
+		} elsif ( $fnk =~ m!^(f_matXML|f_matDTD|f_iprXML|f_iprDTD)$! ) {
+			if ( $opts{$fnk} =~ m!\.gz(ip)?\s*$!i ) {
+				&exeCmd_1cmd("gzip -cd $opts{$fnk} > $out{$fnk}"); 
+			} else {
+				symlink( $opts{$fnk}, $out{$fnk} ) or &stopErr("[Err] Failed to link $opts{$fnk} to $out{$fnk}\n"); 
+			}
 			next; 
 		}
 		if ( -B $opts{$fnk} ) {
