@@ -161,7 +161,7 @@ sub splitXmlByID {
 		while (<$fh>) {
 			if ( $status{'is_header'} == 1 and $_ =~ m!^\s*\<interpro_matches\>\s*$|^\s*$|^\s*\<\?xml(\s+|\>)|^\s*\<protein\-matches(\s+|\>)! ) {
 				$header .= $_; 
-			} elsif ( ($status{'is_header'} == 1 or $status{'is_footer'} == 1) and $_ =~ m!^\s*\<protein(\>|\s+)! ) {
+			} elsif ( ($status{'is_header'} == 1 or $status{'is_footer'} == 1 or $status{'is_body'} == 0) and $_ =~ m!^\s*\<protein(\>|\s+)! ) {
 				$status{'is_body'} = 1; 
 				$status{'is_footer'} = 0; 
 				$status{'is_header'} = 0; 
@@ -171,9 +171,10 @@ sub splitXmlByID {
 				}
 			} elsif ( $status{'is_body'} == 1 and $_ =~ m!^\s*\<\/protein\>! ) {
 				$body .= $_; 
-				@{$status{'ID'}} == 0 and &stopErr("[Err] No protein ID captured in body:\n$body\n"); 
+				@{$status{'ID'}} == 0 and &tsmsg("[Wrn] No protein ID captured in body:\n$body\n"); 
 				grep { defined $id2fn{ $_ } and &stopErr("[Err] repeated ID $_ to output.\n") } @{$status{'ID'}} ; 
 				for my $id ( @{$status{'ID'}} ) {
+					$id eq '' and next; 
 					my $ofn = "$oDir/${id}.xml"; 
 					$id2fn{$id} = $ofn; 
 					open O,'>',"$ofn" or &stopErr("[Err] Failed to write $ofn\n"); 
@@ -389,8 +390,8 @@ sub xml5_to_raw4 {
 						$tag2val{'seq'} = $child_node->textContent(); 
 						$tag2val{'len'} = length( $tag2val{'seq'} ); 
 					} elsif ( $child_name eq 'xref' ) {
-						$tag2val{'id'}   = $child_node->getAttribute('id'); 
-						$tag2val{'name'} = $child_node->getAttribute('name'); 
+						push(@{$tag2val{'id'}}, $child_node->getAttribute('id')); 
+						push(@{$tag2val{'name'}}, $child_node->getAttribute('name')); 
 					} elsif ( $child_name eq 'matches' ) {
 						for my $match_node ( $child_node->findnodes('*') ) {
 							my $mat2href = &_match2Hash( $match_node ); 
@@ -398,22 +399,24 @@ sub xml5_to_raw4 {
 							$rawAref->[0] = $tag2val{'id'}; 
 							$rawAref->[1] = $tag2val{'md5'}; 
 							$rawAref->[2] = $tag2val{'len'}; 
-defined $iprV4DbName{ $rawAref->[3] } or warn " $rawAref->[3] \n"; 
+							defined $iprV4DbName{ $rawAref->[3] } or do { &tsmsg( "[Wrn] Undefined DB name $rawAref->[3]\n" ); $iprV4DbName{ $rawAref->[3] } = $rawAref->[3];  }; 
 							$rawAref->[3] = $iprV4DbName{ $rawAref->[3] } // $rawAref->[3]; 
 							$rawAref->[10] = '15-4-2015'; 
-							for (my $i=0; $i < @{ $rawAref->[6] }; $i++ ) {
-								print {$outFh} join("\t", @{$rawAref}[0..5], 
-								 $rawAref->[6][$i], 
-								 $rawAref->[7][$i], 
-								 $rawAref->[8][$i], 
-								 @{$rawAref}[9..13]
-								)."\n"; 
-							}
+							for my $tmpID ( @{$rawAref->[0]} ) {
+								for (my $i=0; $i < @{ $rawAref->[6] }; $i++ ) {
+									print {$outFh} join("\t", $tmpID, @{$rawAref}[1..5], 
+									 $rawAref->[6][$i], 
+									 $rawAref->[7][$i], 
+									 $rawAref->[8][$i], 
+									 @{$rawAref}[9..13]
+									)."\n"; 
+								}
+							}#End for my $tmpID
 						}
 					}
-				}
+				}#End for my $child_node 
 			}
-		}
+		}#End for my $node 
 	}
 }# sub xml5_to_raw4() 
 
