@@ -198,6 +198,7 @@ sub readTbl {
 		undef $self->{$tk}; 
 	}
 	my %parm = @_; 
+	$self->{'filename'} = $parm{'filename'} // $self->{'filename'}; 
 	$self->{'FH'} = $parm{'FH'} // &openFH( $self->{'filename'}, '<' ); 
 	$self->skipLine(); 
 	

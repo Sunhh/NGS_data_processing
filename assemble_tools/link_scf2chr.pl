@@ -68,7 +68,7 @@ my $rest;
 for my $td ( sort { $len{$b} <=> $len{$a} || $a cmp $b } keys %seq ) {
 	if (!defined $used{$td}) {
 		if (defined $rest and $rest ne '') {
-			print STDERR join("\t", "${preTag}_Chr00", $td, length($rest)+1, length($rest)+length($split_N)+length($seq{$td}), qw/U N/, length($seq{$td}) )."\n"; 
+			print STDERR join("\t", "${preTag}_Chr00", $td, length($rest)+1+length($split_N), length($rest)+length($split_N)+length($seq{$td}), qw/U N/, length($seq{$td}) )."\n"; 
 			$rest .= "$split_N$seq{$td}"; 
 		}else{
 			print STDERR join("\t", "${preTag}_Chr00", $td, 1, length($seq{$td}), qw/U N/, length($seq{$td}))."\n"; 
