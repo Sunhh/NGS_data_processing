@@ -19,6 +19,7 @@
 # 2013-08-21 Add a function to transpose a matrix table. Also fix a bug for function &fillNull() which does not fill the first column of line. 
 # 2013-09-11 Edit -cbind log infor. 
 # 2013-11-26 Add in uniqComb.pl function. Add time tag for message output. 
+# 2015-04-21 Add -colByTbl to select columns according to an input table. 
 
 use strict;
 use warnings; 
@@ -27,6 +28,7 @@ use Getopt::Long;
 my %opts;
 GetOptions(\%opts,
 	"combine!","column:s",
+	"colByTbl:s", "colByTbl_also:s", 
 	"max_col:s","min_col:s",
 	"skip:i",
 	"reverse!",
@@ -57,6 +59,8 @@ command:perl $0 <STDIN|parameters>
   -help           help infomation;
   -combine        combine files;
   -column<int>    cols "num1,num2,num3..." will be picked out and joined to a new line;
+  -colByTbl<Str>  [index_file]. The 1st column of index_file is used to match the first line of input.table. Output matching columns from input.table. 
+   -colByTbl_also [Str] Cols "num1,num2,num3" will be output before checking the matching between input.table and index_file. 
   -max_col        Similar to -column, compare by order;
   -min_col        Similar to -column, compare by order;
   -skip<int>      Skip first <int> lines.Usually for skipping head lines;
@@ -185,6 +189,8 @@ if ( &goodVar($opts{col_sort}) ) {
 
 &chRowColName() if ( defined $opts{chID_RefLis} ); 
 
+&colByTbl() if ( defined $opts{'colByTbl'} ); 
+
 for (@InFp) {
 	close ($_);
 }
@@ -194,6 +200,49 @@ for (@InFp) {
 ## sub-routines for functions. 
 ######################################################################
 
+# Extract columns according to $opts{'colByTbl'}; 
+sub colByTbl {
+	my @col_also = (); 
+	defined $opts{'colByTbl_also'} and @col_also = &parseCol($opts{'colByTbl_also'}); 
+	my $idxFh = &openFH($opts{'colByTbl'}, '<'); 
+	my (%needColID, $cnt); 
+	$cnt = 0; 
+	while (<$idxFh>) {
+		chomp; 
+		my @ta = split(/$symbol/, $_); 
+		defined $needColID{$ta[0]} or do { $needColID{$ta[0]} = $cnt; $cnt ++; }; 
+		
+	}
+	close($idxFh); 
+	
+	for my $fh ( @InFp ) {
+		my @cur_ColNs = @col_also; 
+		{
+			my $first_line = <$fh>; 
+			my %cur_ID2ColN; 
+			chomp($first_line); 
+			my @ta = split(/$symbol/, $first_line); 
+			for (my $i=0; $i<@ta; $i++) {
+				defined $needColID{$ta[$i]} and $cur_ID2ColN{$ta[$i]} = $i; 
+			}
+			for (sort { $needColID{$a} <=> $needColID{$b} } keys %needColID) {
+				if ( defined $cur_ID2ColN{$_} ) {
+					push(@cur_ColNs, $cur_ID2ColN{$_}); 
+				} else {
+					push(@cur_ColNs, 'NA'); 
+				}
+			}
+			print STDOUT join("\t", map { ( $_ eq 'NA' ) ? '' : $ta[$_] ; } @cur_ColNs)."\n"; 
+		}
+		while (<$fh>) {
+			chomp; 
+			my @ta = split(/\t/, $_); 
+			print STDOUT join("\t", map { ( $_ eq 'NA' ) ? '' : $ta[$_] ; } @cur_ColNs)."\n"; 
+		}
+		close ($fh); 
+	}
+	
+}# sub colByTbl() 
 
 # change table's name according to reference list. 
 sub chRowColName {
