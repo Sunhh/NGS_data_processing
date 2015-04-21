@@ -197,7 +197,8 @@ sub readTbl {
 	for my $tk (qw/FH title data_arr/) {
 		undef $self->{$tk}; 
 	}
-	$self->{'FH'} = &openFH( $self->{'filename'}, '<' ); 
+	my %parm = @_; 
+	$self->{'FH'} = $parm{'FH'} // &openFH( $self->{'filename'}, '<' ); 
 	$self->skipLine(); 
 	
 	# Read in header. 
