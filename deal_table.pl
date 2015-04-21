@@ -250,7 +250,8 @@ sub showHeader {
 	for my $fh ( @InFp ) {
 		while (<$fh>) {
 			chomp; 
-			my @ta = split(/$symbol/, $_); 
+			my @ta = split(/$symbol/, "$_|"); 
+			$ta[-1] =~ s!\|$!!; 
 			for (my $i=0; $i<@ta; $i++) {
 				print STDOUT join("\t", $i, $ta[$i])."\n"; 
 			}
