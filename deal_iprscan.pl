@@ -217,7 +217,7 @@ sub splitXmlByID {
 			}
 		}
 		close($fh); 
-		$opts{'fitB2G'} and $footer .= "<\EBIInterProScanResults>\n"; 
+		$opts{'fitB2G'} and $footer .= "</EBIInterProScanResults>\n"; 
 		for my $id (sort keys %id2fn) {
 			open OO,'>>',"$id2fn{$id}" or &stopErr("[Err] Failed to write $id2fn{$id}\n"); 
 			print OO $footer; 
