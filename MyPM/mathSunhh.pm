@@ -516,6 +516,46 @@ sub _setHashFromArr {
 	return(%back_hash); 
 }# _setHashFromArr() 
 
+=head2 switch_position('qry2ref'=>\%refPos, 'qryID'=>$queryID, 'qryPos'=>$queryPos, 'qryStr'=>'+/-')
+
+Input       : 
+ %refPos   : {qryID} => sortedByQrySE [ [qryS_1, qryE_1, refID_1, refS_1, refE_1, refStr_1(+/-)], [qryS_2, qryE_2, refID_2, refS_2, refE_2, refStr_2], ... ]
+               qryS <= qryE && refS <= refE 
+			   qryS_1 <= qryS_2 ... 
+Function    : 
+ Get position on ref for qryID_qryPos
+Return      : 
+ ([refID_1, refPos_1, refStr_1], [refID_2, refPos_2, refStr_2])
+=cut
+sub switch_position {
+	my $self = shift; 
+	my %parm = $self->_setHashFromArr(@_); 
+	for (qw/qry2ref qryID qryPos/) {
+		defined $parm{$_} or &stopErr("[Err] '$_' not defined.\n"); 
+	}
+	$parm{'qryStr'} //= '+'; 
+	my $qry_aref = $parm{'qry2ref'}{ $parm{'qryID'} } // []; 
+	my @back; 
+	for my $ta (@$qry_aref) {
+		$ta->[1] < $parm{'qryPos'} and next; 
+		$ta->[0] > $parm{'qryPos'} and last; 
+		my $refID = $ta->[2]; 
+		my ($refPos, $refStr); 
+		$refStr = $parm{'qryStr'}; 
+		if ( $ta->[5] eq '+' ) {
+			$refPos = $ta->[3] + ($parm{'qryPos'}-$ta->[0]); 
+		} elsif ( $ta->[5] eq '-' ) {
+			$refPos = $ta->[4] - ($parm{'qryPos'}-$ta->[0]); 
+			$refStr =~ tr!+-!-+!; 
+		} else {
+			&stopErr("[Err] Unknown refStr($ta->[5])\n"); 
+		}
+		push(@back, [$refID, $refPos, $refStr]); 
+	}
+	@back == 0 and @back = ([]); 
+	return (@back); 
+}# sub switch_position () 
+
 ############################################################
 #  Sub-routines. 
 ############################################################
