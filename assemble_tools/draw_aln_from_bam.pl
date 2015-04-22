@@ -1,4 +1,6 @@
 #!/usr/bin/perl -w 
+# SVG color names: http://www.december.com/html/spec/colorsvg.html
+# 2015-04-22 Check 'XT:A:U/R/M' of left read to decide read pair's mapping is unique (orange) or repeat (lightgreen). 
 use strict; 
 use LogInforSunhh; 
 use fileSunhh; 
@@ -86,12 +88,14 @@ while (<F>) {
 	chomp; 
 	my @ta = split(/\t/, $_); 
 	my ($id1, $pos1, $id2, $pos2, $ins_len) = @ta[2,3,6,7,8]; 
+	my $xt_u = 1; 
+	$_ =~ m/\tXT:A:[RM](\t|$)/ and $xt_u = 0; 
 	$id2 eq '=' or next; 
 	my $pos3 = $pos1+$ins_len-1; 
 	$pos1 <= $pos3 or next; # Skip PE pairs. 
 	$pos1 >= $opts{'scfS'} or next; 
 	defined $opts{'scfE'} and $pos3 > $opts{'scfE'} and next; 
-	push(@pair_se, [$pos1, $pos3]); 
+	push(@pair_se, [$pos1, $pos3, $xt_u]); 
 }
 close F; 
 @pair_se = sort { $a->[0] <=> $b->[0] || $a->[1] <=> $b->[1] } @pair_se; 
@@ -154,6 +158,18 @@ $grps{'add_blks'} = $svg->group(
 	'font-size'         => '10', 
 	'font-family'       => 'ArialNarrow'
 ); # This is used to draw add_blocks of scaffold. 
+$grps{'readpair_repeat'} = $svg->group(
+	'id'                => "read_pairs_repeat", 
+	'stroke-width'      => 0.5, 
+	'stroke'            => 'lightgreen', 
+	'opacity'           => 0.6, 
+	'fill'              => 'transparent', 
+	'text-anchor'       => 'middle', 
+	'font-weight'       => 'normal', 
+	'font-size'         => '10', 
+	'font-family'       => 'ArialNarrow'
+); # Draw read pairs aligned as 'XT:A:R/M'
+
 $grps{'readpair'} = $svg->group(
 	'id'                => "read_pairs", 
 	'stroke-width'      => 0.5, 
@@ -275,8 +291,49 @@ for my $tr (@add_blks) {
 
 
 # Draw read pairs. 
+#   Draw XT:A:M/R
 for my $tr (@pair_se) {
-	my ($s, $e) = @$tr; 
+	my ($s, $e, $xt_u) = @$tr; 
+	$xt_u == 0 or next; 
+	my @si_s = @{
+	 $ms->map_windows(
+	   'position'  => $s, 
+	   'wind_hash' => \%bp_line_wind, 
+	 )
+	}; 
+	my @si_e = @{
+	 $ms->map_windows(
+	   'position'  => $e, 
+	   'wind_hash' => \%bp_line_wind, 
+	 )
+	}; 
+	for my $tsi_s (@si_s) {
+		my $idx_dep = $si_to_idx{$tsi_s}; 
+		my $cur_s = $s-$bp_line_wind{'loci'}{$tsi_s}[0]+1; 
+		my $cur_x_s  = $base_x + $cur_s/$opts{'bp_per_point'}; 
+		for my $tsi_e (@si_e) {
+			$tsi_s == $tsi_e or next; 
+			my $cur_e = $e-$bp_line_wind{'loci'}{$tsi_e}[0]+1; 
+			my $cur_x_e  = $base_x + $cur_e/$opts{'bp_per_point'}; 
+			my $cur_y_se = $base_y+$idx_dep*$step_y; 
+			my @xx = ( $cur_x_s,  ($cur_x_s+$cur_x_e)/2, $cur_x_e ); 
+			my @yy = ( $cur_y_se-10, $cur_y_se-$rdHeight_y, $cur_y_se-10 ); 
+			my $points = $grps{'readpair_repeat'}->get_path(
+				'x'   => \@xx, 
+				'y'   => \@yy, 
+				-relative=>1, 
+				-type=>'polyline',
+				-closed=>0
+			); 
+			$grps{'readpair_repeat'}->polyline(%$points); 
+		}
+	}
+}
+
+#   Draw XT:A:U and rest 
+for my $tr (@pair_se) {
+	my ($s, $e, $xt_u) = @$tr; 
+	$xt_u == 1 or next; 
 	my @si_s = @{
 	 $ms->map_windows(
 	   'position'  => $s, 
