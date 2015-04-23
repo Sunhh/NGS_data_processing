@@ -37,6 +37,7 @@ GetOptions(\%opts,
 	   "f_fprint:s", 
 	   "f_superFT:s", 
 	   "f_coil:s", 
+	   "f_hamap:s", 
 	  "splitXmlByID:s", # Used to prepare input of blast2go pipeline. 
 	   "fitB2G!", 
 	  "showV4convert!", 
@@ -90,6 +91,7 @@ sub usage {
 #               -f_fprint    : [\$dirV5/data/prints/42.0/FingerPRINTShierarchy.db]
 #               -f_superFT   : [\$dirV5/data/superfamily/1.75/model.tab]
 #               -f_coil      : [\$dirV5/data/coils/2.2/new_coil.mat]
+#               -f_hamap     : [\$dirV5/data/hamap/latest/hamap.prf]
 #
 #              -splitXmlByID : [OutDir] Split ips_result.xml into small peices, in the way one ID.xml with one ID protein. 
 #                               OutDir must not exist. 
