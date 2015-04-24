@@ -40,8 +40,6 @@ GetOptions(\%opts,
 	   "f_coil:s", 
 	   "f_hamap:s", 
 	   "f_pirsf:s", 
-	   "f_prosite:s", 
-	   "f_evaluator:s", 
 	  "splitXmlByID:s", # Used to prepare input of blast2go pipeline. 
 	   "fitB2G!", 
 	  "showV4convert!", 
@@ -98,8 +96,6 @@ sub usage {
 #               -f_coil      : [\$dirV5/data/coils/2.2/new_coil.mat]
 #               -f_hamap     : [\$dirV5/data/hamap/latest/hamap.prf]
 #               -f_pirsf     : [\$dirV5/data/pirsf/3.01/pirsf.dat]
-#               -f_prosite   : [\$dirV5/data/prosite/20.105/prosite.dat]
-#               -f_evalue    : [\$dirV5/data/prosite/20.105/evaluator.dat]
 #
 #              -splitXmlByID : [OutDir] Split ips_result.xml into small peices, in the way one ID.xml with one ID protein. 
 #                               OutDir must not exist. 
@@ -273,8 +269,6 @@ sub dbV5_to_dbV4 {
 	$opts{'f_coil'}    //= $opts{'dirV5'} . '/data/coils/2.2/new_coil.mat'; 
 	$opts{'f_hamap'}   //= $opts{'dirV5'} . '/data/hamap/latest/hamap.prf'; 
 	$opts{'f_pirsf'}   //= $opts{'dirV5'} . 'data/pirsf/3.01/pirsf.dat'; 
-	$opts{'f_prosite'} //= $opts{'f_prosite'} . '/data/prosite/20.105/prosite.dat'; 
-	$opts{'f_evaluator'} //= $opts{'f_evaluator'} . '/data/prosite/20.105/evaluator.dat'; 
 
 	# Construct dirV4new . 
 	mkdir("$opts{'dirV4new'}/data/", 0755); 
