@@ -282,6 +282,14 @@ sub SingleChar {
 	return 1; 
 }# sub SingleChar () 
 
+=head2 SingleCharData( 'onlyATGC'=>0, 'maxAlleleN'=>0 )
+
+Required : Need 'data_arr' available in current object. 
+Function : Change genotypes in 'data_arr' to single character.
+ 'onlyATGC'    : If == 1, only accept 'A|T|G|C' characters in raw input genotypes. 
+ 'maxAlleleN'  : If > 0, any genotypes with more than 'maxAlleleN' 'A|T|G|C' probable bases will be changed to 'N'
+Return   : None. $this_object->{'data_arr'} has been changed. 
+=cut
 sub SingleCharData {
 	my $self = shift; 
 	for my $tk (qw/is_single/) {
