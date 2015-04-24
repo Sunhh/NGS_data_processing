@@ -30,6 +30,7 @@ GetOptions(\%opts,
 	"ovlapLongest!", "ovlapLength:i", "ovlapRatio:f", "ovlapStrand:s", "ovlapFeatType:s", # Finished. 
 	"islandGene:i", "islandFeatType:s", "islandStrand:s", # Finished. 
 	"gffret:s", "idType:s", # FInished. 
+	"gffInRegion:s", "bothStr!", "onlyFull!", # 
 	"listTopID!", # Finished. 
 	"getLoc:s", "joinLoc!", # Doing. Could be mRNA/CDS/gene/intron, others may work but not guaranteed. 
 	
@@ -72,6 +73,12 @@ sub usage {
 #----------------------------------------------------------------------------------------------------
 # -gffret           [input_ID_list] I use the first column. 
 #   -idType         [mRNA] Could be 'gene/exon/CDS/match/match_part'
+#----------------------------------------------------------------------------------------------------
+# -gffInRegion      [input_Region_list] Format: SeqID \\t Start \\t End [\\t Strand(+/-/.)]
+#                     If defined Strand column, only genes overlapping in the same strand will be extracted. 
+#   -idType         ['mRNA'] Decide the feature type which is checked for overlapping. 
+#   -bothStr        [Boolean] Ignore strand information if given. 
+#   -onlyFull       [Boolean] Only fully included genes will be extracted. 
 #----------------------------------------------------------------------------------------------------
 # -listTopID        [Boolean] 
 #   -idType         [Same to -gff_top_hier if not given]. 
@@ -156,7 +163,7 @@ if (defined $opts{'gff_top_hier'}) {
 } else {
 	$opts{'gff_top_hier'} = undef(); 
 }
-if ( defined $opts{'gffret'} ) {
+if ( defined $opts{'gffret'} or defined $opts{'gffInRegion'} ) {
 	$opts{'idType'} //= 'mRNA'; 
 }
 if ( defined $opts{'idType'} ) { 
@@ -214,6 +221,49 @@ if ( $opts{'addFaToGff'} ) {
 	} else {
 		&stopErr("[Err] Nothing to do with -compare2gffC\n"); 
 	}
+} elsif ( $opts{'gffInRegion'} ) { 
+	# $opts{'idType'} //= 'mRNA'; 
+	my $tmp_idType = (split(/,/, $opts{'idType'}))[0]; 
+	my $regionFh = &openFH($opts{'gffInRegion'}, '<'); 
+	my $tmpGff = &fileSunhh::new_tmp_file(); 
+	my $tmpGfh = &openFH( $tmpGff, '>' ); 
+	while (<$regionFh>) {
+		chomp; 
+		m!^\s*(#|$)! and next; 
+		my @ta = split(/\t/, $_); 
+		$ta[1] =~ m!^[+-]?[\d\.]+$! or do { &tsmsg("[Wrn] Skip line: $_\n"); next; }; 
+		$ta[2] =~ m!^[+-]?[\d\.]+$! or do { &tsmsg("[Wrn] Skip line: $_\n"); next; }; 
+		$ta[1] > $ta[2] and @ta[1,2] = @ta[2,1]; 
+		my $str = $ta[3] // '.'; 
+		$opts{'bothStr'} and $str = '.'; 
+		# seqid / source / type / start / end / score / strand / phase / attributes(ID=???)
+		if ( $str eq '.' ) {
+			print {$tmpGfh} join("\t", $ta[0], 'list', $tmp_idType, $ta[1], $ta[2], '.', '+', '.', "ID=$.p")."\n"; 
+			print {$tmpGfh} join("\t", $ta[0], 'list', $tmp_idType, $ta[1], $ta[2], '.', '-', '.', "ID=$.m")."\n"; 
+			
+		} elsif ( $str eq '+' or $str eq '-' ) {
+			print {$tmpGfh} join("\t", $ta[0], 'list', $tmp_idType, $ta[1], $ta[2], '.', $str, '.', "ID=$.")."\n"; 
+		} else {
+			&tsmsg("[Err] Bad strand information ($str), set as both.\n"); 
+			print {$tmpGfh} join("\t", $ta[0], 'list', $tmp_idType, $ta[1], $ta[2], '.', '+', '.', "ID=$.p")."\n"; 
+			print {$tmpGfh} join("\t", $ta[0], 'list', $tmp_idType, $ta[1], $ta[2], '.', '-', '.', "ID=$.m")."\n"; 
+		}
+	}
+	close($tmpGfh); 
+	close ($regionFh); 
+	my ( $co_gff_href ) = $gff_obj->read_gff3File('gffFile'=>$tmpGff, 'top_hier'=>$opts{'gff_top_hier'}); 
+	my $rmOvlapRatio1 = -1; $opts{'onlyFull'} and $rmOvlapRatio1 = 1; 
+	my $rmOvlapStrand = 'Single' ; 
+	my ($kept_topIDs_aref) = &getID_rmOvlap_gff(
+	 \%in_gff, $co_gff_href, 
+	 'rmOvlapRatio1' => $rmOvlapRatio1, 
+	 'rmOvlapType'   => $opts{'idType'}, 
+	 'rmOvlapStrand' => $rmOvlapStrand, 
+	 'getOvlap'      => 1 
+	); 
+	$gff_obj->write_gff3File( 'outFH'=>$oFh, 'gff3_href'=>\%in_gff, 'topIDs_aref'=>$kept_topIDs_aref, 'sort_by'=>$opts{'sortGffBy'} ); 
+	
+	unlink($tmpGff); 
 } elsif ( $opts{'ovlapLongest'} ) {
 	$opts{'ovlapRatio'} //= -1; 
 	$opts{'ovlapLength'} //= ( ( $opts{'ovlapRatio'} == -1 ) ? 1 : -1 ); 
@@ -577,7 +627,7 @@ sub _rmOvlap_blk {
 }# _rmOvlap_blk
 
 
-# Input : (\%in_gff_1, \%in_gff_2_Compare, 'rmOvlapLen'=>-1, 'rmOvlapRatio1'=>-1, 'rmOvlapRatio2'=>-1, 'rmOvlapType'=>'exon,CDS,match_part', 'rmOvlapStrand'=>'Both')
+# Input : (\%in_gff_1, \%in_gff_2_Compare, 'rmOvlapLen'=>-1, 'rmOvlapRatio1'=>-1, 'rmOvlapRatio2'=>-1, 'rmOvlapType'=>'exon,CDS,match_part', 'rmOvlapStrand'=>'Both', 'getOvlap'=>0)
 # Output: (\@back_topIDs); 
 sub getID_rmOvlap_gff {
 	my $g1 = shift; 
@@ -601,6 +651,7 @@ sub getID_rmOvlap_gff {
 	$parm{'rmOvlapType'} //= 'exon,CDS,match_part'; 
 	$parm{'rmOvlapStrand'} //= 'Both'; 
 	$parm{'rmOvlapStrand'} =~ m/^(Both|Single)$/i or &stopErr("[Err][getID_rmOvlap_gff] -rmOvlapStrand should be Both/Single.\n"); 
+	$parm{'getOvlap'} //= 0; 
 	
 	my @back_topIDs; 
 	my @chkTypes = split(/,/, $parm{'rmOvlapType'}); 
@@ -710,6 +761,11 @@ sub getID_rmOvlap_gff {
 		&stopErr("[Err][getID_rmOvlap_gff] Unknown -rmOvlapStrand [$parm{'rmOvlapStrand'}]\n"); 
 	}
 	
+	if ( $parm{'getOvlap'} ) {
+		my %rmID = map { $_ => 1 } @back_topIDs; 
+		my @useIDs = grep { !(defined $rmID{$_}) } @topIDs_1; 
+		@back_topIDs = @useIDs; 
+	}
 	return (\@back_topIDs); 
 }# sub getID_rmOvlap_gff() 
 
