@@ -43,6 +43,10 @@ GetOptions(\%opts,
 	  "splitXmlByID:s", # Used to prepare input of blast2go pipeline. 
 	   "fitB2G!", 
 	  "showV4convert!", 
+	# task="go"
+	  "go_obo:s", # gene_ontology_edit_20150309.obo
+	   "goIDColN:i", 
+	   "addInfor:s", 
 	"out:s", 
 ); 
 
@@ -101,6 +105,10 @@ sub usage {
 #                               OutDir must not exist. 
 #               -fitB2G      : [Boolean] Use this if you are splitting xml files for B2G. 
 #                               This will add another node name 'EBIInterProScanResults'. 
+#              go : 
+#               -go_obo      : [gene_ontology_edit_20150309.obo] The GO .obo file being used. 
+#               -addInfor    : ['name'] Feature names being attached in lines. 
+#               -goIDColN    : [0] The column number of GO ID. 
 # -out        [out_file_name] 
 ################################################################################
 HH
@@ -119,6 +127,32 @@ if ( !@ARGV ) {
 
 my $outFh = \*STDOUT; 
 defined $opts{'out'} and $outFh = &openFH($opts{'out'}, '>'); 
+
+my (%go_obo); 
+if ( defined $opts{'go_obo'} ) {
+	my $tmpFh = &openFH($opts{'go_obo'}, '<'); 
+	my $tmp_class = 'Basic'; 
+	my $tmp_ID = 'Basic'; 
+	while (<$tmpFh>) {
+		chomp; m/^\s*(#|$)/ and next; 
+		if (m/^\[(\S+)\]$/) {
+			$tmp_class = $1; 
+			next; 
+		}
+		m/^([^\s:]+):\s+(\S.*)$/ or &stopErr("[Err] Bad GO.obo format : $_\n"); 
+		my ($tag, $value)  = ($1, $2); 
+		if ($tag =~ m/^id$/i) {
+			$tmp_ID = $value; 
+		}
+		if ( $tag =~ m/^alt_id$/i ) {
+			push(@{ $go_obo{'alt_id'}{$value} }, $tmp_ID); 
+		}
+		push(@{$go_obo{$tmp_class}{$tmp_ID}{$tag}}, $value); 
+	}
+	close ($tmpFh); 
+	$opts{'goIDColN'} //= 0; 
+}
+
 
 $opts{'task'} //= ''; 
 
@@ -157,8 +191,43 @@ $goType{'CELLULAR_COMPONENT'} = 'Cellular Component';
 &dbV5_to_dbV4() if ( $opts{'task'} eq 'convert' and $opts{'dbV5_to_dbV4'} ); 
 &splitXmlByID() if ( $opts{'task'} eq 'convert' and defined $opts{'splitXmlByID'} ); 
 &showV4convert() if ( $opts{'task'} eq 'convert' and $opts{'showV4convert'} ); 
+&addInfor() if ( defined $opts{'addInfor'} ); 
 
 # Sub-functions
+sub addInfor {
+	my @need_id = map { s!\s!!g; $_; } split(/,/, $opts{'addInfor'}); 
+	for my $fh (@InFp) {
+		while (<$fh>) {
+			chomp; 
+			my @ta = split(/\t/, $_); 
+			my @added_cols; 
+			my $go_id = $ta[ $opts{'goIDColN'} ]; 
+			if ( $. == 1 and $go_id =~ m/^go(id)?$/i ) {
+				print {$outFh} join("\t", $_, @need_id)."\n"; 
+				next; 
+			}
+			defined $go_obo{'alt_id'}{$go_id} and $go_id = $go_obo{'alt_id'}{$go_id}[0]; 
+			if ( defined $go_obo{'Term'}{$go_id} ) {
+				for my $tid (@need_id) {
+					if ( defined $go_obo{'Term'}{$go_id}{$tid} ) {
+						push(@added_cols, $go_obo{'Term'}{$go_id}{$tid}); 
+					} else {
+						push(@added_cols, ['']); 
+					}
+				}
+			} else {
+				for my $tid (@need_id) {
+					push(@added_cols, ['']); 
+				}
+			}
+			print {$outFh} "$_"; 
+			for my $tr (@added_cols) {
+				print {$outFh} "\t" . join(";; ", @$tr); 
+			}
+			print {$outFh} "\n"; 
+		}
+	}
+}#sub addInfor () 
 sub showV4convert {
 	$opts{'dirV4new'} //= '/home/Sunhh/iprscan/iprscanV4_wiV5/'; 
 	-d $opts{'dirV4new'} or &stopErr("[Err] Not valid interproscan V4.8 directory with -dirV4new\n"); 
