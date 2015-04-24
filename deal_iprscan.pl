@@ -36,8 +36,12 @@ GetOptions(\%opts,
 	   "f_prosite:s", 
 	   "f_fprint:s", 
 	   "f_superFT:s", 
+	   "f_superFA:s", 
 	   "f_coil:s", 
 	   "f_hamap:s", 
+	   "f_pirsf:s", 
+	   "f_prosite:s", 
+	   "f_evaluator:s", 
 	  "splitXmlByID:s", # Used to prepare input of blast2go pipeline. 
 	   "fitB2G!", 
 	  "showV4convert!", 
@@ -56,7 +60,7 @@ sub usage {
 #              -dbXml2GOlist : [Boolean] Convert interpro.xml to GO list 'GO:ID\\tCategory\\tDescription'
 #               -xpath2go    : [/interprodb/interpro/class_list/classification] Normally no need to change. 
 #
-#              -xml5_to_raw4 : [Boolean] Convert interproV5.xml file to interproV4.raw file. [toDo]
+#              -xml5_to_raw4 : [Boolean] Convert interproV5.xml file to interproV4.raw file. 
 #
 #              -showV4convert: [Boolean] Show the command to convert ipsV4_result from .raw to others. 
 #               -dirV4new    : [/home/Sunhh/iprscan/iprscanV4_wiV5/] This is the new dir of iprV4 for converting files. 
@@ -90,8 +94,12 @@ sub usage {
 #               -f_prosite   : [\$dirV5/data/prosite/20.105/prosite.dat]
 #               -f_fprint    : [\$dirV5/data/prints/42.0/FingerPRINTShierarchy.db]
 #               -f_superFT   : [\$dirV5/data/superfamily/1.75/model.tab]
+#               -f_superFA   : [\$dirV5/data/superfamily/1.75/model.tab]
 #               -f_coil      : [\$dirV5/data/coils/2.2/new_coil.mat]
 #               -f_hamap     : [\$dirV5/data/hamap/latest/hamap.prf]
+#               -f_pirsf     : [\$dirV5/data/pirsf/3.01/pirsf.dat]
+#               -f_prosite   : [\$dirV5/data/prosite/20.105/prosite.dat]
+#               -f_evalue    : [\$dirV5/data/prosite/20.105/evaluator.dat]
 #
 #              -splitXmlByID : [OutDir] Split ips_result.xml into small peices, in the way one ID.xml with one ID protein. 
 #                               OutDir must not exist. 
@@ -261,7 +269,12 @@ sub dbV5_to_dbV4 {
 	$opts{'f_prosite'} //= $opts{'dirV5'} . '/data/prosite/20.105/prosite.dat'; 
 	$opts{'f_fprint'}  //= $opts{'dirV5'} . '/data/prints/42.0/FingerPRINTShierarchy.db'; 
 	$opts{'f_superFT'} //= $opts{'dirV5'} . '/data/superfamily/1.75/model.tab'; 
+	$opts{'f_superFA'} //= $opts{'dirV5'} . '/data/superfamily/1.75/model.tab'; 
 	$opts{'f_coil'}    //= $opts{'dirV5'} . '/data/coils/2.2/new_coil.mat'; 
+	$opts{'f_hamap'}   //= $opts{'dirV5'} . '/data/hamap/latest/hamap.prf'; 
+	$opts{'f_pirsf'}   //= $opts{'dirV5'} . 'data/pirsf/3.01/pirsf.dat'; 
+	$opts{'f_prosite'} //= $opts{'f_prosite'} . '/data/prosite/20.105/prosite.dat'; 
+	$opts{'f_evaluator'} //= $opts{'f_evaluator'} . '/data/prosite/20.105/evaluator.dat'; 
 
 	# Construct dirV4new . 
 	mkdir("$opts{'dirV4new'}/data/", 0755); 
@@ -328,7 +341,10 @@ sub dbV5_to_dbV4 {
 	$out{'f_prosite'} //= 'prosite.dat';
 	$out{'f_fprint'}  //= 'FingerPRINTShierarchy.db';
 	$out{'f_superFT'} //= 'superfamily.tab';
+	$out{'f_superFA'} //= 'superfamily.acc';
 	$out{'f_coil'}    //= 'new_coil.mat';
+	$out{'f_hamap'}   //= 'hamap.prf'; 
+	$out{'f_pirsf'}   //= 'pirsf.dat'; 
 	$out{$_} = "$opts{'dirV4new'}/data/$out{$_}" foreach ( keys %out ); 
 	# Still we have following files not found: sf.seq sf.tb sf_hmm_sub model2sf_map.csv superfamily.acc
 	# While superfamily.acc is the 1st column of superfamily.tab, and the other files should have no changes. 
@@ -341,7 +357,7 @@ sub dbV5_to_dbV4 {
 		defined $opts{$fnk} or &stopErr("[Err] No $fnk ($out{$fnk}) source defined.\n"); 
 		my ( $fn, $path_aref ) = &fileSunhh::_chkExist($opts{$fnk}); 
 		( defined $fn and $fn ne '' ) or do { &tsmsg("[Err] No source file: $opts{$fnk}\n"); next; }; 
-		if ( $fnk eq 'f_superFT' ) {
+		if ( $fnk eq 'f_superFA' ) {
 			&exeCmd_1cmd("cut -f 1 $opts{$fnk} > $out{$fnk}"); 
 			next; 
 		} elsif ( $fnk =~ m!^(f_matXML|f_matDTD|f_iprXML|f_iprDTD)$! ) {
