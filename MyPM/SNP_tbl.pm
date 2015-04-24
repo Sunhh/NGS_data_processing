@@ -83,6 +83,22 @@ my %allele2num = qw(
 #########  Methods. 
 ##########################################################
 
+=head1 new()
+
+Function     : Create an SNP_tbl object. 
+Input        : 
+ 'filename'  : input_SNP.tbl filename 
+ 'FH'        : File handle of filename
+ 'skip'      : [0] Number of head lines to skip (ignore) when reading in filename
+ 'header'    : [1] Tell if the input table has header line. 
+ 'chrColN'   : [0] Column No. of chromosome ID. 
+ 'posColN'   : [1] Column No. of position . 
+ 'refColN'   : [2] Column No. of reference base informaton. This is not used yet. 
+ 'chrColID'  : ['chrCol'] The title of column for chromosome ID. 
+ 'posColID'  : ['posCol'] The title of column for position information. 
+ 'skipColN'  : [] Columns that are not genotypes and will not exist in 'data_arr' array. 
+                The 'chrCol' and 'posCol' will be skipped automatically. 
+=cut
 sub new {
 	my $class = shift;     # Get the request class name. Use "class->new()" to call this function! 
 	
@@ -113,6 +129,15 @@ sub _initialize {
 	}
 }#End sub _initialize() 
 
+=head2 newSubObj( 'RowN'=>[-1], 'ColN'=>[-1] )
+
+Function     : Creat a new object which is a subset of old_current object, according to 'RowN' and 'ColN' information. 
+ 'RowN'   : [-1], should be a \@arr_indice of row numbers. 0-based. 
+ 'ColN'   : [-1], should be a \@arr_indice of column numbers. 0-based. 
+Return       : A new object with 'data_arr' is a subset of old object. 
+
+#  3. newSubObj()   : Use 'RowN' and 'ColN' to get a new subset of an old object. 
+=cut
 sub newSubObj {
 	my $self = shift; 
 	my %parm = @_; 
@@ -632,11 +657,25 @@ sub cnt_maf {
 	return 0; 
 }# sub cnt_maf ()
 
+=head2 cnt_genotype()
+
+Required     : object->{'data_arr'} filled. 
+Function     : Count genotype information for each site (line). 
+Return       : obj->{'tag'}, most of which are for related sites, when tag == 
+ {'cnt_alleleCnt'}      : [\%cnt], {[ATGC]=>base_count}
+ {'cnt_alleleSum'}      : [$sum], Sum of allele numbers (AA gives 2 count)
+ {'cnt_alleleTypeN'}    : [scalar(keys %cnt)] , Number of allele types in this site. 
+ {'cnt_alleleTypeBase'} : [ sorted keys %cnt ], Allele bases sorted by count number large to small 
+ {'cnt_lmiss'}          : [$lmiss], Number of individuals missing ("N") genotype in the current site. This value doesn't include number of Indels! 
+ {'cnt_imiss'}          : \@imiss, Number of sites missing with in individual. 
+ {'cnt_hete'}           : [$hete_indv_number] Only genotypes with 2 alleles ('A|T|G|C') counted. 
+ {'cnt_homo'}           : [$homo_indv_number] Only genotypes with 'A|T|G|C' counted. 
+=cut
 # Only count genotypes in homo/biHete SNP. 
 sub cnt_genotype {
 	my $self = shift; 
 	defined $self->{'data_arr'} or return 0; 
-	for my $tkey (qw/cnt_alleleCnt cnt_alleleSum cnt_alleleTypeN cnt_alleleTypeBase cnt_lmiss cnt_imiss/) {
+	for my $tkey (qw/cnt_alleleCnt cnt_alleleSum cnt_alleleTypeN cnt_alleleTypeBase cnt_lmiss cnt_imiss cnt_hete cnt_homo/) {
 		undef $self->{$tkey}; 
 	}
 	my @imiss; # Same to definition in vcftools. the missingness on a per-individual basis
@@ -645,6 +684,8 @@ sub cnt_genotype {
 		my $sum = 0; 
 		my $lmiss = 0; 
 		my $i_idx = -1; 
+		my $cnt_hete = 0; 
+		my $cnt_homo = 0; 
 		for my $tb (@$tp) {
 			$i_idx ++; 
 			$tb = uc($tb); 
@@ -656,10 +697,12 @@ sub cnt_genotype {
 			if ( scalar(@tc) == 1 ) {
 				$cnt{$tc[0]} += 2; 
 				$sum += 2; 
+				$cnt_homo ++; 
 			} elsif ( scalar(@tc) == 2 ) {
 				$cnt{$tc[0]} ++; 
 				$cnt{$tc[1]} ++; 
 				$sum += 2; 
+				$cnt_hete ++; 
 			} else {
 				$lmiss++; $imiss[$i_idx]++; next; 
 			}
@@ -669,6 +712,8 @@ sub cnt_genotype {
 		push(@{$self->{'cnt_alleleTypeN'}}, scalar(keys %cnt)); # Number of allele types in this site. 
 		push(@{$self->{'cnt_alleleTypeBase'}}, [sort { $cnt{$b} <=> $cnt{$a} || $a cmp $b } keys %cnt]); # Allele bases sorted by count number. 
 #		push(@{$self->{'cnt_alleleTypeBase'}}, [sort { $cnt{$b} <=> $cnt{$a} } keys %cnt]); # Allele bases sorted by count number. 
+		push(@{$self->{'cnt_hete'}}, $cnt_hete); 
+		push(@{$self->{'cnt_homo'}}, $cnt_homo); 
 		push(@{$self->{'cnt_lmiss'}}, $lmiss); # Number of individuals missing ("N") genotype in the current site. This value doesn't include number of Indels. 
 	}
 	$self->{'cnt_imiss'} = \@imiss; 
