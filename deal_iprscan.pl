@@ -47,6 +47,7 @@ GetOptions(\%opts,
 	  "go_obo:s", # gene_ontology_edit_20150309.obo
 	   "goIDColN:i", 
 	   "addInfor:s", 
+	   "go2ahrd:s", 
 	"out:s", 
 ); 
 
@@ -107,8 +108,10 @@ sub usage {
 #                               This will add another node name 'EBIInterProScanResults'. 
 #              go : 
 #               -go_obo      : [gene_ontology_edit_20150309.obo] The GO .obo file being used. 
-#               -addInfor    : ['name'] Feature names being attached in lines. 
 #               -goIDColN    : [0] The column number of GO ID. 
+#               -addInfor    : ['name'] Feature names being attached in lines. 
+#               -go2ahrd     : [out_ahrd_pref] Create out_ahrd_pref.GOname and out_ahrd_pref.annot files for AHRD Terms: 
+#                                                gene_ontology_result and blast2go 
 # -out        [out_file_name] 
 ################################################################################
 HH
@@ -192,8 +195,35 @@ $goType{'CELLULAR_COMPONENT'} = 'Cellular Component';
 &splitXmlByID() if ( $opts{'task'} eq 'convert' and defined $opts{'splitXmlByID'} ); 
 &showV4convert() if ( $opts{'task'} eq 'convert' and $opts{'showV4convert'} ); 
 &addInfor() if ( defined $opts{'addInfor'} ); 
+&go2ahrd() if ( defined $opts{'go2ahrd'} ); 
 
 # Sub-functions
+sub go2ahrd {
+	my $oname_Fh = &openFH("$opts{'go2ahrd'}.GOname", '>'); 
+	my $oanno_Fh = &openFH("$opts{'go2ahrd'}.annot", '>'); 
+	my %annotGO; 
+	for my $fh ( @InFp ) {
+		while (<$fh>) {
+			chomp; m/^\s*(#|$)/ and next; 
+			my @ta = split(/\t/, $_); 
+			$ta[1] =~ m/^GO:/ or next; 
+			if ( defined $ta[2] ) {
+				if ( defined $annotGO{$ta[1]} ) {
+					&tsmsg("[Wrn] Skip repeated annotation description of [$ta[1]]\n"); 
+				} else {
+					print {$oanno_Fh} join("\t", @ta[0,1,2])."\n"; 
+				}
+			}
+			my $tr1 = &infor_by_goID($ta[1], \%go_obo); 
+			if ( defined $tr1 ) {
+				print {$oname_Fh} join("\t", $ta[0], 0.5, $ta[1], join(";; ", @{ $tr1->{'name'} }) )."\n"; 
+			} else {
+				print {$oname_Fh} join("\t", $ta[0], 0.5, $ta[1], 'NA')."\n"; 
+			}
+		}
+		close($fh); 
+	}
+}# sub go2ahrd () 
 sub addInfor {
 	my @need_id = map { s!\s!!g; $_; } split(/,/, $opts{'addInfor'}); 
 	for my $fh (@InFp) {
@@ -206,11 +236,11 @@ sub addInfor {
 				print {$outFh} join("\t", $_, @need_id)."\n"; 
 				next; 
 			}
-			defined $go_obo{'alt_id'}{$go_id} and $go_id = $go_obo{'alt_id'}{$go_id}[0]; 
-			if ( defined $go_obo{'Term'}{$go_id} ) {
+			my $tr1 = &infor_by_goID($go_id, \%go_obo); 
+			if ( defined $tr1 ) {
 				for my $tid (@need_id) {
-					if ( defined $go_obo{'Term'}{$go_id}{$tid} ) {
-						push(@added_cols, $go_obo{'Term'}{$go_id}{$tid}); 
+					if ( defined $tr1->{$tid} ) {
+						push(@added_cols, $tr1->{$tid}); 
 					} else {
 						push(@added_cols, ['']); 
 					}
@@ -778,3 +808,17 @@ sub joinHash {
 	return (\%back); 
 }# joinHash() 
 
+=head1 infor_by_goID($go_ID, \%go_obo)
+
+Return        : $go_obo{'Term'}{$go_ID} / undef() 
+=cut
+sub infor_by_goID {
+	my ($goID, $go_obo_href) = @_; 
+	$go_obo_href //= \%go_obo; 
+	my $back_href = undef(); 
+	$goID = $go_obo_href->{'alt_id'}{$goID}[0] // $goID; 
+	if ( defined $go_obo_href->{'Term'}{$goID} ) {
+		$back_href = $go_obo_href->{'Term'}{$goID}; 
+	}
+	return $back_href; 
+}# sub infor_by_goID() 
