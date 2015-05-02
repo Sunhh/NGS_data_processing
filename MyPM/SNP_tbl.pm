@@ -203,7 +203,16 @@ sub rm_noVar {
 	return $new_obj; 
 }# sub rm_noVar () 
 
-# Extract 'tv' sites. 
+=head2 get_tv( 'type'=>'tv|ts|un' ) 
+
+Required      : None. 
+ 'type' => 'tv' -- retrieve tranversion mutation. 
+           'ts' -- retrieve transition mutation. 
+           'un' -- retrieve non-tv and non-ts sites, which means more than two alleles in this site
+Function      : Return a new object with sites in required type. 
+                This function will use is_tstv() method to determine the type of each site. 
+Return        : SNP_tbl object. 
+=cut
 sub get_tv {
 	my $self = shift; 
 	$self->is_tstv(); 
