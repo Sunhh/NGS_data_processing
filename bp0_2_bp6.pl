@@ -13,13 +13,14 @@ use strict;
 
 use Getopt::Long;
 my %opts; 
-GetOptions(\%opts,"help!","in:s","out:s","snp!","bn6:s"); 
+GetOptions(\%opts,"help!","in:s","out:s","snp!","bn6:s", "geno!"); 
 sub usage {
 	print STDOUT <<HELP; 
 *************************** Instruction ***************************
 Usage: perl $0 -in *.bn0 
 -out    file name for bn6 output. 
 -snp    calculate SNP positions if given. incompatible with -out. 
+-geno   Similar to -snp but also output sites without variations. 
 -bn6    bn6 file to restrict SNP finding. incompatible with -out. 
 *************************** Instruction ***************************
 HELP
@@ -40,6 +41,8 @@ $opts{help} and &usage();
 my $region = 'head'; # qw/query sbjct head alignment/
 my (%info, @ta, %snpaln); 
 my $obn6fh = \*STDOUT; 
+
+defined $opts{'geno'} and $opts{'snp'} = 1; 
 
 if ($opts{snp}) {
 	open BN6, '<', "$opts{bn6}" or do { print "failed to open file(-bn6) $opts{bn6}. $!\n"; &usage(); }; 
@@ -74,7 +77,7 @@ while (<BN0>) {
 					for my $snpl (@{$snpaln{$info{qid}}}) {
 						index($oline, $snpl) == -1 and next; 
 						# $oline =~ /^$snpl/ or next; 
-						&listSNP(\%info); 
+						&listSNP(\%info, $opts{'geno'}); 
 					}
 				}
 				$info{send} = undef(); 
@@ -95,7 +98,7 @@ while (<BN0>) {
 					for my $snpl (@{$snpaln{$info{qid}}}) {
 						index($oline, $snpl) == -1 and next; 
 						# $oline =~ /^$snpl/ or next; 
-						&listSNP(\%info); 
+						&listSNP(\%info, $opts{'geno'}); 
 					}
 				}# if ($opts{snp})
 				$info{send} = undef(); 
@@ -124,7 +127,7 @@ while (<BN0>) {
 					for my $snpl (@{$snpaln{$info{qid}}}) {
 						index($oline, $snpl) == -1 and next; 
 						# $oline =~ /^$snpl/ or next; 
-						&listSNP(\%info); 
+						&listSNP(\%info, $opts{'geno'}); 
 					}
 				}
 				$info{send} = undef(); 
@@ -201,7 +204,7 @@ while (<BN0>) {
 					for my $snpl (@{$snpaln{$info{qid}}}) {
 						index($oline, $snpl) == -1 and next; 
 						# $oline =~ /^$snpl/ or next; 
-						&listSNP(\%info); 
+						&listSNP(\%info, $opts{'geno'}); 
 					}
 				}
 				$info{send} = undef(); 
@@ -220,7 +223,7 @@ while (<BN0>) {
 					for my $snpl (@{$snpaln{$info{qid}}}) {
 						index($oline, $snpl) == -1 and next; 
 						# $oline =~ /^$snpl/ or next; 
-						&listSNP(\%info); 
+						&listSNP(\%info, $opts{'geno'}); 
 					}
 				}
 				$info{send} = undef(); 
@@ -239,7 +242,7 @@ while (<BN0>) {
 					for my $snpl (@{$snpaln{$info{qid}}}) {
 						index($oline, $snpl) == -1 and next; 
 						# $oline =~ m/^$snpl/ or next; 
-						&listSNP(\%info); 
+						&listSNP(\%info, $opts{'geno'}); 
 					}
 				}
 				$info{send} = undef(); 
@@ -271,7 +274,7 @@ while (<BN0>) {
 					for my $snpl (@{$snpaln{$info{qid}}}) {
 						index($oline, $snpl) == -1 and next; 
 						# $oline =~ /^$snpl/ or next; 
-						&listSNP(\%info); 
+						&listSNP(\%info, $opts{'geno'}); 
 					}
 				}
 				%info = (); 
@@ -291,6 +294,7 @@ sub outline {
 # list all SNPs in the records; 
 sub listSNP {
 	my $rr = shift; 
+	my $out_all = shift; $out_all //= 0; 
 	defined $rr->{qseq} or die "Wrong!\n$rr->{sid} have no qseq.\n"; 
 	my @qs = split(//, $rr->{qseq}); 
 	my @ss = split(//, $rr->{sseq}); 
@@ -299,7 +303,7 @@ sub listSNP {
 		defined $ss[$i] or die "Failed to find [$i+1] base for sseq.\n"; 
 		$qs[$i] eq '-' or $q_delt++; 
 		$ss[$i] eq '-' or $s_delt++; 
-		if ($qs[$i] !~ /$ss[$i]/i) {
+		if ($qs[$i] !~ /$ss[$i]/i or $out_all) {
 			my ($qpos, $spos); 
 			$qpos = $rr->{qstart} + $q_delt-1; 
 			if ($rr->{sstr} eq '+' or ($rr->{sstr} eq 'NA' and $rr->{qstr} eq 'NA')) {
