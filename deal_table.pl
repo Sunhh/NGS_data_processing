@@ -617,11 +617,14 @@ sub best_uniqCol{
 			my $newSlct = join($symbol,@temp[@SelctCol]);
 			if (defined $slctLines{$key}) {
 				my @OriginSelct = split(/$symbol/o,$slctLines{$key});
-				if ($rep == 1 and $newSlct eq $slctLines{$key}) {
-					$repLines{$key} .= "\n$_";
-					$repCount{$key} ++;
-					next READING;
-				} # 2007-1-17 16:55
+				if ( $newSlct eq $slctLines{$key} ) {
+					if ( $rep == 1 ) {
+						$repLines{$key} .= "\n$_"; 
+						$repCount{$key} ++;
+					}
+					$lines{$key} .= "\n$_"; 
+					next READING; 
+				}
 				COMP:for (my $i=0; $i<@SelctCol; $i++) {
 					my ($slctCol,$slctRule,$originSlct) = ($SelctCol[$i],$SelctRule[$i],$OriginSelct[$i]);
 					my $sym_cmp = ($temp[$slctCol] <=> $originSlct || $temp[$slctCol] cmp $originSlct); 
