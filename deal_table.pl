@@ -592,7 +592,7 @@ sub UniqColLineF{
 ### "best_uniqCol:s","select_col:s","select_rule:s","best_rep:s",2006-11-17 13:24
 sub best_uniqCol{
 	my $rep = 0;
-	$opts{best_rep} ne '' and $rep = 1;
+	defined $opts{'best_rep'} and $rep = 1;
 	$rep == 1 and do { open(REP,'>',$opts{best_rep}) or &stop( "[Err]open file $opts{best_rep} failed!\n" ) };
 	my @BestCol   = &parseCol($opts{best_uniqCol});
 	my @SelctCol  = &parseCol($opts{select_col});
