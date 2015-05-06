@@ -9,7 +9,7 @@ my %opts;
 GetOptions(\%opts, 
 	"help!", 
 	"wind_length:i", "wind_start:i", "wind_end:i", "wind_step:i", 
-	"chr_colN:i", "pos_colN:i", "cnt_colN:i", 
+	"chr_colN:i", "pos_colN:i", "cnt_colN:i", "freq_colN:i", 
 	"maxLine:i", "showAll!", "trimTail!", 
 	"skipHN:i", 
 ); 
@@ -32,6 +32,7 @@ sub usage {
 #  -chr_colN       [0] 999999 means there is no chr_colN being used. 
 #  -pos_colN       [1] 999999 means there is no pos_colN being used, then setup windows from cnt_colN
 #  -cnt_colN       [] Count will be always 1 if not given this column number. 
+#  -freq_colN      [] Number in -cnt_colN will be repeated with this number of times. 
 #
 #  -showAll        [] Show all windows if given. 
 #  -trimTail       [] Trim tailing windows. 
@@ -94,7 +95,13 @@ while (<>) {
 	$opts{'maxLine'} > 0 and $inLine > $opts{'maxLine'} and last; 
 	my (@wind_i) = @{ $mm->map_windows( 'posi' => $posV , 'wind_hash' => $chr_wind{$chrV} ) }; 
 	for my $ti ( @wind_i ) {
-		push(@{$chr_wind{$chrV}{'vv'}{$ti}}, $cntV); 
+		if ( defined $opts{'freq_colN'} ) {
+			for (my $j=0; $j<$ta[ $opts{'freq_colN'} ]; $j++) {
+				push(@{$chr_wind{$chrV}{'vv'}{$ti}}, $cntV); 
+			}
+		} else {
+			push(@{$chr_wind{$chrV}{'vv'}{$ti}}, $cntV); 
+		}
 	}
 	$inLine ++; 
 }
