@@ -560,6 +560,29 @@ sub switch_position {
 #  Sub-routines. 
 ############################################################
 
+=head1 _mean(@numbers)
+=cut
+sub _mean {
+	my $stat = Statistics::Descriptive::Full->new(); 
+	$stat->add_data(@_); 
+	return $stat->mean(); 
+}
+=head1 _sum(@numbers)
+=cut
+sub _sum {
+	my $stat = Statistics::Descriptive::Full->new(); 
+	$stat->add_data(@_); 
+	return $stat->sum(); 
+}
+=head1 _median(@numbers)
+=cut
+sub _median {
+	my $stat = Statistics::Descriptive::Full->new(); 
+	$stat->add_data(@_); 
+	return $stat->median(); 
+}
+
+
 =head1 min(@numbers)
 
 Function: This is not a method, but a sub-routine()
