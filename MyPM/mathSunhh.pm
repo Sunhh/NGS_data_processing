@@ -634,7 +634,7 @@ Description: For calculating insert sizes.
 Input      : (\@ins_value_array)
 
 Output     : (\%hash_of_values) 
-             keys = qw(SUM COUNT MEAN MEDIAN Q1 Q3 interval_low interval_high interval_mean interval_median interval_var interval_stdev limit_low limit_high)
+             keys = qw(SUM COUNT MEAN MEDIAN Q1 Q3 interval_low interval_high interval_mean interval_median interval_var interval_stdev limit_low limit_high min max)
 
 =cut
 sub ins_calc {
@@ -661,6 +661,8 @@ sub ins_calc {
 	$back{'Q3'} = $stat->quantile(3); 
 	$back{'interval_low'}  = $back{'Q1'} - 2 * ($back{'Q3'}-$back{'Q1'}); 
 	$back{'interval_high'} = $back{'Q3'} + 2 * ($back{'Q3'}-$back{'Q1'}); 
+	$back{'min'} = $stat->min(); 
+	$back{'max'} = $stat->max(); 
 	
 	$stat->clear(); 
 	my @sub_arr; 
