@@ -10,20 +10,33 @@ use Exporter qw(import);
 our @EXPORT = qw(tsmsg stopErr exeCmd exeCmd_1cmd);
 our @EXPORT_OK = qw();
 
+=head1 tsmsg($seg1, $seg2, ...)
 
-# Print (to STDERR) input text with time stamp. 
+Function : All segN will be joined with empty character. 
+           Print (to STDERR) input text with time stamp. 
+
+=cut
 sub tsmsg {
 	my $tt = scalar( localtime() ); 
 	print STDERR join('', "[$tt]", @_); 
 }#End tsmsg() 
 
-# Print (to STDERR) input text with time stamp, and then exit. 
+=head1 stopErr()
+
+Function : Print (to STDERR) input text with time stamp, and then exit. 
+
+=cut
 sub stopErr {
 	&tsmsg(@_); 
 	exit (1); 
 }#End stopErr() 
 
-# Execute command with system and time record. 
+=head1 exeCmd_1cmd($cmd_to_exec, $print_only)
+
+Function : Execute command with system and time record. 
+           When $print_only == 1, will only print command instead of executing it. 
+
+=cut
 sub exeCmd_1cmd {
 	my $cmd = shift; 
 	my $is_print = shift; 
@@ -47,7 +60,11 @@ sub exeCmd_1cmd {
 	}
 }#End exeCmd 
 
-# Execute command with system and time record. 
+=head1 exeCmd($cmd1, $cmd2, $cmd3, ... )
+
+Function : Execute commands with system and time record. 
+
+=cut 
 sub exeCmd {
 	for my $cmd ( @_ ) {
 		&tsmsg("[CMD] $cmd\n"); 
@@ -65,8 +82,12 @@ sub exeCmd {
 	}
 }#End exeCmd 
 
+=head1 LogInforSunhh::run($cmd)
+
 ### This is a method to monitor process in perl. 
 ### Copied from maker perl script, and edited minor. 
+
+=cut
 sub run {
 	my $command = shift; 
 	( defined $command and $command ne '' ) or return; 
