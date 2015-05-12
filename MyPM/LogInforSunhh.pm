@@ -49,6 +49,7 @@ sub exeCmd_1cmd {
 	&tsmsg("[CMD] $cmd\n"); 
 	if ( system($cmd) == 0 ) {
 		&tsmsg("[CMD_done]$cmd\n"); 
+		return 0; 
 	} else {
 		if ( $? == -1 ) {
 			&tsmsg("[CMD_err] Failed to execute: $!\n"); 
@@ -58,6 +59,7 @@ sub exeCmd_1cmd {
 			&tsmsg("[CMD_err] Child exited with value ", $? >> 8, "\n"); 
 		}
 	}
+	return 1; 
 }#End exeCmd 
 
 =head1 exeCmd($cmd1, $cmd2, $cmd3, ... )
@@ -70,6 +72,7 @@ sub exeCmd {
 		&tsmsg("[CMD] $cmd\n"); 
 		if ( system($cmd) == 0 ) {
 			&tsmsg("[CMD_done]$cmd\n"); 
+			return 0; 
 		} else {
 			if ( $? == -1 ) {
 				&tsmsg("[CMD_err] Failed to execute: $!\n"); 
@@ -80,6 +83,7 @@ sub exeCmd {
 			}
 		}
 	}
+	return 1; 
 }#End exeCmd 
 
 =head1 LogInforSunhh::run($cmd)
