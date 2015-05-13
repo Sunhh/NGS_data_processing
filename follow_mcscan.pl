@@ -95,7 +95,10 @@ sub usage {
 #                   Need -in_blast 
 #   -rm_repeat    [Boolean]
 #    -repeat_eval [0.05] 
-#   -rm_tandem    [Boolean]
+#   -rm_tandem    [Boolean] Should be given with -in_gff 
+#   -max_tandN
+#   -min_cscore
+#   -max_eval
 #
 # -add_KaKs       [Boolean] Invoke tanghaibao-jcvi python to do this. 
 #                   Need -in_aln / -in_pair_list 
