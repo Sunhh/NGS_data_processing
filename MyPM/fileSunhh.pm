@@ -109,6 +109,24 @@ sub openFH ($$) {
 	return $fh; 
 }#End openFH() 
 
+=head1 new_tmp_dir( 'maxNum' => 999999 )
+
+Function       : Creat a new temporary directory with name 'tmp\d+', and return the name of dir. 
+ I will test from tmp0 to tmp$maxNum until the filename does not exist. 
+ If all files exists, I will return undef() and report an warning. 
+=cut
+sub new_tmp_dir {
+	my %parm = @_; 
+	$parm{'maxNum'} //= 999999; 
+	for (my $i=0; $i<=$parm{'maxNum'}; $i++) {
+		my $fname = "tmp$i"; 
+		-e $fname and next; 
+		return $fname; 
+	}
+	&tsmsg("[Wrn] All tmp dir from tmp0 to tmp$parm{'maxNum'} exists!\n"); 
+	return undef(); 
+}# sub new_tmp_dir() 
+
 =head1 new_tmp_file( 'maxNum' => 999999 )
 
 Function       : Creat a new temporary file with name 'tmp\d+', and return the name of file. 
