@@ -20,7 +20,7 @@ GetOptions(\%opts,
  "glist2html!", "pivot_chrID:s", 
  "classDupGene!", "max_eval:f", "min_cscore:f", "max_proxN:i", "max_tandN:i", "tand_list:s", 
  "filterBlast!", "rm_repeat!", "repeat_eval:f", "rm_tandem!", 
- "add_KaKs!", "in_pair_list:s", "fas_cds:s", "fas_prot:s", "out_pref:s", 
+ "add_KaKs!", "in_pair_list:s", "fas_cds:s", "fas_prot:s", "out_pref:s","alnMethod:s", 
  "help!", 
 ); 
 
@@ -100,6 +100,7 @@ sub usage {
 #   -fas_cds      [filename] fasta format of cds file. 
 #   -fas_prot     [filename] fasta format of protein file. 
 #   -out_pref     [Prefix] Output prefix. Default is 'paired'. 
+#   -alnMethod    ['muscle'] Could also be 'clustalw'
 ####################################################################################################
 HH
 	exit 1; 
@@ -181,6 +182,7 @@ if ( $opts{'aln2list'} ) {
 	 'fas_cds'=>$opts{'fas_cds'}, 
 	 'fas_prot'=>$opts{'fas_prot'}, 
 	 'out_pref'=>$opts{'out_pref'}, 
+	 'alnMethod'=>$opts{'alnMethod'}, 
 	); 
 } else {
 	&usage(); 
@@ -248,12 +250,13 @@ sub _lis2ks {
 	my %parm = $ms_obj->_setHashFromArr(@_); 
 	$parm{'fas_prot'} //= ''; 
 	$parm{'out_pref'} //= 'paired'; 
+	$parm{'alnMethod'} //= 'muscle'; 
 	defined $parm{'fas_cds'} or &stopErr("[Err] -fas_cds must be given.\n"); 
 	defined $parm{'in_pair_list'} or &stopErr("[Err] -in_pair_list is needed.\n"); 
 	
 	&exeCmd_1cmd("python -m jcvi.apps.ks prepare $parm{'in_pair_list'} $parm{'fas_cds'} $parm{'fas_prot'} -o $parm{'out_pref'}.cds.fasta") and &stopErr("[Err] Failed prepare\n"); 
 	my $med_prot = ( $parm{'fas_prot'} eq '' ) ? "" : "$parm{'out_pref'}.cds.fasta.pep" ; 
-	&exeCmd_1cmd("python -m jcvi.apps.ks calc    --msa=muscle $med_prot $parm{'out_pref'}.cds.fasta -o $parm{'out_pref'}.cds.fasta.ks"); 
+	&exeCmd_1cmd("python -m jcvi.apps.ks calc    --msa=$parm{'alnMethod'} $med_prot $parm{'out_pref'}.cds.fasta -o $parm{'out_pref'}.cds.fasta.ks"); 
 	my ( $header, $pair2ks ) = &_readInKsLis( "$parm{'out_pref'}.cds.fasta.ks" ); 
 	my $paFh = &openFH($parm{'in_pair_list'}, '<'); 
 	my $oksFh = &openFH("$parm{'out_pref'}.ks", '>'); 
