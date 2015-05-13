@@ -6,6 +6,9 @@ use fileSunhh;
 use mathSunhh; 
 my $ms_obj = mathSunhh->new(); 
 
+use Parallel::ForkManager;
+
+
 use Getopt::Long; 
 my %opts; 
 GetOptions(\%opts, 
@@ -20,7 +23,7 @@ GetOptions(\%opts,
  "glist2html!", "pivot_chrID:s", 
  "classDupGene!", "max_eval:f", "min_cscore:f", "max_proxN:i", "max_tandN:i", "tand_list:s", 
  "filterBlast!", "rm_repeat!", "repeat_eval:f", "rm_tandem!", 
- "add_KaKs!", "in_pair_list:s", "fas_cds:s", "fas_prot:s", "out_pref:s","alnMethod:s", 
+ "add_KaKs!", "in_pair_list:s", "fas_cds:s", "fas_prot:s", "out_pref:s","alnMethod:s", "ncpu:i", 
  "help!", 
 ); 
 
@@ -101,6 +104,7 @@ sub usage {
 #   -fas_prot     [filename] fasta format of protein file. 
 #   -out_pref     [Prefix] Output prefix. Default is 'paired'. 
 #   -alnMethod    ['muscle'] Could also be 'clustalw'
+#   -ncpu         [1] Use multiple-CPUs to compute KaKs, because it is too slow. 
 ####################################################################################################
 HH
 	exit 1; 
@@ -183,6 +187,7 @@ if ( $opts{'aln2list'} ) {
 	 'fas_prot'=>$opts{'fas_prot'}, 
 	 'out_pref'=>$opts{'out_pref'}, 
 	 'alnMethod'=>$opts{'alnMethod'}, 
+	 'ncpu' => $opts{'ncpu'}, 
 	); 
 } else {
 	&usage(); 
@@ -195,10 +200,55 @@ sub mcs_addKaKs {
 	my %parm = $ms_obj->_setHashFromArr(@_); 
 	$parm{'fas_prot'} //= ''; 
 	$parm{'out_pref'} //= 'paired'; 
+	$parm{'ncpu'} //= 1; 
 	defined $parm{'fas_cds'} or &stopErr("[Err] -fas_cds must be given.\n"); 
 	
 	if ( defined $parm{'in_pair_list'} ) {
-		&_lis2ks(%parm); 
+		if ( $parm{'ncpu'} > 1 ) {
+			my @sub_dirs; 
+			my $ipFh = &openFH($parm{'in_pair_list'}, '<'); 
+			my @in_lines = <$ipFh>; 
+			close($ipFh); 
+			my $lnPerFile = scalar(@in_lines) / $parm{'ncpu'} ; 
+			$lnPerFile = ( $lnPerFile > int($lnPerFile) ) ? $lnPerFile+1 : $lnPerFile ; 
+			for (my $i=0; $i<@in_lines; $i+=$lnPerFile) {
+				my $e = $i+$lnPerFile-1; $e>$#in_lines and $e = $#in_lines; 
+				my $tmpDir = &fileSunhh::new_tmp_dir(); 
+				push(@sub_dirs, $tmpDir); 
+				mkdir($tmpDir); 
+				my $opFh = &openFH("$tmpDir/pair_lis", '>'); 
+				for my $j ($i .. $e) {
+					print {$opFh} $in_lines[$j]; 
+				}
+				close($opFh); 
+			}
+			my $pm = new Parallel::ForkManager($parm{'ncpu'}); 
+			for my $sd ( @sub_dirs ) {
+				my $pid = $pm->start and next; 
+				my %sub_parm = %parm; 
+				for my $tk (qw/in_aln in_pair_list fas_cds fas_prot/) {
+					defined $sub_parm{$tk} or next; 
+					$sub_parm{$tk} = fileSunhh::_abs_path( $sub_parm{$tk} ); 
+				}
+				chdir($sd); 
+				$sub_parm{'in_pair_list'} = 'pair_lis'; 
+				$sub_parm{'out_pref'} = 'paired'; 
+				&_lis2ks(%sub_parm); 
+				$pm->finish; 
+			}
+			$pm->wait_all_children; 
+			my $oksFh = &openFH("$parm{'out_pref'}.ks", '>'); 
+			my $has_head = 0; 
+			for my $sd ( @sub_dirs ) {
+				my $sksFh = &openFH("$sd/paired.ks", '<'); 
+				while (<$sksFh>) { $. == 1 and $has_head == 1 and next; $has_head = 1; chomp; print {$oksFh} "$_\n"; } 
+				close($sksFh); 
+			}
+			close($oksFh); 
+			&fileSunhh::_rmtree(\@sub_dirs); 
+		} else {
+			&_lis2ks(%parm); 
+		}
 	} elsif ( $parm{'in_aln'} ) {
 		my ($alnInfo) = &_readInAln( $parm{'in_aln'} ); 
 		$parm{'in_pair_list'} = "$parm{'out_pref'}_pair.lis"; 
@@ -210,8 +260,14 @@ sub mcs_addKaKs {
 			}
 		}
 		close($lisFh); 
-		my ($header, $pair2ks) = &_lis2ks(%parm); 
-		# my ( $header, $pair2ks ) = &_readInKsLis( "$parm{'out_pref'}.cds.fasta.ks" ); 
+		my ($header, $pair2ks); 
+		if ( $parm{'ncpu'} > 1 ) {
+			my %tmp_parm = %parm; 
+			&mcs_addKaKs(%tmp_parm); 
+			( $header, $pair2ks ) = &_readInKsTab( "$tmp_parm{'out_pref'}.ks" ); 
+		} else {
+			( $header, $pair2ks ) = &_lis2ks(%parm); 
+		}
 		my $oksFh = &openFH("$parm{'in_aln'}.ks", '>'); 
 		for my $ar1 (@$alnInfo) {
 			for my $ln (split(/\n/, $ar1->{'text'})) {
@@ -229,6 +285,31 @@ sub mcs_addKaKs {
 	return ; 
 }# mcs_addKaKs() 
 
+# Input file format : 
+#   gene1   gene2   yn_ks   yn_ka   ng_ks   ng_ka
+#   Cma_000007      Cma_000973      0.5258  0.0154  0.5387  0.0148
+#   Cma_000009      Cma_000975      0.2844  0.0044  0.2966  0.0043
+sub _readInKsTab {
+	my $inFh = &openFH(shift, '<'); 
+	my (@header, %pair2ks); 
+	while (<$inFh>) {
+		chomp; 
+		my @ta = split(/\t/, $_); 
+		if ($ta[0] eq 'gene1') {
+			push(@header, @ta); 
+			next; 
+		}
+		($ta[0] ne '' and $ta[1] ne '') or do { &tsmsg("[Err] bad line in .ks.tab file: $_\n"); next; }; 
+		$pair2ks{$ta[0]}{$ta[1]} = [ @ta[2..$#ta] ]; 
+	}
+	close($inFh); 
+	return(\@header, \%pair2ks); 
+}# _readInKsTab () 
+
+
+# Input file format : 
+#   name,yn_ks,yn_ka,ng_ks,ng_ka
+#   Cla007160;Cla010603,0.4049,0.2933,0.4497,0.2698
 sub _readInKsLis {
 	my $inFh = &openFH(shift, '<'); 
 	my (@header, %pair2ks); 
