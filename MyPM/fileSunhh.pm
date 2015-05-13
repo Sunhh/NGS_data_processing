@@ -9,6 +9,7 @@ use File::Basename;
 use File::Copy::Recursive; 
 use File::Copy; 
 use File::Spec::Functions qw( catfile path ); 
+use File::Path; 
 use LogInforSunhh; 
 use Cwd; 
 use Exporter qw(import); 
@@ -225,5 +226,11 @@ Invoke File::Copy::copy()
 sub _copy {
 	return File::Copy::copy(@_); 
 }#sub _copy()
+
+=head1 _rmtree()
+=cut
+sub _rmtree {
+	return File::Path::rmtree(@_); 
+}#sub _rmtree()
 
 1; 
