@@ -35,6 +35,8 @@ use fileSunhh;
 #  25. rmClose_idx() : Given a small-to-large sorted numbers' array, and 'within_dist'=>Value, it returns a indics array of numbers not close to any other. 
 #  26. permutations(): Given (\@list_of_ele, $n_in_class), return all permutations by array. Return ([@perm1_of_ele], [@perm2], ...)
 #  27. combinations(): Given (\@list_of_ele, $n_in_class), return all combinations by array. Return ([@comb1_of_ele], [@comb2_of_ele], ...)
+#  28. dna_d2b()     : Translate degenerate base symbols into an array of A/T/G/C sets. 
+#  29. dna_b2d()     : Translate a set of A/T/G/C array to degenerate base symbol. 
 ##########################################################
 
 
@@ -49,7 +51,7 @@ my %IUPAC_d2b; # degenerate to bases;
 my @ta = qw(
 AA   CC   GG   TT   UU
 WAT  SCG  MAC  KGT  RAG   YCT
-BCGT DAGT HACT VACG NACGT
+BCGT DAGT HACT VACG -ACGT NACGT
 ); 
 	for my $tb (@ta) {
 		my @bb = split(//, $tb); 
@@ -612,6 +614,13 @@ HH
 	return 0; 
 }#sub tbl2seq ()
 
+=head1 guessChrNum( $raw_chrID, $chrID_relationship_hashref )
+
+Return    : ( $new_chrID_number, $updated_chrID_relationship_hashref )
+  Normally this should be stored in $self->{'chrIDrel'} variable in the format {$raw_id} => $new_id . 
+Function  : I will guess the chrID number. 
+
+=cut
 sub guessChrNum {
 	my ($raw_id, $raw_hash) = @_; 
 	my ($back_id, %back_hash); 
@@ -881,5 +890,44 @@ sub combinations {
 	return @comb; 
 }#sub combinations
 
+=head1 dna_d2b('A|C|G|T|U|W|S|M|K|R|Y|B|D|H|V|N|-')
+
+Function   : Get A|C|G|T data array from input degenerate DNA base symbol. 
+             'U' will also be translated to 'T'; 
+             If input symbol has not been defined, I will return undef(); 
+
+Return     : (@array_bases)
+
+=cut
+sub dna_d2b {
+	my $in = shift; 
+	$in = uc($in); 
+	$in eq 'U' and $in = "T"; 
+	if ( defined $IUPAC_d2b{$in} ) {
+		return ( @{$IUPAC_d2b{$in}} ); 
+	} else {
+		return ; 
+	}
+}#sub dna_d2b() 
+
+=head1 dna_b2d('AA|AT|AAT|...')
+
+Function   : Translate a set of A/T/G/C array to degenerate base symbol. 
+             If no degenerated base found, I will return undef(); 
+
+Return     : $IUPAC_degenerated_base
+
+=cut
+sub dna_b2d {
+	my $in = shift; 
+	$in = uc($in); 
+	while ( $in =~ s!((.).*)\2!$1!g ) { 1; }
+	$in eq 'U' and $in = "T"; 
+	if ( defined $IUPAC_b2d{$in} ) {
+		return $IUPAC_b2d{$in}; 
+	} else {
+		return; 
+	}
+}# sub dna_b2d() 
 
 1; # Terminate the package with the required 1; 
