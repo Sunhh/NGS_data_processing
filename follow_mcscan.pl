@@ -47,7 +47,7 @@ sub usage {
 #                   This list can be viewed in excel, and each column contain an aligned block. 
 #   -addChr       [Boolean] Tell if add chromID to block genes. 
 #   -tgt_gff      [target.gff] Provide source of blocks. 
-#   -srt_by       ['min'] Sort the gene blocks by 'min|Q1|Q3|interval_mean'
+#   -srt_by       ['min'] Sort the gene blocks by 'min|Q1|Q3|interval_mean|COUNT'
 # 
 # -aln2table      [Boolean] Reformat aligned blocks into one line. 
 #                   Need -in_gff , -in_aln 
@@ -660,6 +660,7 @@ sub msc_aln2list{
 					my @t_sloci = map { $gidx{ $_->[$na] } } @{$tr->{'pair'}}; 
 					my $ic = $ms_obj->ins_calc( \@t_sloci, 0 ); 
 					$sub_alnInfo[-1]{'idx'} = $ic->{ $parm{'srt_by'} }; 
+					$parm{'srt_by'} eq 'COUNT' and $sub_alnInfo[-1]{'idx'} *= -1; 
 					last; 
 				}
 			}
