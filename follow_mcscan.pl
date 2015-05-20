@@ -802,6 +802,25 @@ sub _readInAln{
 			$alnID == $alnInfo[$aln_idx]{'info'}[0] or &stopErr("[Err] line_alnID=$alnID not fitting upper level (alnID=$alnInfo[$aln_idx]{'info'}[0]).\n"); 
 			push(@{$alnInfo[$aln_idx]{'pair'}}, [$gid1, $gid2, $eval, $tka, $tks, $tw]); 
 			$alnInfo[$aln_idx]{'text'} .= "$_\n"; 
+		} elsif ( m!^\s*(\d+)\-\s*(\d+):\t(\S+)\t(\S+)\s*(\S+)(?:\t(\S+)\t(\S+)(?:\t(\S+)\t(\S+))?)?$! ) { 
+			# #  0-  0:  Cma_000007      Cma_000973        2e-57 0.5258  0.0154  0.5387  0.0148
+			# This is to fit result from haibao tang's python ks calculation. 
+			$aln_idx > -1 or &stopErr("Too early to line: $_\n"); 
+			my ($alnID, $alnID_id, $gid1, $gid2, $eval, $tks, $tka, $t_ngKs, $t_ngKa) = ($1, $2, $3, $4, $5, $6, $7, $8, $9); 
+			my $tw; 
+			if ( defined $t_ngKs ) {
+				$tks = $t_ngKs; 
+				$tka = $t_ngKa; 
+			}
+			$tks < 0 and $tks = 'nan'; 
+			if ( defined $tks and $tks ne 'nan') {
+				$tw = ( $tks > 0 ) ? $tka/$tks : 'nan'; 
+			}
+			$tks eq 'nan' and $tw = 'nan'; 
+			$tka //= ''; $tks //= ''; $tw //= ''; 
+			$alnID == $alnInfo[$aln_idx]{'info'}[0] or &stopErr("[Err] line_alnID=$alnID not fitting upper level (alnID=$alnInfo[$aln_idx]{'info'}[0]).\n"); 
+			push(@{$alnInfo[$aln_idx]{'pair'}}, [$gid1, $gid2, $eval, $tka, $tks, $tw]); 
+			$alnInfo[$aln_idx]{'text'} .= "$_\n"; 
 		} else {
 			&stopErr("[Err] Unable to parse line: $_\n"); 
 		}

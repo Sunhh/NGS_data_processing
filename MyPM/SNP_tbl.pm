@@ -3,6 +3,9 @@ use strict;
 use warnings; 
 use LogInforSunhh; 
 use fileSunhh; 
+use mathSunhh; 
+my $ms_obj = mathSunhh->new(); 
+
 # 2014-12-23 Time flies fast! It's time to step on higher perl skills. I am coming. 
 
 ##########################################################
@@ -37,6 +40,7 @@ use fileSunhh;
 #  27. combinations(): Given (\@list_of_ele, $n_in_class), return all combinations by array. Return ([@comb1_of_ele], [@comb2_of_ele], ...)
 #  28. dna_d2b()     : Translate degenerate base symbols into an array of A/T/G/C sets. 
 #  29. dna_b2d()     : Translate a set of A/T/G/C array to degenerate base symbol. 
+#  30. file_tbl2csv(): Convert linyong_SNP.tbl to bioperl_PopGen.csv 
 ##########################################################
 
 
@@ -929,5 +933,55 @@ sub dna_b2d {
 		return; 
 	}
 }# sub dna_b2d() 
+
+=head1 file_tbl2csv( 'in'=>$in_SNP_tbl_file , 'out'=>$out_SNP_csv_file, 'inFh'=>$file_handle_of_in_SNP_tbl, 'chrIDrel'=>undef(), 'outFh'=>\*STDOUT ) 
+
+Function   : Convert linyong_SNP.tbl to bioperl_PopGen.csv
+
+=cut
+sub file_tbl2csv {
+	my %parm = $ms_obj->_setHashFromArr(@_); 
+	my $fh = $parm{'inFh'} // &openFH( $parm{'in'}, '<' ); 
+	my $chrIDrel = $parm{'chrIDrel'} // {}; 
+	my @data; 
+	while (<$fh>) {
+		$. % 1e5 == 1 and &tsmsg("[Msg] Reading $. line.\n"); 
+		chomp; 
+		my @ta = split(/\t/, $_); 
+		my ($cid, $pos) = @ta[0,1]; 
+		if ( $cid =~ m/^chr(om|ID|omID|omosomeID|omosome|)$/i ) {
+			push( @{$data[0]}, 'SAMPLE' ); 
+			for ( my $i=2; $i<@ta; $i++ ) {
+				push(@{$data[$i]}, $ta[$i]); 
+			}
+			next; 
+		}
+		$. == 1 and &stopErr("[Err] The 1st header line not parsed.\n"); 
+		(my $chrNum, $chrIDrel) = &guessChrNum( $cid, $chrIDrel ); 
+		my $markerName = "s${chrNum}_${pos}"; 
+		push(@{$data[0]}, $markerName); 
+		for ( my $i=2; $i<@ta; $i++ ) {
+			$ta[$i] = uc($ta[$i]); 
+			unless ( $ta[$i] =~ m/^[ATGC]$/ ) {
+				if ( length($ta[$i]) > 2 ) {
+					$ta[$i] = 'N'; 
+				} else {
+					$ta[$i] = &dna_b2d($ta[$i]) // 'N'; 
+				}
+			}
+			push( @{$data[$i]}, $ta[$i]); 
+		}
+	}
+	close ($fh); 
+	my $oFh = $parm{'outFh'} // ( defined $parm{'out'} and &openFH($parm{'out'}, '>') ) // \*STDOUT; 
+	&tsmsg("[Msg] Output .csv\n"); 
+	for ( my $i=0; $i<@data; $i++ ) {
+		$i == 1 and next; 
+		print {$oFh} join(",", @{$data[$i]})."\n"; 
+	}
+	close ($oFh); 
+	&tsmsg("[Msg] Finish .csv\n"); 
+	return; 
+}# sub file_tbl2csv() 
 
 1; # Terminate the package with the required 1; 
