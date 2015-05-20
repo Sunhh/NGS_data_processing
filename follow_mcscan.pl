@@ -23,7 +23,7 @@ GetOptions(\%opts,
  "glist2html!", "pivot_chrID:s", 
  "classDupGene!", "max_eval:f", "min_cscore:f", "max_proxN:i", "max_tandN:i", "tand_list:s", 
  "filterBlast!", "rm_repeat!", "repeat_eval:f", "rm_tandem!", 
- "add_KaKs!", "in_pair_list:s", "fas_cds:s", "fas_prot:s", "out_pref:s","alnMethod:s", "ncpu:i", 
+ "add_KaKs!", "in_pair_list:s", "fas_cds:s", "fas_prot:s", "out_pref:s","alnMethod:s", "ncpu:i", "kaks_tab:s", 
  "help!", 
 ); 
 
@@ -108,6 +108,7 @@ sub usage {
 #   -out_pref     [Prefix] Output prefix. Default is 'paired'. 
 #   -alnMethod    ['muscle'] Could also be 'clustalw'
 #   -ncpu         [1] Use multiple-CPUs to compute KaKs, because it is too slow. 
+#   -kaks_tab     [NULL] Do not calculate KaKs again if given. 
 ####################################################################################################
 HH
 	exit 1; 
@@ -191,6 +192,7 @@ if ( $opts{'aln2list'} ) {
 	 'out_pref'=>$opts{'out_pref'}, 
 	 'alnMethod'=>$opts{'alnMethod'}, 
 	 'ncpu' => $opts{'ncpu'}, 
+	 'kaks_tab' => $opts{'kaks_tab'}, 
 	); 
 } else {
 	&usage(); 
@@ -204,8 +206,13 @@ sub mcs_addKaKs {
 	$parm{'fas_prot'} //= ''; 
 	$parm{'out_pref'} //= 'paired'; 
 	$parm{'ncpu'} //= 1; 
-	defined $parm{'fas_cds'} or &stopErr("[Err] -fas_cds must be given.\n"); 
+	if ( defined $parm{'kaks_tab'} and $parm{'kaks_tab'} ne '' ) {
+		&attach_KaKs( $parm{'in_aln'}, $parm{'kaks_tab'}, "$parm{'in_aln'}.ks" ); 
+		return; 
+	}
 	
+	defined $parm{'fas_cds'} or &stopErr("[Err] -fas_cds must be given.\n"); 
+
 	if ( defined $parm{'in_pair_list'} ) {
 		if ( $parm{'ncpu'} > 1 ) {
 			my @sub_dirs; 
@@ -271,22 +278,34 @@ sub mcs_addKaKs {
 		} else {
 			( $header, $pair2ks ) = &_lis2ks(%parm); 
 		}
-		my $oksFh = &openFH("$parm{'in_aln'}.ks", '>'); 
-		for my $ar1 (@$alnInfo) {
-			for my $ln (split(/\n/, $ar1->{'text'})) {
-				chomp($ln); 
-				if ( $ln =~ m/^\s*(#|$)/ ) {
-					print {$oksFh} "$ln\n"; 
-					next; 
-				}
-				my @ta = split(/\t/, $ln); 
-				print {$oksFh} join( "\t", @ta[0..3], @{ $pair2ks->{$ta[1]}{$ta[2]} } )."\n"; 
-			}
-		}
-		close ($oksFh); 
+		&attach_KaKs( $parm{'in_aln'}, "$parm{'out_pref'}.ks", "$parm{'in_aln'}.ks", $header, $pair2ks ); 
 	}
 	return ; 
 }# mcs_addKaKs() 
+
+
+sub attach_KaKs {
+	my ($alnF, $kaksF, $outF, $header, $pair2ks) = @_; 
+	my ($alnInfo) = &_readInAln( $alnF );
+	if (!defined $header or !defined $pair2ks) {
+		($header, $pair2ks) = &_readInKsTab( $kaksF );
+	}
+	my $oksFh = &openFH( $outF, '>' ); 
+	for my $ar1 (@$alnInfo) {
+		for my $ln (split(/\n/, $ar1->{'text'})) {
+			chomp($ln); 
+			if ( $ln =~ m/^\s*(#|$)/ ) {
+				print {$oksFh} "$ln\n"; 
+				next; 
+			}
+			my @ta = split(/\t/, $ln); 
+			$pair2ks->{$ta[1]}{$ta[2]} //= [ 'nan', 'nan', 'nan', 'nan' ]; 
+			print {$oksFh} join( "\t", @ta[0..3], @{ $pair2ks->{$ta[1]}{$ta[2]} } )."\n"; 
+		}
+	}
+	close ($oksFh); 
+	return; 
+}# sub attach_KaKs() 
 
 # Input file format : 
 #   gene1   gene2   yn_ks   yn_ka   ng_ks   ng_ka
