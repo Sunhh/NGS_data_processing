@@ -151,7 +151,7 @@ sub getPath {
 	my ($toolR, $cfg_file) = @_;
 	open (CF,'<',"$cfg_file") or &stopErr("[Err] file [$cfg_file] $!\n");
 	while (<CF>) {
-		m/^\s*$/ and next;
+		m/^\s*(#|$)/ and next;
 		s/[^\S\t]+$//;
 		my ($tk, $tv) = split(/\t/, $_);
 		while ($tv =~ m/__([^\s_]+)__/) {

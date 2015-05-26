@@ -39,10 +39,10 @@ $tool{pathCfg_file} = "$tool{pathCfg_dir}/path.conf";
 
 my %input; 
 {
-$input{eu_tRNA} = '/data/Sunhh/P1_repeat/db/eukaryotic-tRNAs.fa';
+$input{eu_tRNA} = $tool{'eu_tRNA'} // '/data/Sunhh/P1_repeat/db/eukaryotic-tRNAs.fa';
 
-$input{refFa} = "P1Genom_Gt5h.scf.fa";
-$input{refIdx} = 'P1GenomeGt5hScf';
+$input{refFa} = $tool{'refFa'} // "P1Genom_Gt5h.scf.fa";
+$input{refIdx} = $tool{'refIdx'} // 'P1GenomeGt5hScf';
 
 $input{hvt_gff} = "$input{refFa}.gffT85"; 
 $input{hvt_outFa} = "$input{refFa}.outT85"; 
@@ -52,7 +52,7 @@ $input{dgt_gff} = "$input{refFa}.gffT85.dgt";
 
 $input{ref_hvt_gff} = "$input{refFa}.gffT99"; 
 $input{ref_hvt_outFa} = "$input{refFa}.outT99"; 
-$input{ref_dbLTR} = "TRIM99_named.lib"; 
+$input{ref_dbLTR} = $tool{'ref_dbLTR_trim99'} // $tool{'ref_dbLTR'} // "TRIM99_named.lib"; 
 }
 
 
@@ -121,7 +121,7 @@ sub getPath {
 	my ($toolR, $cfg_file) = @_;
 	open (CF,'<',"$cfg_file") or &stopErr("[Err] file [$cfg_file] $!\n");
 	while (<CF>) {
-		m/^\s*$/ and next;
+		m/^\s*($|#)/ and next;
 		s/[^\S\t]+$//;
 		my ($tk, $tv) = split(/\t/, $_);
 		while ($tv =~ m/__([^\s_]+)__/) {
