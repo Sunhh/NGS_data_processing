@@ -560,6 +560,40 @@ sub switch_position {
 #  Sub-routines. 
 ############################################################
 
+=head1 _parseCol( $col_string )
+
+Required    : $col_string
+ $col_string : Like 0-100 | 0,3,4,5-7,1-10 | 10-8
+
+Function    : 
+ '0-5' returns (0 .. 5)
+ '0,3,5-7,6-9' returns (0,3,5,6,7,6,7,8,9)
+ ' -3 - -4, 10-8'  returns (-3,-4,10,9,8)
+
+Return      : (@col_numbers)
+
+=cut
+sub _parseCol {
+	my @ncols; 
+	for my $tc (split(/,/, shift)) {
+		$tc =~ s!\s!!g; 
+		$tc =~ m!^$! and next; 
+		if ( $tc =~ m!^\-?\d+$! ) {
+			push(@ncols, $tc); 
+		} elsif ( $tc =~ m!^(\-?\d+)\-(\-?\d+)$! ) {
+			my ($s, $e) = ($1, $2); 
+			if ( $s <= $e ) {
+				push(@ncols, ($s .. $e)); 
+			} else {
+				push(@ncols, reverse($e .. $s)); 
+			}
+		} else {
+			&stopErr("[Err] Unparsable column tag [$tc] in _parseCol().\n"); 
+		}
+	}
+	return (@ncols); 
+}# _parseCol() 
+
 =head1 _mean(@numbers)
 =cut
 sub _mean {
