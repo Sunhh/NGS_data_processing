@@ -81,6 +81,7 @@ Return     : 0
 =cut 
 sub write2file {
 	my ($fn, $txt, $open_type) = @_; 
+	$open_type //= 'write'; 
 	my $fh = &openFH($fn, $open_type); 
 	print {$fh} $txt; 
 	close ($fh); 
