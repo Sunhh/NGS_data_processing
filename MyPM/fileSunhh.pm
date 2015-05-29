@@ -66,6 +66,23 @@ sub renameByPat {
 	return \@backList; 
 }# sub renameByPat() 
 
+=head1 write2file( $filename, $text, $open_type )
+
+Required   : $filename $text
+
+Function   : Open file and write $text into file according to open_type; 
+
+Return     : 0
+
+=cut 
+sub write2file {
+	my ($fn, $txt, $open_type) = @_; 
+	my $fh = &openFH($fn, $open_type); 
+	print {$fh} $txt; 
+	close ($fh); 
+	return 0; 
+}# sub write2file ()
+
 
 =head1 openFH( $filename, $open_type )
 
