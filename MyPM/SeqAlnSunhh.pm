@@ -359,8 +359,8 @@ Output      : { qw/(start|end)(A|B) aln_len aln_ident count seqA_aln seqB_aln se
 =cut
 sub olap_e2e_A2B {
 	my $seqA = shift; 
-	unless ( ref($seqA) eq 'SCALAR' ) {
-		ref($seqA) eq 'SeqAlnSunhh' or &stopErr("[Err] olap_e2e_A2B 1st-input should be a scalar string standing for sequence A.\n"); 
+	unless ( ref($seqA) eq 'SCALAR' or ref($seqA) eq '' ) {
+		ref($seqA) eq 'SeqAlnSunhh' or &stopErr("[Err] olap_e2e_A2B 1st-input should be a scalar string standing for sequence A.\n", "Now ref_seqA is [", ref($seqA), "]\n", "seqA=$seqA\n"); 
 		$seqA = shift; 
 	}
 	my ($seqB, $ref_para) = @_; 
