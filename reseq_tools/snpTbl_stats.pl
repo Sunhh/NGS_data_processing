@@ -15,6 +15,8 @@ use Bio::PopGen::Statistics;
 use Bio::PopGen::Individual; 
 use Bio::PopGen::Genotype; 
 
+my $stats = Bio::PopGen::Statistics->new(); 
+
 # An example of how to use this. 
 use Parallel::ForkManager; 
 #my $MAX_PROCESSES = 10; 
@@ -391,7 +393,6 @@ sub cnt_val_1tbl_inMEM {
 		}
 	}
 	my %val; 
-	my $stats = Bio::PopGen::Statistics->new(); 
 	my @out_arr; 
 	# These are values not normalized. 
 	for my $type (@{$opts{'_inner'}{'cnt_stat'}}) {
