@@ -46,9 +46,12 @@ my (%wind, @chrIDs);
 
 &set_opts(); 
 &load_snp_tbl(); 
+&reform_snp_tbl(); 
 &setup_windows(); 
-&dvd_snp_tbl(); 
-&cnt_val(); 
+# &dvd_snp_tbl(); 
+&dvd_snp_tbl_inMEM(); 
+# &cnt_val(); 
+&cnt_val_inMEM(); 
 &out_data(); 
 &del_tmp(); 
 
@@ -66,6 +69,7 @@ sub usage {
 # -help 
 # 
 # -snp_tbl          [filename] 
+# -skipSort         [Boolean] Skip sorting table if given. 
 # -value_types      ['pi,theta,tajima_D']
 # -ncpu             [1]
 #
@@ -92,6 +96,7 @@ sub set_opts {
 	GetOptions(\%opts, 
 		"help!", 
 		"snp_tbl:s", 
+		"skipSort!", 
 		"out:s", 
 		"value_types:s", 
 		"ncpu:i", 
@@ -113,37 +118,38 @@ sub set_opts {
 	$opts{'wind_length'} //= 10000; 
 	$opts{'wind_step'} //= 1000; 
 	$opts{'wind_end_useMax'} //= undef(); 
+	$opts{'skipSort'} //= undef(); 
 	$opts{'chr_colN'}  //= 0; 
 	$opts{'pos_colN'}  //= 1; 
 	$opts{'geno_col'} //= ''; 
-	$opts{'geno_cols'} = [ &mathSunhh::_parseCol( $opts{'geno_col'} ) ]; 
+	$opts{'_inner'}{'geno_cols'} = [ &mathSunhh::_parseCol( $opts{'geno_col'} ) ]; 
 	# Usable keys: 
-	#  'inFh'  => file_handle of input. 
-	#  'cnt_stat' => [ stat_value_to_be_counted ]
+	#  '_inner':'inFh'  => file_handle of input. 
+	#  '_inner':'cnt_stat' => [ stat_value_to_be_counted ]
 	#  'wind_start|end|length|step' => global parameters to setup windows. 
 	#  'wind_end_useMax' => False. If True, will trim windows by CHR's maximum position; 
 	#  'chr|pos_colN'    => columns for indexing. 
-	#  'geno_cols' => [@cols_to_use]
+	#  '_inner':'geno_cols' => [@cols_to_use]
 }# sub set_opts() 
 
-# Setup $opts{'inFh'} and skip $opts{'skipHN'} lines; 
+# Setup $opts{'_inner'}{'inFh'} and skip $opts{'skipHN'} lines; 
 sub prepare_input_fh {
 	&tsmsg("[Msg] Prepare input file.\n"); 
-	$opts{'inFh'} = \*STDIN; 
-	defined $opts{'snp_tbl'} and $opts{'inFh'} = &openFH($opts{'snp_tbl'}, '<'); 
+	$opts{'_inner'}{'inFh'} = \*STDIN; 
+	defined $opts{'snp_tbl'} and $opts{'_inner'}{'inFh'} = &openFH($opts{'snp_tbl'}, '<'); 
 	$opts{'skipHN'} //= 0; 
 	for ( 1 .. $opts{'skipHN'} ) {
-		readline($opts{'inFh'}); 
+		readline($opts{'_inner'}{'inFh'}); 
 	}
 	return 0; 
 	#  'skipHN'   => number of lines to skip from head of file. 
 }# sub prepare_input_fh () 
 
-# Setup $opts{'cnt_stat'}; 
+# Setup $opts{'_inner'}{'cnt_stat'}; 
 sub prepare_cnt_stat {
 	&tsmsg("[Msg] Record types of statistics.\n"); 
 	$opts{'value_types'} //= 'pi,theta,tajima_D'; 
-	$opts{'cnt_stat'} = [ map { s!\s!!g; $_; } split(/,/, $opts{'value_types'})]; 
+	$opts{'_inner'}{'cnt_stat'} = [ map { s!\s!!g; $_; } split(/,/, $opts{'value_types'})]; 
 	# Maybe I can add sub-function to a hash. 
 	return 0; 
 }# prepare_cnt_stat() 
@@ -151,37 +157,62 @@ sub prepare_cnt_stat {
 # Setup $opts{'_inner'}{'tbl_lines'} : recording [@data_lines]; 
 sub load_snp_tbl {
 	&tsmsg("[Msg] Loading data.\n"); 
-	@{ $opts{'_inner'}{'tbl_lines'} } = readline( $opts{'inFh'} ) ; 
+	@{ $opts{'_inner'}{'tbl_lines'} } = readline( $opts{'_inner'}{'inFh'} ) ; 
 	chomp(@{$opts{'_inner'}{'tbl_lines'}}); 
 	my $nn = scalar( @{$opts{'_inner'}{'tbl_lines'}} ); 
 	&tsmsg("[Msg] $nn lines data loaded.\n"); 
 	return 0; 
 }# load_snp_tbl () 
 
-# Setup ($opts{'geno_cols'}, %wind, @chrIDs); 
+# Reformat $opts{'_inner'}{'tbl_lines'} to format : [ [chrID, posVal, raw_line] ]
+#  and sort it if needed. 
+sub reform_snp_tbl {
+	&tsmsg("[Msg] Reform snp table data.\n"); 
+	for ( @{$opts{'_inner'}{'tbl_lines'}} ) {
+		my @ta = split(/\t/, $_); 
+		my $cur_chr = $ta[ $opts{'chr_colN'} ]; 
+		my $cur_pos = $ta[ $opts{'pos_colN'} ]; 
+		$_ = [ $cur_chr, $cur_pos, $_ ]; 
+		defined $opts{'_inner'}{'max_pos'}{$cur_chr} or do { push(@chrIDs, $cur_chr); $opts{'_inner'}{'max_pos'}{$cur_chr} = $cur_pos; }; 
+		$opts{'_inner'}{'max_pos'}{$cur_chr} < $cur_pos and $opts{'_inner'}{'max_pos'}{$cur_chr} = $cur_pos; 
+	}
+	unless ( $opts{'skipSort'} ) {
+		@{$opts{'_inner'}{'tbl_lines'}} = sort my_sort @{$opts{'_inner'}{'tbl_lines'}} ; 
+	}
+	return 0; 
+}# sub reform_snp_tbl () 
+
+sub my_sort {
+	no strict; 
+	no warnings; 
+	my $result = ($a->[0] <=> $b->[0]) || ($a->[0] cmp $b->[0]) || ($a->[1] <=> $b->[1]) ; 
+	return $result; 
+}
+
+# Setup ($opts{'_inner'}{'geno_cols'}, %wind, @chrIDs); 
 sub setup_windows {
 	&tsmsg("[Msg] Setting up windows.\n"); 
-	if ( scalar(@{$opts{'geno_cols'}}) == 0 ) { 
-		my $ln = $opts{'_inner'}{'tbl_lines'}[0]; 
+	if ( scalar(@{$opts{'_inner'}{'geno_cols'}}) == 0 ) { 
+		my $ln = $opts{'_inner'}{'tbl_lines'}[0][2]; 
 		my @ta = split(/\t/, $ln); 
 		for (my $i=0; $i<@ta; $i++) {
 			$i == $opts{'chr_colN'} and next; 
 			$i == $opts{'pos_colN'} and next; 
-			push(@{$opts{'geno_cols'}}, $i); 
+			push(@{$opts{'_inner'}{'geno_cols'}}, $i); 
 		}
 	}
-	scalar(@{$opts{'geno_cols'}}) == 0 and &stopErr("[Err] No good geno_cols available. Try use -geno_col\n"); 
+	scalar(@{$opts{'_inner'}{'geno_cols'}}) == 0 and &stopErr("[Err] No good geno_cols available. Try use -geno_col\n"); 
 	
 	# Setup %wind; {chr}
-	for (@{$opts{'_inner'}{'tbl_lines'}}) {
-		my @ta = split(/\t/, $_); 
-		my $cur_chr = $ta[ $opts{'chr_colN'} ]; 
-		my $cur_pos = $ta[ $opts{'pos_colN'} ]; 
-		defined $opts{'_inner'}{'max_pos'}{$cur_chr} or do { push(@chrIDs, $cur_chr); $opts{'_inner'}{'max_pos'}{$cur_chr} = $cur_pos; }; 
-		$opts{'_inner'}{'max_pos'}{$cur_chr} < $cur_pos and $opts{'_inner'}{'max_pos'}{$cur_chr} = $cur_pos; 
-	}
+	#for (@{$opts{'_inner'}{'tbl_lines'}}) {
+	#	my $cur_chr = $_->[0]; 
+	#	my $cur_pos = $_->[1]; 
+	#	defined $opts{'_inner'}{'max_pos'}{$cur_chr} or do { push(@chrIDs, $cur_chr); $opts{'_inner'}{'max_pos'}{$cur_chr} = $cur_pos; }; 
+	#	$opts{'_inner'}{'max_pos'}{$cur_chr} < $cur_pos and $opts{'_inner'}{'max_pos'}{$cur_chr} = $cur_pos; 
+	#}
 	for my $cur_chr ( @chrIDs ) {
 		my $max_len = ( $opts{'wind_end_useMax'} ) ? $opts{'_inner'}{'max_pos'}{$cur_chr} : $opts{'wind_end'} ; 
+		&tsmsg("[Msg]   Setting windows for $cur_chr [ $opts{'wind_start'} - $max_len ]\n"); 
 		$wind{$cur_chr} = $ms_obj->setup_windows(
 		  'ttl_start'   =>  $opts{'wind_start'}, 
 		  'ttl_end'     =>  $max_len, 
@@ -192,6 +223,34 @@ sub setup_windows {
 	}
 	return 0; 
 }# setup_windows() 
+
+sub dvd_snp_tbl_inMEM {
+	&tsmsg("[Msg] Dividing windows in memory.\n"); 
+	$opts{'_inner'}{'tmp_dir'} = &fileSunhh::new_tmp_dir(); 
+	defined $opts{'_inner'}{'tmp_dir'} or &stopErr("[Err] failed to find a temporary directory.\n"); 
+	my $tmpDir = $opts{'_inner'}{'tmp_dir'}; 
+	my %used; 
+	mkdir($tmpDir); 
+	for ( my $ln=0; $ln<@{$opts{'_inner'}{'tbl_lines'}}; $ln++ ) {
+		$ln % 500e3 == 1 and &tsmsg("[Msg] Processed $ln line.\n"); 
+		my $cur_chr = $opts{'_inner'}{'tbl_lines'}[$ln]->[0]; 
+		my $cur_pos = $opts{'_inner'}{'tbl_lines'}[$ln]->[1]; 
+		my (@wind_i) = @{ $ms_obj->map_windows( 'posi'=>$cur_pos, 'wind_hash'=>$wind{$cur_chr} ) }; 
+		for my $ti ( @wind_i ) {
+			my $file_idx; 
+			if ( defined $opts{'_inner'}{'chrIdx2fIdx'}{$cur_chr}{$ti} ) {
+				$file_idx = $opts{'_inner'}{'chrIdx2fIdx'}{$cur_chr}{$ti}; 
+			} else {
+				$file_idx = $ms_obj->newNumber(); 
+				$opts{'_inner'}{'chrIdx2fIdx'}{$cur_chr}{$ti} = $file_idx; 
+			}
+			my $wind_fname = "$tmpDir/wind_${file_idx}"; 
+			$opts{'_inner'}{'windFN2windTI'}{$wind_fname} = [$cur_chr, $ti]; 
+			push(@{ $opts{'_inner'}{'windFH2LineN'}{$wind_fname} }, $ln); 
+			defined $used{$wind_fname} or do { push(@{$opts{'_inner'}{'tmp_wind_file'}}, $wind_fname); $used{$wind_fname} = 1; }; 
+		}
+	}
+}# dvd_snp_tbl_inMEM() 
 
 # Setup smaller snp_tbl files ( @{$opts{'_inner'}{'tmp_wind_file'}} ). 
 #  $opts{'_inner'}{'tmp_dir'}
@@ -204,10 +263,12 @@ sub dvd_snp_tbl {
 	my $tmpDir = $opts{'_inner'}{'tmp_dir'}; 
 	mkdir($tmpDir); 
 	my %used; 
+	my $nn = 0; 
 	for ( @{$opts{'_inner'}{'tbl_lines'}} ) {
-		my @ta = split(/\t/, $_); 
-		my $cur_chr = $ta[ $opts{'chr_colN'} ]; 
-		my $cur_pos = $ta[ $opts{'pos_colN'} ]; 
+		$nn ++; 
+		$nn % 500e3 == 1 and &tsmsg("[Msg] Processing $nn line.\n"); 
+		my $cur_chr = $_->[0]; 
+		my $cur_pos = $_->[1]; 
 		my (@wind_i) = @{ $ms_obj->map_windows( 'posi'=>$cur_pos, 'wind_hash'=>$wind{$cur_chr} ) }; 
 		for my $ti ( @wind_i ) {
 			my $file_idx; 
@@ -219,11 +280,38 @@ sub dvd_snp_tbl {
 			}
 			my $wind_fname = "$tmpDir/wind_${file_idx}"; 
 			$opts{'_inner'}{'windFN2windTI'}{$wind_fname} = [$cur_chr, $ti]; 
-			&fileSunhh::write2file($wind_fname, "$_\n", '>>'); 
 			defined $used{$wind_fname} or do { push(@{$opts{'_inner'}{'tmp_wind_file'}}, $wind_fname); $used{$wind_fname} = 1; }; 
 		}
+		my $pm = new Parallel::ForkManager( $opts{'ncpu'} ); 
+		for my $ti ( @wind_i ) {
+			my $pid = $pm->start and next; 
+			my $file_idx; 
+			if ( defined $opts{'_inner'}{'chrIdx2fIdx'}{$cur_chr}{$ti} ) {
+				$file_idx = $opts{'_inner'}{'chrIdx2fIdx'}{$cur_chr}{$ti}; 
+			} else {
+				$file_idx = $ms_obj->newNumber(); 
+				$opts{'_inner'}{'chrIdx2fIdx'}{$cur_chr}{$ti} = $file_idx; 
+			}
+			my $wind_fname = "$tmpDir/wind_${file_idx}"; 
+			&fileSunhh::write2file($wind_fname, "$_->[2]\n", '>>'); 
+			$pm->finish; 
+		}
+		$pm->wait_all_children; 
 	}
 }# dvd_snp_tbl () 
+
+sub cnt_val_inMEM {
+	&tsmsg("[Msg] Counting statistics in memory.\n"); 
+	my $MAX_PROCESSES = $opts{'ncpu'}; 
+	my $pm = new Parallel::ForkManager($MAX_PROCESSES); 
+	for my $inFname ( @{$opts{'_inner'}{'tmp_wind_file'}} ) {
+		my $pid = $pm->start and next; 
+		&cnt_val_1tbl_inMEM($inFname, "${inFname}.val") || &exeCmd_1cmd("touch ${inFname}.val.OK"); 
+		$pm->finish; 
+	}
+	$pm->wait_all_children; 
+	return 0; 
+}# sub cnt_val_inMEM () 
 
 sub cnt_val {
 	&tsmsg("[Msg] Counting statistics.\n"); 
@@ -240,7 +328,7 @@ sub cnt_val {
 
 sub out_data {
 	&tsmsg("[Msg] Output result.\n"); 
-	print {$opts{'_inner'}{'outFh'}} join("\t", qw/ChrID WindS WindE WindL/, @{$opts{'cnt_stat'}})."\n"; 
+	print {$opts{'_inner'}{'outFh'}} join("\t", qw/ChrID WindS WindE WindL/, @{$opts{'_inner'}{'cnt_stat'}})."\n"; 
 	for my $inFname ( @{$opts{'_inner'}{'tmp_wind_file'}} ) {
 		my ($chrID, $chrWsi) = @{ $opts{'_inner'}{'windFN2windTI'}{$inFname} }; 
 		my ($wS, $wE, $wL) = @{ $wind{$chrID}{'loci'}{$chrWsi} }; 
@@ -263,12 +351,71 @@ sub del_tmp {
 	return 0; 
 }
 
+sub cnt_val_1tbl_inMEM {
+	my ($inTblFile, $outValFile) = @_; 
+	$outValFile //= "${inTblFile}.val"; 
+	# Setup individuals obj
+	my @inds; 
+	my @ncols = @{ $opts{'_inner'}{'geno_cols'} }; 
+	for (my $i=0; $i<@ncols; $i++) {
+		$inds[$i] = Bio::PopGen::Individual->new(
+		  -unique_id   => $i, 
+		  -genotypes   => []
+		); 
+	}
+	# Add genotypes
+	for my $ln ( @{ $opts{'_inner'}{'windFH2LineN'}{$inTblFile} } ) {
+		my $tr = $opts{'_inner'}{'tbl_lines'}[$ln]; 
+		my @ta = split(/\t/, $tr->[2]); 
+		my $cur_chr = $tr->[0]; 
+		my $cur_pos = $tr->[1]; 
+		my $marker_name = "${cur_chr}_${cur_pos}"; 
+		for ( my $i=0; $i<@ncols; $i++ ) {
+			my @geno; 
+			$ta[$i] = uc($ta[$i]); 
+			if ( $ta[$i] =~ m/^[ATGC]$/ ) {
+				@geno = ($ta[$i], $ta[$i]); 
+			} elsif ( $ta[$i] =~ m/^([ATGC])([ATGC])$/ ) {
+				@geno = ($1, $2); 
+			} else {
+				@geno = ('N', 'N'); 
+			}
+			$inds[$i]->add_Genotype(
+			  Bio::PopGen::Genotype->new(
+			    -alleles     => [@geno], 
+			    -marker_name => $marker_name 
+			  )
+			); 
+		}
+	}
+	my %val; 
+	my $stats = Bio::PopGen::Statistics->new(); 
+	my @out_arr; 
+	# These are values not normalized. 
+	for my $type (@{$opts{'_inner'}{'cnt_stat'}}) {
+		defined $val{$type} and do { push(@out_arr, $val{$type}); next; }; 
+		if ( $type =~ m!^pi$!i ) {
+			$val{$type} = $stats->pi(\@inds); 
+		} elsif ( $type =~ m!^theta$!i ) {
+			$val{$type} = $stats->theta(\@inds); 
+		} elsif ( $type =~ m!tajima_?D!i ) {
+			$val{$type} = $stats->tajima_D(\@inds); 
+		} else {
+			&stopErr("[Err] Unknown type to count [$type]\n"); 
+		}
+		push(@out_arr, $val{$type}); 
+	}
+	&fileSunhh::write2file("$outValFile", join("\t", @out_arr)."\n", '>'); 
+	return 0; 
+}# sub cnt_val_1tbl_inMEM () 
+
+
 sub cnt_val_1tbl {
 	my ($inTblFile, $outValFile) = @_; 
 	$outValFile //= "${inTblFile}.val"; 
 	# Setup individuals obj
 	my @inds; 
-	my @ncols = @{ $opts{'geno_cols'} }; 
+	my @ncols = @{ $opts{'_inner'}{'geno_cols'} }; 
 	for (my $i=0; $i<@ncols; $i++) {
 		$inds[$i] = Bio::PopGen::Individual->new(
 		  -unique_id   => $i, 
@@ -311,7 +458,7 @@ sub cnt_val_1tbl {
 	my $stats = Bio::PopGen::Statistics->new(); 
 	my @out_arr; 
 	# These are values not normalized. 
-	for my $type (@{$opts{'cnt_stat'}}) {
+	for my $type (@{$opts{'_inner'}{'cnt_stat'}}) {
 		defined $val{$type} and do { push(@out_arr, $val{$type}); next; }; 
 		if ( $type =~ m!^pi$!i ) {
 			$val{$type} = $stats->pi(\@inds); 
