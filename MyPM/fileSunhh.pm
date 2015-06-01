@@ -21,8 +21,10 @@ our @EXPORT_OK = qw();
 my %goodFileType = qw(
 	<           read
 	>           write
+	>>          add
 	read        read
 	write       write
+	add         add
 	<gz         readGZ
 	>gz         writeGZ
 	<bz2        readBZ2
@@ -31,6 +33,8 @@ my %goodFileType = qw(
 	writeGZ     writeGZ
 	readBZ2     readBZ2
 	writeBZ2    writeBZ2
+	addGZ       addGZ
+	addBZ2      addBZ2
 ); 
 
 # Check if there is gzip/bzip2 software in current system. 
@@ -66,12 +70,31 @@ sub renameByPat {
 	return \@backList; 
 }# sub renameByPat() 
 
+=head1 write2file( $filename, $text, $open_type )
+
+Required   : $filename $text
+
+Function   : Open file and write $text into file according to open_type; 
+
+Return     : 0
+
+=cut 
+sub write2file {
+	my ($fn, $txt, $open_type) = @_; 
+	$open_type //= 'write'; 
+	my $fh = &openFH($fn, $open_type); 
+	print {$fh} $txt; 
+	close ($fh); 
+	return 0; 
+}# sub write2file ()
+
 
 =head1 openFH( $filename, $open_type )
 
 Required   : $filename
 
 Function   : Open file and return file handle one at a time. 
+ $open_type could be '<|>|read|write|add|readGZ|writeGZ|readBZ2|writeBZ2|addGZ|addBZ2'
 
 Input      : 
  $filename  : filename ended with .gz or .bz2 will be treated in compressed format. 
@@ -103,6 +126,12 @@ sub openFH ($$) {
 		$fh = &oCompressFile($f, 'gz'); 
 	} elsif ($type eq 'writeBZ2') {
 		$fh = &oCompressFile($f, 'bz2'); 
+	} elsif ($type eq 'addGZ' or $type eq 'addBZ2') { 
+		$fh = &oCompressFile($f, $type); 
+	} elsif ($type eq 'add') {
+		$f =~ m/\.(gz|gzip)$/   and do { $type = "addGZ"; &tsmsg("[Msg] Using gzip format for [$f]\n"); goto RE_CHK; }; 
+		$f =~ m/\.(bz2|bzip2)$/ and do { $type = "addBZ2"; &tsmsg("[Msg] Using bzip2 format for [$f]\n"); goto RE_CHK; }; 
+		open ($fh, '>>', "$f") or &stopErr("[Err] $! [$f]\n"); 
 	} else {
 		# Something is wrong. 
 		&stopErr("[Err]Unknown type[$type].\n"); 
@@ -172,6 +201,12 @@ sub oCompressFile ($$) {
 	} elsif ( $type eq 'bz2' ) {
 		$has_bzip2 ne '' or &stopErr("[Err] No bzip2 command found in PATH.\n"); 
 		open($fh,'|-',"$has_bzip2 > $f") or &stopErr("[Err] $! [$f]\n"); 
+	} elsif ( $type eq 'addGZ' ) {
+		$has_gzip ne '' or &stopErr("[Err] No gzip command found in PATH.\n"); 
+		open($fh,'|-',"$has_gzip >> $f") or &stopErr("[Err] $! [$f]\n"); 
+	} elsif ( $type eq 'addBZ2' ) {
+		$has_bzip2 ne '' or &stopErr("[Err] No bzip2 command found in PATH.\n"); 
+		open($fh,'|-',"$has_bzip2 >> $f") or &stopErr("[Err] $! [$f]\n"); 
 	} else {
 		&stopErr("[Err] Unknown type [$type]\n"); 
 	}
