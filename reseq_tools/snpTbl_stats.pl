@@ -250,6 +250,8 @@ sub dvd_snp_tbl_inMEM {
 			defined $used{$wind_fname} or do { push(@{$opts{'_inner'}{'tmp_wind_file'}}, $wind_fname); $used{$wind_fname} = 1; }; 
 		}
 	}
+	my $nn = scalar( @{$opts{'_inner'}{'tmp_wind_file'}} ); 
+	&tsmsg("[Msg] Total $nn windows to process.\n"); 
 }# dvd_snp_tbl_inMEM() 
 
 # Setup smaller snp_tbl files ( @{$opts{'_inner'}{'tmp_wind_file'}} ). 
