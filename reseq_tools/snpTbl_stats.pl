@@ -42,6 +42,8 @@ my (%wind, @chrIDs);
 ############################################################
 # Main 
 ############################################################
+&tsmsg("[Rec] Start.\n"); 
+
 &set_opts(); 
 &load_snp_tbl(); 
 &setup_windows(); 
@@ -49,6 +51,8 @@ my (%wind, @chrIDs);
 &cnt_val(); 
 &out_data(); 
 &del_tmp(); 
+
+&tsmsg("[Rec] Done.\n"); 
 
 ############################################################
 # Sub-routines 
@@ -84,13 +88,14 @@ HH
 
 # Set options from the input; 
 sub set_opts {
+	&tsmsg("[Msg] Setup options.\n"); 
 	GetOptions(\%opts, 
 		"help!", 
 		"snp_tbl:s", 
 		"out:s", 
 		"value_types:s", 
 		"ncpu:i", 
-		"wind_start:i", "wind_end:i", "wind_length:i", "wind_step:i", 
+		"wind_start:i", "wind_end:i", "wind_end_useMax!", "wind_length:i", "wind_step:i", 
 		"chr_colN:i", "pos_colN:i", 
 		"skipHN:i", 
 		"geno_col:s", 
@@ -123,6 +128,7 @@ sub set_opts {
 
 # Setup $opts{'inFh'} and skip $opts{'skipHN'} lines; 
 sub prepare_input_fh {
+	&tsmsg("[Msg] Prepare input file.\n"); 
 	$opts{'inFh'} = \*STDIN; 
 	defined $opts{'snp_tbl'} and $opts{'inFh'} = &openFH($opts{'snp_tbl'}, '<'); 
 	$opts{'skipHN'} //= 0; 
@@ -135,6 +141,7 @@ sub prepare_input_fh {
 
 # Setup $opts{'cnt_stat'}; 
 sub prepare_cnt_stat {
+	&tsmsg("[Msg] Record types of statistics.\n"); 
 	$opts{'value_types'} //= 'pi,theta,tajima_D'; 
 	$opts{'cnt_stat'} = [ map { s!\s!!g; $_; } split(/,/, $opts{'value_types'})]; 
 	# Maybe I can add sub-function to a hash. 
@@ -143,13 +150,17 @@ sub prepare_cnt_stat {
 
 # Setup $opts{'_inner'}{'tbl_lines'} : recording [@data_lines]; 
 sub load_snp_tbl {
+	&tsmsg("[Msg] Loading data.\n"); 
 	@{ $opts{'_inner'}{'tbl_lines'} } = readline( $opts{'inFh'} ) ; 
 	chomp(@{$opts{'_inner'}{'tbl_lines'}}); 
+	my $nn = scalar( @{$opts{'_inner'}{'tbl_lines'}} ); 
+	&tsmsg("[Msg] $nn lines data loaded.\n"); 
 	return 0; 
 }# load_snp_tbl () 
 
 # Setup ($opts{'geno_cols'}, %wind, @chrIDs); 
 sub setup_windows {
+	&tsmsg("[Msg] Setting up windows.\n"); 
 	if ( scalar(@{$opts{'geno_cols'}}) == 0 ) { 
 		my $ln = $opts{'_inner'}{'tbl_lines'}[0]; 
 		my @ta = split(/\t/, $ln); 
@@ -187,6 +198,7 @@ sub setup_windows {
 #  $opts{'_inner'}{'windFN2windTI'} : {wind_filename}=>[chrID, chr_wind_idx]
 #  $opts{'_inner'}{'chrIdx2fIdx'}   : {chrID}{wind_idx} => file_idx 
 sub dvd_snp_tbl {
+	&tsmsg("[Msg] Dividing windows.\n"); 
 	$opts{'_inner'}{'tmp_dir'} = &fileSunhh::new_tmp_dir(); 
 	defined $opts{'_inner'}{'tmp_dir'} or &stopErr("[Err] failed to find a temporary directory.\n"); 
 	my $tmpDir = $opts{'_inner'}{'tmp_dir'}; 
@@ -214,6 +226,7 @@ sub dvd_snp_tbl {
 }# dvd_snp_tbl () 
 
 sub cnt_val {
+	&tsmsg("[Msg] Counting statistics.\n"); 
 	my $MAX_PROCESSES = $opts{'ncpu'}; 
 	my $pm = new Parallel::ForkManager($MAX_PROCESSES); 
 	for my $inFname ( @{$opts{'_inner'}{'tmp_wind_file'}} ) {
@@ -226,6 +239,7 @@ sub cnt_val {
 }# sub cnt_val () 
 
 sub out_data {
+	&tsmsg("[Msg] Output result.\n"); 
 	print {$opts{'_inner'}{'outFh'}} join("\t", qw/ChrID WindS WindE WindL/, @{$opts{'cnt_stat'}})."\n"; 
 	for my $inFname ( @{$opts{'_inner'}{'tmp_wind_file'}} ) {
 		my ($chrID, $chrWsi) = @{ $opts{'_inner'}{'windFN2windTI'}{$inFname} }; 
@@ -244,6 +258,7 @@ sub out_data {
 }# sub out_data () 
 
 sub del_tmp {
+	&tsmsg("[Msg] Delete temporary Dir: $opts{'_inner'}{'tmp_dir'}\n"); 
 	&fileSunhh::_rmtree( $opts{'_inner'}{'tmp_dir'} ); 
 	return 0; 
 }
