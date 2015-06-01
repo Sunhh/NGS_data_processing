@@ -458,7 +458,6 @@ sub cnt_val_1tbl {
 #	  -individuals => [@inds]
 #	); 
 	my %val; 
-	my $stats = Bio::PopGen::Statistics->new(); 
 	my @out_arr; 
 	# These are values not normalized. 
 	for my $type (@{$opts{'_inner'}{'cnt_stat'}}) {
