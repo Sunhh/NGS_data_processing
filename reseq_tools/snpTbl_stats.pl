@@ -52,7 +52,8 @@ my (%wind, @chrIDs);
 &setup_windows(); 
 if ( $opts{'use_file'} ) {
 	&dvd_snp_tbl(); 
-	&cnt_val(); 
+	# &cnt_val(); 
+	&cnt_val_raw(); 
 } else {
 	&dvd_snp_tbl_inMEM(); 
 	&cnt_val_inMEM(); 
@@ -294,42 +295,78 @@ sub dvd_snp_tbl {
 	my $nn = scalar( @{$opts{'_inner'}{'tmp_wind_file'}} ); 
 	&tsmsg("[Msg] Total $nn windows to process.\n"); 
 
+	my $batch_grp = &batch_subGrp( $opts{'_inner'}{'tmp_wind_file'}, $opts{'ncpu'} ); 
 	my $pm = new Parallel::ForkManager( $opts{'ncpu'} ); 
-	my $tn = 0; 
-	for my $inFname ( @{$opts{'_inner'}{'tmp_wind_file'}} ) {
-		$tn ++; 
-		$tn % 1e3 == 1 and &tsmsg("[Msg] Generating [$tn] $inFname file.\n"); 
+	for my $grp ( @$batch_grp ) {
 		my $pid = $pm->start and next; 
-		open O,'>',"$inFname" or &stopErr("[Err] Failed to write to [$inFname]\n"); 
-		for my $tr ( @{ $opts{'_inner'}{'tbl_lines'} }[ @{ $opts{'_inner'}{'windFH2LineN'}{$inFname} } ] ) {
-			print O $tr->[2]."\n"; 
+		for my $inFname (@$grp) {
+			open O,'>',"$inFname" or &stopErr("[Err] Failed to write to [$inFname]\n"); 
+			for my $tr ( @{ $opts{'_inner'}{'tbl_lines'} }[ @{ $opts{'_inner'}{'windFH2LineN'}{$inFname} } ] ) { 
+				print O $tr->[2]."\n"; 
+			} 
+			close O; 
 		}
-		close O; 
 		$pm->finish; 
 	}
 	$pm->wait_all_children; 
 }# dvd_snp_tbl () 
 
+sub batch_subGrp {
+	my $inA = shift; 
+	my $grpN = shift; 
+	$grpN = int($grpN); 
+	$grpN >= 1 or $grpN = 1; 
+	my @sub_grps; 
+	for (my $i=0; $i<@$inA; $i+=$grpN) {
+		for (my $j=0; $j<$grpN; $j++) {
+			my $k = $j+$i; 
+			$k < @$inA or last; 
+			push(@{$sub_grps[$j]}, $inA->[$k]); 
+		}
+	}
+	return \@sub_grps; 
+}# batch_subGrp () 
+
 sub cnt_val_inMEM {
 	&tsmsg("[Msg] Counting statistics in memory.\n"); 
-	my $MAX_PROCESSES = $opts{'ncpu'}; 
-	my $pm = new Parallel::ForkManager($MAX_PROCESSES); 
-	for my $inFname ( @{$opts{'_inner'}{'tmp_wind_file'}} ) {
+	my $batch_grp = &batch_subGrp( $opts{'_inner'}{'tmp_wind_file'}, $opts{'ncpu'} ); 
+	my $pm = new Parallel::ForkManager($opts{'ncpu'}); 
+	for my $grp ( @$batch_grp ) {
 		my $pid = $pm->start and next; 
-		&cnt_val_1tbl_inMEM($inFname, "${inFname}.val") || &exeCmd_1cmd("touch ${inFname}.val.OK"); 
+		for my $inFname (@$grp) {
+			# &cnt_val_1tbl_inMEM($inFname, "${inFname}.val") || &exeCmd_1cmd("touch ${inFname}.val.OK"); 
+			&cnt_val_1tbl_inMEM($inFname, "${inFname}.val"); 
+		}
 		$pm->finish; 
 	}
 	$pm->wait_all_children; 
 	return 0; 
 }# sub cnt_val_inMEM () 
 
+sub cnt_val_raw {
+	&tsmsg("[Msg] Counting statistics.\n");
+	my $MAX_PROCESSES = $opts{'ncpu'};
+	my $pm = new Parallel::ForkManager($MAX_PROCESSES);
+	for my $inFname ( @{$opts{'_inner'}{'tmp_wind_file'}} ) {
+		my $pid = $pm->start and next;
+		&cnt_val_1tbl($inFname, "${inFname}.val") || &exeCmd_1cmd("touch ${inFname}.val.OK");
+		$pm->finish;
+	}
+	$pm->wait_all_children;
+	return 0;
+}# sub cnt_val ()
+
+
 sub cnt_val {
 	&tsmsg("[Msg] Counting statistics.\n"); 
-	my $MAX_PROCESSES = $opts{'ncpu'}; 
-	my $pm = new Parallel::ForkManager($MAX_PROCESSES); 
-	for my $inFname ( @{$opts{'_inner'}{'tmp_wind_file'}} ) {
-		my $pid = $pm->start and next; 
-		&cnt_val_1tbl($inFname, "${inFname}.val") || &exeCmd_1cmd("touch ${inFname}.val.OK"); 
+	my $batch_grp = &batch_subGrp( $opts{'_inner'}{'tmp_wind_file'}, $opts{'ncpu'} ); 
+	my $pm = new Parallel::ForkManager( $opts{'ncpu'} ); 
+	for my $grp ( @$batch_grp ) {
+		my $pid=$pm->start and next; 
+		for my $inFname ( @$grp ) {
+			# &cnt_val_1tbl($inFname, "${inFname}.val") || &exeCmd_1cmd("touch ${inFname}.val.OK"); 
+			&cnt_val_1tbl($inFname, "${inFname}.val"); 
+		}
 		$pm->finish; 
 	}
 	$pm->wait_all_children; 
@@ -342,10 +379,10 @@ sub out_data {
 	for my $inFname ( @{$opts{'_inner'}{'tmp_wind_file'}} ) {
 		my ($chrID, $chrWsi) = @{ $opts{'_inner'}{'windFN2windTI'}{$inFname} }; 
 		my ($wS, $wE, $wL) = @{ $wind{$chrID}{'loci'}{$chrWsi} }; 
-		unless ( -e "${inFname}.val.OK" ) {
-			&tsmsg("[Err] Failed to count values for $inFname storing ${chrID} - [ $wS , $wE ]\n"); 
-			next; 
-		}
+		# unless ( -e "${inFname}.val.OK" ) {
+		# 	&tsmsg("[Err] Failed to count values for $inFname storing ${chrID} - [ $wS , $wE ]\n"); 
+		# 	next; 
+		# }
 		open F,'<',"$inFname.val" or &stopErr("[Err] Failed to open file $inFname.val\n"); 
 		my $outL = <F>; chomp($outL); 
 		close F; 
