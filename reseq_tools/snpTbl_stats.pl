@@ -295,7 +295,10 @@ sub dvd_snp_tbl {
 	&tsmsg("[Msg] Total $nn windows to process.\n"); 
 
 	my $pm = new Parallel::ForkManager( $opts{'ncpu'} ); 
+	my $tn = 0; 
 	for my $inFname ( @{$opts{'_inner'}{'tmp_wind_file'}} ) {
+		$tn ++; 
+		$tn % 1e3 == 1 and &tsmsg("[Msg] Generating [$tn] $inFname file.\n"); 
 		my $pid = $pm->start and next; 
 		open O,'>',"$inFname" or &stopErr("[Err] Failed to write to [$inFname]\n"); 
 		for my $tr ( @{ $opts{'_inner'}{'tbl_lines'} }[ @{ $opts{'_inner'}{'windFH2LineN'}{$inFname} } ] ) {
