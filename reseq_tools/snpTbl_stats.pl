@@ -273,11 +273,10 @@ sub dvd_snp_tbl {
 	mkdir($tmpDir); 
 	my %used; 
 	my $nn = 0; 
-	for ( @{$opts{'_inner'}{'tbl_lines'}} ) {
-		$nn ++; 
-		$nn % 500e3 == 1 and &tsmsg("[Msg] Processing $nn line.\n"); 
-		my $cur_chr = $_->[0]; 
-		my $cur_pos = $_->[1]; 
+	for ( my $ln=0; $ln<@{$opts{'_inner'}{'tbl_lines'}}; $ln++ ) { 
+		$ln % 500e3 == 1 and &tsmsg("[Msg] Processed $ln line.\n"); 
+		my $cur_chr = $opts{'_inner'}{'tbl_lines'}[$ln]->[0]; 
+		my $cur_pos = $opts{'_inner'}{'tbl_lines'}[$ln]->[1]; 
 		my (@wind_i) = @{ $ms_obj->map_windows( 'posi'=>$cur_pos, 'wind_hash'=>$wind{$cur_chr} ) }; 
 		for my $ti ( @wind_i ) {
 			my $file_idx; 
@@ -289,24 +288,24 @@ sub dvd_snp_tbl {
 			}
 			my $wind_fname = "$tmpDir/wind_${file_idx}"; 
 			$opts{'_inner'}{'windFN2windTI'}{$wind_fname} = [$cur_chr, $ti]; 
+			push( @{$opts{'_inner'}{'windFH2LineN'}{$wind_fname}}, $ln ); 
 			defined $used{$wind_fname} or do { push(@{$opts{'_inner'}{'tmp_wind_file'}}, $wind_fname); $used{$wind_fname} = 1; }; 
 		}
-		my $pm = new Parallel::ForkManager( $opts{'ncpu'} ); 
-		for my $ti ( @wind_i ) {
-			my $pid = $pm->start and next; 
-			my $file_idx; 
-			if ( defined $opts{'_inner'}{'chrIdx2fIdx'}{$cur_chr}{$ti} ) {
-				$file_idx = $opts{'_inner'}{'chrIdx2fIdx'}{$cur_chr}{$ti}; 
-			} else {
-				$file_idx = $ms_obj->newNumber(); 
-				$opts{'_inner'}{'chrIdx2fIdx'}{$cur_chr}{$ti} = $file_idx; 
-			}
-			my $wind_fname = "$tmpDir/wind_${file_idx}"; 
-			&fileSunhh::write2file($wind_fname, "$_->[2]\n", '>>'); 
-			$pm->finish; 
-		}
-		$pm->wait_all_children; 
 	}
+	my $nn = scalar( @{$opts{'_inner'}{'tmp_wind_file'}} ); 
+	&tsmsg("[Msg] Total $nn windows to process.\n"); 
+
+	my $pm = new Parallel::ForkManager( $opts{'ncpu'} ); 
+	for my $inFname ( @{$opts{'_inner'}{'tmp_wind_file'}} ) {
+		my $pid = $pm->start and next; 
+		open O,'>',"$inFname" or &stopErr("[Err] Failed to write to [$inFname]\n"); 
+		for my $tr ( @{ $opts{'_inner'}{'tbl_lines'} }[ @{ $opts{'_inner'}{'windFH2LineN'}{$inFname} } ] ) {
+			print O $tr->[2]."\n"; 
+		}
+		close O; 
+		$pm->finish; 
+	}
+	$pm->wait_all_children
 }# dvd_snp_tbl () 
 
 sub cnt_val_inMEM {
