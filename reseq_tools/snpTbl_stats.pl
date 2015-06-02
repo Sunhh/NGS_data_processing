@@ -272,7 +272,6 @@ sub dvd_snp_tbl {
 	my $tmpDir = $opts{'_inner'}{'tmp_dir'}; 
 	mkdir($tmpDir); 
 	my %used; 
-	my $nn = 0; 
 	for ( my $ln=0; $ln<@{$opts{'_inner'}{'tbl_lines'}}; $ln++ ) { 
 		$ln % 500e3 == 1 and &tsmsg("[Msg] Processed $ln line.\n"); 
 		my $cur_chr = $opts{'_inner'}{'tbl_lines'}[$ln]->[0]; 
