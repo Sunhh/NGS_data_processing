@@ -368,8 +368,9 @@ sub cnt_val_1tbl_inMEM {
 		); 
 	}
 	# Add genotypes
-	for my $ln ( @{ $opts{'_inner'}{'windFH2LineN'}{$inTblFile} } ) {
-		my $tr = $opts{'_inner'}{'tbl_lines'}[$ln]; 
+	for my $tr ( @{ $opts{'_inner'}{'tbl_lines'} }[ @{ $opts{'_inner'}{'windFH2LineN'}{$inTblFile} } ] ) { 
+	# for my $ln ( @{ $opts{'_inner'}{'windFH2LineN'}{$inTblFile} } ) {
+		# my $tr = $opts{'_inner'}{'tbl_lines'}[$ln]; 
 		my @ta = split(/\t/, $tr->[2]); 
 		my $cur_chr = $tr->[0]; 
 		my $cur_pos = $tr->[1]; 

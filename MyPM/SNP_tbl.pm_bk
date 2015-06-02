@@ -455,34 +455,6 @@ sub max2Allele {
 	return 0; 
 }# sub max2Allele 
 
-=head2 rm_multiVar( 'maxAlleleN'=>2, 'force_single'=>1 )
-
-Function      : Remove sites with more than 'maxAlleleN' alleles. 
- Only A|T|G|C are counted as alleles. 
-
-=cut
-sub rm_multiVar {
-	my $self = shift; 
-	my %parm = @_; 
-	$parm{'force_single'} //= 1; 
-	$parm{'maxAlleleN'} //= 2; 
-	if ( $parm{'force_single'} ) {
-		$self->SingleCharData('maxAlleleN'=>2); 
-	} elsif ( defined $self->{'is_single'} and $self->{'is_single'} == 1 ) {
-		; 
-	} else {
-		$self->SingleCharData(); 
-	}
-	$self->cnt_genotype(); 
-	my @goodRows; 
-	for (my $i=0; $i<@{$self->{'data_arr'}}; $i++) {
-		$self->{'cnt_alleleTypeN'}[$i] > $parm{'maxAlleleN'} and next; 
-		push(@goodRows, $i); 
-	}
-	my $new_obj = $self->newSubObj('RowN'=>\@goodRows); 
-	return $new_obj; 
-}# rm_multiVar() 
-
 sub tbl2illumina {
 	my $self = shift; 
 	return $self->writeTbl('fmt'=>'illumina', 'wrapTitle'=>1, @_); 
@@ -513,15 +485,6 @@ sub tbl2ped {
 	return $self->tbl2seq('fmt'=>'ped', @_); 
 }
 
-=head2 tbl2hap( 'ofile'=>\*STDOUT , 'oinfofile'=>'oo.info' ) 
-=cut
-sub tbl2hap {
-	my $self = shift; 
-	return $self->tbl2seq('fmt'=>'hap_ped', @_); 
-}
-
-=head2 tbl2seq( 'fmt'=>'fasta', 'ofile'=>\*STDOUT )
-=cut
 sub tbl2seq {
 	my $self = shift; 
 	my %parm = @_; 
@@ -544,16 +507,7 @@ sub tbl2seq {
 		$self = $self->rm_noVar(); 
 		$parm{'omapfile'} = $parm{'omapfile'} // 'oo.map' ; 
 	}
-	if ( $parm{'fmt'} =~ m/^hap_ped$/i ) {
-		&tsmsg("[Msg] Remove sites with multiple alleles.\n"); 
-		$self = $self->rm_multiVar( 'maxAlleleN'=>2, 'force_single'=>1 ); 
-		$parm{'oinfofile'} //= 'oo.info'; 
-		&tsmsg("[Msg] Removing no variation sites.\n"); 
-		$self = $self->rm_noVar(); 
-		&tsmsg("[Msg] Renew genotype information.\n"); 
-		$self->cnt_genotype(); 
-	}
-	$parm{'rm_noVar'} and $self = $self->rm_noVar(); 
+	$parm{'rm_noVar'} and $self->rm_noVar(); 
 	
 	&tsmsg("[Msg] Generating sequences.\n"); 
 	my @hh = @{$self->{'title'}}; # Sequence's IDs 
@@ -624,35 +578,6 @@ HH
 			print {$ofh} "$s1\n"; 
 			print {$ofh} "$s2\n"; 
 		}
-	} elsif ( $parm{'fmt'} =~ m/^hap_ped$/i ) { 
-		my $oIfh = &openFH( $parm{'oinfofile'}, '>' ); 
-		for ( my $i=0; $i<@{$self->{'chrColV'}}; $i++ ) {
-			my $chrNum; 
-			($chrNum, $self->{'chrIDrel'}) = &guessChrNum( $self->{'chrColV'}[$i] ,$self->{'chrIDrel'} ); 
-			my $posNum = $self->{'posColV'}[$i]; 
-			my ($a1_base, $a2_base) = @{ $self->{'cnt_alleleTypeBase'}[$i] }; 
-			my ($a1_num, $a2_num) = ( $self->{'cnt_alleleCnt'}[$i]{$a1_base}, $self->{'cnt_alleleCnt'}[$i]{$a2_base} ); 
-			my $a1_ratio = sprintf("%.4f", $a1_num/($a1_num+$a2_num)); 
-			my $a2_ratio = sprintf("%.4f", $a2_num/($a1_num+$a2_num)); 
-			print {$oIfh} join("\t", "s${chrNum}_${posNum}", $posNum, $a1_base, $a1_num, $a2_base, $a2_num, $a2_ratio )."\n"; 
-		}
-		close ($oIfh); 
-		for ( my $i=0; $i<@hh; $i++ ) {
-			my $pedID = $hh[$i]; 
-			my $idvID = $hh[$i]; 
-			my $fatID = 0; 
-			my $monID = 0; 
-			my $sexID = 0; 
-			my $case  = 0; 
-			print {$ofh} join("\t", $pedID, $idvID, $fatID, $monID, $sexID, $case); 
-			my @geno_dd; 
-			for my $tb (split(//, $seqs[$i])) {
-				my @nn = &geno2num($tb); 
-				for my $tn (@nn) { $tn == -9 and $tn = 0; }
-				push(@geno_dd, "$nn[0] $nn[1]"); 
-			}
-			print {$ofh} join("\t", '', @geno_dd)."\n"; 
-		}
 	} elsif ( $parm{'fmt'} =~ m/^ped$/i ) { 
 		# http://pngu.mgh.harvard.edu/~purcell/plink/data.shtml
 		#  It says all markers should be biallelic. 
@@ -712,9 +637,8 @@ sub guessChrNum {
 			$back_id = $1; 
 		} elsif ( $raw_id =~ m/^(\d+)$/i ) {
 			$back_id = $1; 
-		} elsif ( $raw_id =~ m/^(?:WM97_)?c(?:hr(?:om(?:osome)?)?)?(\d+)$/i ) {
+		} elsif ( $raw_id =~ m/^(WM97_)?c(?:hr(?:om(?:osome)?)?)?(\d+)$/ ) {
 			$back_id = $1; 
-			$back_id =~ s!^0+(\d)$!$1!; 
 		} else {
 			$back_id = 1; 
 			while (1) {
