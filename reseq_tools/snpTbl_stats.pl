@@ -50,10 +50,13 @@ my (%wind, @chrIDs);
 &load_snp_tbl(); 
 &reform_snp_tbl(); 
 &setup_windows(); 
-# &dvd_snp_tbl(); 
-&dvd_snp_tbl_inMEM(); 
-# &cnt_val(); 
-&cnt_val_inMEM(); 
+if ( $opts{'use_file'} ) {
+	&dvd_snp_tbl(); 
+	&cnt_val(); 
+} else {
+	&dvd_snp_tbl_inMEM(); 
+	&cnt_val_inMEM(); 
+} 
 &out_data(); 
 &del_tmp(); 
 
@@ -74,6 +77,8 @@ sub usage {
 # -skipSort         [Boolean] Skip sorting table if given. 
 # -value_types      ['pi,theta,tajima_D']
 # -ncpu             [1]
+# -use_file         [Boolean] Write tmp files if given. 
+#                     It is strange that with this method, the speed is faster. 
 #
 # -out              [*STDOUT] Output file storing the values per window. 
 #                   
@@ -101,7 +106,7 @@ sub set_opts {
 		"skipSort!", 
 		"out:s", 
 		"value_types:s", 
-		"ncpu:i", 
+		"ncpu:i", "use_file!", 
 		"wind_start:i", "wind_end:i", "wind_end_useMax!", "wind_length:i", "wind_step:i", 
 		"chr_colN:i", "pos_colN:i", 
 		"skipHN:i", 
