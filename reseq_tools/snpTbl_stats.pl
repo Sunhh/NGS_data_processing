@@ -377,10 +377,11 @@ sub cnt_val_1tbl_inMEM {
 		my $marker_name = "${cur_chr}_${cur_pos}"; 
 		for ( my $i=0; $i<@ncols; $i++ ) {
 			my @geno; 
-			$ta[$i] = uc($ta[$i]); 
-			if ( $ta[$i] =~ m/^[ATGC]$/ ) {
-				@geno = ($ta[$i], $ta[$i]); 
-			} elsif ( $ta[$i] =~ m/^([ATGC])([ATGC])$/ ) {
+			my $bp = $ta[ $ncols[$i] ]; 
+			$bp = uc($bp); 
+			if ( $bp =~ m/^[ATGC]$/ ) {
+				@geno = ($bp, $bp); 
+			} elsif ( $bp =~ m/^([ATGC])([ATGC])$/ ) {
 				@geno = ($1, $2); 
 			} else {
 				@geno = ('N', 'N'); 
@@ -436,10 +437,11 @@ sub cnt_val_1tbl {
 		my $marker_name = "${cur_chr}_${cur_pos}"; 
 		for (my $i=0; $i < @ncols; $i++ ) {
 			my @geno; 
-			$ta[$i] = uc($ta[$i]); 
-			if ( $ta[$i] =~ m/^[ATGC]$/ ) {
-				@geno = ($ta[$i], $ta[$i]); 
-			} elsif ( $ta[$i] =~ m/^([ATGC])([ATGC])$/ ) {
+			my $bp = $ta[ $ncols[$i] ]; 
+			$bp = uc($bp); 
+			if ( $bp =~ m/^[ATGC]$/ ) {
+				@geno = ($bp, $bp); 
+			} elsif ( $bp =~ m/^([ATGC])([ATGC])$/ ) {
 				@geno = ($1, $2); 
 			} else {
 				@geno = ('N', 'N'); 
