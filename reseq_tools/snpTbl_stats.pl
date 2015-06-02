@@ -51,14 +51,16 @@ my (%wind, @chrIDs);
 &reform_snp_tbl(); 
 &setup_windows(); 
 if ( $opts{'use_file'} ) {
-	&dvd_snp_tbl(); 
-	# &cnt_val(); 
-	&cnt_val_raw(); 
+	# &dvd_snp_tbl(); 
+	## &cnt_val(); 
+	# &cnt_val_raw(); 
+	# &out_data(); 
+	&dvd_cnt_out(); 
 } else {
 	&dvd_snp_tbl_inMEM(); 
 	&cnt_val_inMEM(); 
+	&out_data(); 
 } 
-&out_data(); 
 &del_tmp(); 
 
 &tsmsg("[Rec] Done.\n"); 
@@ -310,6 +312,80 @@ sub dvd_snp_tbl {
 	}
 	$pm->wait_all_children; 
 }# dvd_snp_tbl () 
+
+
+sub dvd_cnt_out {
+	&tsmsg("[Msg] Dividing windows.\n"); 
+	$opts{'_inner'}{'tmp_dir'} = &fileSunhh::new_tmp_dir(); 
+	defined $opts{'_inner'}{'tmp_dir'} or &stopErr("[Err] failed to find a temporary directory.\n"); 
+	my $tmpDir = $opts{'_inner'}{'tmp_dir'}; 
+	mkdir($tmpDir); 
+	my %used; 
+	for ( my $ln=0; $ln<@{$opts{'_inner'}{'tbl_lines'}}; $ln++ ) { 
+		$ln % 500e3 == 1 and &tsmsg("[Msg] Processed $ln line.\n"); 
+		my $cur_chr = $opts{'_inner'}{'tbl_lines'}[$ln]->[0]; 
+		my $cur_pos = $opts{'_inner'}{'tbl_lines'}[$ln]->[1]; 
+		my (@wind_i) = @{ $ms_obj->map_windows( 'posi'=>$cur_pos, 'wind_hash'=>$wind{$cur_chr} ) }; 
+		for my $ti ( @wind_i ) {
+			my $file_idx; 
+			if ( defined $opts{'_inner'}{'chrIdx2fIdx'}{$cur_chr}{$ti} ) {
+				$file_idx = $opts{'_inner'}{'chrIdx2fIdx'}{$cur_chr}{$ti}; 
+			} else {
+				$file_idx = $ms_obj->newNumber(); 
+				$opts{'_inner'}{'chrIdx2fIdx'}{$cur_chr}{$ti} = $file_idx; 
+			}
+			my $wind_fname = "$tmpDir/wind_${file_idx}"; 
+			$opts{'_inner'}{'windFN2windTI'}{$wind_fname} = [$cur_chr, $ti]; 
+			push( @{$opts{'_inner'}{'windFH2LineN'}{$wind_fname}}, $ln ); 
+			defined $used{$wind_fname} or do { push(@{$opts{'_inner'}{'tmp_wind_file'}}, $wind_fname); $used{$wind_fname} = 1; }; 
+		}
+	}
+	my $nn = scalar( @{$opts{'_inner'}{'tmp_wind_file'}} ); 
+	&tsmsg("[Msg] Total $nn windows to process.\n"); 
+
+	my $batch_grp = &batch_subGrp( $opts{'_inner'}{'tmp_wind_file'}, $opts{'ncpu'} ); 
+	my $pm = new Parallel::ForkManager( $opts{'ncpu'} ); 
+	for ( my $i=0; $i < @$batch_grp; $i++ ) {
+		my $grp = $batch_grp->[$i]; 
+		my $pid = $pm->start and next; 
+		my $idx_inGrp = 0; 
+		for my $inFname (@$grp) {
+			$idx_inGrp ++; 
+			$idx_inGrp % 100 == 1 and &tsmsg("[Msg] Processing file $inFname [$idx_inGrp] in Grp_$i\n"); 
+			open O,'>',"$inFname" or &stopErr("[Err] Failed to write to [$inFname]\n"); 
+			for my $tr ( @{ $opts{'_inner'}{'tbl_lines'} }[ @{ $opts{'_inner'}{'windFH2LineN'}{$inFname} } ] ) { 
+				print O $tr->[2]."\n"; 
+			} 
+			close O; 
+			&cnt_val_1tbl($inFname, "${inFname}.val"); 
+			open F,'<',"${inFname}.val" or &stopErr("[Err] Failed to open file $inFname.val\n"); 
+			my $outL = <F>; chomp($outL); 
+			close F; 
+			my ($chrID, $chrWsi) = @{ $opts{'_inner'}{'windFN2windTI'}{$inFname} }; 
+			my ($wS, $wE, $wL) = @{ $wind{$chrID}{'loci'}{$chrWsi} }; 
+			&fileSunhh::write2file( "$tmpDir/grp_$i", join("\t", $chrID, $wS, $wE, $wL, $outL)."\n", '>>' ); 
+			unlink($inFname, "${inFname}.val"); 
+		}
+		$pm->finish; 
+	}
+	$pm->wait_all_children; 
+	print {$opts{'_inner'}{'outFh'}} join("\t", qw/ChrID WindS WindE WindL/, @{$opts{'_inner'}{'cnt_stat'}})."\n"; 
+	my @outLines; 
+	for ( my $i=0; $i<@$batch_grp; $i++ ) {
+		open F,'<',"$tmpDir/grp_$i" or &stopErr("[Err] Failed to open $tmpDir/grp_$i\n"); 
+		while (<F>) {
+			chomp; 
+			my @ta = split(/\t/, $_); 
+			push(@outLines, [@ta]); 
+		}
+		close F; 
+	}
+	@outLines = sort { $a->[0] cmp $b->[0] || $a->[1] <=> $b->[1] } @outLines; 
+	for (@outLines) {
+		print {$opts{'_inner'}{'outFh'}} join("\t", @$_)."\n"; 
+	}
+	close ($opts{'_inner'}{'outFh'}); 
+}# dvd_cnt_out () 
 
 sub batch_subGrp {
 	my $inA = shift; 
