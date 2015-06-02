@@ -413,6 +413,7 @@ sub cnt_val_1tbl_inMEM {
 		} else {
 			&stopErr("[Err] Unknown type to count [$type]\n"); 
 		}
+		$val{$type} //= 'NA'; 
 		push(@out_arr, $val{$type}); 
 	}
 	&fileSunhh::write2file("$outValFile", join("\t", @out_arr)."\n", '>'); 
@@ -479,6 +480,7 @@ sub cnt_val_1tbl {
 		} else {
 			&stopErr("[Err] Unknown type to count [$type]\n"); 
 		}
+		$val{$type} //= 'NA'; 
 		push(@out_arr, $val{$type}); 
 	}
 	&fileSunhh::write2file("$outValFile", join("\t", @out_arr)."\n", '>'); 
