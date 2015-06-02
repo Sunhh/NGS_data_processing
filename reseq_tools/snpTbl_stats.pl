@@ -307,7 +307,7 @@ sub dvd_snp_tbl {
 		close O; 
 		$pm->finish; 
 	}
-	$pm->wait_all_children
+	$pm->wait_all_children; 
 }# dvd_snp_tbl () 
 
 sub cnt_val_inMEM {

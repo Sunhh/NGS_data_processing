@@ -52,7 +52,8 @@ my (%wind, @chrIDs);
 &setup_windows(); 
 if ( $opts{'use_file'} ) {
 	&dvd_snp_tbl(); 
-	&cnt_val(); 
+	# &cnt_val(); 
+	&cnt_val_raw(); 
 } else {
 	&dvd_snp_tbl_inMEM(); 
 	&cnt_val_inMEM(); 
@@ -333,13 +334,28 @@ sub cnt_val_inMEM {
 	for my $grp ( @$batch_grp ) {
 		my $pid = $pm->start and next; 
 		for my $inFname (@$grp) {
-			&cnt_val_1tbl_inMEM($inFname, "${inFname}.val") || &exeCmd_1cmd("touch ${inFname}.val.OK"); 
+			# &cnt_val_1tbl_inMEM($inFname, "${inFname}.val") || &exeCmd_1cmd("touch ${inFname}.val.OK"); 
+			&cnt_val_1tbl_inMEM($inFname, "${inFname}.val"); 
 		}
 		$pm->finish; 
 	}
 	$pm->wait_all_children; 
 	return 0; 
 }# sub cnt_val_inMEM () 
+
+sub cnt_val_raw {
+	&tsmsg("[Msg] Counting statistics.\n");
+	my $MAX_PROCESSES = $opts{'ncpu'};
+	my $pm = new Parallel::ForkManager($MAX_PROCESSES);
+	for my $inFname ( @{$opts{'_inner'}{'tmp_wind_file'}} ) {
+		my $pid = $pm->start and next;
+		&cnt_val_1tbl($inFname, "${inFname}.val") || &exeCmd_1cmd("touch ${inFname}.val.OK");
+		$pm->finish;
+	}
+	$pm->wait_all_children;
+	return 0;
+}# sub cnt_val ()
+
 
 sub cnt_val {
 	&tsmsg("[Msg] Counting statistics.\n"); 
@@ -348,7 +364,8 @@ sub cnt_val {
 	for my $grp ( @$batch_grp ) {
 		my $pid=$pm->start and next; 
 		for my $inFname ( @$grp ) {
-			&cnt_val_1tbl($inFname, "${inFname}.val") || &exeCmd_1cmd("touch ${inFname}.val.OK"); 
+			# &cnt_val_1tbl($inFname, "${inFname}.val") || &exeCmd_1cmd("touch ${inFname}.val.OK"); 
+			&cnt_val_1tbl($inFname, "${inFname}.val"); 
 		}
 		$pm->finish; 
 	}
@@ -362,10 +379,10 @@ sub out_data {
 	for my $inFname ( @{$opts{'_inner'}{'tmp_wind_file'}} ) {
 		my ($chrID, $chrWsi) = @{ $opts{'_inner'}{'windFN2windTI'}{$inFname} }; 
 		my ($wS, $wE, $wL) = @{ $wind{$chrID}{'loci'}{$chrWsi} }; 
-		unless ( -e "${inFname}.val.OK" ) {
-			&tsmsg("[Err] Failed to count values for $inFname storing ${chrID} - [ $wS , $wE ]\n"); 
-			next; 
-		}
+		# unless ( -e "${inFname}.val.OK" ) {
+		# 	&tsmsg("[Err] Failed to count values for $inFname storing ${chrID} - [ $wS , $wE ]\n"); 
+		# 	next; 
+		# }
 		open F,'<',"$inFname.val" or &stopErr("[Err] Failed to open file $inFname.val\n"); 
 		my $outL = <F>; chomp($outL); 
 		close F; 
