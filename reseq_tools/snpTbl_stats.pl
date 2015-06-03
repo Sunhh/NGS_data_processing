@@ -58,8 +58,9 @@ if ( $opts{'use_file'} ) {
 	&dvd_cnt_out(); 
 } else {
 	&dvd_snp_tbl_inMEM(); 
-	&cnt_val_inMEM(); 
-	&out_data(); 
+	# &cnt_val_inMEM(); 
+	# &out_data(); 
+	&cnt_out_inMEM(); 
 } 
 &del_tmp(); 
 
@@ -343,6 +344,7 @@ sub dvd_cnt_out {
 	my $nn = scalar( @{$opts{'_inner'}{'tmp_wind_file'}} ); 
 	&tsmsg("[Msg] Total $nn windows to process.\n"); 
 
+	&tsmsg("[Msg] Generate and count values.\n"); 
 	my $batch_grp = &batch_subGrp( $opts{'_inner'}{'tmp_wind_file'}, $opts{'ncpu'} ); 
 	my $pm = new Parallel::ForkManager( $opts{'ncpu'} ); 
 	for ( my $i=0; $i < @$batch_grp; $i++ ) {
@@ -403,21 +405,44 @@ sub batch_subGrp {
 	return \@sub_grps; 
 }# batch_subGrp () 
 
-sub cnt_val_inMEM {
+sub cnt_out_inMEM {
 	&tsmsg("[Msg] Counting statistics in memory.\n"); 
 	my $batch_grp = &batch_subGrp( $opts{'_inner'}{'tmp_wind_file'}, $opts{'ncpu'} ); 
+	my $tmpDir = $opts{'_inner'}{'tmp_dir'}; 
 	my $pm = new Parallel::ForkManager($opts{'ncpu'}); 
-	for my $grp ( @$batch_grp ) {
+	for ( my $i=0; $i < @$batch_grp; $i++ ) {
+		my $grp = $batch_grp->[$i]; 
 		my $pid = $pm->start and next; 
+		my $idx_inGrp = 0; 
 		for my $inFname (@$grp) {
-			# &cnt_val_1tbl_inMEM($inFname, "${inFname}.val") || &exeCmd_1cmd("touch ${inFname}.val.OK"); 
-			&cnt_val_1tbl_inMEM($inFname, "${inFname}.val"); 
+			$idx_inGrp ++; 
+			$idx_inGrp % 100 == 1 and &tsmsg("[Msg] Processing file $inFname [$idx_inGrp] in Grp_$i\n"); 
+			my $outL = &cnt_val_1tbl_inMEM($inFname); 
+			my ($chrID, $chrWsi) = @{ $opts{'_inner'}{'windFN2windTI'}{$inFname} }; 
+			my ($wS, $wE, $wL) = @{ $wind{$chrID}{'loci'}{$chrWsi} }; 
+			&fileSunhh::write2file( "$tmpDir/grp_$i", join("\t", $chrID, $wS, $wE, $wL, $outL)."\n", '>>' ); 
 		}
 		$pm->finish; 
 	}
 	$pm->wait_all_children; 
+	print {$opts{'_inner'}{'outFh'}} join("\t", qw/ChrID WindS WindE WindL/, @{$opts{'_inner'}{'cnt_stat'}})."\n"; 
+	my @outLines; 
+	for ( my $i=0; $i<@$batch_grp; $i++ ) {
+		open F,'<',"$tmpDir/grp_$i" or &stopErr("[Err] Failed to open $tmpDir/grp_$i\n"); 
+		while (<F>) {
+			chomp; 
+			my @ta = split(/\t/, $_); 
+			push(@outLines, [@ta]); 
+		}
+		close F; 
+	}
+	@outLines = sort { $a->[0] cmp $b->[0] || $a->[1] <=> $b->[1] } @outLines; 
+	for (@outLines) {
+		print {$opts{'_inner'}{'outFh'}} join("\t", @$_)."\n"; 
+	}
+	close ($opts{'_inner'}{'outFh'}); 
 	return 0; 
-}# sub cnt_val_inMEM () 
+}# sub cnt_out_inMEM () 
 
 sub cnt_val_raw {
 	&tsmsg("[Msg] Counting statistics.\n");
@@ -475,8 +500,7 @@ sub del_tmp {
 }
 
 sub cnt_val_1tbl_inMEM {
-	my ($inTblFile, $outValFile) = @_; 
-	$outValFile //= "${inTblFile}.val"; 
+	my ($inTblFile) = @_; 
 	# Setup individuals obj
 	my @inds; 
 	my @ncols = @{ $opts{'_inner'}{'geno_cols'} }; 
@@ -530,8 +554,7 @@ sub cnt_val_1tbl_inMEM {
 		$val{$type} //= 'NA'; 
 		push(@out_arr, $val{$type}); 
 	}
-	&fileSunhh::write2file("$outValFile", join("\t", @out_arr)."\n", '>'); 
-	return 0; 
+	return (join("\t", @out_arr)); 
 }# sub cnt_val_1tbl_inMEM () 
 
 
