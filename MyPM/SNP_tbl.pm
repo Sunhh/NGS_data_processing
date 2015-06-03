@@ -104,6 +104,9 @@ Input        :
  'posColID'  : ['posCol'] The title of column for position information. 
  'skipColN'  : [] Columns that are not genotypes and will not exist in 'data_arr' array. 
                 The 'chrCol' and 'posCol' will be skipped automatically. 
+Required     : 'filename' or 'FH'
+
+
 =cut
 sub new {
 	my $class = shift;     # Get the request class name. Use "class->new()" to call this function! 
@@ -232,6 +235,16 @@ sub get_tv {
 	return $new_obj; 
 }# sub get_tv ()  
 
+=head2 readTbl( 'filename'=>filename, 'FH'=>file_handle )
+
+Function   : read table into object. 
+
+Returns    : 
+ 'chrColV'   : Storing values in Chrom column ('chrColN'); 
+ 'posColV'   : Storing values in Position column ('posColN'); 
+ 'data_arr'  : All genotype data in array. One elment one line, and each line in a sub-array. 
+
+=cut
 sub readTbl {
 	my $self = shift; 
 	for my $tk (qw/FH title data_arr/) {

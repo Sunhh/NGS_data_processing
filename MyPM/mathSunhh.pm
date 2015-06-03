@@ -770,28 +770,42 @@ sub combinations {
 	return @comb; 
 }#sub combinations
 
-=head1 dvd_array( \@array_to_be_divided, $number_of_subgroups )
+=head1 dvd_array( \@array_to_be_divided, $number_of_subgroups, $If_keep_order[default=0] )
 
 Function : Divide @array_to_be_divided into $number_of_subgroups subgroups. 
+If $If_keep_order is TRUE, the elements in subgroups will be sequenctial same to the raw order. 
 
 Return   : [ \@subgroup_1, \@subgroup_2, ... ]
 
 Example  : 
-  &dvd_array( [0,1,2,3,4,5,6,7] , 3 )
- will return [ [0,3,6], [1,4,7], [2,5] ]
+  &dvd_array( [0,1,2,3,4,5,6,7] , 3 )    returns [ [0,3,6], [1,4,7], [2,5] ] ; 
+  &dvd_array( [0,1,2,3,4,5,6,7] , 3, 1 ) returns [ [0,1,2], [3,4,5], [6,7] ] ; 
 
 =cut
 sub dvd_array {
-	my $inA = shift;
-	my $grpN = shift;
+	my $inA = shift; 
+	my $grpN = shift; 
+	my $keepOrder = shift; 
 	$grpN = int($grpN);
 	$grpN >= 1 or $grpN = 1;
 	my @sub_grps;
-	for (my $i=0; $i<@$inA; $i+=$grpN) {
-		for (my $j=0; $j<$grpN; $j++) {
-			my $k = $j+$i;
-			$k < @$inA or last;
-			push(@{$sub_grps[$j]}, $inA->[$k]);
+	if ( $keepOrder ) {
+		my $num_ttl = scalar(@$inA); 
+		my $num_subG = int( $num_ttl/$grpN ); 
+		$num_subG * $grpN >= $num_ttl or $num_subG++; 
+		$num_subG * $grpN >= $num_ttl or &stopErr("[Err] num_ttl=$num_ttl , grpN=$grpN\n"); 
+		for (my $i=0; $i<@$inA; $i+=$num_subG) {
+			my $e = $i+$num_subG-1; 
+			$e > $#$inA and $e = $#$inA; 
+			push( @sub_grps, [ @{$inA}[ $i .. $e ] ] ); 
+		}
+	} else {
+		for (my $i=0; $i<@$inA; $i+=$grpN) {
+			for (my $j=0; $j<$grpN; $j++) {
+				my $k = $j+$i;
+				$k < @$inA or last;
+				push(@{$sub_grps[$j]}, $inA->[$k]);
+			}
 		}
 	}
 	return \@sub_grps;
