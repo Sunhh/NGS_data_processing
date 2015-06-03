@@ -66,6 +66,13 @@ for (my $i=$opts{'beginLn'}-1; $i<$opts{'endLn'}; $i++) {
 }
 $pm->wait_all_children; 
 
+&tsmsg("[Rec] All commands over.\n"); 
+
+################################################################################
+# Sub-routines 
+################################################################################
+
+
 sub change_procN {
 	my ($pm, $nprocF, $prev_maxP) = @_; 
 	-e $nprocF or return $prev_maxP; 
