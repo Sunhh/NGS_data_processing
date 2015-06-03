@@ -770,6 +770,32 @@ sub combinations {
 	return @comb; 
 }#sub combinations
 
+=head1 dvd_array( \@array_to_be_divided, $number_of_subgroups )
+
+Function : Divide @array_to_be_divided into $number_of_subgroups subgroups. 
+
+Return   : [ \@subgroup_1, \@subgroup_2, ... ]
+
+Example  : 
+  &dvd_array( [0,1,2,3,4,5,6,7] , 3 )
+ will return [ [0,3,6], [1,4,7], [2,5] ]
+
+=cut
+sub dvd_array {
+	my $inA = shift;
+	my $grpN = shift;
+	$grpN = int($grpN);
+	$grpN >= 1 or $grpN = 1;
+	my @sub_grps;
+	for (my $i=0; $i<@$inA; $i+=$grpN) {
+		for (my $j=0; $j<$grpN; $j++) {
+			my $k = $j+$i;
+			$k < @$inA or last;
+			push(@{$sub_grps[$j]}, $inA->[$k]);
+		}
+	}
+	return \@sub_grps;
+}# dvd_array ()
 
 
 1; 
