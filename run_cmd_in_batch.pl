@@ -79,7 +79,7 @@ sub change_procN {
 		$pm->set_max_procs($new_maxP); 
 		&tsmsg("[Rec] Changing MAX_PROCESSES from $prev_maxP to $new_maxP\n"); 
 	}
-	return $prev_maxP; 
+	return $new_maxP; 
 }# change_procN()
 
 
