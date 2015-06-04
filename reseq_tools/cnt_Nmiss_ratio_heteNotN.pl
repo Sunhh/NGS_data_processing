@@ -2,10 +2,11 @@
 use strict; 
 use warnings; 
 use LogInforSunhh; 
+use SNP_tbl; 
 
 # Rules: 
 #  R1. Treat all indel as N missing; 
-#  R2. Treat heterozygous as missing; 
+#  R2. Treat heterozygous not missing; 
 
 my $maxAllowMiss = 0.05 * 100; 
 $maxAllowMiss = 0.20 * 100; 
@@ -32,7 +33,14 @@ while (<>) {
 	my $totalCnt = 0; 
 	for my $tb (@ta[3..$#ta]) {
 		$tb = uc($tb); 
-		$tb =~ m/^([ATGC]|[ATGC][ATGC])$/ or $tb = 'N'; # R1 & R2
+		if ( length($tb) == 1 ) {
+			my @td = &SNP_tbl::dna_d2b($tb); 
+			scalar(@td) == 1 or scalar(@td) == 2 or $tb = 'N'; 
+		} elsif ( $tb =~ m!^[ATGC][ATGC]$! ) {
+			; 
+		} else {
+			$tb = 'N'; 
+		}
 		$tb eq 'N' and $missingCnt++; 
 		$totalCnt ++; 
 	}

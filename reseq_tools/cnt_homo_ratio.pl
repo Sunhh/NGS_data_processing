@@ -2,14 +2,16 @@
 use strict; 
 use warnings; 
 
+my $geno_col = 3; 
+
 my $l = <>; 
 print join("\t",qw/ChromID Pos HomoRatio/)."\n"; 
 while (<>) {
 	chomp; 
 	my @ta = split(/\t/, $_); 
-	my $tot = $#ta-3+1; 
+	my $tot = $#ta- $geno_col +1; 
 	my $homN = 0; 
-	for my $tb ( @ta[3 .. $#ta] ) {
+	for my $tb ( @ta[$geno_col .. $#ta] ) {
 		$tb =~ m/^[ATGC]$/i and $homN ++; 
 	}
 	my $rat = sprintf("%.4f", $homN/$tot) * 100; 
