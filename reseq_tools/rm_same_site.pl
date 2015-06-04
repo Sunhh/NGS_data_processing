@@ -3,6 +3,10 @@ use strict;
 use warnings; 
 use LogInforSunhh; 
 
+my $geno_col = 2; 
+
+-t and !@ARGV and die "perl $0 in_pasted_1col.tbl > snp.tbl\nPlease note that the geno_col is $geno_col\n"; 
+
 
 while (<>) {
 	$. % 1e6 == 1 and &tsmsg("[Msg] Reading $. lines.\n");
@@ -12,9 +16,9 @@ while (<>) {
 		print "$_\n";
 		next;
 	}
-	my $base = uc($ta[2]);
+	my $base = 'N';
 	my $has_diff = 0;
-	for (my $i=3; $i<@ta; $i++) {
+	for (my $i=$geno_col; $i<@ta; $i++) {
 		$ta[$i] = uc($ta[$i]);
 		$ta[$i] eq 'N' and next;
 		$base eq 'N' and $base = $ta[$i];

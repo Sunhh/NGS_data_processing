@@ -4,11 +4,17 @@ use warnings;
 use LogInforSunhh; 
 use SNP_tbl; 
 
-!@ARGV and die "perl $0 in_snp.tbl > in_snp.tbl.maf\n"; 
+!@ARGV and die "perl $0 in_snp.tbl > in_snp.tbl.maf\nPlease note that the geno_col is 3 by default, it is not 2!\n"; 
+
+my $geno_col = 3; 
+my %skipColN; 
+for (my $i=2; $i<$geno_col; $i++) {
+	$skipColN{$i} = 1; 
+}
 
 print join("\t", qw/chr pos cnt_all cnt_2Allele MajorBp MajorCnt MinorBp MinorCnt MAF_all MAF_2Allele/)."\n"; 
 
-my $st_obj = SNP_tbl->new('filename'=>shift); 
+my $st_obj = SNP_tbl->new('filename'=>shift, 'skipColN'=>\%skipColN); 
 &tsmsg("[Msg] Reading SNP\n"); 
 $st_obj->readTbl(); 
 &tsmsg("[Msg] Counting genotypes\n"); 

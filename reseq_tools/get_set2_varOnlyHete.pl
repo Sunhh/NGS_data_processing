@@ -3,7 +3,9 @@ use strict;
 use warnings; 
 use LogInforSunhh; 
 
+-t and !@ARGV and die "perl $0 in_snp.tbl > in_snp.tbl.set2_varOnlyHete\n"; 
 
+my $geno_col = 3; 
 
 while (<>) {
 	$. % 1e6 == 1 and &tsmsg("[Msg] Reading $. lines.\n"); 
@@ -13,14 +15,11 @@ while (<>) {
 		print "$_\n"; 
 		next; 
 	}
-	my $base = uc($ta[3]); 
-	# $base =~ m!^[ATGC]{2,}$! and $base = 'N'; 
-	$base =~ m/^[ATGC]$|\*|\+/ or $base = 'N'; 
+	my $base = 'N'; 
 	my $has_diff = 0; 
-	for (my $i=4; $i<@ta; $i++) {
+	for (my $i=$geno_col; $i<@ta; $i++) {
 		$ta[$i] = uc($ta[$i]); 
-		# $ta[$i] =~ m!^[ATGC]{2,}$! and $base = 'N'; 
-		$ta[$i] =~ m/^[ATGC]$|\*|\+/ or $base = 'N'; 
+		$ta[$i] =~ m/^[ATGC]$|\*|\+/ or $ta[$i] = 'N'; 
 		$ta[$i] eq 'N' and next; 
 		$base eq 'N' and $base = $ta[$i]; 
 		$base ne $ta[$i] and do { $has_diff = 1; last; }; 

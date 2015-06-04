@@ -102,8 +102,10 @@ Input        :
  'refColN'   : [2] Column No. of reference base informaton. This is not used yet. 
  'chrColID'  : ['chrCol'] The title of column for chromosome ID. 
  'posColID'  : ['posCol'] The title of column for position information. 
- 'skipColN'  : [] Columns that are not genotypes and will not exist in 'data_arr' array. 
+ 'skipColN'  : [{}] Columns that are not genotypes and will not exist in 'data_arr' array. 
                 The 'chrCol' and 'posCol' will be skipped automatically. 
+                Other columns should be set as a hash_ref. 
+                Setting 'skipColN'=>{ 2 => 1, 3 => 1} will skip col_2 and col_3. 
 Required     : 'filename' or 'FH'
 
 
@@ -990,6 +992,13 @@ Function   : Get A|C|G|T data array from input degenerate DNA base symbol.
              If input symbol has not been defined, I will return undef(); 
 
 Return     : (@array_bases)
+
+Example    : 
+  &dna_d2b('G') returns ('G')
+  &dna_d2b('H') returns ('A','C','T')
+  &dna_d2b('U') returns ('T')
+  &dna_d2b('-') returns ('A','C','G','T')
+  &dna_d2b('AA') returns undef()
 
 =cut
 sub dna_d2b {
