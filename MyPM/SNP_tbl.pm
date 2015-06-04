@@ -313,6 +313,20 @@ sub is_tstv {
 	return 0; 
 }# sub is_tstv()
 
+=head2 SingleChar( $genotype_char, 'onlyATGC'=>0 , 'maxAlleleN'=>0 )
+
+Function    : Change $genotype_char to single character version. 
+  'onlyATGC'   : [0] When True, only bp other than 'A|T|G|C' will be changed into 'N'; 
+  'maxAlleleN' : [0] When >=1, only bp with no more than 'maxAlleleN' will be accepted, others will be changed into 'N'; 
+
+Example     : 
+  $obj->SingleChar( "AT", 'onlyATGC'=>1 ) returns 'N'; 
+  $obj->SingleChar( "H" , 'onlyATGC'=>0 ) returns 'H'; 
+  $obj->SingleChar( "ATA", 'onlyATGC'=>0 ) returns 'W'; 
+  $obj->SingleChar( "ATG", 'onlyATGC'=>0 ) returns 'D'; 
+  $obj->SingleChar( "D", 'maxAlleleN'=>2 ) returns 'N'; 
+
+=cut
 sub SingleChar {
 	my $self = shift; 
 	my $char = shift; 
