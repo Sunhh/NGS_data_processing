@@ -11,6 +11,6 @@ for (@txt) {
 	chomp; 
 	m!^\s*(\d+)! or next; 
 	my $pid = $1; 
-	&tsmsg("kill -9 $pid"); 
+	&exeCmd_1cmd("kill -9 $pid"); 
 }
 
