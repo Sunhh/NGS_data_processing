@@ -33,6 +33,8 @@ use fileSunhh;
 use LogInforSunhh; 
 use mathSunhh; 
 my $ms_obj = mathSunhh->new(); 
+use SNP_tbl; 
+my $st_obj = SNP_tbl->new(); 
 
 ############################################################
 # Basic settings 
@@ -80,7 +82,10 @@ sub usage {
 # -snp_tbl          [filename] 
 # -skipSort         [Boolean] Skip sorting table if given. 
 # -value_types      ['pi,theta,tajima_D']
-# -ncpu             [1]
+# -ploidy           [2] In case 2, 'A' will be changed to 'AA', 'W' will be changed to 'AT', 'D' will be changed to 'NN'
+#                       In case 1, 'A' or 'W' will be kept, 'D' will be changed to 'N'. 
+#                       This affects the markers' genotype, as well as the population size. 
+# -ncpu             [1] 
 # -use_file         [Boolean] Write tmp files if given. 
 #                     It is strange that with this method, the speed is faster. 
 #
@@ -110,6 +115,7 @@ sub set_opts {
 		"skipSort!", 
 		"out:s", 
 		"value_types:s", 
+		"ploidy:i", # Default 2, could be 1. 
 		"ncpu:i", "use_file!", 
 		"wind_start:i", "wind_end:i", "wind_end_useMax!", "wind_length:i", "wind_step:i", 
 		"chr_colN:i", "pos_colN:i", 
@@ -123,6 +129,8 @@ sub set_opts {
 	$opts{'_inner'}{'outFh'} = \*STDOUT; 
 	defined $opts{'out'} and $opts{'_inner'}{'outFh'} = &openFH($opts{'out'}, '>'); 
 	
+	$opts{'ploidy'} //= 2; 
+
 	$opts{'ncpu'} //= 1; 
 	$opts{'wind_start'} //= 1; 
 	$opts{'wind_end'}   //= 99999999; 
@@ -522,12 +530,22 @@ sub cnt_val_1tbl_inMEM {
 			my @geno; 
 			my $bp = $ta[ $ncols[$i] ]; 
 			$bp = uc($bp); 
-			if ( $bp =~ m/^[ATGC]$/ ) {
-				@geno = ($bp, $bp); 
-			} elsif ( $bp =~ m/^([ATGC])([ATGC])$/ ) {
-				@geno = ($1, $2); 
+			if ( $opts{'ploidy'} == 2 ) {
+				if ( length($bp) == 1 ) {
+					@geno = &SNP_tbl::dna_d2b($bp); 
+					scalar(@geno) == 1 and @geno = ($geno[0], $geno[0]); 
+					scalar(@geno) == 0 and @geno = ('N','N'); 
+					scalar(@geno) > 2 and @geno = ('N','N'); 
+				} elsif ( $bp =~ m!^([ATGC])([ATGC])$! ) {
+					@geno = ($1, $2); 
+				} else {
+					@geno = ('N', 'N'); 
+				}
+			} elsif ( $opts{'ploidy'} == 1 ) {
+				@geno = ( $st_obj->SingleChar($bp) ); 
+				scalar(@geno) == 0 and @geno = ('N'); 
 			} else {
-				@geno = ('N', 'N'); 
+				&stopErr("[Err] Unknown -ploidy [$opts{'ploidy'}]\n"); 
 			}
 			$inds[$i]->add_Genotype(
 			  Bio::PopGen::Genotype->new(
@@ -582,13 +600,30 @@ sub cnt_val_1tbl {
 			my @geno; 
 			my $bp = $ta[ $ncols[$i] ]; 
 			$bp = uc($bp); 
-			if ( $bp =~ m/^[ATGC]$/ ) {
-				@geno = ($bp, $bp); 
-			} elsif ( $bp =~ m/^([ATGC])([ATGC])$/ ) {
-				@geno = ($1, $2); 
+			if ( $opts{'ploidy'} == 2 ) {
+				if ( length($bp) == 1 ) {
+					@geno = &SNP_tbl::dna_d2b($bp); 
+					scalar(@geno) == 1 and @geno = ($geno[0], $geno[0]); 
+					scalar(@geno) == 0 and @geno = ('N','N'); 
+					scalar(@geno) > 2 and @geno = ('N','N'); 
+				} elsif ( $bp =~ m!^([ATGC])([ATGC])$! ) {
+					@geno = ($1, $2); 
+				} else {
+					@geno = ('N', 'N'); 
+				}
+			} elsif ( $opts{'ploidy'} == 1 ) {
+				@geno = ( $st_obj->SingleChar($bp) ); 
+				scalar(@geno) == 0 and @geno = ('N'); 
 			} else {
-				@geno = ('N', 'N'); 
+				&stopErr("[Err] Unknown -ploidy [$opts{'ploidy'}]\n"); 
 			}
+			#if ( $bp =~ m/^[ATGC]$/ ) {
+			#	@geno = ($bp, $bp); 
+			#} elsif ( $bp =~ m/^([ATGC])([ATGC])$/ ) {
+			#	@geno = ($1, $2); 
+			#} else {
+			#	@geno = ('N', 'N'); 
+			#}
 			$inds[$i]->add_Genotype(
 			  Bio::PopGen::Genotype->new(
 			    -alleles     => [@geno], 
