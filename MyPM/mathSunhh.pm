@@ -488,6 +488,8 @@ sub mergeLocBlk {
 	return \@back_blk; 
 }# mergeLocBlk() 
 
+=head1 _setHashFromArr(@keyVal_array)
+
 =head2 _setHashFromArr(@keyVal_array)
 
 Required: @keyVal_array
@@ -502,6 +504,10 @@ Return  : %back_hash
 =cut
 sub _setHashFromArr {
 	my $self = shift; 
+	if ( ref($self) ne 'mathSunhh' ) {
+		ref($self) eq '' or &stopErr("[Err] _setHashFromArr() input [$self] illegal.\n"); 
+		unshift(@_, $self); 
+	}
 	my %back_hash; 
 	for (my $i=0; $i<@_; $i+=2) {
 		my $val; 
@@ -619,6 +625,8 @@ sub _median {
 
 =head1 min(@numbers)
 
+=head2 min(@numbers)
+
 Function: This is not a method, but a sub-routine()
 
 =cut
@@ -637,6 +645,8 @@ sub min {
 }# min() 
 
 =head1 max(@numbers)
+
+=head2 max(@numbers)
 
 Function: This is not a method, but a sub-routine()
 

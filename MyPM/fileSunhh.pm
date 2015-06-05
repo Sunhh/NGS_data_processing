@@ -11,6 +11,7 @@ use File::Copy;
 use File::Spec::Functions qw( catfile path ); 
 use File::Path; 
 use LogInforSunhh; 
+use mathSunhh; 
 use Cwd; 
 use Exporter qw(import); 
 
@@ -174,6 +175,63 @@ sub new_tmp_file {
 	&tsmsg("[Wrn] All tmp file from tmp0 to tmp$parm{'maxNum'} exists!\n"); 
 	return undef(); 
 }# sub new_tmp_file() 
+
+=head1 dvd_file( $in_filename_or_filehandle, $num_of_groups, 'keep_order'=>0, 'with_header'=>0, 'sub_pref'=>'sub_' )
+
+Function       : divide $in_filename_or_filehandle into subgroup_files within format 'sub_pref'$grpNumber . 
+  If the line number of in_file is smaller than $num_of_groups, $num_of_in_file_lines (-1 if with header) sub_files will be created. 
+
+Return         : ($sub_filename_1, $sub_filename_2, ...)
+  If in_file is : 
+header
+1
+2
+3
+4
+  &dvd_file( $in_file, 2, 'keep_order'=>1, 'with_header'=>1, 'sub_pref'=>'out_' ) will return ('out_0', 'out_1'), and in the files: 
+# out_0 contains: 
+header
+1
+2
+# out_1 contains: 
+header
+3
+4
+
+=cut
+sub dvd_file {
+	my $inFn = shift; 
+	my $grpN = shift; 
+	my $inFh; 
+	if ( ref($inFn) eq '' ) {
+		$inFh = &openFH( $inFn, '<' ); 
+	} elsif ( ref($inFn) eq 'GLOB' ) {
+		$inFh = $inFn; 
+	} else {
+		&stopErr("[Err] The 1st input [$inFn] of dvd_file() should be a filename or file_handle.\n"); 
+	}
+	( defined $grpN and int($grpN) > 0 ) or &stopErr("[Err] 2nd input [$grpN] of dvd_file() must not be smaller than 1.\n"); 
+	$grpN = int($grpN); 
+	my %parm = &mathSunhh::_setHashFromArr(@_); 
+	$parm{'keep_order'} //= 0; 
+	$parm{'with_header'} //= 0; 
+	$parm{'sub_pref'} //= 'sub_'; 
+	my $header = ''; 
+	my @in_data = <$inFh>; 
+	$parm{'with_header'} and $header = shift(@in_data); 
+	my @sub_data = @{ &mathSunhh::dvd_array(\@in_data, $grpN, $parm{'keep_order'}) }; 
+	
+	my @sub_file_names; 
+	for (my $i=0; $i<@sub_data; $i++) {
+		my $subFn = "$parm{'sub_pref'}$i"; 
+		push(@sub_file_names, $subFn); 
+		&write2file( $subFn, join('',$header,@{$sub_data[$i]}), '>' ); 
+	}
+
+	return @sub_file_names; 
+}# dvd_file() 
+
+
 
 sub iCompressFile ($$) {
 	my $f = shift; 
