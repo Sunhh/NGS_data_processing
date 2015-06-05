@@ -4,9 +4,10 @@ use warnings;
 use LogInforSunhh; 
 use SNP_tbl; 
 
-!@ARGV and die "perl $0 in_snp.tbl > in_snp.tbl.maf\nPlease note that the geno_col is 3 by default, it is not 2!\n"; 
-
 my $geno_col = 3; 
+
+!@ARGV and die "perl $0 in_snp.tbl > in_snp.tbl.maf\nPlease note that the geno_col is $geno_col!\n"; 
+
 my %skipColN; 
 for (my $i=2; $i<$geno_col; $i++) {
 	$skipColN{$i} = 1; 
