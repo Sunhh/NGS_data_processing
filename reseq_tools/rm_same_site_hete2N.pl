@@ -4,7 +4,7 @@ use warnings;
 use LogInforSunhh; 
 
 my $gene_col = 2; 
-!@ARGV and die "perl $0 in_wiSame.snp\nPlease note that gene_col=$gene_col\nHere we treat heterozygous site as 'N', with indel accepted.\n"; 
+-t and !@ARGV and die "perl $0 in_wiSame.snp\nPlease note that gene_col=$gene_col\nHere we treat heterozygous site as 'N', with indel accepted.\n"; 
 
 
 while (<>) {
