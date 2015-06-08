@@ -3,8 +3,8 @@ use strict;
 use warnings; 
 use LogInforSunhh; 
 
-my $gene_col = 2; 
--t and !@ARGV and die "perl $0 in_wiSame.snp\nPlease note that gene_col=$gene_col\nHere we treat heterozygous site as 'N', with indel accepted.\n"; 
+my $geno_col = 2; 
+-t and !@ARGV and die "perl $0 in_wiSame.snp\nPlease note that geno_col=$geno_col\nHere we treat heterozygous site as 'N', with indel accepted.\n"; 
 
 
 while (<>) {
@@ -17,7 +17,7 @@ while (<>) {
 	}
 	my $base = 'N'; 
 	my $has_diff = 0; 
-	for (my $i=$gene_col; $i<@ta; $i++) {
+	for (my $i=$geno_col; $i<@ta; $i++) {
 		$ta[$i] = uc($ta[$i]); 
 		$ta[$i] =~ m/^[ATGC]$|\*|\+/ or $base = 'N'; 
 		$ta[$i] eq 'N' and next; 
