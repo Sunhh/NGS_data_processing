@@ -19,7 +19,7 @@ while (<>) {
 	my $has_diff = 0; 
 	for (my $i=$gene_col; $i<@ta; $i++) {
 		$ta[$i] = uc($ta[$i]); 
-		$ta[$i] =~ m/^[ATGC]$|\*|\+/ or $ibase = 'N'; 
+		$ta[$i] =~ m/^[ATGC]$|\*|\+/ or $base = 'N'; 
 		$ta[$i] eq 'N' and next; 
 		$base eq 'N' and $base = $ta[$i]; 
 		$base ne $ta[$i] and do { $has_diff = 1; last; }; 
