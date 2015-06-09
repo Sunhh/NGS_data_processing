@@ -4,13 +4,13 @@ use warnings;
 use LogInforSunhh; 
 use SNP_tbl; 
 
-!@ARGV and -t and die "perl $0 in_snp.tbl > in_snp.tbl.missRatio\n"; 
+my $geno_col = 3; 
+!@ARGV and -t and die "perl $0 in_snp.tbl > in_snp.tbl.missRatio\nPlease note geno_col=$geno_col\n"; 
 
 # Rules: 
 #  R1. Treat all indel as N missing; 
 #  R2. Treat heterozygous not missing; 
 
-my $geno_col = 3; 
 
 my $maxAllowMiss = 0.05 * 100; 
 $maxAllowMiss = 0.20 * 100; 
