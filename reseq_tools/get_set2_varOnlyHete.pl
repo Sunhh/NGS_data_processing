@@ -3,9 +3,9 @@ use strict;
 use warnings; 
 use LogInforSunhh; 
 
--t and !@ARGV and die "perl $0 in_snp.tbl > in_snp.tbl.set2_varOnlyHete\n"; 
-
 my $geno_col = 3; 
+-t and !@ARGV and die "perl $0 in_snp.tbl > in_snp.tbl.set2_varOnlyHete\nPlease note the geno_col=$geno_col\n"; 
+
 
 while (<>) {
 	$. % 1e6 == 1 and &tsmsg("[Msg] Reading $. lines.\n"); 
