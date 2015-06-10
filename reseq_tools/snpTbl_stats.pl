@@ -692,6 +692,7 @@ sub _selfTheta {
 		for (my $k=1; $k<$samplesize; $k++) {
 			$a1 += (1/$k); 
 		}
+		$a1 > 0 or next; 
 		$theta += 1/$a1; 
 	}
 	return ( $theta ); 
