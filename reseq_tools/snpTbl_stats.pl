@@ -8,6 +8,8 @@
 #    5. Remove temporary files. 
 # 2015-06-01 In this workflow, I ignored windows with no SNP sites in the table. So if needed, we 
 #   should setup a basic window list. 
+# 2015-06-10 The theta() function in bioperl doesn't fit my needs, because it doesn't remove N genotypes from total sample size. 
+#   I use _selfTheta() instead. 
 use strict; 
 use warnings; 
 
@@ -563,7 +565,8 @@ sub cnt_val_1tbl_inMEM {
 		if ( $type =~ m!^pi$!i ) {
 			$val{$type} = $stats->pi(\@inds); 
 		} elsif ( $type =~ m!^theta$!i ) {
-			$val{$type} = $stats->theta(\@inds); 
+			# $val{$type} = $stats->theta(\@inds); 
+			$val{$type} = &_selfTheta(\@inds); 
 		} elsif ( $type =~ m!tajima_?D!i ) {
 			$val{$type} = $stats->tajima_D(\@inds); 
 		} else {
@@ -646,7 +649,8 @@ sub cnt_val_1tbl {
 		if ( $type =~ m!^pi$!i ) {
 			$val{$type} = $stats->pi(\@inds); 
 		} elsif ( $type =~ m!^theta$!i ) {
-			$val{$type} = $stats->theta(\@inds); 
+			# $val{$type} = $stats->theta(\@inds); 
+			$val{$type} = &_selfTheta(\@inds); 
 		} elsif ( $type =~ m!tajima_?D!i ) {
 			$val{$type} = $stats->tajima_D(\@inds); 
 		} else {
@@ -662,3 +666,33 @@ sub cnt_val_1tbl {
 ############################################################
 ############################################################
 
+=head1 _selfTheta(\@individuals)
+=cut
+sub _selfTheta {
+	my $individuals = shift; 
+	my $seg_sites = $stats->segregating_sites_count($individuals); 
+	# Count alleles in each marker
+	## Count allele frequencies and sample sizes for each marker. 
+	my (%data, %marker_total);  
+	my @marker_names = $individuals->[0]->get_marker_names; 
+	foreach my $ind ( @$individuals ) {
+		foreach my $m ( @marker_names ) {
+			foreach my $allele ( map { $_->get_Alleles } $ind->get_Genotypes($m) ) {
+				$data{$m}->{$allele} ++; 
+				$marker_total{$m}++; 
+			}
+		}
+	}
+	## Count theta site by site 
+	my $theta = 0; 
+	while ( my ( $marker, $markerdat ) = each %data ) {
+		my $samplesize = $marker_total{$marker}; 
+		$samplesize > 0 or next; 
+		my $a1 = 0; 
+		for (my $k=1; $k<$samplesize; $k++) {
+			$a1 += (1/$k); 
+		}
+		$theta += 1/$a1; 
+	}
+	return ( $theta ); 
+}
