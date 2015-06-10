@@ -688,6 +688,8 @@ sub _selfTheta {
 	while ( my ( $marker, $markerdat ) = each %data ) {
 		my $samplesize = $marker_total{$marker}; 
 		$samplesize > 0 or next; 
+		my @alleles = keys %$markerdat; 
+		scalar(@alleles) > 1 or next; 
 		my $a1 = 0; 
 		for (my $k=1; $k<$samplesize; $k++) {
 			$a1 += (1/$k); 
