@@ -140,6 +140,12 @@ Usage: $0  <fasta_file | STDIN>
   -replaceIDcol       [0,1] "oldID_col,newID_col"
   -replaceIDadd       [Boolean] keep old ID in head line if given. 
 
+  -chop_seq           [Boolean] Chop each sequences to small pieces. 
+  -chop_len           [100] Length of small pieces. 
+  -chop_step          [chop_len] Distance of two closest pieces' start position. 
+  -chop_min           [0] Minimum length of pieces. 
+  -chop_noPos         [Boolean] Default add raw position of pieces. 
+
 #******* Instruction of this program *********#
 HELP
 	exit (1); 
@@ -165,6 +171,7 @@ GetOptions(\%opts,"help!","cut:i","details!","cut_dir:s","cut_prefix:s",
 	"fa2fq!", "fa2fqQChar:s", "fq2fa!", 
 	"replaceID!", "replaceIDlist:s", "replaceIDcol:s", "replaceIDadd!", 
 	"reorderByList:s", 
+	"chop_seq!", "chop_len:i", "chop_step:i", "chop_min:i", "chop_noPos!", 
 	);
 &usage if ($opts{"help"}); 
 !@ARGV and -t and &usage; 
@@ -228,6 +235,7 @@ my %goodStr = qw(
 &fq2fa() if ( $opts{fq2fa} ); 
 &replaceID() if ( $opts{'replaceID'} ); 
 &reorderSeq($opts{'reorderByList'}) if ( defined $opts{'reorderByList'} ); 
+&chop_seq() if ( $opts{'chop_seq'} ); 
 
 for (@InFp) {
 	close ($_); 
@@ -242,6 +250,34 @@ for (@InFp) {
 #****************************************************************#
 #--------------Subprogram------------Start-----------------------#
 #****************************************************************#
+
+# 2015-06-15
+# "chop_len:i"
+sub chop_seq {
+	$opts{'chop_len'}  //= 100; 
+	$opts{'chop_step'} //= $opts{'chop_len'}; 
+	$opts{'chop_min'}  //= 0; 
+	
+	for my $fh ( @InFp ) {
+		for ( my ($relHR, $get) = &get_fasta_seq($fh); defined $relHR; ($relHR, $get) = &get_fasta_seq($fh) ) {
+			$relHR->{'seq'} =~ s!\s!!g; 
+			my $seqLen = length( $relHR->{'seq'} ); 
+			my $tkey = $relHR->{'key'} ; 
+			for (my $i=1; ($i-1) * $opts{'chop_step'} + 1 < $seqLen ; $i++) {
+				my $s = ($i-1) * $opts{'chop_step'} + 1 ; 
+				my $e = $s + $opts{'chop_len'} - 1; 
+				$e > $seqLen and $e = $seqLen; 
+				$e-$s+1 >= $opts{'chop_min'} or next; 
+				my $sub_seq = substr( $relHR->{'seq'}, $s-1, $e-$s+1 ); 
+				my $tag = " [${s}-${e}]"; 
+				$opts{'chop_noPos'} and $tag = ''; 
+				print STDOUT ">${tkey}_$i${tag}\n$sub_seq\n"; 
+				$e >= $seqLen and last; 
+			}
+		}
+	}
+	return; 
+}# sub chop_seq 
 
 # 2015-04-10
 #  "reorderByList:s"
