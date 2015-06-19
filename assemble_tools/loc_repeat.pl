@@ -3,7 +3,7 @@ use strict;
 use warnings; 
 use LogInforSunhh; 
 
-!@ARGV and die "perl $0 repeat_depth_min NSP306_1kb_Cor1st_P2Gt5h.bwt2.srt.bam.dep\n"; 
+!@ARGV and die "perl $0 repeat_depth_min NSP306_1kb_Cor1st_P2Gt5h.bwt2.srt.bam.dep > NSP306_1kb_Cor1st_P2Gt5h.bwt2.srt.bam.dep_repDdepth.loc_id_start_end_length\n"; 
 
 my $repDep_min = 109; 
 $repDep_min = shift; 
