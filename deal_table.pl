@@ -102,9 +102,9 @@ command:perl $0 <STDIN|parameters>
                     Be aware that only the new added cells will be filled with this character! 
                     So the raw NULL cells will remain unchanged! 
 
-  'kSrch_idx:s','kSrch_idxCol:s','kSrch_srcCol:s','kSrch_drop!', 'kSrch_line!', # Similar to linux command join, without joining and with more index columns. Combined from uniqComb.pl 
+  '-kSrch_idx:s','-kSrch_idxCol:s','-kSrch_srcCol:s','-kSrch_drop!', '-kSrch_line!', # Similar to linux command join, without joining and with more index columns. Combined from uniqComb.pl 
 
-  'chID_RefLis:s', 'chID_Row!', 'chID_OldColN:i', 'chID_NewColN:i', 'chID_skipH:i', 'chID_RowColN:i', # Change Column/Row names according to reference.
+  '-chID_RefLis:s', '-chID_Row!', '-chID_OldColN:i', '-chID_NewColN:i', '-chID_skipH:i', '-chID_RowColN:i', # Change Column/Row names according to reference.
 
   -symbol         Defining the symbol to divide data.Default is "\\t";
   -dR2dN          [Boolean] Change \\r to \\n in files. 
