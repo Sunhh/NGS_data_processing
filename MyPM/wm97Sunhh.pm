@@ -41,6 +41,19 @@ sub number_to_chrID {
 	return $id; 
 }
 
+=head1 chrID_to_number( $chrID, $prefix )
+
+$chrID           : Required. Such as 'WM97_Chr01'
+$prefix          : 'WM97_Chr'
+
+=cut
+sub chrID_to_number {
+	my ($id, $p) = @_; 
+	$p //= 'WM97_Chr'; 
+	$id =~ s!^$p!!; 
+	$id =~ s!^0*(.+?)$!$1!; 
+	return $id; 
+}
 
 1; 
 
