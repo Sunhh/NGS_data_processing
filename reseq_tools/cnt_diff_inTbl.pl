@@ -15,14 +15,15 @@ my $geno_col = 2;
 
 
 my @hh; 
-{
-my $l = <>; 
-chomp($l); 
-@hh = split(/\t/, $l); 
-}
-
 my %cnt; 
 while (<>) {
+	chomp; 
+	@hh = split(/\t/, $_); 
+	last; 
+}
+
+while (<>) {
+	$. % 1000 == 1 and &tsmsg("[Msg] $. line.\n"); 
 	chomp; 
 	my @ta = split(/\t/, $_); 
 	for (my $i=$geno_col; $i<@hh; $i++) {
