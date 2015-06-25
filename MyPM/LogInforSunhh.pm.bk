@@ -62,35 +62,6 @@ sub exeCmd_1cmd {
 	return 1; 
 }#End exeCmd 
 
-=head1 timed_out( $cmd, $num_secs_to_timeout )
-
-http://stackoverflow.com/questions/1962985/how-can-i-timeout-a-forked-process-that-might-hang
-http://www.ahlinux.com/perl/4677.html
-
-=cut
-sub timed_out {
-	my $retval ; 
-	my ($cmd, $num_secs_to_timeout) = @_; 
-	my $pid = fork; 
-	if ( $pid > 0 ) { # This is parent process 
-		eval {
-			local $SIG{'ALRM'} = 
-			  sub { kill 9, -$pid; &tsmsg("[CMD_timeout_err]$cmd\n"); $retval = 124; }; 
-			alarm $num_secs_to_timeout; 
-			waitpid( $pid, 0 ); 
-			alarm 0; 
-		}; 
-		return defined($retval) ? $retval : 0 ; 
-	} elsif ( $pid==0 ) { # This is child process 
-		setpgrp(0,0); 
-		&exeCmd_1cmd($cmd); 
-	} else { # The fork is not successful. 
-		&stopErr("Failed to exec fork.\n"); 
-	}
-	return; 
-}# sub timed_out()
-
-
 =head1 exeCmd($cmd1, $cmd2, $cmd3, ... )
 
 Function : Execute commands with system and time record. 
