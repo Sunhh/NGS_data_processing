@@ -52,11 +52,11 @@ sub exeCmd_1cmd {
 		return 0; 
 	} else {
 		if ( $? == -1 ) {
-			&tsmsg("[CMD_err] Failed to execute: $!\n"); 
+			&tsmsg("[CMD_err] Failed to execute: $! . CMD: $cmd\n"); 
 		} elsif ( $? & 127 ) {
-			&tsmsg("[CMD_err] Child died with signal ", $? & 127, ", ", ($? & 128)? 'with' : 'without', "coredump\n"); 
+			&tsmsg("[CMD_err] Child died with signal ", $? & 127, ", ", ($? & 128)? 'with' : 'without', " coredump. CMD: $cmd\n"); 
 		} else {
-			&tsmsg("[CMD_err] Child exited with value ", $? >> 8, "\n"); 
+			&tsmsg("[CMD_err] Child exited with value ", $? >> 8, " . CMD: $cmd\n"); 
 		}
 	}
 	return 1; 
@@ -104,11 +104,11 @@ sub exeCmd {
 			return 0; 
 		} else {
 			if ( $? == -1 ) {
-				&tsmsg("[CMD_err] Failed to execute: $!\n"); 
+				&tsmsg("[CMD_err] Failed to execute: $! . CMD: $cmd\n"); 
 			} elsif ( $? & 127 ) {
-				&tsmsg("[CMD_err] Child died with signal ", $? & 127, ", ", ($? & 128)? 'with' : 'without', "coredump\n"); 
+				&tsmsg("[CMD_err] Child died with signal ", $? & 127, ", ", ($? & 128)? 'with' : 'without', " coredump. CMD: $cmd\n"); 
 			} else {
-				&tsmsg("[CMD_err] Child exited with value ", $? >> 8, "\n"); 
+				&tsmsg("[CMD_err] Child exited with value ", $? >> 8, " . CMD: $cmd\n"); 
 			}
 		}
 	}
