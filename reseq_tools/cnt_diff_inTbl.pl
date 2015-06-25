@@ -18,7 +18,7 @@ my @hh;
 {
 my $l = <>; 
 chomp($l); 
-@hh = split(/\t/, $_); 
+@hh = split(/\t/, $l); 
 }
 
 my %cnt; 
