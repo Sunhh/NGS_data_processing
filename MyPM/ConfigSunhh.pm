@@ -23,6 +23,16 @@ sub _initialize {
 	return; 
 }
 
+=head2 getConfig( 'cfg_file'=>'path.conf', 'replace'=> 1, 'hash_r'=> {} )
+
+Function : 
+  This is a method in object. 
+  Read 'cfg_file' file and store key,val pairs in hash_reference 'hash_r'. 
+  If 'replace' == TRUE, repeated value will be replaced by the newly input one. 
+
+Return   : $self->{'hash_r'} 
+
+Sample file : 
 # [Sunhh@wwz repAnno_tools]$ more path.conf
 # dir2                    /home/Sunhh/tools/github/NGS_data_processing
 # pl_deal_fasta           __dir2__/deal_fasta.pl
@@ -46,6 +56,7 @@ sub _initialize {
 # exe_mv                    /usr/bin/mv
 ### Input  : ('cfg_file'=>'path.conf', 'replace'=>1, 'hash_r'=>\%tool)
 ### Return : \%tool 
+=cut
 sub getConfig {
 	my $self = shift; 
 	my %parm = @_; 
@@ -56,7 +67,7 @@ sub getConfig {
 	open CF,'<',"$parm{'cfg_file'}" or &stopErr("[Err] file [$parm{'cfg_file'}] $!\n"); 
 	while (<CF>) {
 		chomp; 
-		m/^\s*$/ and next; 
+		m/^\s*(#|$)/ and next; 
 		s/[^\S\t]+$//; 
 		my ($tk, $tv) = split(/\s+/, $_); 
 		while ($tv =~ m/__([^\s_]+)__/) {
