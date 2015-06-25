@@ -41,7 +41,7 @@ while (<>) {
 print STDOUT join("\t", qw/Indv1 Indv2 NumTotal NumDiff/)."\n"; 
 for my $kk ( sort { my ($a1,$a2) = ( $a =~ m!^(\d+)\-(\d+)$! ); my ($b1,$b2) = ( $b =~ m!^(\d+)\-(\d+)$! ); $a1 <=> $b1 || $a2 <=> $b2;  } keys %cnt ) {
 	my ($k1, $k2) = ( $kk =~ m!^(\d+)\-(\d+)$! ); 
-	print STDOUT join("\t", $k1, $k2, $cnt{$kk}{'total'}, $cnt{$kk}{'diffN'})."\n"; 
+	print STDOUT join("\t", $hh[$k1], $hh[$k2], $cnt{$kk}{'total'}, $cnt{$kk}{'diffN'})."\n"; 
 }
 
 sub fmt_base {
