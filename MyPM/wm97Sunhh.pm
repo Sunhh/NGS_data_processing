@@ -37,7 +37,7 @@ sub number_to_chrID {
 	my ($n, $p, $l) = @_; 
 	$p //= 'WM97_Chr'; 
 	$l //= 2; 
-	my $id = $p . sprintf("%0${$l}d", $n); 
+	my $id = $p . sprintf("%0${l}d", $n); 
 	return $id; 
 }
 
