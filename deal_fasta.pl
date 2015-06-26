@@ -40,6 +40,7 @@
 ### 2014-03-12 Add -listSeq to control if output match_seq for -listSite. 
 ### 2015-04-09 Add -rmDefinition to keep only sequence ID in the definition line. 
 ### 2015-04-10 Reorder sequences according to an input seqID list. 
+### 2015-06-26 Use -joinR12 to join to .fasta R1/R2 files. 
 
 use strict;
 use warnings; 
@@ -146,6 +147,8 @@ Usage: $0  <fasta_file | STDIN>
   -chop_min           [0] Minimum length of pieces. 
   -chop_noPos         [Boolean] Default add raw position of pieces. 
 
+  -joinR12            [Boolean] Input files as paired, and join R1/R2 reads in a same stream. 
+
 #******* Instruction of this program *********#
 HELP
 	exit (1); 
@@ -172,6 +175,7 @@ GetOptions(\%opts,"help!","cut:i","details!","cut_dir:s","cut_prefix:s",
 	"replaceID!", "replaceIDlist:s", "replaceIDcol:s", "replaceIDadd!", 
 	"reorderByList:s", 
 	"chop_seq!", "chop_len:i", "chop_step:i", "chop_min:i", "chop_noPos!", 
+	"joinR12!", 
 	);
 &usage if ($opts{"help"}); 
 !@ARGV and -t and &usage; 
@@ -236,6 +240,7 @@ my %goodStr = qw(
 &replaceID() if ( $opts{'replaceID'} ); 
 &reorderSeq($opts{'reorderByList'}) if ( defined $opts{'reorderByList'} ); 
 &chop_seq() if ( $opts{'chop_seq'} ); 
+&joinR12() if ( $opts{'joinR12'} ); 
 
 for (@InFp) {
 	close ($_); 
@@ -250,6 +255,24 @@ for (@InFp) {
 #****************************************************************#
 #--------------Subprogram------------Start-----------------------#
 #****************************************************************#
+
+# 2015-06-26 
+# "joinR12!"
+sub joinR12 {
+	for (my $i=0; $i<@InFp; $i+=2) {
+		my $fh1 = $InFp[$i];
+		my $fh2 = $InFp[$i+1];
+		RD:
+		while ( !eof($fh1) and !eof($fh2) ) {
+			for ( my ($relHR1, $get1) = &get_fasta_seq($fh1); defined $relHR1; ($relHR1, $get1) = &get_fasta_seq($fh1) ) {
+				my ($relHR2, $get2) = &get_fasta_seq($fh2); 
+				print STDOUT ">$relHR1->{'head'}\n$relHR1->{'seq'}\n"; 
+				print STDOUT ">$relHR2->{'head'}\n$relHR2->{'seq'}\n"; 
+			}
+                }#End while() RD:
+        }#End for
+}#sub joinR12()
+
 
 # 2015-06-15
 # "chop_len:i"
