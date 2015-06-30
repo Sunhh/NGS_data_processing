@@ -532,6 +532,11 @@ sub tbl2fas {
 	return $self->tbl2seq('fmt'=>'fasta', @_); 
 }#sub tbl2fas
 
+=head2 tbl2structure( 'ofile'=>"out.structure" )
+
+Function    : Convert SNP table to .structure file format for Structure software. 
+
+=cut
 sub tbl2structure {
 	my $self = shift; 
 	return $self->tbl2seq('fmt'=>'structure', @_); 
