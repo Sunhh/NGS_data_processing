@@ -32,6 +32,8 @@ $prefix           : 'WM97_Chr'
 
 $length_of_number : 2
 
+Return : chrID_string
+
 =cut
 sub number_to_chrID {
 	my ($n, $p, $l) = @_; 
@@ -45,6 +47,8 @@ sub number_to_chrID {
 
 $chrID           : Required. Such as 'WM97_Chr01'
 $prefix          : 'WM97_Chr'
+
+Return   : number_of_chr
 
 =cut
 sub chrID_to_number {
