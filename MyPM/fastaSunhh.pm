@@ -63,6 +63,8 @@ Required     : 'faFh' , or 'faFile' when 'faFh' missed.
 
 Function     : Save all sequences' information in hash
 
+'has_head' = 1 by default. 
+
 Return       : (\%key_to_infor)
  \%key_to_infor : {key} => value
    {$seq_ID}      => \%seq_record_hash; 
