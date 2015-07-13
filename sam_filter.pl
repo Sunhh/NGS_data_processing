@@ -152,7 +152,7 @@ if (defined $opts{NMperc}) {
 
 ###### Make FLAG list 
 my %flag; 
-for (0 .. 2047) {
+for (0 .. 4095) {
 	my $binum = unpack("B32", pack("N", $_)); 
 	$flag{$_} = [ reverse( split(//, sprintf("%011d", $binum) ) ) ]; 
 }
@@ -230,7 +230,7 @@ for (sort { $a<=>$b } keys %flag) {
 
 ###### Show flag number usage: If we only need to show flag number usage. 
 if ( $opts{showNumber} ) {
-	for ( 1 .. 2047 ) {
+	for ( 1 .. 4095 ) {
 		if ( defined $is_output{$_} ) {
 			print STDOUT join("\t", $_, 'Include')."\n"; 
 		} else {
