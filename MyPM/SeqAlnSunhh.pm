@@ -356,6 +356,85 @@ sub bwaSE {
 #  Sub-routines. 
 ############################################################
 
+=head1 mk_flag( 'keep'=>'', 'drop'=>'' )
+
+Function: 
+
+Example: 
+ -anyEnd_pair    'keep'=>'0=1' , 'drop'=>'2=1,3=1' ; 
+ -anyEnd_info    'keep'=>''    , 'drop'=>'2=1,3=1' ; 
+ -bothEnd_pair   'keep'=>'0=1,2=0,3=0' , 'drop'=>'' ; 
+ -h2diff_pair    'keep'=>'0=1,2=0,3=0,4=0,5=1;0=1,2=0,3=0,4=1,5=0' , 'drop'=>'' ; 
+ -h2diff_F       'keep'=>'0=1,2=0,3=0,4=0,5=1' , 'drop'=>'' ; 
+ -onlyMapRd      'keep'=>'', 'drop'=>'2=1' ; 
+ -plusRd         'keep'=>'' , 'drop'=>'2=0,4=0'; 
+ -minusRd        'keep'=>'2=0,4=1' , 'drop'=>''; 
+
+=cut
+sub mk_flag {
+	my %parm = @_; 
+	$parm{'keep'} //= ''; 
+	$parm{'drop'} //= ''; 
+	
+	my %flag = %{ &_sam_flag_href() }; 
+	my ($have_drop, $have_keep) = (0,0); 
+	$parm{'keep'} eq '' or $have_keep = 1; 
+	$parm{'drop'} eq '' or $have_drop = 1; 
+	my %good_flag; 
+	if ( $have_keep == 0 and $have_drop == 0 ) {
+		for (sort {$a<=>$b} keys %flag) {
+			$good_flag{$_} = 1; 
+		}
+		return \%good_flag; 
+	}
+	FLAG_NUM: 
+	for my $flag_num ( sort {$a<=>$b} keys %flag ) {
+		my @ta = @{$flag{$flag_num}}; 
+		my ($drop_flag, $keep_flag) = (0, 0); 
+		if ( $have_drop ) {
+			CHK_TTL_DROP: 
+			for my $exp1 ( split(/;/, $parm{'drop'}) ) {
+				my $should_drop = 1; 
+				CHK_EACH_DROP: 
+				for my $exp2 ( split(/,/, $exp1) ) {
+					$exp2 =~ m!^(\d+)=([01])$! or die "Failed to parse |$exp2|\n"; 
+					my ($coln, $colv)  = ($1, $2); 
+					$ta[ $coln ] != $colv and do { $should_drop = 0; last CHK_EACH_DROP; }; 
+				}
+				$should_drop == 1 and do { $drop_flag = 1; last CHK_TTL_DROP; }; 
+			}
+		}
+		if ( $have_keep ) {
+			CHK_TTL_KEEP: 
+			for my $exp1 ( split(/;/, $parm{'keep'}) ) {
+				my $should_keep = 1; 
+				CHK_EACH_KEEP: 
+				for my $exp2 ( split(/,/, $exp1) ) {
+					$exp2 =~ m!^(\d+)=([01])$! or die "Failed to parse |$exp2|\n"; 
+					my ($coln, $colv) = ($1, $2); 
+					$ta[ $coln ] != $colv and do { $should_keep = 0; last CHK_EACH_KEEP; }; 
+				}
+				$should_keep == 1 and do { $keep_flag = 1; last CHK_TTL_KEEP; }; 
+			}
+		}
+		$have_drop and $drop_flag == 1 and next FLAG_NUM; 
+		$have_keep and $keep_flag == 0 and next FLAG_NUM; 
+		$good_flag{ $flag_num } = 1; 
+	}
+	return \%good_flag; 
+}# mk_flag()
+
+# Make FLAG list
+sub _sam_flag_href {
+	my %flag; 
+	for ( 0 .. 4095 ) {
+		my $binum = unpack( "B32", pack("N", $_) ); 
+		$flag{$_} = [ reverse( split(//, sprintf("%011d", $binum) ) ) ]; 
+	}
+	return \%flag; 
+}# _sam_flag_href ()
+
+
 =head1 sam_flag_infor( $sam_flag )
 
 Function  : 
