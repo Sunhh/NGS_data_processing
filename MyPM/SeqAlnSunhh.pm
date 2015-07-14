@@ -360,6 +360,10 @@ sub bwaSE {
 
 Function: 
 
+Return    : \%good_flag_list
+
+%good_flag_list == ( $flag_to_keep1 => 1 , $flag_to_keep2 => 1, ... )
+
 Example: 
  -anyEnd_pair    'keep'=>'0=1' , 'drop'=>'2=1,3=1' ; 
  -anyEnd_info    'keep'=>''    , 'drop'=>'2=1,3=1' ; 
