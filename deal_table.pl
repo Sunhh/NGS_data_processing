@@ -20,6 +20,7 @@
 # 2013-09-11 Edit -cbind log infor. 
 # 2013-11-26 Add in uniqComb.pl function. Add time tag for message output. 
 # 2015-04-21 Add -colByTbl to select columns according to an input table. 
+# 2015-07-14 Add -spec_loci_1from2 to find region in -spec_loci_f1 (Format: ID\tstart\tEnd) that is absent in -spec_loci_f2 (Format: ID\tStart\tEnd). 
 
 use strict;
 use warnings; 
@@ -48,6 +49,7 @@ GetOptions(\%opts,
 	"dR2dN!", 
 	"col_head!", 
 	"chID_RefLis:s", "chID_Row!", "chID_OldColN:i", "chID_NewColN:i", "chID_skipH:i", "chID_RowColN:i", # Change Column/Row names according to reference. 
+	"spec_loci_1from2!", "spec_loci_f1:s", "spec_loci_f2:s", "spec_loci_minLen:i", 
 	"help!");
 sub usage {
 
@@ -106,6 +108,10 @@ command:perl $0 <STDIN|parameters>
 
   '-chID_RefLis:s', '-chID_Row!', '-chID_OldColN:i', '-chID_NewColN:i', '-chID_skipH:i', '-chID_RowColN:i', # Change Column/Row names according to reference.
 
+  '-spec_loci_1from2!', '-spec_loci_f1:s', '-spec_loci_f2:s' , # Find region in -spec_loci_f1 that is absent in -spec_loci_f2. 
+                  # Format of '-spec_loci_f1/2' : ID \\t Start \\t End \\n
+    '-spec_loci_minLen:i', # Minimum length of specific region. Default is 0; 
+
   -symbol         Defining the symbol to divide data.Default is "\\t";
   -dR2dN          [Boolean] Change \\r to \\n in files. 
 ##################################################
@@ -116,7 +122,7 @@ INFO
 	exit(1); 
 }
 
-if ($opts{help} or (-t and !@ARGV)) {
+if ($opts{help} or (-t and !@ARGV) and !$opts{spec_loci_1from2}) {
 	&usage; 
 }
 
@@ -128,7 +134,7 @@ if ($opts{help} or (-t and !@ARGV)) {
 our @InFp = () ;  
 if ( !@ARGV )
 {
-	@InFp = (\*STDIN);
+	-t or @InFp = (\*STDIN);
 }
 else
 {
@@ -136,7 +142,6 @@ else
 		push( @InFp, &openFH($_,'<') );
 	}
 }
-
 
 
 my $symbol = "\t";
@@ -191,6 +196,8 @@ if ( &goodVar($opts{col_sort}) ) {
 
 &colByTbl() if ( defined $opts{'colByTbl'} ); 
 
+&specLoci() if ( defined $opts{'spec_loci_1from2'} ); 
+
 for (@InFp) {
 	close ($_);
 }
@@ -199,6 +206,44 @@ for (@InFp) {
 ######################################################################
 ## sub-routines for functions. 
 ######################################################################
+
+# 
+sub specLoci {
+	$opts{'spec_loci_minLen'} //= 0; 
+	my $f1h = &openFH($opts{'spec_loci_f1'}, '<'); 
+	my $f2h = &openFH($opts{'spec_loci_f2'}, '<'); 
+	# ID \\t Start \\t End \\n
+	my %loc1 = %{ &loc_tbl2hash( $f1h ) }; 
+	my %loc2 = %{ &loc_tbl2hash( $f2h ) }; 
+
+	for my $id1 (sort keys %loc1) {
+		my @spec_in_1; 
+		for my $ar1 ( @{$loc1{$id1}} ) {
+			my ($s1, $e1) = @$ar1; 
+			my $cur_p = $s1; 
+			for my $ar2 ( @{$loc2{$id1}} ) {
+				my ($s2, $e2) = @$ar2; 
+				if ( $e2 < $cur_p ) {
+					next; 
+				} elsif ( $s2 > $e1 ) { 
+					last; 
+				} elsif ( $s2 <= $cur_p ) {
+					$cur_p = $e2+1; 
+				} elsif ( $s2 > $cur_p ) {
+					push(@spec_in_1, [$cur_p, $s2-1]); 
+					$cur_p = $e2+1; 
+				}
+			}
+			if ( $cur_p <= $e1 ) {
+				push(@spec_in_1, [$cur_p, $e1]); 
+			}
+		}
+		for my $ar (@spec_in_1) {
+			$ar->[1]-$ar->[0]+1 >= $opts{'spec_loci_minLen'} or next; 
+			print STDOUT join("\t", $id1, $ar->[0], $ar->[1])."\n"; 
+		}
+	}
+}# specLoci() 
 
 # Extract columns according to $opts{'colByTbl'}; 
 sub colByTbl {
@@ -938,4 +983,32 @@ sub stop {
 	print STDERR join('', "[$tt]", @_); 
 	exit 1; 
 }# End stop 
+
+sub loc_tbl2hash {
+	# ID \\t Start \\t End \\n
+	my $fh = shift; 
+	my %loc; 
+	while (<$fh>) {
+		chomp; 
+		my @ta = split(/\t/, $_); 
+		push(@{$loc{$ta[0]}}, [$ta[1] , $ta[2]]); 
+	}
+	for my $id (keys %loc) {
+		my @new_blk; 
+		for my $ar1 (sort {$a->[0] <=> $b->[0] || $a->[1] <=> $b->[1]} @{$loc{$id}}) {
+			if (defined $new_blk[0]) {
+				if ( $new_blk[-1][1]+1 >= $ar1->[0] ) {
+					$ar1->[1] > $new_blk[-1][1] and $new_blk[-1][1] = $ar1->[1]; 
+				} else {
+					push(@new_blk, [$ar1->[0], $ar1->[1]]); 
+				} 
+			} else {
+				push(@new_blk, [$ar1->[0], $ar1->[1]]); 
+			}
+		}
+		$loc{$id} = \@new_blk; 
+	}
+	return \%loc; 
+}# loc_tbl2hash() 
+
 
