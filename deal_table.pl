@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/bin/env perl
 # Author email : hs738@cornell.edu or biosunhh@gmail.com
 
 # 2006-11-17 13:18 准备加入一个best_uniq函数，用来处理*.psl格式文件，尚未完成；

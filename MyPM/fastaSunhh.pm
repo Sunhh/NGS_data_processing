@@ -221,6 +221,16 @@ sub siteList {
 	return @posList;
 }# end siteList subroutine. 2013-10-30
 
+=head1 chop_seq( 'seq'=>$seq_str, 'len'=>$length_of_piece, 'step'=>$NextStart_minus_CurrStart, 'min'=>$MinLenOfPiece )
+
+Return       : ( \@piece_strings )
+ @piece_strings = ( [$piece_string, $piece_start, $piece_end], [$piece_string, $piece_start, $piece_end], ... )
+
+=cut
+sub chop_seq {
+	my %parm = $mathObj->_setHashFromArr(@_); 
+	defined $parm{'seq'} or &stopErr( "" ); 
+}# chop_seq() 
 
 
 1; 
