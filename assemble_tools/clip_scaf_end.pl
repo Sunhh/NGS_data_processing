@@ -4,7 +4,8 @@
 use strict;
 use warnings; 
 use ReadInSeqSunhh; 
-use DealFastaSunhh; 
+# use DealFastaSunhh; 
+use fastaSunhh; 
 use LogInforSunhh; 
 use Getopt::Long; 
 
