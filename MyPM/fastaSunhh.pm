@@ -73,8 +73,9 @@ Return       : (\%key_to_infor)
        {'key'}        => sequence ID ; 
        {'definition'} => Same to 'head' except that 'key' is removed. 
        {'seq'}        => sequence information in the same format of input. 
-       {'has_get'}   => Tell if there is another sequence in the next. 
+       {'has_get'}    => Tell if there is another sequence in the next. 
        {'FH'}         => File handle being used. 
+       {'Order'}      => Tell the order number in the fasta file. This is useful when sorting sequences by input order. 
 
 =cut
 sub save_seq_to_hash {
@@ -86,11 +87,14 @@ sub save_seq_to_hash {
 	ref($fh) eq 'GLOB' or ref($fh) eq '' or &stopErr("[Err] File handle wrong.\n"); 
 	
 	my %backH; 
+	my $seqOrderNum = 0; 
 	# For the first sequence; 
 	{
 		my $relHR = $self->get_fasta_seq( 'faFh'=>$fh, 'has_head'=>$parm{'has_head'} ); 
 		if ( $relHR->{'has_get'} == 1 ) {
 			$backH{$relHR->{'key'}} = $relHR; 
+			++$seqOrderNum; 
+			$backH{$relHR->{'key'}}{'Order'} = $seqOrderNum; 
 		}
 	}
 	for (my $relHR = $self->get_fasta_seq( 'faFh'=>$fh ); $relHR->{'has_get'} == 1; $relHR = $self->get_fasta_seq( 'faFh'=>$fh ) ) {
@@ -98,6 +102,8 @@ sub save_seq_to_hash {
 			&tsmsg("[Err] Key [$relHR->{'key'}] repeated, and I choose the first one.\n"); 
 			next; 
 		}
+		++$seqOrderNum; 
+		$relHR->{'Order'} = $seqOrderNum; 
 		$backH{ $relHR->{'key'} } = $relHR; 
 	}
 	
