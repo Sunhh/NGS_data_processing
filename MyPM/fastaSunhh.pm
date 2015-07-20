@@ -230,7 +230,24 @@ Return       : ( \@piece_strings )
 sub chop_seq {
 	my %parm = $mathObj->_setHashFromArr(@_); 
 	defined $parm{'seq'} or &stopErr( "[Err] 'seq' in chop_seq() is not defined.\n" ); 
-	# $parm{''}
+	$parm{'len'}  //= 100; 
+	$parm{'step'} //= $parm{'len'}; 
+	$parm{'min'}  //= 0; 
+
+	$parm{'seq'} =~ s!\s!!g; 
+	my $seqLen = length( $parm{'seq'} ); 
+	
+	my @back; 
+	for (my $i=1; ($i-1)*$parm{'step'} + 1 < $seqLen ; $i++) {
+		my $s = ($i-1) * $parm{'step'} + 1; 
+		my $e = $s + $parm{'len'} - 1; 
+		$e > $seqLen and $e = $seqLen; 
+		$e-$s+1 >= $parm{'min'} or next; 
+		my $sub_seq = substr( $parm{'seq'}, $s-1, $e-$s+1 ); 
+		push(@back, [$sub_seq, $s, $e]); 
+		$e >= $seqLen and last; 
+	}
+	return (\@back); 
 }# chop_seq() 
 
 
