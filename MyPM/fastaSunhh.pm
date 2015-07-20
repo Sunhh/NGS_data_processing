@@ -229,7 +229,8 @@ Return       : ( \@piece_strings )
 =cut
 sub chop_seq {
 	my %parm = $mathObj->_setHashFromArr(@_); 
-	defined $parm{'seq'} or &stopErr( "" ); 
+	defined $parm{'seq'} or &stopErr( "[Err] 'seq' in chop_seq() is not defined.\n" ); 
+	# $parm{''}
 }# chop_seq() 
 
 
