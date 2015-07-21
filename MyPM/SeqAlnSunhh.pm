@@ -444,20 +444,30 @@ sub _sam_flag_href {
 Function  : 
 
 Return    : (\@flag_infor)
+
 @ [ 0 - 10 ] = [ 0/1, 'explanation' ]; 
 
 $infor_flag{ 0 } = [qw/0     0x0001  p/, "the read is paired in sequencing"];
-$infor_flag{ 1 } = [qw/1     0x0002  P/, "the read is mapped in a proper pair"];
-$infor_flag{ 2 } = [qw/2     0x0004  u/, "the query sequence itself is unmapped"];
-$infor_flag{ 3 } = [qw/3     0x0008  U/, "the mate is unmapped"];
-$infor_flag{ 4 } = [qw/4     0x0010  r/, "strand of the query (1 for reverse)"];
-$infor_flag{ 5 } = [qw/5     0x0020  R/, "strand of the mate (1 for reverse)"];
-$infor_flag{ 6 } = [qw/6     0x0040  1/, "the read is the first read in a pair"];
-$infor_flag{ 7 } = [qw/7     0x0080  2/, "the read is the second read in a pair"];
-$infor_flag{ 8 } = [qw/8     0x0100  s/, "the alignment is not primary"];
-$infor_flag{ 9 } = [qw/9     0x0200  f/, "the read fails platform/vendor quality checks"];
-$infor_flag{ 10} = [qw/10    0x0400  d/, "the read is either a PCR or an optical duplicate"];
 
+$infor_flag{ 1 } = [qw/1     0x0002  P/, "the read is mapped in a proper pair"];
+
+$infor_flag{ 2 } = [qw/2     0x0004  u/, "the query sequence itself is unmapped"];
+
+$infor_flag{ 3 } = [qw/3     0x0008  U/, "the mate is unmapped"];
+
+$infor_flag{ 4 } = [qw/4     0x0010  r/, "strand of the query (1 for reverse)"];
+
+$infor_flag{ 5 } = [qw/5     0x0020  R/, "strand of the mate (1 for reverse)"];
+
+$infor_flag{ 6 } = [qw/6     0x0040  1/, "the read is the first read in a pair"];
+
+$infor_flag{ 7 } = [qw/7     0x0080  2/, "the read is the second read in a pair"];
+
+$infor_flag{ 8 } = [qw/8     0x0100  s/, "the alignment is not primary"];
+
+$infor_flag{ 9 } = [qw/9     0x0200  f/, "the read fails platform/vendor quality checks"];
+
+$infor_flag{ 10} = [qw/10    0x0400  d/, "the read is either a PCR or an optical duplicate"];
 
 =cut
 sub sam_flag_infor {
