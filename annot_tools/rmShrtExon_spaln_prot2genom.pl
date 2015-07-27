@@ -2,6 +2,7 @@
 # CdEx: Coding exon part. 
 # I want to remove these short coding exon part from gff3 files to get clean and good prot2genome alignments. 
 # Remove from both ends. 
+# 20150727 : Correct protein_match boundary after removing short exons. 
 use strict; 
 use warnings; 
 use LogInforSunhh; 
@@ -110,10 +111,12 @@ sub rmShrt($$$$$$) {
 	for (my $i=0; $i<@$gl_aref; $i++) {
 		defined $rm_idx{$i} and $rm_idx{$i} == 1 and next; 
 		push(@filtered_gl, $gl_aref->[$i]); 
-		$gl_min //= $gl_aref->[$i][3]; 
-		$gl_min = $ms->min($gl_min, $gl_aref->[$i][3]); 
-		$gl_max //= $gl_aref->[$i][4]; 
-		$gl_max = $ms->max($gl_max, $gl_aref->[$i][4]); 
+		unless ( $is_top{ $gl_aref->[$i][2] } ) {
+			$gl_min //= $gl_aref->[$i][3]; 
+			$gl_min = $ms->min($gl_min, $gl_aref->[$i][3]); 
+			$gl_max //= $gl_aref->[$i][4]; 
+			$gl_max = $ms->max($gl_max, $gl_aref->[$i][4]); 
+		}
 	}
 	# Give right boundary of 'protein_match'
 	for (my $i=0; $i<@filtered_gl; $i++) {
