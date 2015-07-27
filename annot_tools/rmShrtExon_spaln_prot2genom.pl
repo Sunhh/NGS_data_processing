@@ -3,6 +3,7 @@
 # I want to remove these short coding exon part from gff3 files to get clean and good prot2genome alignments. 
 # Remove from both ends. 
 # 20150727 : Correct protein_match boundary after removing short exons. 
+# 20150727 : Output FASTA at the tail of file. 
 use strict; 
 use warnings; 
 use LogInforSunhh; 
@@ -16,8 +17,15 @@ my $singleEx_dist = 0;
 
 my @geneLines; 
 
+my $fasta_tail = ''; 
+my $is_fasta = 0; 
 while (<>) {
 	chomp; 
+	if (m!^\s*#+FASTA\s*$! or $is_fasta == 1) {
+		$fasta_tail .= "$_\n"; 
+		$is_fasta = 1; 
+		next; 
+	}
 	if (m!^\s*(#|$)!) {
 		print STDOUT "$_\n"; 
 		next; 
@@ -43,6 +51,10 @@ if (@geneLines > 0) {
 	&outGff(\@geneLines, \*STDOUT); 
 }
 @geneLines = (); 
+
+if ($is_fasta == 1) {
+	print STDOUT $fasta_tail; 
+}
 
 sub outGff ($$) {
 	my ($gl_aref, $ofh) = @_; 
