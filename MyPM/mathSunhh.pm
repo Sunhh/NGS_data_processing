@@ -1057,8 +1057,106 @@ sub extract_group {
 	return (\%back_hash, \%new_excl); 
 }# extract_group() 
 
+=head1 extract_group_fromHash( \%relation_pairs, \%excluded_IDs, $in_seed_element ) 
+
+Input      : Format of %relation_pairs is 
+             {$element_1}{$element_2} = 1; 
+             {$element_3}{$element_4} = 1; 
+             {$element_5}{$element_6} = 1; 
+             {$element_1}{$element_6} = 1; 
+             ...... 
+
+             Format of %excluded_IDs is [IDs that should not be considered.]
+             {$element_x1} = 1; 
+             {$element_x2} = 1; 
+             ...... 
+
+Function   : Extract a group which contains all and only contains the elements related to $in_seed_element by some chaining. 
+
+Output     : (\%group_IDs, \%new_excluded_IDs)
+ %group_IDs is in format {$in_seed_element} = 1, {$relate_ID_1} = 1, {$relate_ID_2} = 1, ...
+ %new_excluded_IDs is in the same format of %exluded_IDs, and include all IDs in %excluded_IDs and IDs in %group_IDs; 
+
+=cut
+sub extract_group_fromHash {
+	my ( $pair_href, $excl_href, $in_key ) = @_; 
+	$excl_href //= {}; 
+	defined $in_key or die "Must give \$in_seed_element for mathSunhh::extract_group_fromHash()\n"; 
+	my (%back_hash, %new_excl); 
+	%new_excl = %$excl_href; 
+
+	my @array_input; 
+	for my $tk1 (keys %$pair_href) {
+		defined $new_excl{$tk1} and next; 
+		for my $tk2 ( keys %{$pair_href->{$tk1}} ) {
+			defined $new_excl{$tk2} and next; 
+			push(@array_input, [ $tk1, $tk2 ]); 
+		}
+	}
+	my ($back_href, $new_excl_href) = &extract_group_fromArray( \@array_input, \%new_excl, $in_key ); 
+	
+	return($back_href, $new_excl_href); 
+}# extract_group_fromHash() 
+
+=head1 extract_group_fromArray( \@elements_in_groups, \%excluded_IDs, $in_seed_element ) 
+
+Input      : Format of @elements_in_groups is 
+             ([ ele1, ele2, ... ], 
+             [ele3, ele4, ele5, ...], 
+             [ele1, ele3], 
+             [ele6, ele7, ele8], 
+             [ele11, ele10, ele9], 
+             ......
+             )
+
+             Format of %excluded_IDs is [IDs that should not be considered.]
+             {$element_x1} = 1; 
+             {$element_x2} = 1; 
+             ...... 
+
+Function   : Extract a group which contains all and only contains the elements related to $in_seed_element by some chaining. 
+
+Output     : (\%group_IDs, \%new_excluded_IDs)
+ %group_IDs is in format {$in_seed_element} = 1, {$relate_ID_1} = 1, {$relate_ID_2} = 1, ...
+ %new_excluded_IDs is in the same format of %exluded_IDs, and include all IDs in %excluded_IDs and IDs in %group_IDs; 
+
+=cut
+sub extract_group_fromArray {
+	my ( $pair_aref, $excl_href, $in_key ) = @_; 
+	$excl_href //= {}; 
+	defined $in_key or die "Must give \$in_seed_element for mathSunhh::extract_group_fromArray()\n"; 
+	my (%back_hash, %new_excl); 
+	%new_excl = %$excl_href; 
+
+	my @array_input; 
+	for my $ar1 (@$pair_aref) {
+		my @ta; 
+		for my $eleID (@$ar1) {
+			defined $new_excl{$eleID} and next; 
+			push(@ta, $eleID); 
+		}
+		scalar(@ta) > 0 and push(@array_input, [@ta]); 
+	}
+	my ($back_aref) = &divide_group_fromArray(\@array_input); 
+	for my $ar1 (@$back_aref) {
+		my $is_has = 0; 
+		for my $eleID (@$ar1) {
+			$eleID eq $in_key or next; 
+			$is_has = 1; 
+			last; 
+		}
+		if ( $is_has == 1 ) {
+			for my $eleID (@$ar1) {
+				$back_hash{$eleID} = 1; 
+				$new_excl{$eleID} = 1; 
+			}
+			last; 
+		}
+	}
+	
+	return(\%back_hash, \%new_excl); 
+}# extract_group_fromArray() 
 
 
 
 1; 
-
