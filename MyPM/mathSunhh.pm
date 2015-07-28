@@ -821,6 +821,72 @@ sub dvd_array {
 	return \@sub_grps;
 }# dvd_array ()
 
+=head1 divide_group( \%relation_pairs )
+
+Input      : Format of %relation_pairs is 
+             {$element_1}{$element_2} = 1; 
+             {$element_3}{$element_4} = 1; 
+             {$element_5}{$element_6} = 1; 
+             {$element_1}{$element_6} = 1; 
+             ...... 
+
+Function   : Divide elements in %relation_pairs into groups. 
+             Each group contains related elements, and there is no related pairs between groups. 
+
+Output     : (\@back_groups_array)
+ @back_groups_array format is ( [group_1_ele_1, group1_ele_2, ...], [group_2_ele_1, group_2_ele_2, ...], ... ); 
+
+=cut
+sub divide_group {
+	my ( $pair_href ) = @_; 
+	my %new_excl ; 
+	my @back_array; 
+	for my $tk1 (keys %$pair_href) {
+		defined $new_excl{$tk1} and next; 
+		my ($b_href, $e_href) = &extract_group( $pair_href, \%new_excl, $tk1 ); 
+		push(@back_array, [ sort keys %$b_href ]); 
+		map { $new_excl{$_} = 1; } @{$back_array[-1]}; 
+	}
+	return( \@back_array ); 
+}# divide_group() 
+
+=head1 extract_group( \%relation_pairs, \%excluded_IDs, $in_seed_element ) 
+
+Input      : Format of %relation_pairs is 
+             {$element_1}{$element_2} = 1; 
+             {$element_3}{$element_4} = 1; 
+             {$element_5}{$element_6} = 1; 
+             {$element_1}{$element_6} = 1; 
+             ...... 
+
+             Format of %excluded_IDs is [IDs that should not be considered.]
+             {$element_x1} = 1; 
+             {$element_x2} = 1; 
+             ...... 
+
+Function   : Extract a group which contains all and only contains the elements related to $in_seed_element by some chaining. 
+
+Output     : (\%group_IDs, \%new_excluded_IDs)
+ %group_IDs is in format {$in_seed_element} = 1, {$relate_ID_1} = 1, {$relate_ID_2} = 1, ...
+ %new_excluded_IDs is in the same format of %exluded_IDs, and include all IDs in %excluded_IDs and IDs in %group_IDs; 
+
+=cut
+sub extract_group {
+	my ( $pair_href, $excl_href, $in_key ) = @_; 
+	my %back_hash; 
+	my %new_excl = %$excl_href; 
+	$back_hash{$in_key} = 1; 
+	$new_excl{$in_key} = 1; 
+	for my $tk ( keys %{$pair_href->{$in_key}} ) {
+		defined $new_excl{$tk} and next; 
+		$back_hash{$tk} = 1; 
+		$new_excl{$tk} = 1; 
+		my ($b_href, $e_href) = &extract_group( $pair_href, \%new_excl, $tk); 
+		map { $new_excl{$_} = 1; } keys %$e_href; 
+		map { $back_hash{$_} = 1; } keys %$b_href; 
+	}
+	return (\%back_hash, \%new_excl); 
+}# extract_group() 
 
 1; 
 
