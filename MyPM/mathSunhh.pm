@@ -458,7 +458,16 @@ sub compare_number_list {
 
 =head2 mergeLocBlk( [ [s1,e1], [s2,e2], ... ], [[s21,e21], [s22, e22], ... ] )
 
-Return  : [[ss1, ee1], [ss2, ee2], ...]
+Required   : At least one array reference like [ [$s1,$e1] ]; 
+
+Function   : Merge [s1,e1],[s2,e2],[s21,e21],[e22,e22] ... together into non-overlapping blocks. 
+
+ Can be used as &mergeLocBlk( [ [$s11,$e11], [$s12,$e12] ], [[$s21, $e21]], 'dist2join'=>1  )
+ 
+ Here 'dist2join' is the number distance between two blocks that can be joined. Default is 0, means [4,6] and [7,10] will be two blocks. 
+ If set 'dist2join'=>2, [4,6] and [8,10] will be joined into [4,10] ; 
+
+Return     : [[ss1, ee1], [ss2, ee2], ...]
 
 =cut 
 sub mergeLocBlk {
@@ -470,7 +479,7 @@ sub mergeLocBlk {
 		ref($blk_arr) eq '' and do { push(@para_array, $blk_arr); next; }; 
 		push(@srt_blk, @$blk_arr); 
 	}
-	my %parm = $self->_setHashFromArr(@para_array); 
+	my %parm = &_setHashFromArr(@para_array); 
 	$parm{'dist2join'} //= 0; 
 	@srt_blk = sort { $a->[0] <=> $b->[0] || $a->[1] <=> $b->[1] } map { [ sort { $a <=> $b } @$_ ] } @srt_blk; 
 	for my $a1 (@srt_blk) {
@@ -526,12 +535,19 @@ sub _setHashFromArr {
 
 Input       : 
  %refPos   : {qryID} => sortedByQrySE [ [qryS_1, qryE_1, refID_1, refS_1, refE_1, refStr_1(+/-)], [qryS_2, qryE_2, refID_2, refS_2, refE_2, refStr_2], ... ]
+ 
                qryS <= qryE && refS <= refE 
+
 			   qryS_1 <= qryS_2 ... 
+
 Function    : 
+
  Get position on ref for qryID_qryPos
+
 Return      : 
+
  ([refID_1, refPos_1, refStr_1], [refID_2, refPos_2, refStr_2])
+
 =cut
 sub switch_position {
 	my $self = shift; 
@@ -1156,6 +1172,171 @@ sub extract_group_fromArray {
 	
 	return(\%back_hash, \%new_excl); 
 }# extract_group_fromArray() 
+
+=head1 sep_loc2_by_loc1_multiLoc2( \@loci_1, \@loci_2, [@colN_from_loci_1] )
+
+Required   : 
+ \@loci_1 should be sorted by each start position! 
+ \@loci_1 and \@loci_2 in the same format: [ [sec_1_S, sec_1_E], [sec_2_S, sec_2_E], ...  ]
+
+Function   : 
+ Separate @loci_2 regions by overlapping @loci_1 or not. 
+ And return regions contained in @loci_2; 
+ \@loci_2 will be merged into non-overlapping segments. 
+
+Return     : (\@not_overlappedSE, \@overlappedSE)
+ Format of @not_overlappedSE
+
+=cut
+sub sep_loc2_by_loc1_multiLoc2 {
+	my ( $aref_1, $aref_2, $aref_colN ) = @_; 
+	my ( @specSE, @ovlpSE, $idx_start ); 
+	my $loci_2 = &mergeLocBlk('', $aref_2, 'dist2join' => 1); 
+	for my $ar2 (@$loci_2) {
+		my ( $t_specSE, $t_ovlpSE, $t_idx_start ) = &sep_loc2_by_loc1_singleLoc2( $aref_1, $ar2, $aref_colN ); 
+		$idx_start //= $t_idx_start; 
+		$idx_start > $t_idx_start and $idx_start = $t_idx_start; 
+		push(@specSE, @$t_specSE); 
+		push(@ovlpSE, @$t_ovlpSE); 
+	}
+	
+	return( \@specSE, \@ovlpSE, $idx_start ); 
+}# sep_loc2_by_loc1_multiLoc2() 
+
+=head1 sep_loc2_by_loc1_singleLoc2( \@loci_1, [$s2, $e2], [@colN_from_loci_1] ) 
+
+Input      : 
+ \@loci_1 should be sorted by each start position! 
+ \@loci_1 in the format: [ [sec_1_S, sec_1_E], [sec_2_S, sec_2_E], ...  ]
+ [@colN_from_loci_1] : Default [], means no columns to add. 
+   If given, like [0,3], the 0-th and 3-rd columns from each $loci_1[$x] element will be added to \@overlappedSE; 
+
+Required   : \@loci_1 , [$s2, $e2]
+
+Function   : 
+ Separate [$s2, $e2] region by overlapping @loci_1 or not. 
+ And return regions contained in [$s2, $e2]
+
+Return     : (\@not_overlappedSE, \@overlappedSE, $idx_start)
+ Format of @not_overlappedSE : ( [ $s_1, $e_1 ], [ $s_2, $e_2 ], ... )
+ Format of @overlappedSE : ( [ $s_1, $e_1, ... added ], [ $s_2, $e_2, ... added ], ... )
+ $idx_start : The elements before this index_element is not larger than any of \@not_overlappedSE|\@overlappedSE . 
+
+=cut
+sub sep_loc2_by_loc1_singleLoc2 {
+	my ($aref_1, $aref_2, $aref_colN) = @_; 
+	my (@specSE, @ovlpSE); 
+	$aref_colN //= []; 
+	
+	my $cur_p = $aref_2->[0]; 
+	my $idx_cnt = -1; 
+	my $idx_start; #  
+	for my $ar1 (@$aref_1) {
+		# ar1 -> ( loci_1_start, loci_1_end )
+		$idx_cnt ++; 
+		$ar1->[1] < $cur_p and next;       # The end of loci_1 (end_1)is smaller than current positoin; Go to next. 
+		$ar1->[0] > $aref_2->[1] and last; # The beginning of loci_1 (start_1) is larger than loci_2, so we don't need to compare the followings. 
+		if ( $ar1->[0] <= $cur_p) {
+			# The start_1 is smaller than current position, but end_1 is no less than current position; 
+			# The loci_1 is spanning current position. 
+			$idx_start //= $idx_cnt; 
+			$ar1->[1] >= $cur_p and push(@ovlpSE, [ $cur_p, $ar1->[1], @{$ar1}[@$aref_colN] ]); 
+			$cur_p = $ar1->[1] + 1; 
+		} elsif ( $ar1->[0] > $cur_p ) {
+			# The loci_1 is overlapping loci_2, but larger than current position
+			$idx_start //= $idx_cnt; 
+			push( @specSE, [$cur_p, $ar1->[0]-1 ] ); 
+			$cur_p = $ar1->[1] + 1; 
+			if ( $ar1->[1] <= $aref_2->[1] ) {
+				push( @ovlpSE, [ $ar1->[0], $ar1->[1], @{$ar1}[@$aref_colN] ] ); 
+			} else {
+				push( @ovlpSE, [ $ar1->[0], $aref_2->[1], @{$ar1}[@$aref_colN] ] ); 
+			}
+		} else {
+			# This is impossible! 
+			&stopErr("[Err] Wrongly reach this line in sep_loc2_by_loc1_singleLoc2()\n"); 
+		}
+	}# for my $ar1 (@$aref_1)
+	
+	if ( $cur_p <= $aref_2->[1] ) {
+		# After checking loci_1 regions, there is also loci_2 region left. 
+		push( @specSE, [ $cur_p, $aref_2->[1] ] ); 
+		$idx_cnt < 0 and $idx_cnt = 0; # In this case, the loci_1 is empty. 
+		$idx_start //= $idx_cnt; 
+	}
+	
+	return (\@specSE, \@ovlpSE, $idx_start); 
+}# sep_loc2_by_loc1_singleLoc2() 
+
+=head1 map_loc_byReference( \@reference_1to2, \@LocSE_1, '+/-' )
+
+Input      : 
+
+ \@reference_1to2 : Format as [ $start1, $end1, $start2, $end2 ], in which loc_1 [$start1,$end1] is mapped to loc_2 [$start2, $end2]; 
+ 
+ \@LocSE_1        : Format as [ $targetS_1, $targetE_1 ] 
+ 
+ '+/-'            : The strand (direction) how loc_1 is aligned to loc_2. If '-', $start1 is mapped to $end2, and $end1 is mapped to $start2; 
+
+Function   : According to \@reference_1to2, map loc_1 positions [ $targetS_1, $targetE_1 ] to loc_2 positions, and return them. 
+
+Return     : ( $targetS_2, $targetE_2 )
+
+=cut
+sub map_loc_byReference {
+	my ( $aref_1, $aref_2, $str ) = @_; 
+	$str //= '+'; 
+	my ( $targetS_2, $targetE_2 ); 
+	
+	# $aref_1 is in format [ $start1, $end1, $start2, $end2 ]
+	# $aref_2 is in format [ $targetS_1, $targetE_1 ]
+	my $ratio = ( $aref_1->[1]-$aref_1->[0] == 0 ) ? 0 : ($aref_1->[3]-$aref_1->[2])/($aref_1->[1]-$aref_1->[0]) ; 
+	## Here $targetS_2 should be always no larger than $targetE_2, in case $aref_2->[1] >= $aref_2->[0]; 
+	$targetS_2 = ( $str eq '-' ) 
+	  ? $aref_1->[3] - int( ($aref_2->[1]-$aref_1->[0]) * $ratio)
+	  : $aref_1->[2] + int( ($aref_2->[0]-$aref_1->[0]) * $ratio )
+	; 
+	$targetE_2 = ( $str eq '-' )
+	  ? $aref_1->[3] - int( ($aref_2->[0]-$aref_1->[0]) * $ratio ) 
+	  : $aref_1->[2] + int( ($aref_2->[1]-$aref_1->[0]) * $ratio )
+	; 
+	
+	return ($targetS_2, $targetE_2); 
+}# map_loc_byReference() 
+
+=head1 insert_SEloc_toSEArray( \@toSEArray, \@SEloc, $idx_start )
+
+Input      : 
+ \@toSEArray   : Sorted. [ [$s1,$e1], [$s2, $e2], ... ]
+ \@SEloc       : [ $s, $e ]
+ $idx_start    : The elements in @toSEArray before index($idx_start) is not smaller than $s. Default 0. 
+
+Required   : \@toSEArray, \@SEloc
+
+Function   : Insert \@SEloc into \@toSEArray by low-to-high order. 
+
+Return     : No return. The array \@toSEArray will be changed. 
+
+=cut
+sub insert_SEloc_toSEArray {
+	my ($aref_1, $aref_2, $idx_curr) = @_; 
+	$idx_curr //= 0; 
+	my $is_found = 0; 
+	for (; $idx_curr < @$aref_1; $idx_curr++) {
+		my $ar1 = $aref_1->[$idx_curr]; 
+		# $ar1 -> [ start, end ]
+		$ar1->[0] < $aref_2->[0] and next; 
+		$ar1->[0] == $aref_2->[0] and $ar1->[1] <= $aref_2->[1] and next; 
+		$is_found = 1; 
+		last; 
+	}
+	if ( $is_found == 0 or $idx_curr > $#$aref_1 ) {
+		push(@$aref_1, $aref_2); 
+	} else {
+		splice(@$aref_1, $idx_curr, 0, $aref_2); 
+	}
+	return; 
+}# insert_SEloc_toSEArray() 
 
 
 
