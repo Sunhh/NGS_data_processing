@@ -796,12 +796,12 @@ sub combinations {
 	return @comb; 
 }#sub combinations
 
-=head1 dvd_array( \@array_to_be_divided, $number_of_subgroups, $If_keep_order[default=0] )
+=head1 dvd_array( \@array_to_be_divided, $number_of_subgroups, $If_keep_order[default=0], $prev_grp_colN )
 
 Function : Divide @array_to_be_divided into $number_of_subgroups subgroups. 
 If $If_keep_order is TRUE, the elements in subgroups will be sequenctial same to the raw order. 
 
-Return   : [ \@subgroup_1, \@subgroup_2, ... ]
+Return   : ( [ \@subgroup_1, \@subgroup_2, ... ] )
 
 Example  : 
   &dvd_array( [0,1,2,3,4,5,6,7] , 3 )    returns [ [0,3,6], [1,4,7], [2,5] ] ; 
@@ -812,20 +812,46 @@ sub dvd_array {
 	my $inA = shift; 
 	my $grpN = shift; 
 	my $keepOrder = shift; 
+	my $prevGrp_ColN = shift; 
+	$prevGrp_ColN //= 'N'; 
 	$grpN = int($grpN);
-	$grpN >= 1 or $grpN = 1;
+	$grpN >= 1 or $grpN = 1; 
 	my @sub_grps;
 	if ( $keepOrder ) {
 		my $num_ttl = scalar(@$inA); 
 		my $num_subG = int( $num_ttl/$grpN ); 
 		$num_subG * $grpN >= $num_ttl or $num_subG++; 
 		$num_subG * $grpN >= $num_ttl or &stopErr("[Err] num_ttl=$num_ttl , grpN=$grpN\n"); 
-		for (my $i=0; $i<@$inA; $i+=$num_subG) {
-			my $e = $i+$num_subG-1; 
-			$e > $#$inA and $e = $#$inA; 
-			push( @sub_grps, [ @{$inA}[ $i .. $e ] ] ); 
+		if ( $prevGrp_ColN eq 'N' ) {
+			for (my $i=0; $i<@$inA; $i+=$num_subG) {
+				my $e = $i+$num_subG-1; 
+				$e > $#$inA and $e = $#$inA; 
+				push( @sub_grps, [ @{$inA}[ $i .. $e ] ] ); 
+			}
+		} else {
+			my $prev_tag; 
+			my $curr_num = 0; 
+			my $subGrp_idx = 0; 
+			my $num_cutoff = $num_subG; 
+			for (sort { $a->[$prevGrp_ColN]<=>$b->[$prevGrp_ColN] || $a->[$prevGrp_ColN] cmp $b->[$prevGrp_ColN] } @$inA) {
+				$prev_tag //= $_->[$prevGrp_ColN]; 
+				if ( $prev_tag ne $_->[$prevGrp_ColN] ) {
+					$prev_tag = $_->[$prevGrp_ColN]; 
+					if ( $curr_num < $num_cutoff ) {
+						push( @{$sub_grps[$subGrp_idx]}, $_ ); 
+					} else {
+						$subGrp_idx ++; 
+						$num_cutoff = $curr_num + $num_subG; 
+						push( @{$sub_grps[$subGrp_idx]}, $_ ); 
+					}
+				} else {
+					push( @{$sub_grps[$subGrp_idx]}, $_ ); 
+				}
+				$curr_num ++; 
+			}
 		}
 	} else {
+		$prevGrp_ColN ne 'N' and &stopErr("[Err] mathSunhh::dvd_array(): prev_grp_colN can be only ['N'] when If_keep_order is 0.\n"); 
 		for (my $i=0; $i<@$inA; $i+=$grpN) {
 			for (my $j=0; $j<$grpN; $j++) {
 				my $k = $j+$i;
