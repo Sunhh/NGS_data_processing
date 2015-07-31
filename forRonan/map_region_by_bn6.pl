@@ -10,6 +10,7 @@ my %opts;
 GetOptions(\%opts, 
 	"help!", 
 	"minIdentity:f", # Default 0, range [0-100]
+	"minQspan:i", # 
 	"minIdentityWhenOvl:f", # Default 0, range [0-100], but I might use 88.97 or something. 
 	"repeat_dist:f", 
 	"useRawID!", 
@@ -19,6 +20,7 @@ GetOptions(\%opts,
 $opts{'help'} and &usage(); 
 
 $opts{'minIdentity'}        //= 0; 
+$opts{'minQspan'}           //= 0; 
 $opts{'minIdentityWhenOvl'} //= 0; 
 $opts{'repeat_dist'}        //= -1; 
 
@@ -30,6 +32,7 @@ sub usage {
 # -help
 #
 # -minIdentity                    [0-100] Minimum identity% to accept a blastn hit. (0)
+# -minQspan                       [0] Minimum query span length to accept a blastn hit. (0)
 # -minIdentityWhenOvl             [0-100] Minimum identity% to accept a second overlapping hit. (0)
 # -repeat_dist                    [0-100] Maximum identity% difference from the top one to check repeat. (-1 means no checking)
 # -useRawID                       [Boolean] Convert scaffold ID to raw ID when output data, when this is given. 
@@ -52,6 +55,8 @@ while (<>) {
 	$identity >= $opts{'minIdentity'} or next; 
 	my ( $id1, $id2, $l1, $l2 ) = @ta[0,1,12,13]; 
 	my ( $s1,$e1, $s2, $e2 ) = @ta[6,7,8,9]; 
+	my $qspan = $e1-$s1+1; 
+	$qspan >= $opts{'minQspan'} or next; 
 	my $str = $ta[14]; 
 	$len1{$id1} //= $l1; 
 	$len2{$id2} //= $l2; 
@@ -77,13 +82,15 @@ while (<>) {
 #                                    0            1          2       3          4        5   6        ?
 print STDOUT join("\t", qw/FromScfID FromScfStart FromScfEnd ToScfID ToScfStart ToScfEnd Str Identity Tag/)."\n"; 
 for my $scfID1 (sort keys %p1_to_p2) {
+	my @outlines; 
 	for my $ar1 (@{$p1_to_p2{$scfID1}}) {
 		my ( $s1, $e1, $id2, $s2, $e2, $str, $ident ) = @$ar1; 
 		#ar1-[0], [1], [2] , [3], [4], [5],  [6]
 		if ($opts{'useRawID'}) {
 			unless ( defined $p1_to_p2_repeat{$scfID1} ) {
 				my ( $origID, $origS, $origE ) = &SpecLoc_to_OrigLoc($scfID1, $s1, $e1); 
-				print STDOUT join("\t", $origID, $origS, $origE, $id2, $s2, $e2, $str, $ident, 'Unique')."\n"; 
+				push( @outlines, [ $origID, $origS, $origE, $id2, $s2, $e2, $str, $ident, 'Unique' ] ); 
+				# print STDOUT join("\t", $origID, $origS, $origE, $id2, $s2, $e2, $str, $ident, 'Unique')."\n"; 
 				next; 
 			}
 			$p1_to_p2_repeat{$scfID1} //= []; 
@@ -97,17 +104,20 @@ for my $scfID1 (sort keys %p1_to_p2) {
 				  $str
 				); 
 				my ( $origID, $origS, $origE ) = &SpecLoc_to_OrigLoc($scfID1, $restS, $restE); 
-				print STDOUT join("\t", $origID, $origS, $origE, $id2, $new_S2, $new_E2, $str, $ident, "Unique")."\n"; 
+				push( @outlines, [ $origID, $origS, $origE, $id2, $new_S2, $new_E2, $str, $ident, "Unique" ]); 
+				# print STDOUT join("\t", $origID, $origS, $origE, $id2, $new_S2, $new_E2, $str, $ident, "Unique")."\n"; 
 			}
 			for my $ar3 ( @$ovlSE ) {
 				my ($ovlS, $ovlE) = @$ar3; 
 				#ar3-[0],  [1]
 				my ( $origID, $origS, $origE ) = &SpecLoc_to_OrigLoc($scfID1, $ovlS, $ovlE); 
-				print STDOUT join("\t", $origID, $origS, $origE, $id2, '.', '.', $str, $ident, "Repeat")."\n"; 
+				push( @outlines, [ $origID, $origS, $origE, $id2, '.', '.', $str, $ident, "Repeat" ] ); 
+				# print STDOUT join("\t", $origID, $origS, $origE, $id2, '.', '.', $str, $ident, "Repeat")."\n"; 
 			}
 		} else {
 			unless ( defined $p1_to_p2_repeat{$scfID1} ) {
-				print STDOUT join("\t", $scfID1, $s1, $e1, $id2, $s2, $e2, $str, $ident, 'Unique')."\n"; 
+				push( @outlines, [ $scfID1, $s1, $e1, $id2, $s2, $e2, $str, $ident, 'Unique' ] ); 
+				# print STDOUT join("\t", $scfID1, $s1, $e1, $id2, $s2, $e2, $str, $ident, 'Unique')."\n"; 
 				next; 
 			}
 			$p1_to_p2_repeat{$scfID1} //= []; 
@@ -120,14 +130,19 @@ for my $scfID1 (sort keys %p1_to_p2) {
 				  [ $restS, $restE ], 
 				  $str
 				); 
-				print STDOUT join("\t", $scfID1, $restS, $restE, $id2, $new_S2, $new_E2, $str, $ident, "Unique")."\n"; 
+				push( @outlines, [ $scfID1, $restS, $restE, $id2, $new_S2, $new_E2, $str, $ident, "Unique" ] ); 
+				# print STDOUT join("\t", $scfID1, $restS, $restE, $id2, $new_S2, $new_E2, $str, $ident, "Unique")."\n"; 
 			}
 			for my $ar3 ( @$ovlSE ) {
 				my ($ovlS, $ovlE) = @$ar3; 
 				#ar3-[0],  [1]
-				print STDOUT join("\t", $scfID1, $ovlS, $ovlE, $id2, '.', '.', $str, $ident, "Repeat")."\n"; 
+				push( @outlines, [ $scfID1, $ovlS, $ovlE, $id2, '.', '.', $str, $ident, "Repeat" ] ); 
+				# print STDOUT join("\t", $scfID1, $ovlS, $ovlE, $id2, '.', '.', $str, $ident, "Repeat")."\n"; 
 			}
 		}
+	}
+	for my $arX (sort { $a->[1]<=>$b->[1] || $a->[2]<=>$b->[2] } @outlines) {
+		print STDOUT join("\t", @$arX)."\n"; 
 	}
 }
 
