@@ -1,0 +1,2 @@
+perl run_mugsy_MP.pl -cpuN 1 -seqPerBatch 1000 -outfile S1_syn_batch -inmaf S1.fitMugsy.maf -infas S1_all.fitMugsy.fa -printCmd
+nohup run_cmd_in_batch.pl tmp1 -cpuN 40 >> scrn.cmd_batch

@@ -1240,7 +1240,13 @@ sub sep_loc2_by_loc1_singleLoc2 {
 			# The start_1 is smaller than current position, but end_1 is no less than current position; 
 			# The loci_1 is spanning current position. 
 			$idx_start //= $idx_cnt; 
-			$ar1->[1] >= $cur_p and push(@ovlpSE, [ $cur_p, $ar1->[1], @{$ar1}[@$aref_colN] ]); 
+			if ( $ar1->[1] >= $cur_p ) {
+				if ( $ar1->[1] <= $aref_2->[1] ) {
+					push(@ovlpSE, [ $cur_p, $ar1->[1], @{$ar1}[@$aref_colN] ]); 
+				} else {
+					push(@ovlpSE, [ $cur_p, $aref_2->[1], @{$ar1}[@$aref_colN] ]); 
+				}
+			}
 			$cur_p = $ar1->[1] + 1; 
 		} elsif ( $ar1->[0] > $cur_p ) {
 			# The loci_1 is overlapping loci_2, but larger than current position
