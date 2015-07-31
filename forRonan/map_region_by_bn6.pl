@@ -15,11 +15,29 @@ GetOptions(\%opts,
 	"useRawID!", 
 ); 
 
--t and !@ARGV and die "perl $0 filtered_sorted.Spec97_to_ScfPI.bn6\n"; 
+-t and !@ARGV and &usage(); 
+$opts{'help'} and &usage(); 
 
 $opts{'minIdentity'}        //= 0; 
 $opts{'minIdentityWhenOvl'} //= 0; 
 $opts{'repeat_dist'}        //= -1; 
+
+sub usage {
+	print <<HH; 
+################################################################################
+# perl $0 filtered_sorted.Spec97_to_ScfPI.bn6
+#
+# -help
+#
+# -minIdentity                    [0-100] Minimum identity% to accept a blastn hit. (0)
+# -minIdentityWhenOvl             [0-100] Minimum identity% to accept a second overlapping hit. (0)
+# -repeat_dist                    [0-100] Maximum identity% difference from the top one to check repeat. (-1 means no checking)
+# -useRawID                       [Boolean] Convert scaffold ID to raw ID when output data, when this is given. 
+################################################################################
+HH
+	exit 1; 
+}
+
 
 my %p1_to_p2; 
 my %p1_to_p2_repeat; 
