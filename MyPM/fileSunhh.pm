@@ -326,4 +326,9 @@ sub _rmtree {
 	return File::Path::rmtree(@_); 
 }#sub _rmtree()
 
+=head1 _basename()
+=cut
+sub _basename {
+	return File::Basename::basename(@_); 
+}
 1; 
