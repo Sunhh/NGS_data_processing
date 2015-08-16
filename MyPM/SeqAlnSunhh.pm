@@ -483,6 +483,61 @@ sub sam_flag_infor {
 	return ( \@flag_back ); 
 }
 
+=head1 parseCigar( $CigarString_inSam )
+
+Return      : (\%type2Number)
+  {qw/Dlen Elen Hlen Ilen Mlen Nlen Plen RdLen Slen SpanRefLen Xlen/} => number; 
+  Plen : Read 'Padded SAM' sectioin in manual. standing for '*'
+  Elen : '='
+  Xlen : 'X'
+  Nlen : 'N'
+  SpanRefLen : Mlen + Dlen + Nlen + Plen + Elen + Xlen
+  RdLen      : Mlen + Ilen + Slen + Elen + Xlen
+
+=cut
+sub parseCigar {
+	my $cigarString = shift;
+	my %back;
+	for my $tag (qw/M I D N S H P E X/) {
+		$back{"${tag}len"} = 0;
+	}
+	for my $tag (qw/SpanRefLen RdLen/) {
+		$back{$tag} = 0;
+	}
+	while ($cigarString =~ s/^(\d+)([MIDNSHP=X])//) {
+		# CIGAR String \*|([0-9]+[MIDNSHPX=])+
+		my ($len, $tag) = ($1, $2);
+		if ( $tag eq 'M' ) {
+			$back{'Mlen'} += $len;
+		} elsif ( $tag eq 'I' ) {
+			$back{'Ilen'} += $len;
+		} elsif ( $tag eq 'D' ) {
+			$back{'Dlen'} += $len;
+		} elsif ( $tag eq 'N' ) {
+			$back{'Nlen'} += $len;
+		} elsif ( $tag eq 'S' ) {
+			$back{'Slen'} += $len;
+		} elsif ( $tag eq 'H' ) {
+			$back{'Hlen'} += $len;
+		} elsif ( $tag eq 'P' ) {
+			$back{'Plen'} += $len;
+			# Read 'Padded SAM' section in sam format manual. It stands for '*' ;
+			&tsmsg("[Wrn] I don't really understand P in cigar string.\n");
+		} elsif ( $tag eq '=' ) {
+			$back{'Elen'} += $len;
+		} elsif ( $tag eq 'X' ) {
+			$back{'Xlen'} += $len;
+		} else {
+			&stopErr("[Err] Unknown Cigar string $len$tag\n");
+		}
+	}
+	$cigarString eq '' or &stopErr("[Err] Left unknown Cigar string $cigarString\n");
+	$back{'SpanRefLen'} = $back{'Mlen'} + $back{'Dlen'} + $back{'Nlen'} + $back{'Plen'} + $back{'Elen'} + $back{'Xlen'};
+	$back{'RdLen'} = $back{'Mlen'} + $back{'Ilen'} + $back{'Slen'} + $back{'Elen'} + $back{'Xlen'};
+	return \%back;
+
+}# sub parseCigar() 
+
 
 
 =head1 olap_e2e_A2B( $sequenceA, $sequenceB, [, {%para}] )
