@@ -1157,7 +1157,7 @@ ENDCODE
 sub qual{
 	my (@Starts,@Ends);
 	for (split(/:/,$opts{qual})) {
-		if (/^(\d+)-(\d+)$/) {
+		if (/^(\d+)\-(\d+)$/) {
 			push(@Starts, ( $1 ) ? $1 : 1 );
 			push(@Ends,   ( $2 ) ? $2 : 'end');
 			($1>$2 && $2!=0) and die "[Err]Are you sure? $1 > $2?!\n";
