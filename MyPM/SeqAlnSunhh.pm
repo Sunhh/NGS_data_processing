@@ -356,6 +356,51 @@ sub bwaSE {
 #  Sub-routines. 
 ############################################################
 
+=head1 not_uniqBest( \@sam_line_array )
+
+Function : Judge if a SAM alignment is a not-good alignment: (any of the following applies)
+            Rule 1 : Contain 'XT:A:*' but not 'XT:A:U' ; 
+            Rule 2 : Have 'XA:Z:*' tag and NM in it is not larger than raw NM:i_value;
+
+Return   : (1/0)
+
+=cut
+sub not_uniqBest {
+	my $ar = shift; # [@sam_line]
+	my ($nm, $xt, $xa); 
+	for (my $i=11; $i<@$ar; $i++) {
+		$_ = $ar->[$i];
+		if (m/^XT:A:(\S+)$/) {
+			defined $xt and die "repeat XT:A in : @$ar\n";
+			$xt = $1;
+		} elsif (m/^NM:i:(\d+)$/) {
+			defined $nm and die "repeat NM:i in : @$ar\n";
+			$nm = $1;
+		} elsif (m/^XA:Z:(\S+)$/) {
+			defined $xa and die "repeat XA:Z in : @$ar\n";
+			my $str = $1;
+			# XA:Z:scaffold116_cov122,+373278,113M,0;scaffold200_cov109,-2398803,113M,1;
+			for my $ts0 (split(/;/, $str)) {
+				$ts0 =~ m/^\s*$/ and next;
+				$ts0 =~ m/^(\S+),([+-]?\d+),([\d\w]+),(\d+)$/ or die "Failed for XA:Z : [$ts0]\n";
+				my ($chr, $pos, $cigar, $nm_1) = ($1, $2, $3, $4);
+				$xa //= $nm_1;
+				$xa > $nm_1 and $xa = $nm_1;
+			}
+		} else {
+			;
+		}
+	}
+	$nm //= 0;
+	$xt //= 'U';
+	$xa //= 99999;
+	$xa <= $nm and return 1;
+	$xt eq 'U' or return 1;
+	return 0;
+}# sub not_uniqBest() 
+
+
+
 =head1 mk_flag( 'keep'=>'', 'drop'=>'' )
 
 Function: 
