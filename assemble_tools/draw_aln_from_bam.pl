@@ -125,31 +125,37 @@ my $width;
 my $height; 
 my %bp_line_wind; 
 $width  = $base_x * 2 + $opts{'width_per_line'}; 
-my $max_idx_dep = ($opts{'scfE'}-$opts{'scfS'}+1)/($bp_per_line-$opts{'bp_overlap'}); 
-$max_idx_dep == int($max_idx_dep) or $max_idx_dep = int($max_idx_dep+1); 
+my $max_idx_dep; 
+my $wind_step; 
+my $wind_minRatio; 
+if ( $bp_per_line * 2/3 > $opts{'bp_overlap'} ) {
+	$max_idx_dep = ($opts{'scfE'}-$opts{'scfS'}+1)/($bp_per_line-$opts{'bp_overlap'}); 
+	$max_idx_dep == int($max_idx_dep) or $max_idx_dep = int($max_idx_dep)+1; 
+} else {
+	my $new_v = int( $bp_per_line * 2/3 ); 
+	&tsmsg("[Wrn] The settings makes bp_per_line ($bp_per_line) too small compared to bp_overlap ($opts{'bp_overlap'}), so I decrease bp_overlap to $new_v\n"); 
+	$opts{'bp_overlap'} = $new_v; 
+	$max_idx_dep = ($opts{'scfE'}-$opts{'scfS'}+1)/($bp_per_line-$opts{'bp_overlap'}); 
+	$max_idx_dep == int($max_idx_dep) or $max_idx_dep = int($max_idx_dep)+1; 
+}
 my $base_y_h = ( $base_y >= 50 ) ? $base_y : 50 ; 
 $height = $base_y + $base_y_h + $step_y * $max_idx_dep; 
-if ( $opts{'scfE'}-$opts{'scfS'}+1 <= ( ($opts{'bp_overlap'}+1) ) ) {
-	%bp_line_wind = %{ 
-	 $ms->setup_windows( 
-	   'ttl_start' => $opts{'scfS'}, 
-	   'ttl_end'   => $opts{'scfE'}, 
-	   'wind_size' => $bp_per_line, 
-	   'wind_step' => $bp_per_line - $opts{'bp_overlap'}, 
-	   'minRatio'  => 0, 
-	 ) 
-	}; 
+if ( $opts{'scfE'}-$opts{'scfS'}+1 <= ( ($opts{'bp_overlap'} ) ) ) {
+	$wind_step = $bp_per_line; 
+	$wind_minRatio = 0; 
 } else {
-	%bp_line_wind = %{ 
-	 $ms->setup_windows( 
-	   'ttl_start' => $opts{'scfS'}, 
-	   'ttl_end'   => $opts{'scfE'}, 
-	   'wind_size' => $bp_per_line, 
-	   'wind_step' => $bp_per_line - $opts{'bp_overlap'}, 
-	   'minRatio'  => ($opts{'bp_overlap'}+1)/$bp_per_line, 
-	 ) 
-	}; 
+	$wind_step = $bp_per_line - $opts{'bp_overlap'}; 
+	$wind_minRatio = ($opts{'bp_overlap'}+1)/$bp_per_line; 
 }
+%bp_line_wind = %{ 
+ $ms->setup_windows( 
+   'ttl_start' => $opts{'scfS'}, 
+   'ttl_end'   => $opts{'scfE'}, 
+   'wind_size' => $bp_per_line, 
+   'wind_step' => $wind_step, 
+   'minRatio'  => $wind_minRatio, 
+ ) 
+}; 
 # warn "$opts{'scfS'}, $opts{'scfE'}\n$bp_per_line - $opts{'bp_overlap'}, ($opts{'bp_overlap'}+1)/$bp_per_line\n"; 
 my %si_to_idx; # {si} => index_of_line. 
 for ( my $i=0; $i<@{$bp_line_wind{'info'}{'windSloci'}}; $i++ ) {
@@ -217,7 +223,7 @@ $grps{'backbone'}->text(
 
 # Draw ticks. 
 for (my $i=0; $i<=$opts{'scfE'}; $i+=$opts{'tickStep'}) {
-	$i >= $opts{'scfS'} or next; 
+	$i >= $opts{'scfS'}-1 or next; 
 	my @si = @{ 
 	 $ms->map_windows( 
 	   'position'  => $i, 
@@ -244,7 +250,8 @@ for (my $i=0; $i<=$opts{'scfE'}; $i+=$opts{'tickStep'}) {
 }
 
 # Draw backbone lines. 
-for ( my $i=1; $i<=$opts{'scfE'}; $i+=($bp_per_line - $opts{'bp_overlap'}) ) {
+my %has_draw_bb_idx_dep; 
+for ( my $i=1; $i<=$opts{'scfE'}; $i+=$wind_step ) {
 	my $lineE = $i+$bp_per_line-1; 
 	my $lineS = $i; 
 	$lineE < $opts{'scfS'} and next; 
@@ -258,6 +265,8 @@ for ( my $i=1; $i<=$opts{'scfE'}; $i+=($bp_per_line - $opts{'bp_overlap'}) ) {
 	}; 
 	for my $tsi (@si) {
 		my $idx_dep = $si_to_idx{$tsi}; 
+		defined $has_draw_bb_idx_dep{$idx_dep} and next; 
+		$has_draw_bb_idx_dep{$idx_dep} = 1; 
 		$grps{'backbone'}->line(
 		 'x1' => $base_x, 
 		 'y1' => $base_y+$idx_dep*$step_y, 
@@ -275,7 +284,8 @@ for my $tr (@add_blks) {
 	$s > $opts{'scfE'} and next; 
 	$s >= $opts{'scfS'} or $s = $opts{'scfS'}; 
 	$e <= $opts{'scfE'} or $e = $opts{'scfE'}; 
-	for ( my $i=1; $i<=$e; $i+=($bp_per_line - $opts{'bp_overlap'}) ) {
+	# for ( my $i=1; $i<=$e; $i+=($bp_per_line - $opts{'bp_overlap'}) ) {
+	for ( my $i=1; $i<=$e; $i+=$wind_step ) {
 		my $lineE = $i+$bp_per_line-1; 
 		my $lineS = $i; 
 		$lineE < $s and next; 
