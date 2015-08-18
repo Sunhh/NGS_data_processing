@@ -369,7 +369,7 @@ sub not_uniqBest {
 	my $ar = shift; # [@sam_line]
 	my ($nm, $xt, $xa); 
 	for (my $i=11; $i<@$ar; $i++) {
-		$_ = $ar->[$i];
+		local $_ = $ar->[$i];
 		if (m/^XT:A:(\S+)$/) {
 			defined $xt and die "repeat XT:A in : @$ar\n";
 			$xt = $1;
