@@ -159,7 +159,7 @@ sub not_best {
 	$xt //= 'U'; 
 	$xa //= 99999; 
 	$xa <= $nm and return 1; 
-	$xt eq 'U' and return 1; 
+	$xt eq 'U' or return 1; 
 	return 0; 
 }
 
