@@ -5,6 +5,7 @@ use strict;
 use LogInforSunhh; 
 use fileSunhh; 
 use mathSunhh; 
+use SeqAlnSunhh; 
 my $ms = mathSunhh->new(); 
 use SVG; 
 use Getopt::Long; 
@@ -82,23 +83,36 @@ if (defined $opts{'gapLis'}) {
 -e "$opts{'bam'}.bai" or &exeCmd_1cmd("samtools index $opts{'bam'}"); 
 my @pair_se; 
 {
+my (%flag_hDiffF, %flag_hDiffR); 
+%flag_hDiffF = %{ &SeqAlnSunhh::mk_flag( 'keep'=>'0=1,2=0,3=0,4=0,5=1' , 'drop'=>'' ) }; 
+%flag_hDiffR = %{ &SeqAlnSunhh::mk_flag( 'keep'=>'0=1,2=0,3=0,4=1,5=0' , 'drop'=>'' ) }; 
+my %should_ignoreRd; 
 my $loc = ( defined $opts{'scfE'} ) ? "'$opts{'scfID'}':$opts{'scfS'}-$opts{'scfE'}" : "'$opts{'scfID'}'" ; 
-open F, '-|',"samtools view $opts{'bam'} $loc | sam_filter.pl -h2diff_F " or die; 
+# open F, '-|',"samtools view $opts{'bam'} $loc | sam_filter.pl -h2diff_F " or die; 
+open F, '-|',"samtools view $opts{'bam'} $loc " or die; 
 while (<F>) {
 	chomp; 
 	my @ta = split(/\t/, $_); 
+	my $flag = $ta[1]; 
+	my $rdID = $ta[0]; 
+	defined $flag_hDiffF{$flag} or defined $flag_hDiffR{$flag} or next; 
+	defined $should_ignoreRd{$rdID} or do { &not_best( \@ta ) == 1 and $should_ignoreRd{ $rdID } = 1; }; 
+	$flag_hDiffF{$flag} or next; 
 	my ($id1, $pos1, $id2, $pos2, $ins_len) = @ta[2,3,6,7,8]; 
 	my $xt_u = 1; 
-	$_ =~ m/\tXT:A:[RM](\t|$)/ and $xt_u = 0; 
+	# $_ =~ m/\tXT:A:[RM](\t|$)/ and $xt_u = 0; 
 	$id2 eq '=' or next; 
 	my $pos3 = $pos1+$ins_len-1; 
 	$pos1 <= $pos3 or next; # Skip PE pairs. 
 	$pos1 >= $opts{'scfS'} or next; 
 	defined $opts{'scfE'} and $pos3 > $opts{'scfE'} and next; 
-	push(@pair_se, [$pos1, $pos3, $xt_u]); 
+	push(@pair_se, [$pos1, $pos3, $xt_u, $rdID]); 
 }
 close F; 
 @pair_se = sort { $a->[0] <=> $b->[0] || $a->[1] <=> $b->[1] } @pair_se; 
+for my $ar0 (@pair_se) {
+	defined $should_ignoreRd{ $ar0->[3] } and $ar0->[2] = 0; 
+}
 if ( !(defined $opts{'scfE'}) ) {
 	open H,'-|',"samtools view -H $opts{'bam'}" or die; 
 	while (<H>) {
@@ -110,6 +124,43 @@ if ( !(defined $opts{'scfE'}) ) {
 	close H; 
 }
 # $opts{'scfE'} //= $pair_se[-1][1]; 
+}
+
+# Judge if a alignment is a not-good alignment: (any of the following applies)
+#  Rule 1 : Contain 'XT:A:*' but not 'XT:A:U'
+#  Rule 2 : Have 'XA:Z:*' tag and NM in it is not larger than raw NM:i_value; 
+sub not_best {
+	my $ar = shift; # [@sam_line]
+	my ($nm, $xt, $xa); 
+	for (my $i=11; $i<@$ar; $i++) {
+		$_ = $ar->[$i]; 
+		if (m/^XT:A:(\S+)$/) {
+			defined $xt and die "repeat XT:A in : @$ar\n"; 
+			$xt = $1; 
+		} elsif (m/^NM:i:(\d+)$/) {
+			defined $nm and die "repeat NM:i in : @$ar\n"; 
+			$nm = $1; 
+		} elsif (m/^XA:Z:(\S+)$/) {
+			defined $xa and die "repeat XA:Z in : @$ar\n"; 
+			my $str = $1; 
+			# XA:Z:scaffold116_cov122,+373278,113M,0;scaffold200_cov109,-2398803,113M,1; 
+			for my $ts0 (split(/;/, $str)) {
+				$ts0 =~ m/^\s*$/ and next; 
+				$ts0 =~ m/^(\S+),([+-]?\d+),([\d\w]+),(\d+)$/ or die "Failed for XA:Z : [$ts0]\n"; 
+				my ($chr, $pos, $cigar, $nm_1) = ($1, $2, $3, $4); 
+				$xa //= $nm_1; 
+				$xa > $nm_1 and $xa = $nm_1; 
+			}
+		} else {
+			; 
+		} 
+	}
+	$nm //= 0; 
+	$xt //= 'U'; 
+	$xa //= 99999; 
+	$xa <= $nm and return 1; 
+	$xt eq 'U' and return 1; 
+	return 0; 
 }
 
 # For svg: 
