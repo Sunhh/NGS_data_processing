@@ -96,7 +96,7 @@ while (<F>) {
 	my $flag = $ta[1]; 
 	my $rdID = $ta[0]; 
 	defined $flag_hDiffF{$flag} or defined $flag_hDiffR{$flag} or next; 
-	defined $should_ignoreRd{$rdID} or do { &not_best( \@ta ) == 1 and $should_ignoreRd{ $rdID } = 1; }; 
+	defined $should_ignoreRd{$rdID} or do { &SeqAlnSunhh::not_uniqBest( \@ta ) == 1 and $should_ignoreRd{ $rdID } = 1; }; 
 	$flag_hDiffF{$flag} or next; 
 	my ($id1, $pos1, $id2, $pos2, $ins_len) = @ta[2,3,6,7,8]; 
 	my $xt_u = 1; 
@@ -124,43 +124,6 @@ if ( !(defined $opts{'scfE'}) ) {
 	close H; 
 }
 # $opts{'scfE'} //= $pair_se[-1][1]; 
-}
-
-# Judge if a alignment is a not-good alignment: (any of the following applies)
-#  Rule 1 : Contain 'XT:A:*' but not 'XT:A:U'
-#  Rule 2 : Have 'XA:Z:*' tag and NM in it is not larger than raw NM:i_value; 
-sub not_best {
-	my $ar = shift; # [@sam_line]
-	my ($nm, $xt, $xa); 
-	for (my $i=11; $i<@$ar; $i++) {
-		$_ = $ar->[$i]; 
-		if (m/^XT:A:(\S+)$/) {
-			defined $xt and die "repeat XT:A in : @$ar\n"; 
-			$xt = $1; 
-		} elsif (m/^NM:i:(\d+)$/) {
-			defined $nm and die "repeat NM:i in : @$ar\n"; 
-			$nm = $1; 
-		} elsif (m/^XA:Z:(\S+)$/) {
-			defined $xa and die "repeat XA:Z in : @$ar\n"; 
-			my $str = $1; 
-			# XA:Z:scaffold116_cov122,+373278,113M,0;scaffold200_cov109,-2398803,113M,1; 
-			for my $ts0 (split(/;/, $str)) {
-				$ts0 =~ m/^\s*$/ and next; 
-				$ts0 =~ m/^(\S+),([+-]?\d+),([\d\w]+),(\d+)$/ or die "Failed for XA:Z : [$ts0]\n"; 
-				my ($chr, $pos, $cigar, $nm_1) = ($1, $2, $3, $4); 
-				$xa //= $nm_1; 
-				$xa > $nm_1 and $xa = $nm_1; 
-			}
-		} else {
-			; 
-		} 
-	}
-	$nm //= 0; 
-	$xt //= 'U'; 
-	$xa //= 99999; 
-	$xa <= $nm and return 1; 
-	$xt eq 'U' or return 1; 
-	return 0; 
 }
 
 # For svg: 
