@@ -359,7 +359,7 @@ sub bwaSE {
 =head1 not_uniqBest( \@sam_line_array )
 
 Function : Judge if a SAM alignment is a not-good alignment: (any of the following applies)
-            Rule 1 : Contain 'XT:A:*' but not 'XT:A:U' ; 
+            Rule 1 : Contain 'XT:A:R' ; 
             Rule 2 : Have 'XA:Z:*' tag and NM in it is not larger than raw NM:i_value;
 
 Return   : (1/0)
@@ -395,7 +395,7 @@ sub not_uniqBest {
 	$xt //= 'U';
 	$xa //= 99999;
 	$xa <= $nm and return 1;
-	$xt eq 'U' or return 1;
+	$xt eq 'R' and return 1;
 	return 0;
 }# sub not_uniqBest() 
 
