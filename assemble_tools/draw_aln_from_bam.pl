@@ -82,7 +82,7 @@ if (defined $opts{'gapLis'}) {
 -e "$opts{'bam'}.bai" or &exeCmd_1cmd("samtools index $opts{'bam'}"); 
 my @pair_se; 
 {
-my $loc = ( defined $opts{'scfE'} ) ? "$opts{'scfID'}:$opts{'scfS'}-$opts{'scfE'}" : "$opts{'scfID'}" ; 
+my $loc = ( defined $opts{'scfE'} ) ? "'$opts{'scfID'}':$opts{'scfS'}-$opts{'scfE'}" : "'$opts{'scfID'}'" ; 
 open F, '-|',"samtools view $opts{'bam'} $loc | sam_filter.pl -h2diff_F " or die; 
 while (<F>) {
 	chomp; 
@@ -99,7 +99,17 @@ while (<F>) {
 }
 close F; 
 @pair_se = sort { $a->[0] <=> $b->[0] || $a->[1] <=> $b->[1] } @pair_se; 
-$opts{'scfE'} //= $pair_se[-1][1]; 
+if ( !(defined $opts{'scfE'}) ) {
+	open H,'-|',"samtools view -H $opts{'bam'}" or die; 
+	while (<H>) {
+		chomp; 
+		m/^\@SQ\tSN:(\S+)\tLN:(\d+)$/ or next; 
+		$1 eq $opts{'scfID'} and $opts{'scfE'} = $2; 
+		defined $opts{'scfE'} and last; 
+	}
+	close H; 
+}
+# $opts{'scfE'} //= $pair_se[-1][1]; 
 }
 
 # For svg: 
@@ -119,15 +129,28 @@ my $max_idx_dep = ($opts{'scfE'}-$opts{'scfS'}+1)/($bp_per_line-$opts{'bp_overla
 $max_idx_dep == int($max_idx_dep) or $max_idx_dep = int($max_idx_dep+1); 
 my $base_y_h = ( $base_y >= 50 ) ? $base_y : 50 ; 
 $height = $base_y + $base_y_h + $step_y * $max_idx_dep; 
-%bp_line_wind = %{ 
- $ms->setup_windows( 
-   'ttl_start' => $opts{'scfS'}, 
-   'ttl_end'   => $opts{'scfE'}, 
-   'wind_size' => $bp_per_line, 
-   'wind_step' => $bp_per_line - $opts{'bp_overlap'}, 
-   'minRatio'  => ($opts{'bp_overlap'}+1)/$bp_per_line, 
- ) 
-}; 
+if ( $opts{'scfE'}-$opts{'scfS'}+1 <= ( ($opts{'bp_overlap'}+1) ) ) {
+	%bp_line_wind = %{ 
+	 $ms->setup_windows( 
+	   'ttl_start' => $opts{'scfS'}, 
+	   'ttl_end'   => $opts{'scfE'}, 
+	   'wind_size' => $bp_per_line, 
+	   'wind_step' => $bp_per_line - $opts{'bp_overlap'}, 
+	   'minRatio'  => 0, 
+	 ) 
+	}; 
+} else {
+	%bp_line_wind = %{ 
+	 $ms->setup_windows( 
+	   'ttl_start' => $opts{'scfS'}, 
+	   'ttl_end'   => $opts{'scfE'}, 
+	   'wind_size' => $bp_per_line, 
+	   'wind_step' => $bp_per_line - $opts{'bp_overlap'}, 
+	   'minRatio'  => ($opts{'bp_overlap'}+1)/$bp_per_line, 
+	 ) 
+	}; 
+}
+# warn "$opts{'scfS'}, $opts{'scfE'}\n$bp_per_line - $opts{'bp_overlap'}, ($opts{'bp_overlap'}+1)/$bp_per_line\n"; 
 my %si_to_idx; # {si} => index_of_line. 
 for ( my $i=0; $i<@{$bp_line_wind{'info'}{'windSloci'}}; $i++ ) {
 	$si_to_idx{ $bp_line_wind{'info'}{'windSloci'}[$i] } = $i+1; 
