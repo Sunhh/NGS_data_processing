@@ -23,6 +23,8 @@ GetOptions(\%opts,
 	"tickStep:f", # default 10000 
 	"tickUnit:s", # default k 
 	"gapLis:s",   # N gap list. 
+	"limit_short:i", # -1 
+	"limit_long:i", # -1 
 ); 
 
 sub usage {
@@ -40,6 +42,9 @@ sub usage {
 # -bp_overlap     [20e3]
 # -tickStep       [10000]
 # -tickUnit       [k] k/m/''
+#
+# -limit_short    [-1]
+# -limit_long     [-1]
 #
 # -gapLis         [] NSP306_Pla01s04GC_Gt5h.scf.fa.Nlis 
 ################################################################################
@@ -59,6 +64,8 @@ my $unit_len = 1000;
 $opts{'tickUnit'} eq '' and $unit_len = 1; 
 $opts{'tickUnit'} eq 'k' and $unit_len = 1e3; 
 $opts{'tickUnit'} eq 'm' and $unit_len = 1e6; 
+$opts{'limit_short'} //= -1; 
+$opts{'limit_long'} //= -1; 
 
 my $outFh = \*STDOUT; 
 defined $opts{'outSvg'} and $outFh = &openFH($opts{'outSvg'}, '>'); 
@@ -225,6 +232,30 @@ $grps{'readpair'} = $svg->group(
 	'font-family'       => 'ArialNarrow'
 ); # Draw read pairs. 
 
+$grps{'readpair_short'} = $svg->group(
+	'id'                => "read_pairs_short", 
+	'stroke-width'      => 0.5, 
+	'stroke'            => 'blue', 
+	'opacity'           => 0.6, 
+	'fill'              => 'transparent', 
+	'text-anchor'       => 'middle', 
+	'font-weight'       => 'normal', 
+	'font-size'         => '10', 
+	'font-family'       => 'ArialNarrow'
+); # Draw read pairs. 
+
+$grps{'readpair_long'} = $svg->group(
+	'id'                => "read_pairs_long", 
+	'stroke-width'      => 0.5, 
+	'stroke'            => 'red', 
+	'opacity'           => 0.6, 
+	'fill'              => 'transparent', 
+	'text-anchor'       => 'middle', 
+	'font-weight'       => 'normal', 
+	'font-size'         => '10', 
+	'font-family'       => 'ArialNarrow'
+); # Draw read pairs. 
+
 # Raw scaffoldID ; 
 $grps{'backbone'}->text(
  'x'       => $base_x/2, 
@@ -338,10 +369,17 @@ for my $tr (@add_blks) {
 
 
 # Draw read pairs. 
-#   Draw XT:A:M/R
+#   Draw read pairs. 
 for my $tr (@pair_se) {
 	my ($s, $e, $xt_u) = @$tr; 
-	$xt_u == 0 or next; 
+	my $grp_key; 
+	if ( $xt_u == 0 ) {
+		$grp_key = 'readpair_repeat'; 
+	} else  {
+		$grp_key = 'readpair'; 
+		$opts{'limit_short'} > 0 and $opts{'limit_short'} > $e-$s+1 and $grp_key = 'readpair_short'; 
+		$opts{'limit_long'}  > 0 and $opts{'limit_long'}  < $e-$s+1 and $grp_key = 'readpair_long'; 
+	}
 	my @si_s = @{
 	 $ms->map_windows(
 	   'position'  => $s, 
@@ -360,12 +398,13 @@ for my $tr (@pair_se) {
 		my $cur_x_s  = $base_x + $cur_s/$opts{'bp_per_point'}; 
 		for my $tsi_e (@si_e) {
 			$tsi_s == $tsi_e or next; 
+
 			my $cur_e = $e-$bp_line_wind{'loci'}{$tsi_e}[0]+1; 
 			my $cur_x_e  = $base_x + $cur_e/$opts{'bp_per_point'}; 
 			my $cur_y_se = $base_y+$idx_dep*$step_y; 
 			my @xx = ( $cur_x_s,  ($cur_x_s+$cur_x_e)/2, $cur_x_e ); 
 			my @yy = ( $cur_y_se-10, $cur_y_se-$rdHeight_y, $cur_y_se-10 ); 
-			my $points = $grps{'readpair_repeat'}->get_path(
+			my $points = $grps{$grp_key}->get_path(
 				'x'   => \@xx, 
 				'y'   => \@yy, 
 				-relative=>1, 
@@ -377,44 +416,6 @@ for my $tr (@pair_se) {
 	}
 }
 
-#   Draw XT:A:U and rest 
-for my $tr (@pair_se) {
-	my ($s, $e, $xt_u) = @$tr; 
-	$xt_u == 1 or next; 
-	my @si_s = @{
-	 $ms->map_windows(
-	   'position'  => $s, 
-	   'wind_hash' => \%bp_line_wind, 
-	 )
-	}; 
-	my @si_e = @{
-	 $ms->map_windows(
-	   'position'  => $e, 
-	   'wind_hash' => \%bp_line_wind, 
-	 )
-	}; 
-	for my $tsi_s (@si_s) {
-		my $idx_dep = $si_to_idx{$tsi_s}; 
-		my $cur_s = $s-$bp_line_wind{'loci'}{$tsi_s}[0]+1; 
-		my $cur_x_s  = $base_x + $cur_s/$opts{'bp_per_point'}; 
-		for my $tsi_e (@si_e) {
-			$tsi_s == $tsi_e or next; 
-			my $cur_e = $e-$bp_line_wind{'loci'}{$tsi_e}[0]+1; 
-			my $cur_x_e  = $base_x + $cur_e/$opts{'bp_per_point'}; 
-			my $cur_y_se = $base_y+$idx_dep*$step_y; 
-			my @xx = ( $cur_x_s,  ($cur_x_s+$cur_x_e)/2, $cur_x_e ); 
-			my @yy = ( $cur_y_se-10, $cur_y_se-$rdHeight_y, $cur_y_se-10 ); 
-			my $points = $grps{'readpair'}->get_path(
-				'x'   => \@xx, 
-				'y'   => \@yy, 
-				-relative=>1, 
-				-type=>'polyline',
-				-closed=>0
-			); 
-			$grps{'readpair'}->polyline(%$points); 
-		}
-	}
-}
 
 print {$outFh} $svg->xmlify; 
 
