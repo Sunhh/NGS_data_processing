@@ -220,23 +220,11 @@ $grps{'readpair_repeat'} = $svg->group(
 	'font-family'       => 'ArialNarrow'
 ); # Draw read pairs aligned as 'XT:A:R/M'
 
-$grps{'readpair'} = $svg->group(
-	'id'                => "read_pairs", 
-	'stroke-width'      => 0.5, 
-	'stroke'            => 'orange', 
-	'opacity'           => 0.6, 
-	'fill'              => 'transparent', 
-	'text-anchor'       => 'middle', 
-	'font-weight'       => 'normal', 
-	'font-size'         => '10', 
-	'font-family'       => 'ArialNarrow'
-); # Draw read pairs. 
-
 $grps{'readpair_short'} = $svg->group(
 	'id'                => "read_pairs_short", 
-	'stroke-width'      => 0.5, 
+	'stroke-width'      => 0.2, 
 	'stroke'            => 'blue', 
-	'opacity'           => 0.6, 
+	'opacity'           => 0.3, 
 	'fill'              => 'transparent', 
 	'text-anchor'       => 'middle', 
 	'font-weight'       => 'normal', 
@@ -246,8 +234,20 @@ $grps{'readpair_short'} = $svg->group(
 
 $grps{'readpair_long'} = $svg->group(
 	'id'                => "read_pairs_long", 
-	'stroke-width'      => 0.5, 
+	'stroke-width'      => 0.2, 
 	'stroke'            => 'red', 
+	'opacity'           => 0.3, 
+	'fill'              => 'transparent', 
+	'text-anchor'       => 'middle', 
+	'font-weight'       => 'normal', 
+	'font-size'         => '10', 
+	'font-family'       => 'ArialNarrow'
+); # Draw read pairs. 
+
+$grps{'readpair'} = $svg->group(
+	'id'                => "read_pairs", 
+	'stroke-width'      => 0.5, 
+	'stroke'            => 'orange', 
 	'opacity'           => 0.6, 
 	'fill'              => 'transparent', 
 	'text-anchor'       => 'middle', 
