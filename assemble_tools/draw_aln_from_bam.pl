@@ -411,7 +411,7 @@ for my $tr (@pair_se) {
 				-type=>'polyline',
 				-closed=>0
 			); 
-			$grps{'readpair_repeat'}->polyline(%$points); 
+			$grps{$grp_key}->polyline(%$points); 
 		}
 	}
 }
