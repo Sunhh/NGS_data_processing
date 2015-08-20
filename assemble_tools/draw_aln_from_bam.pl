@@ -25,6 +25,7 @@ GetOptions(\%opts,
 	"gapLis:s",   # N gap list. 
 	"limit_short:i", # -1 
 	"limit_long:i", # -1 
+	"color_scheme:s", # 'backbone=black:add_blks=red:readpair_repeat=lightgreen:readpair_short=blue:readpair_long=red:readpair=orange'
 ); 
 
 sub usage {
@@ -46,6 +47,8 @@ sub usage {
 # -limit_short    [-1]
 # -limit_long     [-1]
 #
+# -color_scheme   [''] Default is 'backbone=black:add_blks=red:readpair_repeat=lightgreen:readpair_short=blue:readpair_long=red:readpair=orange'; 
+#
 # -gapLis         [] NSP306_Pla01s04GC_Gt5h.scf.fa.Nlis 
 ################################################################################
 HH
@@ -66,6 +69,21 @@ $opts{'tickUnit'} eq 'k' and $unit_len = 1e3;
 $opts{'tickUnit'} eq 'm' and $unit_len = 1e6; 
 $opts{'limit_short'} //= -1; 
 $opts{'limit_long'} //= -1; 
+
+my %color; 
+$color{'backbone'} = 'black'; 
+$color{'add_blks'} = 'red'; 
+$color{'readpair_repeat'} = 'lightgreen'; 
+$color{'readpair_short'} = 'blue'; 
+$color{'readpair_long'} = 'red'; 
+$color{'readpair'} = 'orange'; 
+if ( defined $opts{'color_scheme'} and $opts{'color_scheme'} ne '' ) {
+	for my $form (split(/:/, $opts{'color_scheme'})) {
+		$form =~ m/^([^=\s]+)=([^\s=]+)$/ or &tsmsg("[Wrn] Skip bad color_scheme [$form]\n"); 
+		$color{$1} = $2; 
+		&tsmsg("[Msg] Setting color [$form]\n"); 
+	}
+}
 
 my $outFh = \*STDOUT; 
 defined $opts{'outSvg'} and $outFh = &openFH($opts{'outSvg'}, '>'); 
@@ -190,7 +208,7 @@ my %grps;
 $grps{'backbone'} = $svg->group(
 	'id'                => "backbone_$opts{'scfID'}", 
 	'stroke-width'      => 1, 
-	'stroke'            => 'black', 
+	'stroke'            => $color{'backbone'}, 
 	'opacity'           => 1, 
 	'text-anchor'       => 'middle', 
 	'font-weight'       => 'normal', 
@@ -200,8 +218,8 @@ $grps{'backbone'} = $svg->group(
 $grps{'add_blks'} = $svg->group(
 	'id'                => "add_blks_$opts{'scfID'}", 
 	'stroke-width'      => 1, 
-	'stroke'            => 'red', 
-	'fill'              => 'red', 
+	'stroke'            => $color{'add_blks'}, 
+	'fill'              => $color{'add_blks'}, 
 	'opacity'           => 1, 
 	'text-anchor'       => 'middle', 
 	'font-weight'       => 'normal', 
@@ -211,7 +229,7 @@ $grps{'add_blks'} = $svg->group(
 $grps{'readpair_repeat'} = $svg->group(
 	'id'                => "read_pairs_repeat", 
 	'stroke-width'      => 0.5, 
-	'stroke'            => 'lightgreen', 
+	'stroke'            => $color{'readpair_repeat'}, 
 	'opacity'           => 0.6, 
 	'fill'              => 'transparent', 
 	'text-anchor'       => 'middle', 
@@ -223,7 +241,7 @@ $grps{'readpair_repeat'} = $svg->group(
 $grps{'readpair_short'} = $svg->group(
 	'id'                => "read_pairs_short", 
 	'stroke-width'      => 0.2, 
-	'stroke'            => 'blue', 
+	'stroke'            => $color{'readpair_short'}, 
 	'opacity'           => 0.3, 
 	'fill'              => 'transparent', 
 	'text-anchor'       => 'middle', 
@@ -235,7 +253,7 @@ $grps{'readpair_short'} = $svg->group(
 $grps{'readpair_long'} = $svg->group(
 	'id'                => "read_pairs_long", 
 	'stroke-width'      => 0.2, 
-	'stroke'            => 'red', 
+	'stroke'            => $color{'readpair_long'}, 
 	'opacity'           => 0.3, 
 	'fill'              => 'transparent', 
 	'text-anchor'       => 'middle', 
@@ -247,7 +265,7 @@ $grps{'readpair_long'} = $svg->group(
 $grps{'readpair'} = $svg->group(
 	'id'                => "read_pairs", 
 	'stroke-width'      => 0.5, 
-	'stroke'            => 'orange', 
+	'stroke'            => $color{'readpair'}, 
 	'opacity'           => 0.6, 
 	'fill'              => 'transparent', 
 	'text-anchor'       => 'middle', 
