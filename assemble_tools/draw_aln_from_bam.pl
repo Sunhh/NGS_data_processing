@@ -441,7 +441,7 @@ for my $tr (@tag_blks) {
 			my $cur_e    = $lineE-$bp_line_wind{'loci'}{$tsi}[0]+1; 
 			my $cur_x_s  = $base_x + $cur_s/$opts{'bp_per_point'}; 
 			my $cur_x_e  = $base_x + $cur_e/$opts{'bp_per_point'}; 
-			my $tk = "$lineS - $lineE"; 
+			my $tk = "tag: $lineS - $lineE"; 
 			my $n = 0; 
 			while (defined $used_id_tag{$tk}) {
 				$tk = "tag: $lineS - $lineE : $n"; 
