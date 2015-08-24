@@ -41,8 +41,38 @@ $infor_flag{ 8 } = [qw/8     0x0100  s/, "the alignment is not primary"];
 $infor_flag{ 9 } = [qw/9     0x0200  f/, "the read fails platform/vendor quality checks"];
 $infor_flag{ 10} = [qw/10    0x0400  d/, "the read is either a PCR or an optical duplicate"];
 
+my %flag_grp; 
 
-
+# _chk_sam_flag( $flag_key, $flag_to_chk )
+# This is used to check if flag_to_chk_value is defined in group 'flag_key' ; 
+# Returns 1-for yes or 0-for no. 
+sub _chk_sam_flag {
+	my ($flag_key, $flag_to_chk, $debug) = @_; 
+	$debug //= 1; 
+	$debug and !(defined $flag_grp{$flag_key} ) and &tsmsg("[Debug] Generating sam_flag for [$flag_key]\n"); 
+	if ($flag_key eq 'hDiff_Forward') {
+		$flag_grp{$flag_key} //= &mk_flag( 'keep'=>'0=1,2=0,3=0,4=0,5=1' , 'drop'=>'' ); 
+	} elsif ($flag_key eq 'hDiff_Reverse') {
+		$flag_grp{$flag_key} //= &mk_flag( 'keep'=>'0=1,2=0,3=0,4=1,5=0' , 'drop'=>'' ); 
+	} elsif ($flag_key eq 'hDiff_Pair') {
+		$flag_grp{$flag_key} //= &mk_flag( 'keep'=>'0=1,2=0,3=0,4=0,5=1;0=1,2=0,3=0,4=1,5=0', 'drop'=>'' ); 
+	} elsif ($flag_key eq 'pair_aligned') {
+		$flag_grp{$flag_key} //= &mk_flag( 'keep'=>'0=1,2=0,3=0', 'drop'=>'' ); 
+	} elsif ($flag_key eq 'read_aligned') {
+		$flag_grp{$flag_key} //= &mk_flag( 'keep'=>'2=0', 'drop'=>'' ); 
+	} elsif ($flag_key eq 'forward_aligned') {
+		$flag_grp{$flag_key} //= &mk_flag( 'keep'=>'2=0,4=0', 'drop'=>'' ); 
+	} elsif ($flag_key eq 'reverse_aligned') {
+		$flag_grp{$flag_key} //= &mk_flag( 'keep'=>'2=0,4=1', 'drop'=>'' ); 
+	} elsif ($flag_key =~ m/^base_(\d+)$/) {
+		( $1 >= 0 and $1 <= 10 ) or &stopErr("[Err] flag_key [$flag_key] not accepted.\n"); 
+		$flag_grp{$flag_key} //= &mk_flag( 'keep'=>"$1=1", 'drop'=>'' ); 
+	} else {
+		&stopErr("[Err] flag_key [$flag_key] not accepted.\n"); 
+	} 
+	my $back = ( defined $flag_grp{$flag_key}{$flag_to_chk} ) ? 1 : 0 ; 
+	return $back; 
+}
 
 ############################################################
 #  Methods
@@ -583,6 +613,204 @@ sub parseCigar {
 
 }# sub parseCigar() 
 
+=head1 sam_line2hash(\@sam_line_array, [@required_infor], $is_ignore_TAGs)
+
+Required    : \@sam_line_array 
+
+Function    : Retrieve information from sam line as many as possible. 
+              [@required_infor] check all of 'could be' in Return. 
+              read_str mate_str : could be +/-/u , 'u' means not aligned. 
+              ins_s ins_e ins_len : will be computed together, but returned separately. These are same to bwa definition. 
+               For +/- pairs : ins_s=rd_+_5'1st_mappingBp , ins_e=rd_-_5'1st_mappingBp , ins_len=ins_e-ins_s+1; 
+               For -/+ pairs : ins_s=rd_-_5'1st_mappingBp , ins_e=rd_+_5'1st_mappingBp , ins_len=ins_e-ins_s-1; 
+               For +/+ pairs : ins_s=rd_+Curr_5'1st_mappingBp , ins_e=rd_+Mate_5'1st_mappingBp , ins_len=ins_e-ins_s; 
+               For -/- pairs : ins_s=rd_-Curr_3'1st_mappingBp , ins_e=rd_-Mate_3'1st_mappingBp , ins_len=ins_e-ins_s; 
+               If any end is 'u', all ins_values are 'u' ; 
+              
+              Set $is_ignore_TAGs as 1 to ignore TAG informations from column_12 for speed. But This requires @required_infor as empty. 
+
+
+Return      : (\%infor_hash)
+ In this %infor_hash, there are keys as 
+  qw/qname flag rname pos mapq cigar rnext pnext temlen seq qual/ ; 
+  could be [qw/read_len nm_ratio read_str mate_str ins_s ins_e ins_len cigar_href/] ; 
+  could be [qw/XA_aref XA_minNM is_uniqBest NM XT XA/] 
+    In default : 
+    cigar_href = &parseCigar( cigarString ) 
+    read_len   = cigar_href->{'RdLen'}
+    NM         = 0 ; 
+    XT         = 'U' ; 
+    XA         = '' ; 
+    nm_ratio   = NM / read_len
+    read_str|mate_str = +|-|u
+    ins_s|ins_e|ins_len = 'u' 
+    XA_aref    = [] ; Format [ [$chr_1, $pos_1, $cigar_1, $nm_1], ... ] 
+    XA_minNM   = 999999 ; 
+    is_uniqBest = 1|0 ; Similar to not_uniqBest(), rules: Not contain 'XT:A:R' + XA:*NM > NM 
+    hDiff_Pair = 1|0 ; Set as 1 if both ends mapped, and one is forward and the other reverse . 
+=cut
+
+sub sam_line2hash {
+	my ($line_aref, $require_aref, $only_basic) = @_; 
+	$require_aref //= []; 
+	$only_basic //= 0; 
+	my %back; 
+	@back{qw/qname flag rname pos mapq cigar rnext pnext temlen seq qual/} = @{$line_aref}[0 .. 10]; 
+	if (@$line_aref > 11 and !($only_basic and @$require_aref == 0)) {
+		for my $tb (@{$line_aref}[11 .. $#$line_aref]) {
+			$tb =~ m/^([^:\s]+):([^:\s]+):(.*)$/ or do { &tsmsg("[Wrn] Skip bad tag:value pair [$tb]\n"); }; 
+			my ($tag, $type, $value) = ($1, $2, $3); 
+			defined $back{$tag} and do { &tsmsg("[Wrn] Skip repeated TAG [$tag]\n"); }; 
+			$back{$tag} = $value; 
+		}
+	}
+	my %inner = %back; 
+	for my $want (@$require_aref) {
+		&_calc_sam_required( \%inner, $want ); 
+		$back{$want} = $inner{$want}; 
+	}
+	return (\%back); 
+}# sam_line2hash()
+
+=head1 sam_hash_addKey(\%out_of_sam_line2hash, [@required_infor])
+
+Function   : Add keys in @required_infor to %out_of_sam_line2hash ; 
+             %out_of_sam_line2hash is output of sam_line2hash(); 
+             And this sub-routine should follow sam_line2hash(); 
+=cut
+sub sam_hash_addKey {
+	my ($line_href, $require_aref) = @_; 
+	defined $require_aref or return; 
+	my %inner = %$line_href; 
+	for my $want (@$require_aref) {
+		&_calc_sam_required( \%inner, $want ); 
+		$line_href->{$want} = $inner{$want}; 
+	}
+	return ; 
+}#sam_hash_addKey()
+
+
+# _calc_sam_required( \%basic_hash_from_sam_line2hash, $key_to_set )
+# This will change %basic_hash_from_sam_line2hash , and add key($key_to_set) to %basic_hash_from_sam_line2hash; 
+# Accept key_need : 
+#   cigar_href read_len nm_ratio read_str mate_str ins_s ins_e ins_len 
+#   XA_aref XA_minNM is_uniqBest NM XT XA 
+# Default : 
+#   NM //= 0 ; XT //= 'U' ; XA //= ''; 
+#   XA_aref //= [] ; Format [ [$chr_1, $pos_1, $cigar_1, $nm_1], ... ]
+#   XA_minNM //= 999999 ; 
+#   read_str/mate_str = +|-|u
+#   ins_s/ins_e/ins_len = \d+|u
+#   is_uniqBest = 1|0
+#   hDiff_Pair = 1|0
+sub _calc_sam_required {
+	my ($inner_href, $key_need) = @_; 
+	defined $inner_href->{$key_need} and return; 
+	if ( $key_need eq 'cigar_href' ) {
+		$inner_href->{$key_need} = &parseCigar( $inner_href->{'cigar'} ); 
+	} elsif ( $key_need eq 'read_len' ) {
+		&_calc_sam_required($inner_href, 'cigar_href'); 
+		$inner_href->{$key_need} = $inner_href->{'cigar_href'}{'RdLen'}; 
+	} elsif ( $key_need eq 'nm_ratio' ) {
+		&_calc_sam_required($inner_href, 'read_len'); 
+		&_calc_sam_required($inner_href, 'NM'); 
+		$inner_href->{$key_need} = $inner_href->{'NM'} / $inner_href->{'read_len'}; 
+	} elsif ( $key_need eq 'read_str' ) {
+		&_chk_sam_flag( 'base_2', $inner_href->{'flag'} ) and do { $inner_href->{'read_str'} = 'u'; return; }; 
+		$inner_href->{$key_need} = ( &_chk_sam_flag( 'base_4', $inner_href->{'flag'} ) ) ? '-' : '+' ; 
+	} elsif ( $key_need eq 'mate_str' ) {
+		&_chk_sam_flag( 'base_3', $inner_href->{'flag'} ) and do { $inner_href->{'mate_str'} = 'u'; return; }; 
+		$inner_href->{$key_need} =  ( &_chk_sam_flag( 'base_5', $inner_href->{'flag'} ) ) ? '-' : '+' ; 
+	} elsif ( $key_need eq 'ins_s' or $key_need eq 'ins_e' or $key_need eq 'ins_len' ) {
+		( &_chk_sam_flag( 'pair_aligned', $inner_href->{'flag'} ) and $inner_href->{'rnext'} eq '=' and $inner_href->{'pnext'} ne '*' ) or do { $inner_href->{'ins_s'}='u'; $inner_href->{'ins_e'}='u'; $inner_href->{'ins_len'}='u'; return; }; 
+		&_calc_sam_required($inner_href, 'read_str'); 
+		&_calc_sam_required($inner_href, 'mate_str'); 
+		if ( $inner_href->{'read_str'} eq '+' ) {
+			if ( $inner_href->{'mate_str'} eq '-' ) {
+				$inner_href->{'ins_s'} = $inner_href->{'pos'}; 
+				$inner_href->{'ins_e'} = $inner_href->{'pos'}+$inner_href->{'temlen'}-1; 
+				$inner_href->{'ins_len'} = $inner_href->{'temlen'}; 
+				return; 
+			} else {
+				$inner_href->{'ins_s'} = $inner_href->{'pos'}; 
+				$inner_href->{'ins_e'} = $inner_href->{'pnext'}; 
+				$inner_href->{'ins_len'} = $inner_href->{'ins_e'}-$inner_href->{'ins_s'}; 
+				$inner_href->{'ins_len'} == $inner_href->{'temlen'} or &tsmsg("[Wrn] INS_LEN diff for [$inner_href->{'qname'}] in [$inner_href->{'rname'}]\n"); 
+			}
+		} else {
+			if ( $inner_href->{'mate_str'} eq '+' ) {
+				$inner_href->{'ins_e'} = $inner_href->{'pnext'}; 
+				$inner_href->{'ins_s'} = $inner_href->{'ins_e'} - $inner_href->{'temlen'} + 1; 
+				$inner_href->{'ins_len'} = $inner_href->{'temlen'}; 
+			} else {
+				$inner_href->{'ins_s'} = $inner_href->{'pos'}; 
+				$inner_href->{'ins_e'} = $inner_href->{'pnext'}; 
+				$inner_href->{'ins_len'} = $inner_href->{'ins_e'}-$inner_href->{'ins_s'}; 
+				$inner_href->{'ins_len'} == $inner_href->{'temlen'} or &tsmsg("[Wrn] INS_LEN diff for [$inner_href->{'qname'}] in [$inner_href->{'rname'}]\n"); 
+			}
+		}
+	} elsif ( $key_need eq 'XA_aref' ) {
+		my @t_xa_aref; 
+		&_calc_sam_required($inner_href, 'XA'); 
+		for my $ts0 (split(/;/, $inner_href->{'XA'})) {
+			$ts0 =~ m/^\s*$/ and next; 
+			$ts0 =~ m/^(\S+),([+-]?\d+),([\d\w]+),(\d+)$/ or &stopErr("[Err] Failed for XA:Z : [$ts0]\n"); 
+			my ($chr, $pos, $cigar, $nm_1) = ($1, $2, $3, $4); 
+			push(@t_xa_aref, [$chr, $pos, $cigar, $nm_1]); 
+		}
+		$inner_href->{$key_need} = \@t_xa_aref; 
+	} elsif ( $key_need eq 'XA_minNM' ) {
+		&_calc_sam_required($inner_href, 'XA_aref'); 
+		my $xa = 999999; 
+		for my $ar (@{$inner_href->{'XA_aref'}}) {
+			$ar->[3] < $xa and $xa = $ar->[3]; 
+		}
+		$inner_href->{$key_need} = $xa; 
+	} elsif ( $key_need eq 'is_uniqBest' ) {
+		&_calc_sam_required($inner_href, 'XT'); 
+		$inner_href->{'XT'} eq 'R' and do { $inner_href->{$key_need} = 0; return; }; 
+		&_calc_sam_required($inner_href, 'NM'); 
+		&_calc_sam_required($inner_href, 'XA_minNM'); 
+		$inner_href->{'NM'} >= $inner_href->{'XA_minNM'} and do { $inner_href->{$key_need} = 0; return; }; 
+		$inner_href->{$key_need} = 1; 
+	} elsif ( $key_need eq 'hDiff_Pair' ) {
+		$inner_href->{$key_need} = ( &_chk_sam_flag( 'hDiff_Pair', $inner_href->{'flag'} ) ) ? 1 : 0 ; 
+	} elsif ( $key_need eq 'NM' ) {
+		$inner_href->{$key_need} = 0; 
+	} elsif ( $key_need eq 'XT' ) {
+		$inner_href->{$key_need} = 'U'; 
+	} elsif ( $key_need eq 'XA' ) {
+		$inner_href->{$key_need} = ''; 
+	} else {
+		&stopErr("[Err] Why here? key_need=[$key_need]\n"); 
+	} 
+	return; 
+} # _calc_sam_required()
+
+=head1 print_sam_lines( \@rdID_wiLine, \%rdID_toDrop, $outfile_handle ) 
+
+Function    : Print out sam_lines in @rdID_wiLine after removing by %rdID_toDrop with file handle $outfile_handle ; 
+
+Input       : 
+  @rdID_wiLine : ( [$rdID, $line_without_return], [$rdID, $line_without_return], ... )
+  %rdID_toDrop : ( $rdID => 1 , $rdID => 1 ) ; Any rdID defined in this hash won't be output. 
+  $outfile_handle : Default \*STDOUT 
+
+Return      : $out_line_number 
+
+=cut
+sub print_sam_lines {
+	my ($line_aref, $toRM_href, $out_fh) = @_; 
+	$toRM_href //= {}; 
+	$out_fh //= \*STDOUT; 
+	my $line_num = 0; 
+	for my $lar (@$line_aref) {
+		defined $toRM_href->{$lar->[0]} and next; 
+		print {$out_fh} $lar->[1] . "\n"; 
+		$line_num ++; 
+	}
+	return $line_num; 
+}#print_sam_lines() 
 
 
 =head1 olap_e2e_A2B( $sequenceA, $sequenceB, [, {%para}] )
