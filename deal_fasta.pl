@@ -69,6 +69,7 @@ Usage: $0  <fasta_file | STDIN>
   
   -cut<num>           cut fasta file with the specified number of sequences in each subfile.Cited from fasta.pl.
                       A little change to fit different input directory type;
+  -cut_size<num>      Use this when need to control the maximal total bp size in separated files. 
   -cut_prefix         prefix for cutted files; Default 'pre'; 
   -cut_dir            cutted files in this dir if given.
   
@@ -154,7 +155,8 @@ HELP
 	exit (1); 
 }
 
-GetOptions(\%opts,"help!","cut:i","details!","cut_dir:s","cut_prefix:s", 
+GetOptions(\%opts,"help!",
+	"cut:i","details!","cut_dir:s","cut_prefix:s", "cut_size:i", 
 	"max_num:i",
 	"res:s","nres:s","table!",
 	"attribute:s","GC_excln:i",
@@ -218,7 +220,7 @@ my %goodStr = qw(
 
 
 
-&cut_fasta() if(exists $opts{cut} && $opts{cut} );
+&cut_fasta() if( (exists $opts{cut} && $opts{cut}) || (exists $opts{'cut_size'} && $opts{'cut_size'}) );
 &res_match_seqs() if( (defined $opts{res} and $opts{res} ne '') || (defined $opts{nres} and $opts{nres} ne '') );
 &get_sample() if(defined $opts{"sample"} and $opts{sample} ne '');
 &frag() if(defined $opts{frag} and $opts{frag} ne '');
@@ -867,31 +869,41 @@ sub site_list {
 	}
 }# end site_list 2007-9-11 10:08 
 
+
 #cut fasta file, can't accept STDIN
 # fit STDIN; 2007-9-11 11:28 
 ############################################################
 sub cut_fasta{
 	my $total_seq_num = 0; 
-	my $num2cut = $opts{cut}; $num2cut > 0 or do { print "\n-cut not available!\n\n"; &usage(); }; 
+	my ($num2cut, $size2cut); 
+	$num2cut //= $opts{'cut'} //= 0; 
+	$size2cut //= $opts{'cut_size'} //= 0; 
+	( $num2cut > 0 or $size2cut > 0 ) or do { print "\n-cut or -cut_size not assigned.\n\n"; &usage(); }; 
 	my $out_pre = 'pre'; defined $opts{cut_prefix} and $out_pre = $opts{cut_prefix}; 
 	my $out_dir = "${out_pre}_cutted"; 
 	defined $opts{cut_dir} and $opts{cut_dir} ne '' and $out_dir = $opts{cut_dir}; 
 	mkdir($out_dir,0755) or die "[Err]Failed to mkdir [$out_dir]: $!\n"; 
-	my $file_name = 0; my $num_loop = 0; 
+	my $file_name = 0; 
+	my $num_loop = 0; 
+	my $size_loop = 0; 
+	my $size_switch = $size2cut; 
 	open (OUT,'>',File::Spec->catfile($out_dir, $file_name)) or die "[Err]Failed to open file [$file_name] in dir [$out_dir]: $!\n"; 
 	$opts{details} and print STDERR "generating [",File::Spec->catfile($out_dir, $file_name),"]\n"; 
 	$file_name++; 
 	for my $fh (@InFp) {
 		for (my ($relHR, $get) = &get_fasta_seq($fh); defined $relHR; ($relHR, $get) = &get_fasta_seq($fh) ) {
 			$total_seq_num ++; 
-			if ( $num_loop > 0 and $num_loop % $num2cut == 0) {
+			if ( ($num2cut > 0 and $num_loop > 0 and $num_loop % $num2cut == 0) or ($size2cut > 0 and $size_loop > $size_switch) ) {
 				close OUT; 
 				open (OUT,'>',File::Spec->catfile($out_dir, $file_name)) or die "[Err]Failed to open file [$file_name] in dir [$out_dir]: $!\n"; 
 				$opts{details} and print STDERR "generating [",File::Spec->catfile($out_dir, $file_name),"]\n"; 
 				$file_name++; 
+				while ( $size2cut > 0 and $size_loop > $size_switch ) { $size_switch = $size_loop + $size2cut } 
 			}
 			print OUT ">$relHR->{head}\n$relHR->{seq}\n"; 
 			$num_loop++; 
+			$relHR->{'seq'} =~ s!\s!!g; 
+			$size_loop += length($relHR->{'seq'}); 
 		}
 	}# 
 	close OUT; 

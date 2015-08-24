@@ -23,6 +23,7 @@ GetOptions(\%opts,
 	"tickStep:f", # default 10000 
 	"tickUnit:s", # default k 
 	"gapLis:s",   # N gap list. 
+	"tagLis:s",   # Some other list for viewing. 
 	"limit_short:i", # -1 
 	"limit_long:i", # -1 
 	"color_scheme:s", # 'backbone=black:add_blks=red:readpair_repeat=lightgreen:readpair_short=blue:readpair_long=red:readpair=orange'
@@ -50,6 +51,8 @@ sub usage {
 # -color_scheme   [''] Default is 'backbone=black:add_blks=red:readpair_repeat=lightgreen:readpair_short=blue:readpair_long=red:readpair=orange'; 
 #
 # -gapLis         [] NSP306_Pla01s04GC_Gt5h.scf.fa.Nlis 
+#
+# -tagLis         [] NSP306_Pla01s04GC_Gt5h.scf.fa.pattern_lis
 ################################################################################
 HH
 	exit 1; 
@@ -73,6 +76,7 @@ $opts{'limit_long'} //= -1;
 my %color; 
 $color{'backbone'} = 'black'; 
 $color{'add_blks'} = 'red'; 
+$color{'tag_blks'} = 'blue'; 
 $color{'readpair_repeat'} = 'lightgreen'; 
 $color{'readpair_short'} = 'blue'; 
 $color{'readpair_long'} = 'red'; 
@@ -99,6 +103,20 @@ if (defined $opts{'gapLis'}) {
 		$id eq $opts{'scfID'} or next; 
 		$s > $e and ($s, $e) = ($e, $s); 
 		push(@add_blks, [$s, $e]); 
+	}
+	close G; 
+}
+
+my @tag_blks; 
+if (defined $opts{'tagLis'}) {
+	open G,'<',"$opts{'tagLis'}" or die; 
+	while (<G>) {
+		chomp; 
+		my @ta = split(/\t/, $_); 
+		my ($id, $s, $e) = @ta[0, 2, 3]; 
+		$id eq $opts{'scfID'} or next; 
+		$s > $e and ($s, $e) = ($e, $s); 
+		push(@tag_blks, [$s, $e]); 
 	}
 	close G; 
 }
@@ -220,6 +238,17 @@ $grps{'add_blks'} = $svg->group(
 	'stroke-width'      => 1, 
 	'stroke'            => $color{'add_blks'}, 
 	'fill'              => $color{'add_blks'}, 
+	'opacity'           => 1, 
+	'text-anchor'       => 'middle', 
+	'font-weight'       => 'normal', 
+	'font-size'         => '10', 
+	'font-family'       => 'ArialNarrow'
+); # This is used to draw add_blocks of scaffold. 
+$grps{'tag_blks'} = $svg->group(
+	'id'                => "tag_blks_$opts{'scfID'}", 
+	'stroke-width'      => 1, 
+	'stroke'            => $color{'tag_blks'}, 
+	'fill'              => $color{'tag_blks'}, 
 	'opacity'           => 1, 
 	'text-anchor'       => 'middle', 
 	'font-weight'       => 'normal', 
@@ -381,6 +410,52 @@ for my $tr (@add_blks) {
 			 'id'     => "$tk", 
 			); 
 			$used_id{$tk} = 1; 
+		}
+	}
+}
+
+# Draw tag_blks lines. 
+my %used_id_tag; 
+for my $tr (@tag_blks) {
+	my ($s, $e) = @$tr; 
+	$e < $opts{'scfS'} and next; 
+	$s > $opts{'scfE'} and next; 
+	$s >= $opts{'scfS'} or $s = $opts{'scfS'}; 
+	$e <= $opts{'scfE'} or $e = $opts{'scfE'}; 
+	# for ( my $i=1; $i<=$e; $i+=($bp_per_line - $opts{'bp_overlap'}) ) {
+	for ( my $i=1; $i<=$e; $i+=$wind_step ) {
+		my $lineE = $i+$bp_per_line-1; 
+		my $lineS = $i; 
+		$lineE < $s and next; 
+		$lineE > $e and $lineE = $e; 
+		$lineS < $s and $lineS = $s; 
+		my @si = @{ 
+		 $ms->map_windows( 
+		   'position'  => $lineS, 
+		   'wind_hash' => \%bp_line_wind, 
+		 ) 
+		}; 
+		for my $tsi (@si) {
+			my $idx_dep  = $si_to_idx{$tsi}; 
+			my $cur_s    = $lineS-$bp_line_wind{'loci'}{$tsi}[0]+1; 
+			my $cur_e    = $lineE-$bp_line_wind{'loci'}{$tsi}[0]+1; 
+			my $cur_x_s  = $base_x + $cur_s/$opts{'bp_per_point'}; 
+			my $cur_x_e  = $base_x + $cur_e/$opts{'bp_per_point'}; 
+			my $tk = "$lineS - $lineE"; 
+			my $n = 0; 
+			while (defined $used_id_tag{$tk}) {
+				$tk = "tag: $lineS - $lineE : $n"; 
+				$n++; 
+				$n > 10000 and die "Problem tk=$tk\n"; 
+			}
+			$grps{'tag_blks'}->rectangle(
+			 'x'      => $cur_x_s, 
+			 'y'      => $base_y+$idx_dep*$step_y, 
+			 'width'  => $cur_x_e-$cur_x_s, 
+			 'height' => 3, 
+			 'id'     => "$tk", 
+			); 
+			$used_id_tag{$tk} = 1; 
 		}
 	}
 }
