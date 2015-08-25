@@ -2,7 +2,10 @@
 # Input must be sorted by position in order to save memory usage. 
 # 2015-08-20 I want to write a script to filter sam reads for different purpose: 
 #   Purpose 1 : I want uniquely-aligned read pairs with some (NM/read_length)% control; 
-#   Purpose 2 : 
+#   Purpose 2 : I want well-aligned read pairs with some (NM/read_length)% control; 
+#                 Please note that here I don't filter insert size for well. 
+#   Purpose 3 : I want best-aligned read pairs with some (NM/read_length)% control; 
+#                 This is similar to -well_pair but filtering if XA_minNM <= NM ; 
 use strict; 
 use warnings; 
 use SeqAlnSunhh; 
@@ -12,6 +15,10 @@ my %opts;
 GetOptions(\%opts, 
 	# Purpose class 
 	'uniq_pair!', # Purpose 1. 
+	'well_pair!', # Purpose 2. 
+	'best_pair!', # Purpose 3. 
+	
+	# Local for 'well_pair'
 	
 	# Global filtering 
 	'max_NM_ratio:f', # Default none. Recommend 0.01 for self_mapping. 
@@ -19,6 +26,8 @@ GetOptions(\%opts,
 	
 	'help!', 
 ); 
+
+-t and !@ARGV and !( scalar(keys %opts) ) and &usage(); 
 
 # Global parameters. 
 #my %flag_class; 
@@ -32,7 +41,9 @@ $opts{'min_mapQ'} //= 0;
 #      Invoke sub-routines. 
 ################################################################################
 defined $opts{'help'} and &usage(); 
-defined $opts{'uniq_pair'} and &get_uniq_pair(); 
+if ( defined $opts{'uniq_pair'} or defined $opts{'well_pair'} or defined $opts{'best_pair'} ) {
+	&get_uniq_pair(); 
+}
 
 
 ################################################################################
@@ -48,6 +59,9 @@ sub usage {
 # Stratergy: 
 # -uniq_pair      [Boolean] read pairs with both ends uniquely-aligned to the same chr ; 
 #                   Applies: -max_NM_ratio -min_mapQ 
+# 
+# -well_pair      [Boolean] well-aligned read pairs with some (NM/read_length)% control; 
+# -best_pair      [Boolean] Same to -well_pair but filtering if XA_minNM <= NM ; 
 # 
 # Global filtering: 
 # -max_NM_ratio   [-1] Maximum NM/rdLen ratio accepted. 
@@ -85,8 +99,14 @@ sub get_uniq_pair {
 			%bad_rd=(); 
 			$prev_chrID = $sam_href->{'rname'}; 
 		}
-		&SeqAlnSunhh::sam_hash_addKey($sam_href, ['is_uniqBest']); 
-		$sam_href->{'is_uniqBest'} == 1 or do { $bad_rd{$rdID} = 1; next; } ; 
+		if ( defined $opts{'best_pair'} ) {
+			&SeqAlnSunhh::sam_hash_addKey($sam_href, ['NM', 'XA_minNM']); 
+			$sam_href->{'NM'} >= $sam_href->{'XA_minNM'} and do { $bad_rd{$rdID} = 1; next; }; 
+		} elsif ( defined $opts{'well_pair'} ) {
+		} else {
+			&SeqAlnSunhh::sam_hash_addKey($sam_href, ['is_uniqBest']); 
+			$sam_href->{'is_uniqBest'} == 1 or do { $bad_rd{$rdID} = 1; next; } ; 
+		}
 		if ($opts{'max_NM_ratio'} >= 0) {
 			&SeqAlnSunhh::sam_hash_addKey($sam_href, ['NM', 'read_len']); 
 			$sam_href->{'NM'} > $sam_href->{'read_len'} * $opts{'max_NM_ratio'} and do { $bad_rd{$rdID} = 1; next; }; 
