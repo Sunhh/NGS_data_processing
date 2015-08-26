@@ -45,12 +45,15 @@ $opts{'min_mapQ'} //= 0;
 #      Invoke sub-routines. 
 ################################################################################
 defined $opts{'help'} and &usage(); 
+
+&tsmsg("[Rec] Begin $0\n"); 
 if ( defined $opts{'uniq_pair'} or defined $opts{'well_pair'} or defined $opts{'best_pair'} ) {
 	&get_uniq_pair(); 
 } elsif ( defined $opts{'both_aln'} ) {
 	&get_both_aln(); 
 }
 
+&tsmsg("[Rec] Finish $0\n"); 
 
 ################################################################################
 #      Sub-routines to execute 
