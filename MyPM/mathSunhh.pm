@@ -515,7 +515,7 @@ sub _setHashFromArr {
 	my $self = shift; 
 	if ( ref($self) ne 'mathSunhh' ) {
 		ref($self) eq '' or &stopErr("[Err] _setHashFromArr() input [$self] illegal.\n"); 
-		unshift(@_, $self); 
+		defined $self and unshift(@_, $self); 
 	}
 	my %back_hash; 
 	for (my $i=0; $i<@_; $i+=2) {
