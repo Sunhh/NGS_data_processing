@@ -1,4 +1,4 @@
-#!/usr/bin/perl 
+#!/usr/bin/env perl
 # 2014-03-20 A script to deal with fastq format reads. It will be always in processing. 
 # 2014-03-25 Add function to search a pattern in reads, and return different values as defined. 
 #
