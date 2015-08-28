@@ -5,7 +5,7 @@
 #   Purpose 2 : I want well-aligned read pairs with some (NM/read_length)% control; 
 #                 Please note that here I don't filter insert size for well. 
 #   Purpose 3 : I want best-aligned read pairs with some (NM/read_length)% control; 
-#                 This is similar to -well_pair but filtering if XA_minNM <= NM ; 
+#                 This is similar to -well_pair but filtering if XA_minNM < NM ; 
 #   Purpose 4 : Both ends aligned, and filter the NM/XA_minNM ratio. 
 #                 I don't care if the two ends map to the same chrID; 
 use strict; 
@@ -70,7 +70,7 @@ sub usage {
 #                   Applies: -max_NM_ratio -min_mapQ 
 # 
 # -well_pair      [Boolean] well-aligned read pairs with some (NM/read_length)% control; 
-# -best_pair      [Boolean] Same to -well_pair but filtering if XA_minNM <= NM ; 
+# -best_pair      [Boolean] Same to -well_pair but filtering if XA_minNM < NM ; 
 #
 # -both_aln       [Boolean] Both ends aligned, and filter the NM/XA_minNM ratio by parameter -max_NM_ratio ; 
 #                   I don't care if the two ends map to the same chrID; 
@@ -113,7 +113,7 @@ sub get_uniq_pair {
 		}
 		if ( defined $opts{'best_pair'} ) {
 			&SeqAlnSunhh::sam_hash_addKey($sam_href, ['NM', 'XA_minNM']); 
-			$sam_href->{'NM'} >= $sam_href->{'XA_minNM'} and do { $bad_rd{$rdID} = 1; next; }; 
+			$sam_href->{'NM'} > $sam_href->{'XA_minNM'} and do { $bad_rd{$rdID} = 1; next; }; 
 		} elsif ( defined $opts{'well_pair'} ) {
 		} else {
 			&SeqAlnSunhh::sam_hash_addKey($sam_href, ['is_uniqBest']); 
