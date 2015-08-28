@@ -32,7 +32,7 @@ Function :
 
 Return   : $self->{'hash_r'} 
 
-Sample file : 
+ Sample file : 
 # [Sunhh@wwz repAnno_tools]$ more path.conf
 # dir2                    /home/Sunhh/tools/github/NGS_data_processing
 # pl_deal_fasta           __dir2__/deal_fasta.pl
