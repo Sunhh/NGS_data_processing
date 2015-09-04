@@ -52,7 +52,7 @@ while (<>) {
 	}
 }
 
-print STDOUT join("\t", qw/ChrID WindS WindE WindL BpCnt/)."\n"; 
+print STDOUT join("\t", qw/ChromID WindS WindE WindL BpCnt/)."\n"; 
 for my $chrID ( sort keys %wind ) {
 	for my $si ( sort { $a<=>$b } keys %{$wind{$chrID}{'loci'}} ) {
 		my $vv = $w2v{$chrID}{$si} // 0; 
