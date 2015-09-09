@@ -3,7 +3,7 @@ use strict;
 use warnings; 
 use LogInforSunhh; 
 
-!@ARGV and die "perl $0 barcode input.fastq\n\nI use CAGC/CTGC as the required restricted site.\n"; 
+!@ARGV and die "perl $0 barcode input.fastq\n\nI use CAGC/CTGC as the required restricted site.\nPlease note that I will ignore read if meeting Ns within the first 64bp.\n\n"; 
 
 my $barC = shift; 
 my $addCut1 = "${barC}CAGC"; 
