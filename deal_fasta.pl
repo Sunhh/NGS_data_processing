@@ -860,7 +860,7 @@ sub site_list {
 			if ($opts{listBoth}) {
 				my $rcseq = $relHR->{seq}; &rcSeq(\$rcseq, 'rc'); 
 				if ( $opts{listSeq} ) {
-					map { print STDOUT join("\t", $relHR->{key}, $len, $len-$_->[0]+1, $len-$_->[1]+1, $_->[1]-$_->[0]+1, &rcSeq(\$_->[2], 'rc'))."\n"; } &siteList(\$opts{listSite},\$rcseq,$opts{listNum});
+					map { &rcSeq(\$_->[2], 'rc'); print STDOUT join("\t", $relHR->{key}, $len, $len-$_->[0]+1, $len-$_->[1]+1, $_->[1]-$_->[0]+1, $_->[2] )."\n"; } &siteList(\$opts{listSite},\$rcseq,$opts{listNum});
 				}else{
 					map { print STDOUT join("\t", $relHR->{key}, $len, $len-$_->[0]+1, $len-$_->[1]+1, $_->[1]-$_->[0]+1                        )."\n"; } &siteList(\$opts{listSite},\$rcseq,$opts{listNum});
 				}
