@@ -35,7 +35,7 @@ perl $0 in.fastq
 -paired       [Boolean] Treat files as paired, and output reads in order of R1/R2 ... 
 
 -sepR12_pref  [String] Input reads as R1-R2 order, and we output R1 to pref_R1.fq and R2 to pref_R2.fq
--joinR12      [String] Input files as paired, and join R1/R2 reads in a same stream. You can use \"-keep_len 0- -paired\" to get the same result. 
+-joinR12      [Boolean] Input files as paired, and join R1/R2 reads in a same stream. You can use \"-keep_len 0- -paired\" to get the same result. 
 
 -showQscale   [Boolean] Show fastq quality scale value [33/64]. 
 
