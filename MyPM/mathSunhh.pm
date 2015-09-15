@@ -484,6 +484,7 @@ sub mergeLocBlk {
 	@srt_blk = sort { $a->[0] <=> $b->[0] || $a->[1] <=> $b->[1] } map { [ sort { $a <=> $b } @$_ ] } @srt_blk; 
 	for my $a1 (@srt_blk) {
 		my ($s, $e) = @$a1; 
+		( defined $s and defined $e ) or next; 
 		if ( scalar(@back_blk) > 0 ) {
 			if ( $back_blk[-1][1] >= $s - $parm{'dist2join'} ) {
 				$e > $back_blk[-1][1] and $back_blk[-1][1] = $e; 
