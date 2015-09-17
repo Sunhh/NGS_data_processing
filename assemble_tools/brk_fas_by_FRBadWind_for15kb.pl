@@ -260,7 +260,7 @@ sub chop_flank_left {
 		$back{'kicked_seq'} = substr($seq, 0, $kickFlank); 
 		($back{'kicked_seq'}, $back{'kicked_start'}, $back{'kicked_end'}) = &chop_end_Ns( $back{'kicked_seq'}, $back{'start'} ); 
 		$back{'kept_seq'}   = substr($seq, $kickFlank, $back{'len'}-$kickFlank); 
-		($back{'kept_seq'}, $back{'kept_start'}, $back{'kept_end'}) = &chop_end_Ns( $back{'kept_seq'}, $back{'start'}+$kickFlank-1 ); 
+		($back{'kept_seq'}, $back{'kept_start'}, $back{'kept_end'}) = &chop_end_Ns( $back{'kept_seq'}, $back{'start'}+$kickFlank ); 
 	} else {
 		$back{'kept_seq'} = ''; 
 		$back{'kept_start'} = -1; 
@@ -287,7 +287,7 @@ sub chop_flank_right {
 		$back{'kept_start'} = -1; 
 		$back{'kept_end'} = -1; 
 		$back{'kicked_seq'} = $seq; 
-		($back{'kicked_seq'}, $back{'kicked_start'}, $back{'kicked_end'}) = &chop_end_Ns( $back{'kicked_seq'}, $back{'end'}-$kickFlank+1 ); 
+		($back{'kicked_seq'}, $back{'kicked_start'}, $back{'kicked_end'}) = &chop_end_Ns( $back{'kicked_seq'}, $back{'start'} ); 
 	}
 	return \%back; 
 }# chop_flank_right() 
