@@ -66,6 +66,7 @@ while (<>) {
 
 }
 
+print STDERR join("\t", qw/SeqID SeqLen MatS MatE MatLen TypeClasses InExType InMatLen ExMatLen/)."\n"; 
 for my $tid (keys %merged_blk) {
 	my $tar = $ms->mergeLocBlk( $merged_blk{$tid} ); 
 	my $cnt_len = 0; 
