@@ -75,7 +75,8 @@ Usage: $0  <fasta_file | STDIN>
   
   -res<regexps>       pick out sequences whose annotations(key+definition) match the regular expression.Output to STDOUT;
   -nres<regexps>      opposite to -res.
-  -uniqSeq            boolean. remove repeat sequences according to their keys. 
+  -uniqSeq            [boolean]. remove repeat sequences according to their keys. 
+  -uniqSeq_bySeq      [Boolean]. Remove repeat sequences according to their sequences. 
   
   -sample<num-num>    output sequences according to sequence order.0 for 1st or last one;
   
@@ -169,7 +170,7 @@ GetOptions(\%opts,"help!",
 	"N50!", "N50_minLen:i", "N50_GenomSize:i", "N50_levels:s", 
 	"chopKey:s","startCodonDist!","comma3!",
 	"rmDefinition!", 
-	"uniqSeq!", 
+	"uniqSeq!", "uniqSeq_bySeq!", 
 	"upper!","lower!", 
 	"maskByList!", "maskList:s", "maskType:s", "elseMask!", 
 	"drawByList!", "drawList:s", "drawLcol:s", "drawWhole!", "drawIDmatch!", "dropMatch!", 
@@ -236,6 +237,7 @@ my %goodStr = qw(
 &rmDefinition() if ( exists $opts{'rmDefinition'} ) ; 
 &startCodonDist() if ( defined $opts{startCodonDist} and $opts{startCodonDist} );
 &uniqSeq() if ( $opts{uniqSeq} ) ; 
+&uniqSeq_bySeq() if ( $opts{'uniqSeq_bySeq'} ); 
 &mask_seq_by_list() if ( $opts{maskByList} ); 
 &extract_seq_by_list() if ( $opts{drawByList} ); 
 &keep_len() if ( defined $opts{keep_len} ); 
@@ -723,6 +725,28 @@ sub uniqSeq {
 		}
 	}
 }# end uniqSeq
+
+sub uniqSeq_bySeq {
+	my %k; 
+	
+	my @out_aref; 
+	for my $fh (@InFp) {
+		for ( my ($relHR, $get) = &get_fasta_seq($fh); defined $relHR; ($relHR, $get) = &get_fasta_seq($fh) ) {
+			$relHR->{seq} =~ /^\s*$/ and next; 
+			(my $ks = $relHR->{'seq'}) =~ s/\s//g; 
+			unless (defined $k{ $ks }) {
+				push( @out_aref, [ $relHR->{'head'}, $relHR->{'seq'} ] ); 
+			}
+			$k{ $ks } ++; 
+		}
+	}
+	for my $ar1 (@out_aref) {
+		(my $ks = $ar1->[1]) =~ s/\s//g; 
+		print STDOUT ">$ar1->[0] [Count=$k{$ks}]\n$ar1->[1]\n"; 
+	}
+
+	return; 
+}# end uniqSeq_bySeq() 
 
 sub startCodonDist { 
   my %codons; my $total = 0; my @Comma3 = qw/atg gtg ttg/;
