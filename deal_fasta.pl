@@ -729,17 +729,24 @@ sub uniqSeq {
 sub uniqSeq_bySeq {
 	my %k; 
 	
+	my %cnt; 
+
 	my @out_aref; 
 	for my $fh (@InFp) {
 		for ( my ($relHR, $get) = &get_fasta_seq($fh); defined $relHR; ($relHR, $get) = &get_fasta_seq($fh) ) {
+			$cnt{'in_total'} ++; 
+			$cnt{'num_out'} //= 0; 
+			$cnt{'in_total'} % 100e3 == 1 and &tsmsg("[Msg] Processing $cnt{'in_total'}. $cnt{'num_out'} unique patterns.\n"); 
 			$relHR->{seq} =~ /^\s*$/ and next; 
 			(my $ks = $relHR->{'seq'}) =~ s/\s//g; 
 			unless (defined $k{ $ks }) {
+				$cnt{'num_out'}++; 
 				push( @out_aref, [ $relHR->{'head'}, $relHR->{'seq'} ] ); 
 			}
 			$k{ $ks } ++; 
 		}
 	}
+	&tsmsg("[Msg] Output unique patterns\n"); 
 	for my $ar1 (@out_aref) {
 		(my $ks = $ar1->[1]) =~ s/\s//g; 
 		print STDOUT ">$ar1->[0] [Count=$k{$ks}]\n$ar1->[1]\n"; 
@@ -1462,4 +1469,9 @@ sub parseCol {
 	}
 	return (@ncols);
 }
+
+sub tsmsg {
+	my $tt = scalar( localtime() );
+	print STDERR join('', "[$tt]", @_);
+}#End tsmsg()
 
