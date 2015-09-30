@@ -18,24 +18,40 @@ my $covCut    =   1;
 my @genotype  = qw/A T G C N/; 
 
 # print STDOUT join("\t", qw/RefChr ChrPos RefBase RdCov/, @genotype, 'TotalUsed', 'TotalDrop', 'MinorInMaxAndMinor', 'Max2RatByAlphabet')."\n"; 
-print STDOUT join("\t", qw/RefChr ChrPos RefBase RdCov/, @genotype, 'Deletion', 'MinorInMaxAndMinor', 'Max2RatByAlphabet')."\n"; 
+print STDOUT join("\t", qw/RefChr ChrPos RefBase RdCov/, @genotype, 'Deletion', 'Insertion', 'MinorInMaxAndMinor', 'Max2RatByAlphabet')."\n"; 
 while (<>) {
 	$. % 1000000 == 1 and warn "[Stat]$. lines.\n"; 
 	chomp; m/^\s*$/ and next; m/^\#/ and next; 
 	my @ta = split(/\t/, $_); 
 	if ($ta[$covC] < $covCut) {
-		print STDOUT join("\t", @ta[0,1,$refBaseC,$covC], qw/0 0 0 0 0 0 - -/, $ta[$covC])."\n"; 
+		print STDOUT join("\t", @ta[0,1,$refBaseC,$covC], qw/0 0 0 0 0 -:0 - -/, $ta[$covC])."\n"; 
 	} else {
 		my $ref_base   = uc($ta[$refBaseC]); 
 		my $read_bases = $ta[$readBaseC]; 
 		my $read_quals = $ta[$qualC]; 
+		my %insertion_cnt; 
+		my $insertion_txt = '-:0'; 
 		if ($read_bases =~ m/[\$\^\+-]/) {
 			$read_bases =~ s/\^.//g; #removing the start of the read segement mark
 			$read_bases =~ s/\$//g; #removing end of the read segment mark
-			while ($read_bases =~ m/[\+-](\d+)/g) {
-				my $indel_len = $1;
-				$read_bases =~ s/[\+-]$indel_len.{$indel_len}//; # remove indel info from read base field
+			while ($read_bases =~ m/([\+-])(\d+)/g) {
+				my $tag = $1; 
+				my $indel_len = $2; 
+				$read_bases =~ s/(.)([\+-])$indel_len(.{$indel_len})/$1/; # remove indel info from read base field
+				my $indel_geno = "$2$3"; 
+				my $pref_base = $1; 
+				( $pref_base eq ',' or $pref_base eq '.' ) and $pref_base = $ref_base; 
+				$pref_base = uc($pref_base); 
+				$indel_geno = "${pref_base}${indel_geno}"; 
+				if ($tag eq '+') {
+					# This is a insertion. 
+					$indel_geno = uc($indel_geno); 
+					$insertion_cnt{$indel_geno} ++; 
+				}
 			}
+		}
+		if (keys %insertion_cnt > 0) {
+			$insertion_txt = join(';;', map { "$_" . ":" . "$insertion_cnt{$_}" } sort { $insertion_cnt{$b} <=> $insertion_cnt{$a} || $a cmp $b } keys %insertion_cnt); 
 		}
 		if ( length($read_bases) != length($read_quals) ) {
 			warn "[Error]Skip line: $_\n"; 
@@ -86,7 +102,7 @@ while (<>) {
 			$rat2 = $count{$tbs2[0]}/$bi_sum; 
 		}
 #		print STDOUT join("\t", @ta[0,1,$refBaseC,$covC], @count{@genotype}, $ttl_used, $ta[$covC]-$ttl_used, $rat1, $rat2)."\n"; 
-		print STDOUT join("\t", @ta[0,1,$refBaseC,$covC], @count{@genotype}, $deletion_num, $rat1, $rat2)."\n"; 
+		print STDOUT join("\t", @ta[0,1,$refBaseC,$covC], @count{@genotype}, $deletion_num, $insertion_txt, $rat1, $rat2)."\n"; 
 	}
 }
 
