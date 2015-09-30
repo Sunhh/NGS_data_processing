@@ -30,6 +30,7 @@ while (<>) {
 		my $read_bases = $ta[$readBaseC]; 
 		my $read_quals = $ta[$qualC]; 
 		my %insertion_cnt; 
+		my %insRM_cnt; 
 		my $insertion_txt = '-:0'; 
 		if ($read_bases =~ m/[\$\^\+-]/) {
 			$read_bases =~ s/\^.//g; #removing the start of the read segement mark
@@ -43,6 +44,8 @@ while (<>) {
 				( $pref_base eq ',' or $pref_base eq '.' ) and $pref_base = $ref_base; 
 				$pref_base = uc($pref_base); 
 				$indel_geno = "${pref_base}${indel_geno}"; 
+				$pref_base eq '*' and $pref_base = 'deletion'; 
+				$insRM_cnt{$pref_base} ++; 
 				if ($tag eq '+') {
 					# This is a insertion. 
 					$indel_geno = uc($indel_geno); 
@@ -101,6 +104,13 @@ while (<>) {
 			$rat1 = $count{$tbs1[1]}/$bi_sum; 
 			$rat2 = $count{$tbs2[0]}/$bi_sum; 
 		}
+
+		# Adjust %count for following indels. 
+		for my $tt (keys %count) {
+			$insRM_cnt{$tt} //= 0; 
+			$count{$tt} -= $insRM_cnt{$tt}; 
+		}
+
 #		print STDOUT join("\t", @ta[0,1,$refBaseC,$covC], @count{@genotype}, $ttl_used, $ta[$covC]-$ttl_used, $rat1, $rat2)."\n"; 
 		print STDOUT join("\t", @ta[0,1,$refBaseC,$covC], @count{@genotype}, $deletion_num, $insertion_txt, $rat1, $rat2)."\n"; 
 	}
