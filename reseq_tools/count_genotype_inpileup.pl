@@ -17,8 +17,8 @@ my $covCut    =   1;
 
 my @genotype  = qw/A T G C N/; 
 
-# print STDOUT join("\t", qw/RefChr ChrPos RefBase RdCov/, @genotype, 'TotalUsed', 'TotalDrop', 'MinorInMaxAndMinor', 'Max2RatByAlphabet')."\n"; 
-print STDOUT join("\t", qw/RefChr ChrPos RefBase RdCov/, @genotype, 'Deletion', 'Insertion', 'MinorInMaxAndMinor', 'Max2RatByAlphabet')."\n"; 
+# print STDOUT join("\t", qw/RefChr ChrPos RefBase RdCov/, @genotype, 'Deletion', 'Insertion', 'MinorInMaxAndMinor', 'Max2RatByAlphabet')."\n"; 
+print STDOUT join("\t", qw/chr pos RefBase RdCov/, @genotype, 'Deletion', 'Insertion', 'MinorInMaxAndMinor', 'Max2RatByAlphabet')."\n"; 
 while (<>) {
 	$. % 1000000 == 1 and warn "[Stat]$. lines.\n"; 
 	chomp; m/^\s*$/ and next; m/^\#/ and next; 
