@@ -153,6 +153,8 @@ Usage: $0  <fasta_file | STDIN>
 
   -rna2dna            [Boolean] Transform 'U' to 'T'. 
 
+  -rmTailXN           [Boolean] Remove continuous [\*XNxn]+ from the tail of sequence. 
+
 #******* Instruction of this program *********#
 HELP
 	exit (1); 
@@ -182,6 +184,7 @@ GetOptions(\%opts,"help!",
 	"chop_seq!", "chop_len:i", "chop_step:i", "chop_min:i", "chop_noPos!", 
 	"joinR12!", 
 	"rna2dna!", 
+	"rmTailXN!", 
 	);
 &usage if ($opts{"help"}); 
 !@ARGV and -t and &usage; 
@@ -249,6 +252,7 @@ my %goodStr = qw(
 &chop_seq() if ( $opts{'chop_seq'} ); 
 &joinR12() if ( $opts{'joinR12'} ); 
 &rna2dna() if ( $opts{'rna2dna'} ); 
+&rmTailXN() if ( $opts{'rmTailXN'} ); 
 
 for (@InFp) {
 	close ($_); 
@@ -263,6 +267,21 @@ for (@InFp) {
 #****************************************************************#
 #--------------Subprogram------------Start-----------------------#
 #****************************************************************#
+
+# 2015-10-01 
+sub rmTailXN {
+	for (my $i=0; $i<@InFp; $i+=1) {
+		my $fh1 = $InFp[$i];
+		RD:
+		while ( !eof($fh1) ) {
+			for ( my ($relHR1, $get1) = &get_fasta_seq($fh1); defined $relHR1; ($relHR1, $get1) = &get_fasta_seq($fh1) ) {
+				$relHR1->{'seq'} =~ s/\s//g; 
+				$relHR1->{'seq'} =~ s/[\*XN]+$//i; 
+				print STDOUT ">$relHR1->{'head'}\n$relHR1->{'seq'}\n"; 
+			}
+                }#End while() RD:
+        }#End for
+}# sub rmTailXN() 
 
 # 2015-09-26 
 sub rna2dna {
