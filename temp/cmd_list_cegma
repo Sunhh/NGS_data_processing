@@ -1,0 +1,2 @@
+cegma -g spinach_unigene_0415.fa -o spinach_unigene_0415 --max_intron 0 -T 20 --verbose 
+
