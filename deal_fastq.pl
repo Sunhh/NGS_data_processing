@@ -43,6 +43,7 @@ perl $0 in.fastq
 -64to33       [Boolean] Transform phred64 to phred33 quality. 
 
 -rd_Num       [Boolean] Summary read number/length of fq files. 
+-rd_Num_fast  [Boolean] Read simple format of fastq faster. 
 
 -rd_LenHist   [Boolean] 
 -rd_LenHist_pmin   [Boolean] by paired-min. 
@@ -80,7 +81,7 @@ GetOptions(\%opts,
 	"joinR12!", # In fact, this function can be performed by keep_len() subroutine with "-keep_len 0- -paired "
 	"showQscale!", 
 	"33to64!", "64to33!", 
-	"rd_Num!", "rd_LenHist!", "rd_LenHist_pmin!", "rd_LenHist_range:s", "rd_LenHist_name:s", 
+	"rd_Num!", "rd_Num_fast!", "rd_LenHist!", "rd_LenHist_pmin!", "rd_LenHist_range:s", "rd_LenHist_name:s", 
 	"frag:s", "frag_r!", "frag_c!", 
 	"search:s", "srch_strand:s", "srch_back:s", "srch_drop!", "srch_max!", 
 	"randSlct:f", 
@@ -402,22 +403,41 @@ sub rd_Num {
 		my %dd; 
 		$dd{rdN} = $dd{bpN} = 0; 
 		$dd{len_range} = ['NA', 'NA']; 
-		while ( my $rdRec = &get_fq_record($fh) ) {
-			$dd{rdN} ++; $dd{rdN} % 10e6 == 1 and &tsmsg("[Msg] $dd{rdN} reads.\n"); 
-			$rdRec->{seq} =~ s/\s//g; 
-			my $tt_len = length( $rdRec->{seq} ); 
-			$dd{bpN} += $tt_len; 
-			if ($dd{len_range}[0] eq 'NA') {
-				$dd{len_range}[0] = $tt_len; 
-				$dd{len_range}[1] = $tt_len; 
-			} else {
-				if      ( $dd{len_range}[0] > $tt_len ) {
+		unless ( $opts{'rd_Num_fast'} ) {
+			while ( my $rdRec = &get_fq_record($fh) ) {
+				$dd{rdN} ++; $dd{rdN} % 10e6 == 1 and &tsmsg("[Msg] $dd{rdN} reads.\n"); 
+				$rdRec->{seq} =~ s/\s//g; 
+				my $tt_len = length( $rdRec->{seq} ); 
+				$dd{bpN} += $tt_len; 
+				if ($dd{len_range}[0] eq 'NA') {
 					$dd{len_range}[0] = $tt_len; 
-				} elsif ( $dd{len_range}[1] < $tt_len ) {
 					$dd{len_range}[1] = $tt_len; 
+				} else {
+					if      ( $dd{len_range}[0] > $tt_len ) {
+						$dd{len_range}[0] = $tt_len; 
+					} elsif ( $dd{len_range}[1] < $tt_len ) {
+						$dd{len_range}[1] = $tt_len; 
+					}
+				}
+			}#while
+		} else {
+			while ( <$fh> ) {
+				$_ = <$fh>; chomp($_); 
+				$dd{'rdN'} ++; $dd{'rdN'} % 10e6 == 1 and &tsmsg("[Msg] $dd{rdN} reads.\n"); 
+				my $tt_len = length( $_ ); 
+				$dd{'bpN'} += $tt_len; 
+				if ( $dd{'len_range'}[0] eq 'NA' ) {
+					$dd{'len_range'}[0] = $tt_len; 
+					$dd{'len_range'}[1] = $tt_len; 
+				} else {
+					if ( $dd{'len_range'}[0] > $tt_len ) {
+						$dd{'len_range'}[0] = $tt_len; 
+					} elsif ( $dd{'len_range'}[1] < $tt_len ) {
+						$dd{'len_range'}[1] = $tt_len; 
+					}
 				}
 			}
-		}#while
+		}
 		$dd{avgL} = ( $dd{rdN} == 0 ) ? 'NA' : $dd{bpN}/$dd{rdN} ; 
 		print STDOUT join("\t", $fn, $dd{bpN}, $dd{rdN}, $dd{avgL}, "$dd{len_range}[0]-$dd{len_range}[1]", "Phred$qscale", scalar(localtime()))."\n"; 
 		&tsmsg("[Rec] Finish $dd{rdN} reads in file [$fn].\n"); 

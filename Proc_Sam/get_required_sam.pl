@@ -27,6 +27,7 @@ GetOptions(\%opts,
 	# Global filtering 
 	'max_NM_ratio:f', # Default none. Recommend 0.01 for self_mapping. 
 	'min_mapQ:i', # Default 0. 
+	'noClip!', 
 	
 	'help!', 
 ); 
@@ -78,6 +79,7 @@ sub usage {
 # Global filtering: 
 # -max_NM_ratio   [-1] Maximum NM/rdLen ratio accepted. 
 # -min_mapQ       [0] Minimum mapping quality accepted. 
+# -noClip         [Boolean] Do not allow hard/soft clip if given. 
 # 
 ################################################################################
 HH
@@ -123,6 +125,10 @@ sub get_uniq_pair {
 			&SeqAlnSunhh::sam_hash_addKey($sam_href, ['NM', 'read_len']); 
 			$sam_href->{'NM'} > $sam_href->{'read_len'} * $opts{'max_NM_ratio'} and do { $bad_rd{$rdID} = 1; next; }; 
 		}
+		if ($opts{'noClip'}) {
+			&SeqAlnSunhh::sam_hash_addKey($sam_href, ['cigar_href']); 
+			( $sam_href->{'cigar_href'}{'Hlen'} > 0 or $sam_href->{'cigar_href'}{'Slen'} > 0 ) and do { $bad_rd{$rdID} = 1; next; }; 
+		}
 		
 		push(@lines, [$rdID, $_]); 
 	}
@@ -157,6 +163,11 @@ sub get_both_aln {
 			my $vv = &mathSunhh::min( $sam_href->{'NM'}, $sam_href->{'XA_minNM'} ); 
 			$vv > $sam_href->{'read_len'} * $opts{'max_NM_ratio'} and do { $bad_rd{$rdID} = 1; next; }; 
 		}
+		if ($opts{'noClip'}) {
+			&SeqAlnSunhh::sam_hash_addKey($sam_href, ['cigar_href']); 
+			( $sam_href->{'cigar_href'}{'Hlen'} > 0 or $sam_href->{'cigar_href'}{'Slen'} > 0 ) and do { $bad_rd{$rdID} = 1; next; }; 
+		}
+		
 
 		if ( defined $r1_flag{$ta[1]} ) {
 			$rd_cnt_r1{$rdID} ++; 
