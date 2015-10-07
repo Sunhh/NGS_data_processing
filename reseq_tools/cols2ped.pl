@@ -24,7 +24,7 @@ perl $0 in.cols
 -file_list      [''] If given, will replace the ARGV with files in file_list. 
 
 -help 
--max2allele     Only accept sites with two alleles if given; 
+-max2allele     Only accept sites with two alleles if given; Should be given for haploview. 
 -startColN      [2] 0-indexed number of the first column for sample base. 
 -noHeader       Given if input .cols file has no header. 
 
