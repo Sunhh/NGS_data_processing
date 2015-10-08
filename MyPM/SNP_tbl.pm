@@ -80,8 +80,8 @@ T -1 C -1
 my %allele2num = qw(
 	A  1
 	C  2
-	G  3
-	T  4
+	T  3
+	G  4
 	N -9
 ); 
 
