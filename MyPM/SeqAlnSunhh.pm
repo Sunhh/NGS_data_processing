@@ -558,6 +558,129 @@ sub sam_flag_infor {
 	return ( \@flag_back ); 
 }
 
+=head1 cigar_str2array ( $CigarString_inSam )
+
+Return      : (\@cigar_num_array)
+ @cigar_num_array = ( [cigar_len, cigar_tag], [cigar_len, cigar_tag], ... )
+
+=cut
+sub cigar_str2array {
+	my $str = shift; 
+	my @back; 
+	while ($str =~ s!^(\d+)([MIDNSHP=X])!!) {
+		push(@back, [$1, $2]); 
+	}
+	$str eq '' or &stopErr("[Err] Left unknown Cigar string [$str]\n"); 
+	return \@back; 
+}# sub cigar_str2array () 
+
+=head1 cigar_array2str ( \@cigar_num_array )
+
+Return      :  ($CigarString_inSam)
+
+=cut
+sub cigar_array2str {
+	my $back = ''; 
+	defined $_[0] and @{$_[0]} > 0 and $back = join('', map { "$_->[0]$_->[1]" } @{$_[0]}); 
+	return $back; 
+}# cigar_array2str ()
+
+
+=head1 cigar_array2len ( \@cigar_array )
+
+Return      : ( $rd_len, $ref_span_len )
+
+=cut 
+sub cigar_array2len {
+	my ($rd_len, $ref_len) = (0, 0); 
+	for ( @{$_[0]} ) {
+		$_->[1] =~ m/^[MIS=X]$/i and $rd_len += $_->[0]; 
+		$_->[1] =~ m/^[MDNP=X]$/i and $ref_len += $_->[0]; 
+	}
+	return ($rd_len, $ref_len); 
+}# sub cigar_array2len() 
+
+
+=head1 trim_pos ( posi_trimmed_before, end_posi_for_trim, add_len_for_trim )
+
+Return      : ( posi_trimmed, left_len_for_trim ) 
+
+=cut
+sub trim_pos ($$$) {
+	# ( posi_trimmed_before, end_posi_for_trim, add_len_for_trim )
+	#   0                    1                  2
+	if      ( $_[1]-$_[0] < 1  ) {
+		# 1 to end_posi have already been trimmed, so there is no trimming. 
+		return($_[0], $_[2]); 
+	} elsif ( $_[1]-$_[0] >= $_[2] ) {
+		# All of the add_len_for_trim should be trimmed. 
+		return($_[0]+$_[2], 0); 
+	} elsif ( $_[1]-$_[0] <  $_[2] ) {
+		# The heading ($_[1]-$_[0]) positions should be trimmed, and left $_[2]-($_[1]-$_[0]) positions. 
+		return($_[1], $_[2]+$_[0]-$_[1]); 
+	} else {
+		&stopErr("[Err] Why here [@_]\n"); 
+	}
+}# sub trim_pos () 
+
+=head1 trim_cigar_arr (\@cigar_array, $trim_rd_len)
+
+@cigar_array will be trimmed. 
+
+Return      : ($trimmed_rd_len, $trimmed_ref_len)
+
+=cut
+sub trim_cigar_arr ($$) {
+	# ( [ [len_1, tag_1], [len_2, tag_2], ... ] , $rd_len_to_trim )
+	my @new_cigar_arr; 
+	my $trimmed_rd_len = 0; 
+	my $trimmed_ref_len = 0; 
+	for (@{$_[0]}) {
+		if ( $trimmed_rd_len >= $_[1] ) {
+			push(@new_cigar_arr, $_); 
+			next; 
+		}
+		if ( $_->[1] =~ m/^[MP=X]$/i ) {
+			my ($trimmed_RdP, $rest_RdBp) = &trim_pos( $trimmed_rd_len, $_[1], $_->[0] ); 
+			$trimmed_ref_len += ($trimmed_RdP - $trimmed_rd_len); 
+			$trimmed_rd_len = $trimmed_RdP; 
+			$rest_RdBp > 0 and push(@new_cigar_arr, [ $rest_RdBp, $_->[1] ]); 
+		} elsif ( $_->[1] =~ m/^I$/i ) {
+			$trimmed_rd_len += $_->[0]; 
+		} elsif ( $_->[1] =~ m/^S$/i) {
+			my ($trimmed_RdP, $rest_RdBp) = &trim_pos( $trimmed_rd_len, $_[1], $_->[0] );
+			$trimmed_rd_len = $trimmed_RdP; 
+			$rest_RdBp > 0 and push(@new_cigar_arr, [ $rest_RdBp, $_->[1] ]); 
+		} elsif ( $_->[1] =~ m/^D$/i) {
+			$trimmed_ref_len += $_->[0]; 
+		} else {
+			; 
+		}
+	}
+	@{$_[0]} = @new_cigar_arr; 
+	return ( $trimmed_rd_len, $trimmed_ref_len ); 
+}# sub trim_cigar_arr ()
+
+=head1 trim_cigar_str_bothEnd ( $cigar_string, $length_to_trim_from_end ) 
+
+Return      : ( \@trimmed_cigar_array, $left_rm_RdBpN, $right_rm_RdBpN, $left_rm_RefBpN, $right_rm_RefBpN )
+
+=cut 
+sub trim_cigar_str_bothEnd {
+	# ( $cigar_string , $length_to_trim_from_end )
+	my @cigar_arr = @{ &cigar_str2array( $_[0] ) }; 
+	# my ($raw_rd_len, $raw_refSpan_len) = &cigar_array2len(\@cigar_arr); 
+	
+	# Check from the left end. 
+	my ( $left_rm_RdBpN,  $left_rm_RefBpN  ) = &trim_cigar_arr( \@cigar_arr, $_[1] ); 
+	# Check from the right end. 
+	@cigar_arr = reverse(@cigar_arr); 
+	my ( $right_rm_RdBpN, $right_rm_RefBpN ) = &trim_cigar_arr( \@cigar_arr, $_[1] ); 
+	@cigar_arr = reverse(@cigar_arr); 
+
+	return(\@cigar_arr, $left_rm_RdBpN, $right_rm_RdBpN, $left_rm_RefBpN, $right_rm_RefBpN); 
+}
+
 =head1 parseCigar( $CigarString_inSam )
 
 Return      : (\%type2Number)
