@@ -562,10 +562,15 @@ sub sam_flag_infor {
 
 Return      : (\%type2Number)
   {qw/Dlen Elen Hlen Ilen Mlen Nlen Plen RdLen Slen SpanRefLen Xlen/} => number; 
-  Plen : Read 'Padded SAM' sectioin in manual. standing for '*'
-  Elen : '='
-  Xlen : 'X'
-  Nlen : 'N'
+  Plen : Read 'Padded SAM' sectioin in manual. standing for '*'. (silent deletion from padded reference)
+  Elen : '=', sequence match 
+  Xlen : 'X', sequence mismatch 
+  Nlen : 'N', this means an intron. 
+  Mlen : 'M', alignment match, can be match or mismatch. 
+  Ilen : 'I', insertion to the reference. 
+  Dlen : 'D', deletion from the reference. 
+  Slen : 'S', soft clipping (clipped sequences present in SEQ)
+  Hlen : 'H', hard clipping (clipped sequences NOT present in SEQ)
   SpanRefLen : Mlen + Dlen + Nlen + Plen + Elen + Xlen
   RdLen      : Mlen + Ilen + Slen + Elen + Xlen
 
