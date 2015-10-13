@@ -422,7 +422,7 @@ sub rd_Num {
 			}#while
 		} else {
 			while ( <$fh> ) {
-				$_ = <$fh>; chomp($_); 
+				$_ = <$fh>; chomp($_); <$fh>; <$fh>; 
 				$dd{'rdN'} ++; $dd{'rdN'} % 10e6 == 1 and &tsmsg("[Msg] $dd{rdN} reads.\n"); 
 				my $tt_len = length( $_ ); 
 				$dd{'bpN'} += $tt_len; 
