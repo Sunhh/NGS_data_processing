@@ -12,7 +12,20 @@ $opts{'startColN'} //= 2;
 
 my $geno_col = $opts{'startColN'}; 
 
-!@ARGV and die "\nperl $0 in.snp_tbl > in.snp_tbl.cntHomHetR\nPlease note that the geno_col is $geno_col\n"; 
+sub usage {
+	print STDERR <<HH; 
+
+perl $0 in.snp_tbl > in.snp_tbl.cntHomHetR
+
+-startColN       [$opts{'startColN'}]
+
+Please note that the geno_col is $opts{'startColN'}
+
+
+HH
+	exit(1); 
+}
+!@ARGV and &usage(); 
 
 my $l = <>; 
 print join("\t",qw/ChromID Pos GenoN HomoRatio HeteRatio/)."\n"; 
