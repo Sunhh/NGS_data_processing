@@ -20,6 +20,8 @@ perl $0 in.snp > in.snp.cntNHH
 Genotype column start from colN=$opts{'startColN'}
 Do not parse the first line. 
 
+The output format is : qw/IndvID N_Num Typed_Num Het_Num Hom_Num/
+
 HH
 	exit(1); 
 }
