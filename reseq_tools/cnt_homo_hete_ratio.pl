@@ -20,12 +20,13 @@ perl $0 in.snp_tbl > in.snp_tbl.cntHomHetR
 -startColN       [$opts{'startColN'}]
 
 Please note that the geno_col is $opts{'startColN'}
-
+Out format : qw/ChromID Pos GenoN HomoRatio HeteRatio/
 
 HH
 	exit(1); 
 }
 !@ARGV and &usage(); 
+$opts{'help'} and &usage(); 
 
 my $l = <>; 
 print join("\t",qw/ChromID Pos GenoN HomoRatio HeteRatio/)."\n"; 
