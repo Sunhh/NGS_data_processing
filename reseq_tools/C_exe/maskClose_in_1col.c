@@ -267,7 +267,7 @@ int load_RefChr ( char *inFile, struct refChr *store, char *headline ) {
 		}
 
 		// Output some processing information for control. 
-		if ( lineN % 1000000 == 1 ) {
+		if ( lineN % 10000000 == 1 ) {
 			sprintf(log_msg, "[LOADING_RefChr] [%s] lineN=%d [%s %d %s]\n", inFile, lineN, store->chrID, store->position, store->refBase); tsmsg(log_msg); 
 		}
 
