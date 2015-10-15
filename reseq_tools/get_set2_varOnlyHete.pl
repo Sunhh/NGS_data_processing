@@ -2,10 +2,33 @@
 use strict; 
 use warnings; 
 use LogInforSunhh; 
+use Getopt::Long; 
+my %opts; 
+GetOptions(\%opts, 
+	"help!", 
+	"startColN:i", # 2 
+); 
 
-my $geno_col = 3; 
--t and !@ARGV and die "perl $0 in_snp.tbl > in_snp.tbl.set2_varOnlyHete\nPlease note the geno_col=$geno_col\n"; 
+$opts{'startColN'} //= 2; 
 
+my $geno_col = $opts{'startColN'}; 
+
+sub usage {
+	print STDERR <<HH; 
+
+perl $0 in_snp.tbl > in_snp.tbl.set2_varOnlyHete
+
+-help
+-startColN       [$opts{'startColN'}]
+
+Please note the geno_col=$geno_col
+
+HH
+	exit(1); 
+}
+
+-t and !@ARGV and &usage(); 
+$opts{'help'} and &usage(); 
 
 while (<>) {
 	$. % 1e6 == 1 and &tsmsg("[Msg] Reading $. lines.\n"); 
