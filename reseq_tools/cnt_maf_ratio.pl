@@ -3,10 +3,32 @@ use strict;
 use warnings; 
 use LogInforSunhh; 
 use SNP_tbl; 
+use Getopt::Long; 
+my %opts; 
+GetOptions(\%opts, 
+	"help!", 
+	"startColN:i", # 2 
+); 
+$opts{'startColN'} //= 2; 
 
-my $geno_col = 3; 
+my $geno_col = $opts{'startColN'}; 
 
-!@ARGV and die "perl $0 in_snp.tbl > in_snp.tbl.maf\nPlease note that the geno_col is $geno_col!\n"; 
+sub usage {
+	print STDERR <<HH; 
+
+perl $0 in_snp.tbl > in_snp.tbl.maf
+
+-help
+-startColN       [$opts{'startColN'}]
+
+Please note that the geno_col is $geno_col!
+
+HH
+	exit(1); 
+}
+
+!@ARGV and &usage(); 
+$opts{'help'} and &usage(); 
 
 my %skipColN; 
 for (my $i=2; $i<$geno_col; $i++) {
