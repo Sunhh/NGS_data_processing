@@ -8,7 +8,6 @@
 #define COLSIZE 50
 #define IDLEN 20
 #define NUMLEN 10
-#define LINENUM  500000000
 // WM97_Chr04 //
 
 char *curr_time_str (char *s) ; 
@@ -34,11 +33,11 @@ int main ( int argc, char *(argv[]) )
 
 	FILE *ipRefChr; 
 
-	if (argc <= 2) {
+	if (argc <= 3) {
 		printf("Not enough arguments. Should be \n\n"); 
-		printf("%s WM97_v6.chrom.fa.refChr GS122_C.1col ...\n", argv[0]); 
+		printf("%s max_line_num WM97_v6.chrom.fa.refChr GS122_C.1col ...\n", argv[0]); 
 		exit(1); 
-	} else if (argc >= 3) {
+	} else if (argc >= 4) {
 		// ipRefChr = fopen( argv[1], "r"); 
 		sprintf(log_msg, "Begin to run [%s].\n", argv[0]); tsmsg(log_msg); 
 	} else {
@@ -47,24 +46,24 @@ int main ( int argc, char *(argv[]) )
 	}
 
 	// Load refChr file. 
-	// struct refChr *rr = (struct refChr *) calloc ( LINENUM , sizeof(struct refChr) ); // The initialization step needs some time. 
+	// struct refChr *rr = (struct refChr *) calloc ( argv[1] , sizeof(struct refChr) ); // The initialization step needs some time. 
 //	struct refChr *(rr[100]); 
 	struct refChr *rr; 
-	rr = (struct refChr *) malloc( LINENUM * sizeof(struct refChr) ); 
+	rr = (struct refChr *) malloc( atol(argv[1]) * sizeof(struct refChr) ); 
 	char *rr_headline; 
 	rr_headline = (char *) malloc( 100 * sizeof(char) ); 
 	long int rr_lineN; 
 
 	struct tm *curr_time; 
-	sprintf(log_msg, "Processing RefChr file [%s]\n", argv[1]); 
-	rr_lineN = load_RefChr( argv[1], rr, rr_headline); 
+	sprintf(log_msg, "Processing RefChr file [%s]\n", argv[2]); 
+	rr_lineN = load_RefChr( argv[2], rr, rr_headline); 
 
 	int argv_i ; 
-	for (argv_i=2; argv_i<argc; argv_i++) {
+	for (argv_i=3; argv_i<argc; argv_i++) {
 		sprintf(log_msg, "Processing .1col file [%s]\n", argv[argv_i]); tsmsg(log_msg); 
 		// Load in .1col files. 
 		struct colSNP *cc; 
-		cc = (struct colSNP *) malloc( LINENUM * sizeof(struct colSNP) ); 
+		cc = (struct colSNP *) malloc( atol(argv[1]) * sizeof(struct colSNP) ); 
 		char *cc_headline; 
 		cc_headline = (char *) malloc( COLSIZE * sizeof(char) ); 
 		long int cc_lineN; 
