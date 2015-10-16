@@ -13,10 +13,12 @@ GetOptions(\%opts,
 $opts{'startColN'} //= 2; 
 
 my $type_startColN = $opts{'startColN'}; 
-sub usage {
-	print STDERR <<HH; 
+
+my $help_txt = <<HH; 
 
 perl $0 in.snp > in.snp.cntNHH
+
+-help               
 -startColN          [$opts{'startColN'}]
 
 Genotype column start from colN=$opts{'startColN'}
@@ -25,11 +27,9 @@ Do not parse the first line.
 The output format is : qw/IndvID N_Num Typed_Num Het_Num Hom_Num Het_Ratio Hom_Ratio N_Ratio/
 
 HH
-	exit(1); 
-}
 
--t and !@ARGV and &usage(); 
-$opts{'help'} and &usage(); 
+-t and !@ARGV and &LogInforSunhh::usage($help_txt); 
+$opts{'help'} and &LogInforSunhh::usage($help_txt); 
 
 my $head = <>; 
 chomp($head); 
