@@ -2,6 +2,8 @@
 use strict; 
 use warnings; 
 use LogInforSunhh; 
+use SNP_tbl; 
+my $st_obj = SNP_tbl->new(); 
 use Getopt::Long; 
 my %opts; 
 GetOptions(\%opts, 
@@ -41,12 +43,11 @@ while (<>) {
 	chomp; 
 	my @ta = split(/\t/, $_); 
 	for (my $i=$type_startColN; $i<@ta; $i++) { 
-		$ta[$i] eq 'N' and $cnt_N[$i]++; 
-		if ($ta[$i] =~ m/^[ATGC*][ATGC*]$/) {
-			$cnt_hete[$i]++; 
-		} else {
-			$cnt_homo[$i]++; 
-		}
+		$ta[$i] eq 'N' and do { $cnt_N[$i]++; next; }; 
+		( $ta[$i] =~ m/^[ATGC*]$/ or $ta[$i] eq '*' or $ta[$i] =~ m/\+/ ) and do { $cnt_homo[$i]++; next; }; # The '*' and sites with \+ are treated as homozygous. I don't like genotype like 'A*', so I want to remove it before calculation. 
+		(&SNP_tbl::dna_d2b($ta[$i])) > 1 and do { $cnt_hete[$i]++; next; }; # Heterozygous. 
+		&tsmsg("[Wrn] Weired genotype [$ta[$i]] is treated as homozygous.\n"); 
+		$cnt_homo[$i] ++; 
 		# $ta[$i]=~m/^[ATGC*]$|^[ATGC]\+[ATGC]+$/ and $cnt[$i]++; 
 	} 
 } 
