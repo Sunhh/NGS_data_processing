@@ -31,7 +31,7 @@ $opts{'help'} and &LogInforSunhh::usage($help_txt);
 unless ($opts{'noHeader'}) {
 	my $l = <>; 
 }
-print join("\t",qw/chr pos GenoN HomoRatio HeteRatio/)."\n"; 
+print join("\t",qw/chr pos GenoNum HomoRatio HeteRatio/)."\n"; 
 while (<>) {
 	chomp; 
 	my @ta = split(/\t/, $_); 
@@ -45,20 +45,7 @@ while (<>) {
 		( $ta[$i] =~ m/^[ATGC*]$/i or $ta[$i] eq '*' or $ta[$i] =~ m/\+/ ) and do { $homN++; $tot++; next; }; 
 		(&SNP_tbl::dna_d2b($ta[$i])) > 1 and do { $hetN++; $tot++; next; }; 
 		&tsmsg("[Wrn] Weired genotype [$tb] is treated as homozygous.\n"); 
-
-		$tot ++; 
-		
-		if ( $tb =~ m/^[ATGC*]$|^[ATGC]\+[ATGC]+$/ ) {
-			$homN ++; 
-			$tot ++; 
-		} elsif ( $tb eq 'N' ) {
-			; 
-		} elsif ( $tb =~ m/^[ATGC*][ATGC*]$/ ) {
-			$hetN ++; 
-			$tot ++; 
-		} else {
-			&tsmsg("Abnormal [$tb]\n"); 
-		}
+		$homN++; $tot ++; 
 	}
 	my $ratHom = sprintf("%.4f", $homN/$tot) * 100; 
 	my $ratHet = sprintf("%.4f", $hetN/$tot) * 100; 
