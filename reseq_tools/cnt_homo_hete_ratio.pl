@@ -1,19 +1,21 @@
 #!/usr/bin/perl 
 use strict; 
 use warnings; 
+use SNP_tbl; 
+my $st_obj = SNP_tbl->new(); 
 use LogInforSunhh; 
 use Getopt::Long; 
 my %opts; 
 GetOptions(\%opts, 
 	"help!", 
 	"startColN:i", # 2 
+	"noHeader!", 
 ); 
 $opts{'startColN'} //= 2; 
 
 my $geno_col = $opts{'startColN'}; 
 
-sub usage {
-	print STDERR <<HH; 
+my $help_txt = <<HH; 
 
 perl $0 in.snp_tbl > in.snp_tbl.cntHomHetR
 
@@ -23,13 +25,13 @@ Please note that the geno_col is $opts{'startColN'}
 Out format : qw/ChromID Pos GenoN HomoRatio HeteRatio/
 
 HH
-	exit(1); 
-}
-!@ARGV and &usage(); 
-$opts{'help'} and &usage(); 
+!@ARGV and &LogInforSunhh::usage($help_txt); 
+$opts{'help'} and &LogInforSunhh::usage($help_txt); 
 
-my $l = <>; 
-print join("\t",qw/ChromID Pos GenoN HomoRatio HeteRatio/)."\n"; 
+unless ($opts{'noHeader'}) {
+	my $l = <>; 
+}
+print join("\t",qw/chr pos GenoN HomoRatio HeteRatio/)."\n"; 
 while (<>) {
 	chomp; 
 	my @ta = split(/\t/, $_); 
@@ -38,6 +40,14 @@ while (<>) {
 	my $homN = 0; 
 	my $hetN = 0; 
 	for my $tb ( @ta[$geno_col .. $#ta] ) {
+		($tb eq 'N' or $tb eq 'n') and next; 
+
+		( $ta[$i] =~ m/^[ATGC*]$/i or $ta[$i] eq '*' or $ta[$i] =~ m/\+/ ) and do { $homN++; $tot++; next; }; 
+		(&SNP_tbl::dna_d2b($ta[$i])) > 1 and do { $hetN++; $tot++; next; }; 
+		&tsmsg("[Wrn] Weired genotype [$tb] is treated as homozygous.\n"); 
+
+		$tot ++; 
+		
 		if ( $tb =~ m/^[ATGC*]$|^[ATGC]\+[ATGC]+$/ ) {
 			$homN ++; 
 			$tot ++; 
