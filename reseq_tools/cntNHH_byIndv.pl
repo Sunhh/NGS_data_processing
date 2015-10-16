@@ -9,6 +9,7 @@ my %opts;
 GetOptions(\%opts, 
 	"help!", 
 	"startColN:i", # 2 
+	"noHeader!", 
 ); 
 $opts{'startColN'} //= 2; 
 
@@ -20,6 +21,7 @@ perl $0 in.snp > in.snp.cntNHH
 
 -help               
 -startColN          [$opts{'startColN'}]
+-noHeader           [Bool]
 
 Genotype column start from colN=$opts{'startColN'}
 Do not parse the first line. 
@@ -31,9 +33,12 @@ HH
 -t and !@ARGV and &LogInforSunhh::usage($help_txt); 
 $opts{'help'} and &LogInforSunhh::usage($help_txt); 
 
-my $head = <>; 
-chomp($head); 
-my @ha=split(/\t/, $head); 
+my @ha; 
+unless ($opts{'noHeader'}) {
+	my $head = <>; 
+	chomp($head); 
+	@ha=split(/\t/, $head); 
+}
 my @cnt_N; 
 my @cnt_hete; 
 my @cnt_homo; 
@@ -42,6 +47,11 @@ while (<>) {
 	($.-1) % 1e6 == 1 and &tsmsg("[Msg] $. lines.\n"); 
 	chomp; 
 	my @ta = split(/\t/, $_); 
+	unless ($opts{'noHeader'} and @ha == 0) {
+		for (my $i=0; $i<@ta; $i++) {
+			$ha[$i] = "Col_$i"; 
+		}
+	}
 	for (my $i=$type_startColN; $i<@ta; $i++) { 
 		$ta[$i] eq 'N' and do { $cnt_N[$i]++; next; }; 
 		( $ta[$i] =~ m/^[ATGC*]$/ or $ta[$i] eq '*' or $ta[$i] =~ m/\+/ ) and do { $cnt_homo[$i]++; next; }; # The '*' and sites with \+ are treated as homozygous. I don't like genotype like 'A*', so I want to remove it before calculation. 
