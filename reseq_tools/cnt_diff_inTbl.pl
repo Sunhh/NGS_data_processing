@@ -32,23 +32,9 @@ perl $0 in.snp > in.snp.diff_mat
 
 
 HH
-sub usage {
-	print STDERR <<HH;
 
-perl $0 in.snp > in.snp.diff_mat
-
--help
--startColN      [$opts{'startColN'}]
-
-\$geno_col is $geno_col
-
-
-HH
-	exit(1); 
-}
-
-!@ARGV and &usage(); 
-$opts{'help'} and &usage(); 
+!@ARGV and &LogInforSunhh::usage($help_txt); 
+$opts{'help'} and &LogInforSunhh::usage($help_txt); 
 
 my @hh; 
 my %cnt; 
