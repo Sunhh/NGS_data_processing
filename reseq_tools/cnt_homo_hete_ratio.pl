@@ -17,12 +17,14 @@ my $geno_col = $opts{'startColN'};
 
 my $help_txt = <<HH; 
 
+Count genotyped (not missing) number, homozygous ratio and heteryzygous ratio per site. 
+Out format : qw/chr pos GenoNum HomoRatio HeteRatio/
+
 perl $0 in.snp_tbl > in.snp_tbl.cntHomHetR
 
 -startColN       [$opts{'startColN'}]
 
 Please note that the geno_col is $opts{'startColN'}
-Out format : qw/ChromID Pos GenoN HomoRatio HeteRatio/
 
 HH
 !@ARGV and &LogInforSunhh::usage($help_txt); 
@@ -43,7 +45,7 @@ while (<>) {
 		($tb eq 'N' or $tb eq 'n') and next; 
 
 		( $tb =~ m/^[ATGC*]$/i or $tb eq '*' or $tb =~ m/\+/ ) and do { $homN++; $tot++; next; }; 
-		(&SNP_tbl::dna_d2b($tb)) > 1 and do { $hetN++; $tot++; next; }; 
+		(&SNP_tbl::dna_d2b( &SNP_tbl::b2d($tb) )) > 1 and do { $hetN++; $tot++; next; }; 
 		&tsmsg("[Wrn] Weired genotype [$tb] is treated as homozygous.\n"); 
 		$homN++; $tot ++; 
 	}

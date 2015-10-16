@@ -4,8 +4,31 @@ use warnings;
 use LogInforSunhh; 
 use SNP_tbl; 
 
-my $geno_col = 3; 
-!@ARGV and -t and die "perl $0 in_snp.tbl > in_snp.tbl.missRatio\nPlease note geno_col=$geno_col\n"; 
+use Getopt::Long; 
+my %opts; 
+GetOptions(\%opts, 
+	"help!", 
+	"startColN:i", # 2 
+); 
+$opts{'startColN'} //= 2; 
+my $geno_col = $opts{'startColN'}; 
+
+my $help_txt = <<HH; 
+
+Replaced by cnt_homo_hete_ratio.pl script, which can do same thing with some conversion. 
+
+perl $0 in_snp.tbl > in_snp.tbl.missRatio
+
+-help 
+-startColN        [$opts{'startColN'}]
+
+
+Please note geno_col=$geno_col
+
+HH
+
+!@ARGV and -t and &LogInforSunhh::usage($help_txt); 
+$opts{'help'} and &LogInforSunhh::usage($help_txt); 
 
 # Rules: 
 #  R1. Treat all indel as N missing; 

@@ -17,6 +17,9 @@ my $type_startColN = $opts{'startColN'};
 
 my $help_txt = <<HH; 
 
+Count N (missing), heterozygous, and homozygous sites per individual. 
+The output format is : qw/IndvID N_Num Typed_Num Het_Num Hom_Num Het_Ratio Hom_Ratio N_Ratio/
+
 perl $0 in.snp > in.snp.cntNHH
 
 -help               
@@ -25,8 +28,6 @@ perl $0 in.snp > in.snp.cntNHH
 
 Genotype column start from colN=$opts{'startColN'}
 Do not parse the first line. 
-
-The output format is : qw/IndvID N_Num Typed_Num Het_Num Hom_Num Het_Ratio Hom_Ratio N_Ratio/
 
 HH
 
