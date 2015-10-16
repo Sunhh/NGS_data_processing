@@ -42,8 +42,8 @@ while (<>) {
 	for my $tb ( @ta[$geno_col .. $#ta] ) {
 		($tb eq 'N' or $tb eq 'n') and next; 
 
-		( $ta[$i] =~ m/^[ATGC*]$/i or $ta[$i] eq '*' or $ta[$i] =~ m/\+/ ) and do { $homN++; $tot++; next; }; 
-		(&SNP_tbl::dna_d2b($ta[$i])) > 1 and do { $hetN++; $tot++; next; }; 
+		( $tb =~ m/^[ATGC*]$/i or $tb eq '*' or $tb =~ m/\+/ ) and do { $homN++; $tot++; next; }; 
+		(&SNP_tbl::dna_d2b($tb)) > 1 and do { $hetN++; $tot++; next; }; 
 		&tsmsg("[Wrn] Weired genotype [$tb] is treated as homozygous.\n"); 
 		$homN++; $tot ++; 
 	}
