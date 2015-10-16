@@ -6,13 +6,34 @@
 use strict; 
 use warnings; 
 use LogInforSunhh; 
+use Getopt::Long; 
+my %opts; 
+GetOptions(\%opts, 
+	"help!", 
+	"startColN:i", # 2 
+); 
+$opts{'startColN'} //= 2; 
 use SNP_tbl; 
 my $st_obj = SNP_tbl->new(); 
 
-my $geno_col = 2; 
+my $geno_col = $opts{'startColN'}; 
+sub usage {
+	print STDERR <<HH;
 
-!@ARGV and die "perl $0 in.snp > in.snp.diff_mat\n\$geno_col is $geno_col\n"; 
+perl $0 in.snp > in.snp.diff_mat
 
+-help
+-startColN      [$opts{'startColN'}]
+
+\$geno_col is $geno_col
+
+
+HH
+	exit(1); 
+}
+
+!@ARGV and &usage(); 
+$opts{'help'} and &usage(); 
 
 my @hh; 
 my %cnt; 
