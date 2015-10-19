@@ -56,7 +56,7 @@ while (<>) {
 	for (my $i=$type_startColN; $i<@ta; $i++) { 
 		($ta[$i] eq 'N' or $ta[$i] eq 'n') and do { $cnt_N[$i]++; next; }; 
 		( $ta[$i] =~ m/^[ATGC*]$/i or $ta[$i] eq '*' or $ta[$i] =~ m/\+/ ) and do { $cnt_homo[$i]++; next; }; # The '*' and sites with \+ are treated as homozygous. I don't like genotype like 'A*', so I want to remove it before calculation. 
-		(&SNP_tbl::dna_d2b( &SNP_tbl::b2d($ta[$i]) )) > 1 and do { $cnt_hete[$i]++; next; }; # Heterozygous. 
+		(&SNP_tbl::dna_d2b( &SNP_tbl::dna_b2d($ta[$i]) )) > 1 and do { $cnt_hete[$i]++; next; }; # Heterozygous. 
 		&tsmsg("[Wrn] Weired genotype [$ta[$i]] is treated as homozygous.\n"); 
 		$cnt_homo[$i] ++; 
 		# $ta[$i]=~m/^[ATGC*]$|^[ATGC]\+[ATGC]+$/ and $cnt[$i]++; 
