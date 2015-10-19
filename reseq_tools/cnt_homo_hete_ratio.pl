@@ -43,8 +43,8 @@ while (<>) {
 	chomp; 
 	my @ta = split(/\t/, $_); 
 	my $cnt_h = &cnt_in_arr( [@ta[ $opts{'startColN'} .. $#ta ]] ); 
-	my $homR = sprintf( "%.2f", $cnt_h->{'homN'}/$cnt_h->{'tot_typed'} * 100 ); 
-	my $hetR = sprintf( "%.2f", $cnt_h->{'hetN'}/$cnt_h->{'tot_typed'} * 100 ); 
+	my $homR = sprintf( "%.4f", $cnt_h->{'homN'}/$cnt_h->{'tot_typed'} * 100 ); 
+	my $hetR = sprintf( "%.4f", $cnt_h->{'hetN'}/$cnt_h->{'tot_typed'} * 100 ); 
 	print STDOUT join("\t", $ta[0], $ta[1], $cnt_h->{'tot_typed'}, $homR, $hetR, @{$cnt_h}{qw/alleleCnt_all alleleCnt_2 majorBp majorCnt minorBp minorCnt maf_all maf_2/})."\n"; 
 }
 
