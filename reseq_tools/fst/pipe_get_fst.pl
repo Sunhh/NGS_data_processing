@@ -54,7 +54,20 @@ sub run_pipe {
 
 	&addChrPos( "$opts{'o_pref'}.fst.perWindLine", $wid2cp_href, "$opts{'o_pref'}.fst.perWindChrPos" ); 
 
+	&cleanup([@$dvd_fstInList], []); # There is a sub_dir left, but I don't have directly data recording it. 
+
 	return; 
+}
+
+sub cleanup {
+	# $_[0] : [files]
+	# $_[1] : [dirs]
+	&tsmsg("[Msg] Clean temporary files.\n"); 
+	for (@$_[0]) {
+		unlink($_); 
+	}
+	defined $_[1] or return 0; 
+	&fileSunhh::_rmtree($_[1]); 
 }
 
 sub addChrPos {
