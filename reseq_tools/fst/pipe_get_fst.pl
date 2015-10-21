@@ -63,11 +63,13 @@ sub cleanup {
 	# $_[0] : [files]
 	# $_[1] : [dirs]
 	&tsmsg("[Msg] Clean temporary files.\n"); 
-	for (@$_[0]) {
+	for (@{$_[0]}) {
 		unlink($_); 
 	}
 	defined $_[1] or return 0; 
+	@{$_[1]} > 0 or return 0; 
 	&fileSunhh::_rmtree($_[1]); 
+	return 0; 
 }
 
 sub addChrPos {

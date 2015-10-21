@@ -174,8 +174,9 @@ sub setup_cols {
 			defined $_[2]{$ta[$i]} or next; 
 			push(@tb, [$i, $_[2]{$ta[$i]}]); 
 		}
-		@{$_[0]} = map { $_->[0] } sort { $a->[1] <=> $b->[1] } @tb; 
-		@{$_[1]} = @ta[ @{$_[0]} ]; 
+		@tb = sort { $a->[1] <=> $b->[1] } @tb; 
+		@{$_[0]} = map { $_->[0] } @tb; 
+		@{$_[1]} = map { $_->[1] } @tb; 
 	}
 	return 0; 
 }# setup_cols () 
