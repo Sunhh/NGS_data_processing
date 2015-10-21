@@ -78,6 +78,7 @@ my @geno;
 
 my $om_fh = &openFH($opts{'o_mrk_info'}, '>'); 
 my @mrkIDs; 
+my $mrk_copy; 
 my $mrk_num = 0; 
 while (<>) {
 	$. % 10e3 == 1 and &tsmsg("[Msg] $. line.\n"); 
@@ -87,15 +88,28 @@ while (<>) {
 	$mrk_num ++; 
 	push(@mrkIDs, "L$mrk_num"); 
 	print {$om_fh} "$mrkIDs[-1]\t$ta[0]\t$ta[1]\n"; 
+	$mrk_copy //= "$mrkIDs[-1]r\t$ta[0]\t$ta[1]\n"; 
 	for (my $i=0; $i<@grpIDs; $i++) {
 		push(@{$geno[$i]}, $tb->[$i]); 
 	}
+}
+if ($mrk_num == 1) {
+	&tsmsg("[Wrn] Only 1 site in the data, with is not enough.\n"); 
+	print {$om_fh} $mrk_copy; 
+	push(@mrkIDs, "$mrkIDs[0]r"); 
+}
+if ($mrk_num == 0) {
+	&stopErr("[Err] There isn't any available site.\n"); 
 }
 close($om_fh); 
 
 print STDOUT join("\t", 'GrpID', @mrkIDs)."\n"; 
 
 for (my $i=0; $i<@grpIDs; $i++) {
+	if ( $mrk_num == 1 ) {
+		@{$geno[$i]} == 1 or &stopErr("[Err] geno=[@{$geno[$i]}], but mrk_num == 1\n"); 
+		@{$geno[$i]} = (@{$geno[$i]}, @{$geno[$i]}); # repeat once. 
+	}
 	print join("\t", $grpIDs[$i], @{$geno[$i]})."\n"; 
 }
 &tsmsg("[Rec] done.\n"); 
