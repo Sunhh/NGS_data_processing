@@ -63,7 +63,7 @@ sub cnt_in_arr {
 			$cnt{'homN'}++; $cnt{'tot_typed'}++; 
 			$cnt{'allele2cnt'}{$_} += $_[1]; 
 		} elsif ( ( my @bb = &SNP_tbl::dna_d2b( &SNP_tbl::dna_b2d($_) ) ) > 0 ) {
-			@bb   == 1 and do { $cnt{'homN'}++; $cnt{'tot_typed'}++; $cnt{$bb[0]} += $_[1]; next; }; 
+			@bb   == 1 and do { $cnt{'homN'}++; $cnt{'tot_typed'}++; $cnt{'allele2cnt'}{$bb[0]} += $_[1]; next; }; 
 			$_[1] == 1 and do { &tsmsg("[Wrn] Bad genotype [$_] for ploidy=1.\n"); $cnt{'N'}++; next; }; 
 			@bb   >  2 and do { &tsmsg("[Wrn] Bad genotype [$_] for ploidy=2.\n"); $cnt{'N'}++; next; }; 
 			$cnt{'hetN'}++; $cnt{'tot_typed'}++; 
