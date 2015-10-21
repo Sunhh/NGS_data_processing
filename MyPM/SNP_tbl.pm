@@ -1022,6 +1022,7 @@ Example    :
 =cut
 sub dna_d2b {
 	my $in = shift; 
+	defined $in or return; 
 	$in = uc($in); 
 	$in eq 'U' and $in = "T"; 
 	if ( defined $IUPAC_d2b{$in} ) {
@@ -1041,6 +1042,7 @@ Return     : $IUPAC_degenerated_base
 =cut
 sub dna_b2d {
 	my $in = shift; 
+	defined $in or return; 
 	$in = uc($in); 
 	while ( $in =~ s!((.).*)\2!$1!g ) { 1; }
 	$in eq 'U' and $in = "T"; 

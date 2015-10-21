@@ -138,5 +138,14 @@ sub run {
 	return; 
 }# End sub run. 
 
+=head1 LogInforSunhh::usage($help_txt)
+
+Print the $help_txt and then exit(1); 
+
+=cut
+sub usage {
+	print STDERR $_[0]; 
+	exit(1); 
+}
 
 1; 
