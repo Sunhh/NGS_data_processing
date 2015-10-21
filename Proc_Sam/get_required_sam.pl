@@ -8,6 +8,8 @@
 #                 This is similar to -well_pair but filtering if XA_minNM < NM ; 
 #   Purpose 4 : Both ends aligned, and filter the NM/XA_minNM ratio. 
 #                 I don't care if the two ends map to the same chrID; 
+#   Purpose 5 : Trim aligned reads in sam file. Trim the reads from their both ends to center by given length. 
+#                 Please note thate in the new sam file, there will be no 'TAG:VALUE' pairs, and the mate-information is not correct ever. 
 use strict; 
 use warnings; 
 use SeqAlnSunhh; 
@@ -20,9 +22,12 @@ GetOptions(\%opts,
 	'uniq_pair!', # Purpose 1. 
 	'well_pair!', # Purpose 2. 
 	'best_pair!', # Purpose 3. 
-	'both_aln!', # Purpose 4. 
+	'both_aln!',  # Purpose 4. 
+	'trim_readEnds!', # Purpose 5. 
 	
 	# Local for 'well_pair'
+	# Local for 'trim_readEnd'
+	'trimLen:i', # Default 10 bp. 
 	
 	# Global filtering 
 	'max_NM_ratio:f', # Default none. Recommend 0.01 for self_mapping. 
@@ -32,7 +37,7 @@ GetOptions(\%opts,
 	'help!', 
 ); 
 
--t and !@ARGV and !( scalar(keys %opts) ) and &usage(); 
+my %t_opts = %opts; 
 
 # Global parameters. 
 #my %flag_class; 
@@ -41,10 +46,15 @@ GetOptions(\%opts,
 $opts{'max_NM_ratio'} //= -1; 
 $opts{'min_mapQ'} //= 0; 
 
+# Local parameters. 
+$opts{'trimLen'} //= 10; 
+
 
 ################################################################################
 #      Invoke sub-routines. 
 ################################################################################
+-t and !@ARGV and !( scalar(keys %t_opts) ) and &usage(); 
+
 defined $opts{'help'} and &usage(); 
 
 &tsmsg("[Rec] Begin $0\n"); 
@@ -52,6 +62,8 @@ if ( defined $opts{'uniq_pair'} or defined $opts{'well_pair'} or defined $opts{'
 	&get_uniq_pair(); 
 } elsif ( defined $opts{'both_aln'} ) {
 	&get_both_aln(); 
+} elsif ( defined $opts{'trim_readEnds'} ) {
+	&trim_readEnds(); 
 }
 
 &tsmsg("[Rec] Finish $0\n"); 
@@ -75,6 +87,9 @@ sub usage {
 #
 # -both_aln       [Boolean] Both ends aligned, and filter the NM/XA_minNM ratio by parameter -max_NM_ratio ; 
 #                   I don't care if the two ends map to the same chrID; 
+#
+# -trim_readEnds  [Boolean] Trim the reads alignment by removing the terminate bases from both ends. 
+#   -trimLen      [$opts{'trimLen'}] The trimming length from each read end. 
 # 
 # Global filtering: 
 # -max_NM_ratio   [-1] Maximum NM/rdLen ratio accepted. 
@@ -94,10 +109,11 @@ sub get_uniq_pair {
 	my $prev_chrID; 
 	while (<>) {
 		$. % 100e3 == 1 and &tsmsg("[Msg] Processing $. line.\n"); 
-		m/^\@/ and do { print; next; }; 
+		# m/^\@/ and do { print; next; }; 
 		
 		chomp; 
 		my @ta = split(/\t/, $_); 
+		($ta[0] =~ m/^@/ and @ta <= 10) and do { print STDOUT "$_\n"; next; }; 
 		# This step takes 3 times duration compared to the original one because of the TAG-to-hash calculation. 
 		# But this time increase is acceptable because the script is easier to manage. 
 		my $sam_href = &SeqAlnSunhh::sam_line2hash(\@ta, ['hDiff_Pair']); 
@@ -149,10 +165,11 @@ sub get_both_aln {
 	my %r2_flag = %{ &SeqAlnSunhh::mk_flag('keep'=>'0=1,2=0,3=0,7=1,6=0') }; 
 	while (<>) {
 		$. % 100e3 == 1 and &tsmsg("[Msg] Processing $. line.\n"); 
-		m/^\@/ and do { print; next; }; 
+		# m/^\@/ and do { print; next; }; 
 
 		chomp; 
 		my @ta = split(/\t/, $_); 
+		($ta[0] =~ m/^@/ and @ta <= 10) and do { print STDOUT "$_\n"; next; }; 
 		my $sam_href = &SeqAlnSunhh::sam_line2hash(\@ta ); 
 		defined $paired_flag{ $ta[1] } or next; 
 		my $rdID = $sam_href->{'qname'}; 
@@ -190,6 +207,31 @@ sub get_both_aln {
 		%rd_cnt_r1 = %rd_cnt_r2 = (); 
 	}
 }
+
+sub trim_readEnds {
+	my %flag_fwd = %{ &SeqAlnSunhh::mk_flag('keep'=>'2=0,4=0') }; 
+	my %flag_rev = %{ &SeqAlnSunhh::mk_flag('keep'=>'2=0,4=1') }; 
+	while (<>) {
+		chomp; 
+		my @ta = split(/\t/, $_); 
+		($ta[0] =~ m/^@/ and @ta <= 10) and do { print STDOUT "$_\n"; next; }; 
+		$ta[4] >= $opts{'min_mapQ'} or next; 
+		if ( $opts{'max_NM_ratio'} >= 0 ) {
+			my $sam_href = &SeqAlnSunhh::sam_line2hash( \@ta, ['NM', 'read_len', 'XA_minNM'] ); 
+			my $vv = &mathSunhh::min( $sam_href->{'NM'}, $sam_href->{'XA_minNM'} ); 
+			$vv > $sam_href->{'read_len'} * $opts{'max_NM_ratio'} and next; 
+		}
+		(defined $flag_fwd{$ta[1]} or defined $flag_rev{$ta[1]}) or do { print STDOUT join("\t", @ta[0 .. 10])."\n"; next; }; 
+		my ($rd_len, $ref_span) = &SeqAlnSunhh::cigar_array2len( &SeqAlnSunhh::cigar_str2array( $ta[5] ) );
+		my ($new_cigar_aref, $new_drop_lp, $new_drop_rp, $left_mv_refP, $right_mv_refP) = &SeqAlnSunhh::trim_cigar_str_bothEnd($ta[5], $opts{'trimLen'}); 
+		scalar( @$new_cigar_aref ) > 0 or next; 
+		my $new_cigar_str = &SeqAlnSunhh::cigar_array2str( $new_cigar_aref ); 
+		my $new_rd_bp = substr( $ta[9],  $new_drop_lp, $rd_len-$new_drop_lp-$new_drop_rp ); 
+		my $new_rd_qb = substr( $ta[10], $new_drop_lp, $rd_len-$new_drop_lp-$new_drop_rp ); 
+		my $new_refP = $ta[3]+$left_mv_refP; 
+		print STDOUT join("\t", @ta[0 .. 2], $new_refP, $ta[4], $new_cigar_str, @ta[6 .. 8], $new_rd_bp, $new_rd_qb)."\n"; 
+	}
+}# sub trim_readEnds 
 
 ################################################################################
 #      Inner Sub-routines
