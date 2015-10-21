@@ -167,6 +167,19 @@ flist <- read.table( file = argvs[1], stringsAsFactors=F, colClasses=c('characte
 # The first column is input file name, the second column is output file prefix. 
 library(hierfstat); 
 
+#########################################################
+##### This is a method using apply to do iteration, but it appears slower than using for
+#cnt_fst <- function ( xx ) {
+#	aa <- read.table( file=xx[1], header=T, colClasses="numeric", stringsAsFactors=F )
+#	aa.stats <- basic.stats( aa )
+#	write.table( aa.stats$perloc,  file=paste0(xx[2], ".fst.perSite", sep=""), append=F, row.names=T, col.names=NA, quote=F, sep="\t" )
+#	write.table( aa.stats$overall, file=paste0(xx[2], ".fst.perWind", sep=""), append=F, row.names=T, col.names=NA, quote=F, sep="\t" )
+#}
+#apply( X=flist, MARGIN=1, FUN=cnt_fst )
+#####
+#########################################################
+
+
 for ( i in 1:nrow(flist) ) {
 	# input file    : flist[i,1]
 	# output prefix : flist[i,2]
