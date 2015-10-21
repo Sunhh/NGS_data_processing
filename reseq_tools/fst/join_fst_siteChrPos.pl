@@ -8,12 +8,16 @@ my %opts;
 GetOptions(\%opts, 
 	"help!", 
 	"perWind!", 
+	"addSuff:s", '' 
 ); 
+$opts{'addSuff'} //= ''; 
+
 my $help_txt = <<HH; 
 
 perl $0 list_of_fst_perSiteChrPos > merged.ChrPos
 
 -perWind        [Bool]
+-addSuff        ['']
 
 HH
 
@@ -24,7 +28,7 @@ my %used;
 while (my $fn = <>) {
 	chomp($fn); 
 	my @ta = split(/\t/, $fn); 
-	my $fh = &openFH($ta[0], '<'); 
+	my $fh = &openFH("$ta[0]$opts{'addSuff'}", '<'); 
 	while (<$fh>) {
 		chomp; 
 		my @tb = split(/\t/, $_); 

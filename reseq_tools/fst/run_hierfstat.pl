@@ -32,14 +32,14 @@ if ($opts{'inList'}) {
 	my $fst_in_aref = &load_list_info( $opts{'fst_in'} ); 
 	for my $a1 (@$fst_in_aref) {
 		my $mrk2loc_href = &load_mrk_info( $a1->[2] ); 
-		&print_site_fst( "$a1->[1].fst.perSite", $mrk2loc_href,   "$a1->[1].fst.perSite.chrPos" ); 
-		&print_wind_fst( "$a1->[1].fst.perWind", $a1->[0],        "$a1->[1].fst.perWind.line" ); 
+		&print_site_fst( "$a1->[1].fst.perSite", $mrk2loc_href,   "$a1->[1].fst.perSiteChrPos" ); 
+		&print_wind_fst( "$a1->[1].fst.perWind", $a1->[0],        "$a1->[1].fst.perWindLine" ); 
 	}
 } else {
 	&run_fst_R(); 
 	my $mrk2loc_href = &load_mrk_info( $opts{'mrk_info'} ); 
-	&print_site_fst( "$opts{'fst_in'}.fst.perSite", $mrk2loc_href,   "$opts{'fst_in'}.fst.perSite.chrPos" ); 
-	&print_wind_fst( "$opts{'fst_in'}.fst.perWind", $opts{'fst_in'}, "$opts{'fst_in'}.fst.perWind.line" ); 
+	&print_site_fst( "$opts{'fst_in'}.fst.perSite", $mrk2loc_href,   "$opts{'fst_in'}.fst.perSiteChrPos" ); 
+	&print_wind_fst( "$opts{'fst_in'}.fst.perWind", $opts{'fst_in'}, "$opts{'fst_in'}.fst.perWindLine" ); 
 }
 
 &tsmsg("[Rec] done.\n"); 
