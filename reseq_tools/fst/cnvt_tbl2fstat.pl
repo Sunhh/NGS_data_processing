@@ -34,40 +34,12 @@ HH
 -t and !@ARGV and &LogInforSunhh::usage($help_txt); 
 $opts{'help'} and &LogInforSunhh::usage($help_txt); 
 
+my %allele2num = qw(A 1 C 2 G 3 T 4 N NA); 
+
 my %ind2grp = %{ &load_ind2grp( $opts{'ind2grp_list'} ) }; 
 my @use_col ; 
 my @grpIDs; 
-my %allele2num = qw(A 1 C 2 G 3 T 4 N NA); 
-
-sub load_ind2grp {
-	my %h; 
-	my $fh = &openFH( $_[0], '<' ); 
-	while (<$fh>) {
-		chomp; 
-		my @ta = split(/\t/, $_); 
-		$h{$ta[0]} = $ta[1]; 
-	}
-	close($fh); 
-	return \%h; 
-}# load_ind2grp () 
-
-unless ($opts{'noHeader'}) {
-	my $header = <>; 
-	chomp($header); 
-	my @ta = split(/\t/, $header); 
-	for (my $i=0; $i<@ta; $i++) {
-		defined $ind2grp{$ta[$i]} or next; 
-		push( @use_col, $i ); 
-		push( @grpIDs, $ind2grp{$ta[$i]} ); 
-	}
-} elsif ($opts{'indCol'}) {
-	for ( sort {$a<=>$b} keys %ind2grp ) {
-		push( @use_col, $_ ); 
-		push( @grpIDs, $ind2grp{$_} ); 
-	}
-} else {
-	&stopErr("[Err] No header or indCol assigned.\n"); 
-}
+&setup_cols( \@use_col, \@grpIDs, \%ind2grp ); 
 scalar(@use_col) > 0 or &stopErr("[Err] There is no column to be used.\n"); 
 
 my @geno; 
@@ -163,5 +135,49 @@ sub geno2num {
 	return (\@back_num); 
 }# sub geno2num() 
 
+
+sub load_ind2grp {
+	my %h; 
+	my %reset_num;
+	my $reset_num_next = 1; 
+	my $fh = &openFH( $_[0], '<' ); 
+	while (<$fh>) {
+		chomp; 
+		my @ta = split(/\t/, $_); 
+		unless ( defined $reset_num{$ta[1]} ) {
+			$reset_num{$ta[1]} = $reset_num_next; 
+			$reset_num_next ++; 
+		}
+		$h{$ta[0]} = $reset_num{$ta[1]}; 
+	}
+	close($fh); 
+	return \%h; 
+}# load_ind2grp () 
+
+sub setup_cols {
+	# $_[0] : \@use_col 
+	# $_[1] : \@grpIDs 
+	# $_[2] : \%ind2grp 
+	@{$_[0]} = (); 
+	@{$_[1]} = (); 
+	if ($opts{'noHeader'}) {
+		$opts{'indCol'} or &stopErr("[Err] No header or indCol assigned.\n"); 
+		for ( sort {$a <=> $b} keys %{$_[2]} ) {
+			push( @{$_[0]}, $_); 
+			push( @{$_[1]}, $_[2]{$_} ); 
+		}
+	} else {
+		my $header = <>; chomp($header); 
+		my @ta = split(/\t/, $header); 
+		my @tb; 
+		for (my $i=0; $i<@ta; $i++) {
+			defined $_[2]{$ta[$i]} or next; 
+			push(@tb, [$i, $_[2]{$ta[$i]}]); 
+		}
+		@{$_[0]} = map { $_->[0] } sort { $a->[1] <=> $b->[1] } @tb; 
+		@{$_[1]} = @ta[ @{$_[0]} ]; 
+	}
+	return 0; 
+}# setup_cols () 
 
 
