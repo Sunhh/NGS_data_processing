@@ -31,7 +31,7 @@ for (my $i=$colS; $i<@header; $i++) {
 	my $indv_ID = $header[$i]; 
 	$indv_ID =~ s!\s!_!g; 
 	$indv_ID =~ tr!)(][:;,!_______!; 
-	length($indv_ID) > 10 and $indv_ID = substr($indv_ID, 0, 10); 
+	length($indv_ID) > 9 and $indv_ID = substr($indv_ID, 0, 9); 
 	$indv_ID = sprintf("%-10s", $indv_ID); 
         defined $used_id{$indv_ID} and die "Repeat ID [$indv_ID]\n"; 
 	$used_id{$indv_ID} = 1; 
