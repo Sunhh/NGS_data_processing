@@ -307,7 +307,7 @@ sub splitXmlByID {
 				$status{'is_body'} = 0; 
 				$body = ''; 
 				$status{'ID'} = []; 
-			} elsif ( $status{'is_body'} == 0 and $_ =~ m!^\s*$! ) {
+			} elsif ( $status{'is_body'} == 0 and $_ =~ m/^\s*$|^\s*\<\/protein\-matches(\s+|\>)/ ) {
 				$footer = $_; 
 				$status{'is_footer'} = 1; 
 			} elsif ( $status{'is_body'} == 1 ) {
