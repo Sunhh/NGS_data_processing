@@ -147,7 +147,7 @@ while (<BN0>) {
 		}elsif ($info{get_slen} == 0 and $info{get_sdef} == 0) {
 			if (m/^$/) {
 				$info{get_sdef} = 1; 
-			} elsif (m/^Length\s*=\s*([\d,]+)$/i) { 
+			} elsif (m/^\s*Length\s*=\s*([\d,]+)$/i) { 
 				$info{slen} = $1; $info{slen} =~ s/,//g; 
 				$info{get_slen} = 1; $info{get_sdef} = 1; 
 			}else{
