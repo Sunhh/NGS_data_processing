@@ -10,15 +10,18 @@ GetOptions(\%opts,
 	"fst_in:s", 
 	"mrk_info:s", 
 	"inList!", 
+	"maxNmissR:f", # 1 
 	"exe_Rscript:s", # ~/bin/Rscript 
 ); 
 $opts{'exe_Rscript'} //= '~/bin/Rscript'; 
+$opts{'maxNmissR'} //= 1; 
 
 my $help_txt = <<HH; 
 
 perl $0 -fst_in in_fst_prefix -mrk_info mrk_info -exe_Rscript '~/bin/Rscript' 
 
 -inList      [Bool] This option mask -mrk_info . 
+-maxNmissR   [$opts{'maxNmissR'}] [0-1] Maximum N missing ratio allowed in each group. 
 
 -help
 
@@ -184,11 +187,48 @@ for ( i in 1:nrow(flist) ) {
 	# input file    : flist[i,1]
 	# output prefix : flist[i,2]
 	aa <- read.table( file= flist[i,1], header=T, colClasses="numeric", stringsAsFactors=F ) 
+	np.ttl <- nrow(aa); 
+	samp.num <- as.numeric( table( aa[,1] ) ) 
 	aa.stats <- basic.stats( aa )
-	write.table( aa.stats$perloc,  file=paste0(flist[i, 2], ".fst.perSite", sep=""), append=F, row.names=T, col.names=NA, quote=F, sep="\t" )
-	write.table( aa.stats$overall, file=paste0(flist[i, 2], ".fst.perWind", sep=""), append=F, row.names=T, col.names=NA, quote=F, sep="\t" )
-}
+	aa.stats.perloc  <- as.matrix( aa.stats$perloc ) 
+	aa.stats.overall <- aa.stats$overall 
+	aa.wc <- wc( aa )
+	aa.wc.perloc.fst <- aa.wc$per.loc$FST 
+	aa.wc.overall.fst <- aa.wc$FST 
+
 LL
+
+print {$fh} <<"L1";
+	aa.kk <- aa.stats\$n.ind.samp[,1] >= ceiling( (1-$opts{'maxNmissR'})*samp.num[1] ) \& aa.stats\$n.ind.samp[,2] >= ceiling( (1-$opts{'maxNmissR'})*samp.num[2] ) \& !is.na(aa.stats\$n.ind.samp[,1]) \& !is.na(aa.stats\$n.ind.samp[,2])
+L1
+print {$fh} <<'L2'; 
+	if ( sum(aa.kk) == 0 ) {
+		aa.stats.perloc[ !is.nan( aa.stats.perloc ) ] <- NaN
+		aa.stats.overall[ !is.na( aa.stats.overall ) ] <- NaN 
+		aa.wc.perloc.fst[ !is.na( aa.wc.perloc.fst ) ] <- NaN 
+		aa.wc.overall.fst <- NaN 
+	} else {
+		if ( sum(aa.kk) == 1 ) {
+			bb <- aa[ ,c(1, which(aa.kk)+1, which(aa.kk)+1) ] 
+		} else {
+			bb <- aa[ ,c(1, which(aa.kk)+1) ] 
+		}
+		bb.stats <- basic.stats( bb ) 
+		bb.wc <- wc( bb )
+		aa.stats.perloc.toNA <- aa.stats.perloc[ !aa.kk, ]
+		aa.stats.perloc.toNA[ !is.nan( aa.stats.perloc.toNA ) ] <- NaN
+		aa.stats.perloc[ !aa.kk, ] <- aa.stats.perloc.toNA
+		aa.stats.overall <- bb.stats$overall
+		aa.wc.perloc.fst[ !aa.kk ] <- NaN
+		aa.wc.overall.fst <- bb.wc$FST
+	}
+	out.perloc <- cbind( aa.stats.perloc, WCFst=aa.wc.perloc.fst )
+	out.overall <- c( aa.stats.overall, WCFst=aa.wc.overall.fst )
+
+	write.table( out.perloc,  file=paste0(flist[i, 2], ".fst.perSite", sep=""), append=F, row.names=T, col.names=NA, quote=F, sep="\t" )
+	write.table( out.overall, file=paste0(flist[i, 2], ".fst.perWind", sep=""), append=F, row.names=T, col.names=NA, quote=F, sep="\t" )
+}
+L2
 	close($fh); 
 	return ($_[0]); 
 }
