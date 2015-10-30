@@ -11,6 +11,7 @@ GetOptions(\%opts,
 	"mrk_info:s", 
 	"inList!", 
 	"maxNmissR:f", # 1 
+	"rmNegative!", 
 	"exe_Rscript:s", # ~/bin/Rscript 
 ); 
 $opts{'exe_Rscript'} //= '~/bin/Rscript'; 
@@ -86,9 +87,9 @@ sub print_site_fst {
 	# $_[0] : fst_in.perSite 
 	# \%mrk2loc
 	# $_[1] : fst_in.perSite.chrPos
-#   ''      Ho      Hs      Ht      Dst     Htp     Dstp    Fst     Fstp    Fis     Dest
-#   L1      0       0.386   0.3813  -0.0047 0.3766  -0.0094 -0.0123 -0.025  1       -0.0153
-#   L2      0       0.0302  0.0303  0       0.0303  1e-04   0.001   0.0021  1       1e-04
+#   ''      Ho      Hs      Ht      Dst     Htp     Dstp    Fst     Fstp    Fis     Dest     WCFst
+#   L1      0       0.386   0.3813  -0.0047 0.3766  -0.0094 -0.0123 -0.025  1       -0.0153  -0.02
+#   L2      0       0.0302  0.0303  0       0.0303  1e-04   0.001   0.0021  1       1e-04    0.0015
 	my $fh  = &openFH($_[0], '<'); 
 	my $ofh = &openFH($_[2], '>'); 
 	while (<$fh>) {
@@ -189,6 +190,11 @@ for ( i in 1:nrow(flist) ) {
 	aa <- read.table( file= flist[i,1], header=T, colClasses="numeric", stringsAsFactors=F ) 
 	np.ttl <- nrow(aa); 
 	samp.num <- as.numeric( table( aa[,1] ) ) 
+	single.loc <- 0 
+	if ( ncol(aa) == 2 ) {
+		aa <- aa[, c(1,2,2)]
+		single.loc <- 1 
+	}
 	aa.stats <- basic.stats( aa )
 	aa.stats.perloc  <- as.matrix( aa.stats$perloc ) 
 	aa.stats.overall <- aa.stats$overall 
@@ -196,10 +202,17 @@ for ( i in 1:nrow(flist) ) {
 	aa.wc.perloc.fst <- aa.wc$per.loc$FST 
 	aa.wc.overall.fst <- aa.wc$FST 
 
+	aa.kk <- rep( TRUE, length(aa.stats$n.ind.samp[,1]) )
 LL
 
+if ($opts{'rmNegative'}) {
+print {$fh} <<'L3'; 
+	aa.kk[ aa.stats.perloc[,7] < 0 & !is.nan( aa.stats.perloc[,7] ) ] <- FALSE 
+L3
+}
+
 print {$fh} <<"L1";
-	aa.kk <- aa.stats\$n.ind.samp[,1] >= ceiling( (1-$opts{'maxNmissR'})*samp.num[1] ) \& aa.stats\$n.ind.samp[,2] >= ceiling( (1-$opts{'maxNmissR'})*samp.num[2] ) \& !is.na(aa.stats\$n.ind.samp[,1]) \& !is.na(aa.stats\$n.ind.samp[,2])
+	aa.kk <- aa.stats\$n.ind.samp[,1] >= ceiling( (1-$opts{'maxNmissR'})*samp.num[1] ) \& aa.stats\$n.ind.samp[,2] >= ceiling( (1-$opts{'maxNmissR'})*samp.num[2] ) \& !is.na(aa.stats\$n.ind.samp[,1]) \& !is.na(aa.stats\$n.ind.samp[,2]) \& aa.kk 
 L1
 print {$fh} <<'L2'; 
 	if ( sum(aa.kk) == 0 ) {
@@ -224,6 +237,9 @@ print {$fh} <<'L2';
 	}
 	out.perloc <- cbind( aa.stats.perloc, WCFst=aa.wc.perloc.fst )
 	out.overall <- c( aa.stats.overall, WCFst=aa.wc.overall.fst )
+	if ( single.loc == 1 ) {
+		out.perloc <- out.perloc[1, ]
+	}
 
 	write.table( out.perloc,  file=paste0(flist[i, 2], ".fst.perSite", sep=""), append=F, row.names=T, col.names=NA, quote=F, sep="\t" )
 	write.table( out.overall, file=paste0(flist[i, 2], ".fst.perWind", sep=""), append=F, row.names=T, col.names=NA, quote=F, sep="\t" )

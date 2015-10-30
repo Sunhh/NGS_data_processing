@@ -15,13 +15,14 @@ GetOptions(\%opts,
 	"wind_length:i", "wind_step:i", 
 	"pl_snpTbl_sepByWind:s", 
 	"pl_cnvt_tbl2fstat:s", 
-	"pl_run_hierfstat:s", "maxNmissR:f", 
+	"pl_run_hierfstat:s", "maxNmissR:f", "rmNegative!", 
 	"pl_join_fst_siteChrPos:s", 
 	"exe_Rscript:s", 
 ); 
 
 my %para; 
 $para{'maxNmissR'} = ( defined $opts{'maxNmissR'} ) ? " -maxNmissR $opts{'maxNmissR'} " : "" ; 
+$para{'rmNegative'} = ( $opts{'rmNegative'} ) ? " -rmNegative " : ""; 
 
 &set_opts(); 
 
@@ -47,7 +48,7 @@ sub run_pipe {
 			&exeCmd_1cmd("mv $ta[0].fmt $ta[0]"); 
 		}
 		close F; 
-		&exeCmd_1cmd("perl $opts{'pl_run_hierfstat'} $para{'maxNmissR'} -fst_in $fn -inList -exe_Rscript $opts{'exe_Rscript'} "); 
+		&exeCmd_1cmd("perl $opts{'pl_run_hierfstat'} $para{'maxNmissR'} $para{'rmNegative'} -fst_in $fn -inList -exe_Rscript $opts{'exe_Rscript'} "); 
 		$pm->finish; 
 	}
 	$pm->wait_all_children; 
