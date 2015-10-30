@@ -46,6 +46,7 @@ sub load_taxa_lis {
 	while (<F>) {
 		chomp; 
 		my @ta= split(/\t/, $_); 
+		$ta[0] =~ s/\.fa$//; 
 		$lis{$ta[0]} //= $.; 
 	}
 	close F; 
