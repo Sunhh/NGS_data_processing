@@ -23,6 +23,7 @@ perl $0 -fst_in in_fst_prefix -mrk_info mrk_info -exe_Rscript '~/bin/Rscript'
 
 -inList      [Bool] This option mask -mrk_info . 
 -maxNmissR   [$opts{'maxNmissR'}] [0-1] Maximum N missing ratio allowed in each group. 
+-rmNegative  [Bool] Remove sites with negative Fst if given. 
 
 -help
 

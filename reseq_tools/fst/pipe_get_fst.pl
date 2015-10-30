@@ -151,6 +151,7 @@ perl $0 -snp_tbl in_snp.tbl -ind2grp_list indiv_to_grpNum -o_pref out_prefix
 -wind_length       [$opts{'wind_length'}]
 -wind_step         [$opts{'wind_step'}]
 -maxNmissR         [0-1] Maximum missing ratio allowed. Default is no control. 
+-rmNegative        [Bool] Remove sites with negative Fst if given.
 ...
 
 HH
