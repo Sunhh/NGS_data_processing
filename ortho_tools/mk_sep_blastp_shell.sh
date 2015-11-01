@@ -10,6 +10,7 @@ then
 	echo "CMD:    nohup run_cmd_in_batch.pl -cpuN 60 cmd_list_blastp_${pref} > scrn.sep_${pref}"
 else
 	echo "bash $0    in.fa    db_name    cut_num    cut_pref"
+	echo "cat ${pref}_cutted/*.blast > all.blast"
 	exit
 fi
 

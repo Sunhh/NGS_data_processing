@@ -15,14 +15,12 @@ GetOptions(\%opts,
 	"wind_length:i", "wind_step:i", 
 	"pl_snpTbl_sepByWind:s", 
 	"pl_cnvt_tbl2fstat:s", 
-	"pl_run_hierfstat:s", "maxNmissR:f", "rmNegative!", 
+	"pl_run_hierfstat:s", "maxNmissR:f", "rmNegNeiFst!", "rmNegWcFst!", 
 	"pl_join_fst_siteChrPos:s", 
 	"exe_Rscript:s", 
 ); 
 
 my %para; 
-$para{'maxNmissR'} = ( defined $opts{'maxNmissR'} ) ? " -maxNmissR $opts{'maxNmissR'} " : "" ; 
-$para{'rmNegative'} = ( $opts{'rmNegative'} ) ? " -rmNegative " : ""; 
 
 &set_opts(); 
 
@@ -48,7 +46,7 @@ sub run_pipe {
 			&exeCmd_1cmd("mv $ta[0].fmt $ta[0]"); 
 		}
 		close F; 
-		&exeCmd_1cmd("perl $opts{'pl_run_hierfstat'} $para{'maxNmissR'} $para{'rmNegative'} -fst_in $fn -inList -exe_Rscript $opts{'exe_Rscript'} "); 
+		&exeCmd_1cmd("perl $opts{'pl_run_hierfstat'} $para{'maxNmissR'} $para{'rmNegNeiFst'} $para{'rmNegWcFst'} -fst_in $fn -inList -exe_Rscript $opts{'exe_Rscript'} "); 
 		$pm->finish; 
 	}
 	$pm->wait_all_children; 
@@ -151,7 +149,8 @@ perl $0 -snp_tbl in_snp.tbl -ind2grp_list indiv_to_grpNum -o_pref out_prefix
 -wind_length       [$opts{'wind_length'}]
 -wind_step         [$opts{'wind_step'}]
 -maxNmissR         [0-1] Maximum missing ratio allowed. Default is no control. 
--rmNegative        [Bool] Remove sites with negative Fst if given.
+-rmNegNeiFst       [Bool] Set NA to sites with negative Nei_Fst if given. 
+-rmNegWcFst        [Bool] Set NA to sites with negative Wc_Fst  if given. 
 ...
 
 HH
@@ -173,6 +172,11 @@ sub set_opts {
 	$opts{'ncpu'} //= 20; 
 	$opts{'wind_length'} //= 10000; 
 	$opts{'wind_step'} //= $opts{'wind_length'}; 
+
+	$para{'maxNmissR'}   = ( defined $opts{'maxNmissR'} ) ? " -maxNmissR $opts{'maxNmissR'} " : "" ; 
+	$para{'rmNegNeiFst'} = ( $opts{'rmNegNeiFst'} ) ? " -rmNegNeiFst " : ""; 
+	$para{'rmNegWcFst'}  = ( $opts{'rmNegWcFst'}  ) ? " -rmNegWcFst  " : ""; 
+
 	return; 
 }
 

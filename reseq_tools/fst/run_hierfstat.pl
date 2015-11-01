@@ -11,19 +11,20 @@ GetOptions(\%opts,
 	"mrk_info:s", 
 	"inList!", 
 	"maxNmissR:f", # 1 
-	"rmNegative!", 
+	"rmNegNeiFst!", 
+	"rmNegWcFst!", 
 	"exe_Rscript:s", # ~/bin/Rscript 
 ); 
 $opts{'exe_Rscript'} //= '~/bin/Rscript'; 
 $opts{'maxNmissR'} //= 1; 
-
 my $help_txt = <<HH; 
 
 perl $0 -fst_in in_fst_prefix -mrk_info mrk_info -exe_Rscript '~/bin/Rscript' 
 
 -inList      [Bool] This option mask -mrk_info . 
 -maxNmissR   [$opts{'maxNmissR'}] [0-1] Maximum N missing ratio allowed in each group. 
--rmNegative  [Bool] Remove sites with negative Fst if given. 
+-rmNegNeiFst [Bool] Set NA to sites with negative Nei_Fst if given. 
+-rmNegWcFst  [Bool] Set NA to sites with negative Wc_Fst if given. 
 
 -help
 
@@ -31,6 +32,7 @@ HH
 
 $opts{'help'} and &LogInforSunhh::usage($help_txt); 
 (defined $opts{'fst_in'}) or &LogInforSunhh::usage($help_txt); 
+( $opts{'rmNegNeiFst'} >= 0 and $opts{'rmNegNeiFst'} <= 1 ) or &LogInforSunhh::usage($help_txt); 
 
 if ($opts{'inList'}) {
 	&run_fst_R_byList(); 
@@ -166,86 +168,195 @@ HH
 sub _write_fst_R_byList {
 
 	my $fh = &openFH($_[0], '>'); 
-	print {$fh} <<'LL'; 
-argvs <- commandArgs( trailingOnly=TRUE ) ; 
-flist <- read.table( file = argvs[1], stringsAsFactors=F, colClasses=c('character'), header=F ) ; 
-# The first column is input file name, the second column is output file prefix. 
-library(hierfstat); 
+	print {$fh} <<'L0'; 
+maxNR <- 1  # maximum N missing ratio [0-1]
+rmNegativeNeiFst <- FALSE # Tell if I should remove sites with nei_fst < 0 
+rmNegativeWCFst  <- FALSE # Tell if I should remove sites with wc_fst < 0 
+
+L0
+	print {$fh} "maxNR <- $opts{'maxNmissR'}\n"; 
+	$opts{'rmNegNeiFst'} and print "rmNegativeNeiFst <- TRUE\n"; 
+	$opts{'rmNegWcFst'}  and print "rmNegativeWCFst  <- TRUE\n"; 
+
+	print {$fh} <<'L1'; 
+.tsmsg <- function(...) {
+	message("[", date(), "]: ", ...)
+}# End .tsmsg
+
+library(hierfstat);
+argvs <- commandArgs( trailingOnly=TRUE ) ;
+if ( length(argvs) == 0 ) {
+	.tsmsg("[Err] Should be : ~/bin/Rscript   aa.R  file_list [AllowMaxNmissingR[0-1]   0_1_ifRmNegNeiFst   0_1_ifRmNegWcFst]\n")
+	q() 
+}
+flist <- read.table( file = argvs[1], stringsAsFactors=F, colClasses=c('character'), header=F ) ;
+# The first column is input file name, the second column is output file prefix.
+maxNR <- ifelse( !is.na(argvs[2]) & !is.na(as.numeric(argvs[2])), as.numeric(argvs[2]), maxNR )
+rmNegativeNeiFst <- switch( as.character(argvs[3]), '0'=FALSE, '1'=TRUE, 'TRUE'=TRUE, 'FALSE'=FALSE, 'T'=TRUE, 'F'=FALSE, rmNegativeNeiFst )
+rmNegativeWCFst  <- switch( as.character(argvs[4]), '0'=FALSE, '1'=TRUE, 'TRUE'=TRUE, 'FALSE'=FALSE, 'T'=TRUE, 'F'=FALSE, rmNegativeWCFst  )
+
+# Output : list( qw/ nei_perloc wc_perloc_fst nei_overall wc_overall_fst / )
+cnt_fst <- function( x=NULL, stats=NULL, maxNR=1, x.kk=NULL, rmNegativeNeiFst=FALSE, rmNegativeWCFst=FALSE ) {
+	# Note that length(x.kk) is always 1 less than nrow(x)
+	#   and x.kk should be a vector of TRUE/FALSE ; 
+	# Output : list( qw/ nei_perloc wc_perloc_fst nei_overall wc_overall_fst / )
+	back <- list() 
+	if (is.null(x)) {
+		.tsmsg("No input for x!\n")
+		q()
+	}
+	samp.ttl   <- nrow(x)
+	site.ttl   <- ncol(x)-1
+	samp.num   <- as.numeric( table( x[,1] ) )
+	site.name  <- colnames(x) ; site.name  <- site.name[-1] ; 
+	if (is.null(x.kk)) { x.kk <- rep(TRUE, times=site.ttl) }
+	if ( length(x.kk) != site.ttl ) {
+		.tsmsg("[Err] Bad length of x.kk:",length(x.kk), " VS. site.total:", site.ttl, "\n"); 
+		q(); 
+	}
+	
+	nei_perloc_colName  <- c('Ho', 'Hs', 'Ht', 'Dst', 'Htp', 'Dstp', 'Fst', 'Fstp', 'Fis', 'Dest')
+	back$nei_perloc     <- matrix( rep(NaN, times=length(nei_perloc_colName)*site.ttl), byrow=TRUE, nrow=site.ttl )
+	rownames(back$nei_perloc) <- site.name
+	colnames(back$nei_perloc) <- nei_perloc_colName
+	back$nei_overall    <- rep( NaN, times=length(nei_perloc_colName))
+	names( back$nei_overall ) <- nei_perloc_colName
+	back$wc_perloc_fst  <- rep( NaN, times=site.ttl)
+	back$wc_overall_fst <- NaN
+	back$error          <- NULL 
+	
+	# Remove sites with only NA and set it as FALSE in x.kk 
+	if ( sum(x.kk) == 0 ) {
+		return(back); 
+	} else if ( sum(x.kk) == 1 ) {
+		na.inSite <- sum( is.na( x[, c(which(x.kk)+1)] ) )
+		x.kk[x.kk][na.inSite == samp.ttl] <- FALSE
+	} else {
+		na.inSite <- apply( x[, c(which(x.kk)+1)], MARGIN=2, FUN=function(y) { sum(is.na(y)) } )
+		x.kk[x.kk][na.inSite == samp.ttl] <- FALSE
+	}
+	
+	# Check how many available sites in x.kk and determine what to do for basic.stats() 
+	if ( sum(x.kk) == 0 ) {
+		; 
+	} else if ( sum(x.kk) == 1 ) {
+		x1 <- x[, c(1, which(x.kk)+1, which(x.kk)+1)]
+		tmp.back <- cnt_fst( x=x1, stats=NULL, maxNR=maxNR, x.kk=c(TRUE,TRUE), rmNegativeNeiFst=rmNegativeNeiFst, rmNegativeWCFst=rmNegativeWCFst )
+		back$nei_overall          <- tmp.back$nei_overall 
+		back$wc_overall_fst       <- tmp.back$wc_overall_fst
+		back$wc_perloc_fst[x.kk]  <- tmp.back$wc_perloc_fst[1]
+		back$error                <- tmp.back$error 
+		
+		tmp <- matrix(tmp.back$nei_perloc[1,], nrow=1, byrow=TRUE)
+		colnames(tmp) <- colnames(tmp.back$nei_perloc)
+		rownames(tmp) <- rownames(tmp.back$nei_perloc)[1]
+		back$nei_perloc[x.kk, ] <- tmp 
+	} else if ( sum(x.kk) >= 2 ) {
+		if (is.null(stats)) {
+			x1 <- x[, c(1, which(x.kk)+1)]
+			x1.stats <- basic.stats(x1)
+			tmp.back <- cnt_fst( x=x1, stats=x1.stats, maxNR=maxNR, rmNegativeNeiFst=rmNegativeNeiFst, rmNegativeWCFst=rmNegativeWCFst )
+			back$wc_overall_fst         <- tmp.back$wc_overall_fst
+			back$nei_overall            <- tmp.back$nei_overall
+			back$wc_perloc_fst[x.kk]    <- tmp.back$wc_perloc_fst
+			back$nei_perloc[x.kk, ]     <- tmp.back$nei_perloc
+			back$error                  <- tmp.back$error 
+		} else {
+			good1 <- sum(x.kk) # Must have ( good2 >= 2 ) 
+			need_num1 <- samp.num[1]-floor(maxNR*samp.num[1])
+			need_num2 <- samp.num[2]-floor(maxNR*samp.num[2])
+			enough_num1 <- sapply( stats$n.ind.samp[,1], FUN=function(y) {isTRUE(y >= need_num1)} )
+			enough_num2 <- sapply( stats$n.ind.samp[,2], FUN=function(y) {isTRUE(y >= need_num2)} )
+			x.kk <- x.kk & enough_num1 & enough_num2
+			if (isTRUE( rmNegativeNeiFst )) {
+				x.kk <- x.kk & sapply( stats$perloc[,7], FUN=function(y) {isTRUE(y >= 0)} )
+			}
+			good2 <- sum(x.kk) # Maybe 0,1,2 .. good2 
+			x1 <- x[, c(1, which(x.kk)+1)]
+			if (good2 == 0) {
+				; 
+			} else if (good1 == good2) {
+				x1.wc <- wc(x1) 
+				if ( length(x1.wc$per.loc$FST) != sum(x.kk) ) {
+					.tsmsg("[Err] The wc() return different length of fst. Need to check input data\n")
+					back$error <- paste0("wc() return different length rawN=[", sum(x.kk),'] wcN=[',length(x1.wc$per.loc$FST),']', sep="")
+					return(back)
+				}
+				if ( isTRUE(rmNegativeWCFst) ) {
+					x1.kk <- sapply( x1.wc$per.loc$FST, FUN=function(y) {isTRUE(y >= 0)} )
+					x1.cnt_fst <- cnt_fst( x=x1, stats=NULL, x.kk=x1.kk, maxNR=maxNR, rmNegativeNeiFst=rmNegativeNeiFst, rmNegativeWCFst=FALSE )
+					back$wc_overall_fst      <- x1.cnt_fst$wc_overall_fst
+					back$nei_overall         <- x1.cnt_fst$nei_overall
+					back$wc_perloc_fst[x.kk] <- x1.cnt_fst$wc_perloc_fst
+					back$nei_perloc[x.kk,]   <- x1.cnt_fst$nei_perloc
+					back$error               <- x1.cnt_fst$error
+				} else {
+					back$wc_overall_fst      <- x1.wc$FST
+					back$nei_overall         <- stats$overall
+					back$wc_perloc_fst[x.kk] <- x1.wc$per.loc$FST
+					back$nei_perloc          <- as.matrix( stats$perloc )
+				}
+			} else if (good2 < good1) {
+				tmp.back <- cnt_fst( x=x1, stats=NULL, maxNR=maxNR, rmNegativeNeiFst=rmNegativeNeiFst, rmNegativeWCFst=rmNegativeWCFst )
+				back$wc_overall_fst      <- tmp.back$wc_overall_fst
+				back$nei_overall         <- tmp.back$nei_overall
+				back$wc_perloc_fst[x.kk] <- tmp.back$wc_perloc_fst
+				back$nei_perloc[x.kk, ]  <- tmp.back$nei_perloc
+				back$error               <- tmp.back$error
+			} else {
+				.tsmsg(paste0("Why come here? good2=", good2, " good1=", good1, sep=""))
+				q()
+			}
+		}
+	} else {
+		.tsmsg(paste0("Why come here? good2=", good2, " good1=", good1, sep=""))
+		q()
+	}
+	
+	back ; 
+}# cnt_fst()
+
+#### The main body #### 
+for ( i in 1:nrow(flist) ) {
+		# input file    : flist[i,1]
+		# output prefix : flist[i,2]
+		aa <- read.table( file= flist[i,1], header=T, colClasses="numeric", stringsAsFactors=F )
+		aa.cnt_fst <- cnt_fst( x=aa, stats=NULL, maxNR=maxNR, rmNegativeNeiFst=rmNegativeNeiFst, rmNegativeWCFst=rmNegativeWCFst )
+		if (!is.null(aa.cnt_fst$error)) {
+			.tsmsg("[Err] Bad return of cnt_fst() for file [", flist[i,1],"]; error is \"", aa.cnt_fst$error, "\"\n")
+			q()
+		}
+		
+		out.perloc  <- cbind( aa.cnt_fst$nei_perloc, WCFst=aa.cnt_fst$wc_perloc_fst )
+		out.overall <- c( aa.cnt_fst$nei_overall, WCFst=aa.cnt_fst$wc_overall_fst )
+
+		write.table( out.perloc,  file=paste0(flist[i, 2], ".fst.perSite", sep=""), append=F, row.names=T, col.names=NA, quote=F, sep="\t" )
+		write.table( out.overall, file=paste0(flist[i, 2], ".fst.perWind", sep=""), append=F, row.names=T, col.names=NA, quote=F, sep="\t" )
+}
+
+#########################################################
+##### Some information
+## About the wc() : If all of the samples' alleles in one site are NA, wc() will skip this stie. 
+##                  If all of a sub-pop's alleles in one site are NA, wc() may produce bad estimate on that site. 
+##                  So I want to remove any site in the above two cases. 
+## About basic.stats() : When there are too many sites in the above two case, basic.stats() will produce warnings(). But the matrix is full size. 
+## 
+#########################################################
 
 #########################################################
 ##### This is a method using apply to do iteration, but it appears slower than using for
 #cnt_fst <- function ( xx ) {
-#	aa <- read.table( file=xx[1], header=T, colClasses="numeric", stringsAsFactors=F )
-#	aa.stats <- basic.stats( aa )
-#	write.table( aa.stats$perloc,  file=paste0(xx[2], ".fst.perSite", sep=""), append=F, row.names=T, col.names=NA, quote=F, sep="\t" )
-#	write.table( aa.stats$overall, file=paste0(xx[2], ".fst.perWind", sep=""), append=F, row.names=T, col.names=NA, quote=F, sep="\t" )
+#       aa <- read.table( file=xx[1], header=T, colClasses="numeric", stringsAsFactors=F )
+#       aa.stats <- basic.stats( aa )
+#       write.table( aa.stats$perloc,  file=paste0(xx[2], ".fst.perSite", sep=""), append=F, row.names=T, col.names=NA, quote=F, sep="\t" )
+#       write.table( aa.stats$overall, file=paste0(xx[2], ".fst.perWind", sep=""), append=F, row.names=T, col.names=NA, quote=F, sep="\t" )
 #}
 #apply( X=flist, MARGIN=1, FUN=cnt_fst )
 #####
 #########################################################
 
 
-for ( i in 1:nrow(flist) ) {
-	# input file    : flist[i,1]
-	# output prefix : flist[i,2]
-	aa <- read.table( file= flist[i,1], header=T, colClasses="numeric", stringsAsFactors=F ) 
-	np.ttl <- nrow(aa); 
-	samp.num <- as.numeric( table( aa[,1] ) ) 
-	single.loc <- 0 
-	if ( ncol(aa) == 2 ) {
-		aa <- aa[, c(1,2,2)]
-		single.loc <- 1 
-	}
-	aa.stats <- basic.stats( aa )
-	aa.stats.perloc  <- as.matrix( aa.stats$perloc ) 
-	aa.stats.overall <- aa.stats$overall 
-	aa.wc <- wc( aa )
-	aa.wc.perloc.fst <- aa.wc$per.loc$FST 
-	aa.wc.overall.fst <- aa.wc$FST 
-
-	aa.kk <- rep( TRUE, length(aa.stats$n.ind.samp[,1]) )
-LL
-
-if ($opts{'rmNegative'}) {
-print {$fh} <<'L3'; 
-	aa.kk[ aa.stats.perloc[,7] < 0 & !is.nan( aa.stats.perloc[,7] ) ] <- FALSE 
-L3
-}
-
-print {$fh} <<"L1";
-	aa.kk <- aa.stats\$n.ind.samp[,1] >= ceiling( (1-$opts{'maxNmissR'})*samp.num[1] ) \& aa.stats\$n.ind.samp[,2] >= ceiling( (1-$opts{'maxNmissR'})*samp.num[2] ) \& !is.na(aa.stats\$n.ind.samp[,1]) \& !is.na(aa.stats\$n.ind.samp[,2]) \& aa.kk 
 L1
-print {$fh} <<'L2'; 
-	if ( sum(aa.kk) == 0 ) {
-		aa.stats.perloc[ !is.nan( aa.stats.perloc ) ] <- NaN
-		aa.stats.overall[ !is.na( aa.stats.overall ) ] <- NaN 
-		aa.wc.perloc.fst[ !is.na( aa.wc.perloc.fst ) ] <- NaN 
-		aa.wc.overall.fst <- NaN 
-	} else {
-		if ( sum(aa.kk) == 1 ) {
-			bb <- aa[ ,c(1, which(aa.kk)+1, which(aa.kk)+1) ] 
-		} else {
-			bb <- aa[ ,c(1, which(aa.kk)+1) ] 
-		}
-		bb.stats <- basic.stats( bb ) 
-		bb.wc <- wc( bb )
-		aa.stats.perloc.toNA <- aa.stats.perloc[ !aa.kk, ]
-		aa.stats.perloc.toNA[ !is.nan( aa.stats.perloc.toNA ) ] <- NaN
-		aa.stats.perloc[ !aa.kk, ] <- aa.stats.perloc.toNA
-		aa.stats.overall <- bb.stats$overall
-		aa.wc.perloc.fst[ !aa.kk ] <- NaN
-		aa.wc.overall.fst <- bb.wc$FST
-	}
-	out.perloc <- cbind( aa.stats.perloc, WCFst=aa.wc.perloc.fst )
-	out.overall <- c( aa.stats.overall, WCFst=aa.wc.overall.fst )
-	if ( single.loc == 1 ) {
-		out.perloc <- out.perloc[1, ]
-	}
-
-	write.table( out.perloc,  file=paste0(flist[i, 2], ".fst.perSite", sep=""), append=F, row.names=T, col.names=NA, quote=F, sep="\t" )
-	write.table( out.overall, file=paste0(flist[i, 2], ".fst.perWind", sep=""), append=F, row.names=T, col.names=NA, quote=F, sep="\t" )
-}
-L2
 	close($fh); 
 	return ($_[0]); 
 }
