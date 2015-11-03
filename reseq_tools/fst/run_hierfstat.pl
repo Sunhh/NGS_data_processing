@@ -175,8 +175,8 @@ rmNegativeWCFst  <- FALSE # Tell if I should remove sites with wc_fst < 0
 
 L0
 	print {$fh} "maxNR <- $opts{'maxNmissR'}\n"; 
-	$opts{'rmNegNeiFst'} and print "rmNegativeNeiFst <- TRUE\n"; 
-	$opts{'rmNegWcFst'}  and print "rmNegativeWCFst  <- TRUE\n"; 
+	$opts{'rmNegNeiFst'} and print {$fh} "rmNegativeNeiFst <- TRUE\n"; 
+	$opts{'rmNegWcFst'}  and print {$fh} "rmNegativeWCFst  <- TRUE\n"; 
 
 	print {$fh} <<'L1'; 
 .tsmsg <- function(...) {

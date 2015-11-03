@@ -43,7 +43,7 @@ perl $0 in.fastq
 -64to33       [Boolean] Transform phred64 to phred33 quality. 
 
 -rd_Num       [Boolean] Summary read number/length of fq files. 
--rd_Num_fast  [Boolean] Read simple format of fastq faster. 
+-rd_Num_fast  [Boolean] Read simple format of fastq faster. Need -rd_Num assigned. 
 
 -rd_LenHist   [Boolean] 
 -rd_LenHist_pmin   [Boolean] by paired-min. 
