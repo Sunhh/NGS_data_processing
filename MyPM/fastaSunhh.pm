@@ -187,6 +187,31 @@ sub get_fasta_seq {
 #########  Sub-functions.
 ##########################################################
 
+=head1 rcSeq( \$seq_str, $deal_tag ) 
+
+Input       : 
+ \$seq_string   : A string storing sequence without '\s' (continuous)
+ $deal_tag      : What to do with this $seq_string
+                  'r' => reverse , 
+                  'c' => complemented , 
+                  'rc' => reverse and complemented [Default] 
+Function    : Reverse and complementing a DNA string. 
+Return      : No return, just edit $seq_string . 
+
+=cut
+sub rcSeq {
+	my $seq_r = shift; 
+	my $tag = shift; $tag //= 'rc'; 
+	my ($Is_r, $Is_c) = (0, 0); 
+	$tag =~ m/r/i and $Is_r = 1; 
+	$tag =~ m/c/i and $Is_c = 1; 
+	!$Is_r and !$Is_c and &stopErr("[Err] Why do you call me rcSeq() as deal_tag is [$tag]?\n"); 
+	$Is_r and $$seq_r = reverse( $$seq_r ); 
+	$Is_c and $$seq_r =~ tr/acgturykmbvdhACGTURYKMBVDHwWsSnN/tgcaayrmkvbhdTGCAAYRMKVBHDwWsSnN/; 
+	return; 
+}# rcSeq() 
+
+
 =head1 siteList( \$expr_pattern, \$sequence_to_search, $check_mode )
 
 Input       : 
