@@ -26,7 +26,7 @@ $opts{'snp_number'} //= 1000;
 $opts{'minR'} <= $opts{'maxR'} or die "minR > maxR\n"; 
 $opts{'OutDir'} //= `pwd`; 
 chomp($opts{'OutDir'}); 
-$opts{'BinDir'} //= '/data/Sunhh/watermelon/01.source_reseq/05.structure/bin'; 
+$opts{'BinDir'} //= '/home/Sunhh/tools/github/NGS_data_processing/structure/bin'; 
 # die  "perl $0  <add_ref_list> <individual> <snp_number> <run>\n" unless ($#ARGV==2);
 my $seed_tag = ''; 
 $opts{'randSeed'} and $seed_tag = '-randSeed'; 
@@ -47,6 +47,8 @@ perl $0 -indv_txt indvID.shrtC-3 -snp_number 1000 -geno_tbl all.snp
 -minR / -maxR 
 -minK / -maxK
 -randSeed
+
+-snp_number      [$opts{'snp_number'}] Number of SNP to used in each dataset. -1 means all of SNP will be used. 
 
 
 HH
