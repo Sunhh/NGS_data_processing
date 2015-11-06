@@ -69,7 +69,7 @@ for (my $i=$opts{'startColN'}; $i<@ha; $i++) {
 	my $tot_typed = $cnt_hete[$i]+$cnt_homo[$i]; 
 	my $rat_hete = ($tot_typed > 0) ? sprintf("%02.02f", $cnt_hete[$i]/$tot_typed*100) : -1 ; 
 	my $rat_homo = ($tot_typed > 0) ? sprintf("%02.02f", $cnt_homo[$i]/$tot_typed*100) : -1 ; 
-	my $rat_miss = ($tot       > 0) ? sprintf("%02.02f", $cnt_N[$i]   /$tot_typed*100) : -1 ; 
+	my $rat_miss = ($tot       > 0) ? sprintf("%02.02f", $cnt_N[$i]   /$tot      *100) : -1 ; 
 	print "$ha[$i]\t$cnt_N[$i]\t$tot_typed\t$cnt_hete[$i]\t$cnt_homo[$i]\t$rat_hete\t$rat_homo\t$rat_miss\n";
 }
 
