@@ -48,7 +48,7 @@ while (<>) {
 	($.-1) % 1e6 == 1 and &tsmsg("[Msg] $. lines.\n"); 
 	chomp; 
 	my @ta = split(/\t/, $_); 
-	unless ($opts{'noHeader'} and @ha == 0) {
+	if ($opts{'noHeader'} and @ha == 0) {
 		for (my $i=0; $i<@ta; $i++) {
 			$ha[$i] = "Col_$i"; 
 		}
