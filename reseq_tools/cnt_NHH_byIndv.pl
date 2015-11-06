@@ -13,8 +13,6 @@ GetOptions(\%opts,
 ); 
 $opts{'startColN'} //= 2; 
 
-my $type_startColN = $opts{'startColN'}; 
-
 my $help_txt = <<HH; 
 
 Count N (missing), heterozygous, and homozygous sites per individual. 
@@ -53,7 +51,7 @@ while (<>) {
 			$ha[$i] = "Col_$i"; 
 		}
 	}
-	for (my $i=$type_startColN; $i<@ta; $i++) { 
+	for (my $i=$opts{'startColN'}; $i<@ta; $i++) { 
 		($ta[$i] eq 'N' or $ta[$i] eq 'n') and do { $cnt_N[$i]++; next; }; 
 		( $ta[$i] =~ m/^[ATGC*]$/i or $ta[$i] eq '*' or $ta[$i] =~ m/\+/ ) and do { $cnt_homo[$i]++; next; }; # The '*' and sites with \+ are treated as homozygous. I don't like genotype like 'A*', so I want to remove it before calculation. 
 		(&SNP_tbl::dna_d2b( &SNP_tbl::dna_b2d($ta[$i]) )) > 1 and do { $cnt_hete[$i]++; next; }; # Heterozygous. 
@@ -63,7 +61,7 @@ while (<>) {
 	} 
 } 
 print STDOUT join("\t", qw/IndvID N_Num Typed_Num Het_Num Hom_Num Het_Ratio Hom_Ratio N_Ratio/)."\n"; 
-for (my $i=0; $i<@ha; $i++) { 
+for (my $i=$opts{'startColN'}; $i<@ha; $i++) { 
 	$cnt_N[$i] //= 0; 
 	$cnt_hete[$i] //= 0; 
 	$cnt_homo[$i] //= 0; 
