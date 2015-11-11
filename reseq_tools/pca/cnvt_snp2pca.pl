@@ -38,6 +38,7 @@ if (@ARGV) {
 		push( @InFp, &openFH($_, '<') ); 
 	}
 }
+!@InFp and &LogInforSunhh::usage($help_txt); 
 
 my $ofh_geno = &openFH( "$opts{'opref'}.geno", '>' ); 
 my $ofh_snp  = &openFH( "$opts{'opref'}.snp",  '>' ); 
