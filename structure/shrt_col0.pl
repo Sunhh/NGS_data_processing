@@ -36,7 +36,7 @@ while (<>) {
 	my $suff = "a"; 
 	while (defined $h{$tk}) {
 		$suff++; 
-		$tk = "$ta[ $opts{'shrt_col'} ]$suff"; 
+		$tk = "$ta[$opts{'shrt_col'}]$suff"; 
 	}
 	$h{$tk} = 1; 
 	$ta[ $opts{'shrt_col'} ] = $tk; 
