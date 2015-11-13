@@ -1,0 +1,32 @@
+# CLV_4D_slct.snp 
+# GrpList/grp11_As_list
+# GrpList/grp13_CLM_list
+# GrpList/grp14_CLC_list
+# GrpList/grp16_AsAm_list
+# GrpList/grp1_As_list
+# GrpList/grp2_Am_list
+# GrpList/grp3_CLM_list
+# GrpList/grp4_CLC_list
+# GrpList/grp5_CC_list
+# GrpList/grp6_AsAm_list
+#
+# Step 1. Prepare individual file : Get id2new_slct.pca.ind.shrt 
+perl -e ' while (<>) { $. >= 3 or next; chomp; my @ta=split(/\t/, $_); $ta[0] =~ m/^([^_]+)_/ or die "$_\n"; print "$ta[0]\t$1\n"; }  ' id2new_slct | deal_table.pl -label_mark 'U' | deal_table.pl -column 1,0,2 > id2new_slct.pca.ind
+perl /home/Sunhh/tools/github/NGS_data_processing/structure/shrt_col0.pl id2new_slct.pca.ind -shrt_len 38 -shrt_col 0 > id2new_slct.pca.ind.shrt
+# Step 2. Extract SNP : Get CLV_4D_slct.snp.use 
+deal_table.pl -colByTbl id2new_slct.pca.ind -colByTbl_also 0,1 CLV_4D_slct.snp > CLV_4D_slct.snp.use
+# Step 3. Filter SNP sites according to Nmissing ratio (10%) and MAF (5%) : Get CLV_4D_slct.snp.filter01 
+perl /home/Sunhh/tools/github/NGS_data_processing/structure/03.rm_Nmiss_maf.pl -minMAF 0.05 -maxMissR 0.10 -only2allele -startColN 2 CLV_4D_slct.snp.use 
+mv CLV_4D_slct.snp.use.filter CLV_4D_slct.snp.filter01 
+# Step 4. Convert genotype table to .geno and .snp files : Get CLV_4D_slct.snp.filter01 + .geno/.snp/.pos_log 
+perl cnvt_snp2pca.pl CLV_4D_slct.snp.filter01 -opref CLV_4D_slct.snp.filter01 -startColN 2 -insertLen 1000 
+# Step 5. Run smartpca.perl 
+## /data/Sunhh/src/Evolution/EIGENSOFT/EIG6.0.1/
+perl /data/Sunhh/src/Evolution/EIGENSOFT/EIG6.0.1/bin/smartpca.perl -m 0 -i CLV_4D_slct.snp.filter01.geno -a CLV_4D_slct.snp.filter01.snp -b id2new_slct.pca.ind.shrt -o CLV_4D_slct.snp.filter01.pca -p CLV_4D_slct.snp.filter01.plot -e CLV_4D_slct.snp.filter01.eval -l CLV_4D_slct.snp.filter01.log
+# Step 6. Run twstats . 
+/data/Sunhh/src/Evolution/EIGENSOFT/EIG6.0.1/bin/twstats -t /data/Sunhh/src/Evolution/EIGENSOFT/EIG6.0.1/POPGEN/twtable -i CLV_4D_slct.snp.filter01.eval -o CLV_4D_slct.snp.filter01.out
+# Step 7. 
+
+
+
+
