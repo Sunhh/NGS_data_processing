@@ -32,7 +32,7 @@ HH
 
 $opts{'help'} and &LogInforSunhh::usage($help_txt); 
 (defined $opts{'fst_in'}) or &LogInforSunhh::usage($help_txt); 
-( $opts{'rmNegNeiFst'} >= 0 and $opts{'rmNegNeiFst'} <= 1 ) or &LogInforSunhh::usage($help_txt); 
+( $opts{'maxNmissR'} >= 0 and $opts{'maxNmissR'} <= 1 ) or &LogInforSunhh::usage($help_txt); 
 
 if ($opts{'inList'}) {
 	&run_fst_R_byList(); 
