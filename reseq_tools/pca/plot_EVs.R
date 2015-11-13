@@ -26,5 +26,6 @@ for ( i in 1:length(grpLis) ) {
 pdf( file = "plot_EVs.pdf" )
 plot( aa$EV1[kk] , aa$EV2[kk], col=indvColor[kk], pch=indvShape[kk], xlab="EV1", ylab="EV2" )
 legend( legendTag , legend=grpLis, col=grpColor, pch=grpShape)
+write.table( cbind("Grp"=grpLis, "GrpColor"=grpColor, "GrpShape"=grpShape), file="plot_EVs.para_plot", quote=FALSE, sep="\t", row.names=FALSE )
 dev.off() 
 
