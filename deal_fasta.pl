@@ -255,6 +255,7 @@ my %goodStr = qw(
 &joinR12() if ( $opts{'joinR12'} ); 
 &rna2dna() if ( $opts{'rna2dna'} ); 
 &rmTailXN() if ( $opts{'rmTailXN'} ); 
+&rmTailX_prot() if ( $opts{'rmTailX_prot'} ); 
 
 for (@InFp) {
 	close ($_); 
