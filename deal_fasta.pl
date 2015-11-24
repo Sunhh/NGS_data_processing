@@ -154,6 +154,7 @@ Usage: $0  <fasta_file | STDIN>
   -rna2dna            [Boolean] Transform 'U' to 'T'. 
 
   -rmTailXN           [Boolean] Remove continuous [\*XNxn]+ from the tail of sequence. 
+  -rmTailX_prot       [Boolean] Remove continuous [\*X]+ from the tail of sequence. 
 
 #******* Instruction of this program *********#
 HELP
@@ -185,6 +186,7 @@ GetOptions(\%opts,"help!",
 	"joinR12!", 
 	"rna2dna!", 
 	"rmTailXN!", 
+	"rmTailX_prot!", 
 	);
 &usage if ($opts{"help"}); 
 !@ARGV and -t and &usage; 
@@ -267,6 +269,21 @@ for (@InFp) {
 #****************************************************************#
 #--------------Subprogram------------Start-----------------------#
 #****************************************************************#
+
+# 2015-11-24
+sub rmTailX_prot {
+	for (my $i=0; $i<@InFp; $i+=1) {
+		my $fh1 = $InFp[$i];
+		RD:
+		while ( !eof($fh1) ) {
+			for ( my ($relHR1, $get1) = &get_fasta_seq($fh1); defined $relHR1; ($relHR1, $get1) = &get_fasta_seq($fh1) ) {
+				$relHR1->{'seq'} =~ s/\s//g; 
+				$relHR1->{'seq'} =~ s/[\*X]+$//i; 
+				print STDOUT ">$relHR1->{'head'}\n$relHR1->{'seq'}\n"; 
+			}
+                }#End while() RD:
+        }#End for
+}# sub rmTailX_prot() 
 
 # 2015-10-01 
 sub rmTailXN {
