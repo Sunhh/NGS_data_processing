@@ -2,6 +2,12 @@
 use strict; 
 use warnings; 
 use LogInforSunhh; 
+use Getopt::Long; 
+my %opts; 
+GetOptions(\%opts, 
+	"help!", 
+	"startColN:i", # 
+); 
 
 my $geno_col = 2; 
 
