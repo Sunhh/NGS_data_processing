@@ -123,13 +123,32 @@ sub load_mrk_info {
 	return \%mrk2loc; 
 }
 
-sub run_fst_R {
+sub run_fst_R_old {
 	my $tmp_R = &fileSunhh::new_tmp_file(); 
 	&_write_fst_R( $tmp_R ); 
 	&exeCmd_1cmd("$opts{'exe_Rscript'} $tmp_R $opts{'fst_in'}"); 
 	unlink($tmp_R); 
 	return $tmp_R; 
 }
+
+sub run_fst_R {
+	my $tmp_R = &fileSunhh::new_tmp_file(); 
+	&_write_fst_R_byList( $tmp_R ); 
+	my $tmp_in_list = &fileSunhh::new_tmp_file(); 
+	&_write_fst_in_list( $tmp_in_list, $opts{'fst_in'} ); 
+	&exeCmd_1cmd("$opts{'exe_Rscript'} $tmp_R $tmp_in_list"); 
+	unlink($tmp_R); 
+	unlink($tmp_in_list); 
+	return $tmp_R; 
+}
+
+sub _write_fst_in_list {
+	# $_[0] : out file name
+	# $_[1] : fst_in.fmt file. 
+	my $fh = &openFH($_[0], '>'); 
+	print {$fh} join("\t", $_[1], $_[1], 'NA')."\n"; 
+	close($fh); 
+}# _write_fst_in_list() 
 
 sub run_fst_R_byList {
 	my $tmp_R = &fileSunhh::new_tmp_file(); 
