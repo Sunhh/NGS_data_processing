@@ -670,6 +670,7 @@ sub mask_seq_by_list {
 		chomp; 
 		my @ta = split(/\t/, $_); 
 		my ($id, $ss, $ee) = @ta[0,1,2]; 
+		$ss =~ m/^\-?\d+$/ or do { &tsmsg("[Wrn] Skip bad position format: [$_]\n"); next; }; 
 		$ss <= $ee or ($ss,$ee) = ($ee, $ss); 
 		push(@{$mask_region{$id}}, [$ss, $ee]); 
 	}
