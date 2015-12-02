@@ -14,6 +14,7 @@ GetOptions(\%opts,
 	"rmNegNeiFst!", 
 	"rmNegWcFst!", 
 	"exe_Rscript:s", # ~/bin/Rscript 
+	"generateR:s", 
 ); 
 $opts{'exe_Rscript'} //= '~/bin/Rscript'; 
 $opts{'maxNmissR'} //= 1; 
@@ -26,13 +27,20 @@ perl $0 -fst_in in_fst_prefix -mrk_info mrk_info -exe_Rscript '~/bin/Rscript'
 -rmNegNeiFst [Bool] Set NA to sites with negative Nei_Fst if given. 
 -rmNegWcFst  [Bool] Set NA to sites with negative Wc_Fst if given. 
 
+-generateR   [''] Highest. 
+
 -help
 
 HH
 
 $opts{'help'} and &LogInforSunhh::usage($help_txt); 
-(defined $opts{'fst_in'}) or &LogInforSunhh::usage($help_txt); 
+(defined $opts{'fst_in'}) or defined $opts{'generateR'} or &LogInforSunhh::usage($help_txt); 
 ( $opts{'maxNmissR'} >= 0 and $opts{'maxNmissR'} <= 1 ) or &LogInforSunhh::usage($help_txt); 
+
+if (defined $opts{'generateR'} and $opts{'generateR'} ne '') {
+	&_write_fst_R_byList( $opts{'generateR'} ); 
+	exit(0); 
+}
 
 if ($opts{'inList'}) {
 	&run_fst_R_byList(); 
@@ -234,7 +242,7 @@ cnt_fst <- function( x=NULL, stats=NULL, maxNR=1, x.kk=NULL, rmNegativeNeiFst=FA
 		q(); 
 	}
 	
-	nei_perloc_colName  <- c('Ho', 'Hs', 'Ht', 'Dst', 'Htp', 'Dstp', 'Fst', 'Fstp', 'Fis', 'Dest')
+	nei_perloc_colName  <- c('Ho', 'Hs', 'Ht', 'Dst', 'Htp', 'Dstp', 'Fst', 'Fstp', 'Fis', 'Dest', 'Hs_p1', 'Hs_p2')
 	back$nei_perloc     <- matrix( rep(NaN, times=length(nei_perloc_colName)*site.ttl), byrow=TRUE, nrow=site.ttl )
 	rownames(back$nei_perloc) <- site.name
 	colnames(back$nei_perloc) <- nei_perloc_colName
@@ -311,9 +319,9 @@ cnt_fst <- function( x=NULL, stats=NULL, maxNR=1, x.kk=NULL, rmNegativeNeiFst=FA
 					back$error               <- x1.cnt_fst$error
 				} else {
 					back$wc_overall_fst      <- x1.wc$FST
-					back$nei_overall         <- stats$overall
+					back$nei_overall         <- c( stats$overall, Hs_p1=mean( stats$Hs[,1] , na.rm=TRUE), Hs_p2=mean( stats$Hs[,2], na.rm=TRUE ) )
 					back$wc_perloc_fst[x.kk] <- x1.wc$per.loc$FST
-					back$nei_perloc          <- as.matrix( stats$perloc )
+					back$nei_perloc          <- cbind( as.matrix( stats$perloc ), Hs_p1=stats$Hs[,1], Hs_p2=stats$Hs[,2] )
 				}
 			} else if (good2 < good1) {
 				tmp.back <- cnt_fst( x=x1, stats=NULL, maxNR=maxNR, rmNegativeNeiFst=rmNegativeNeiFst, rmNegativeWCFst=rmNegativeWCFst )
@@ -348,6 +356,13 @@ for ( i in 1:nrow(flist) ) {
 		
 		out.perloc  <- cbind( aa.cnt_fst$nei_perloc, WCFst=aa.cnt_fst$wc_perloc_fst )
 		out.overall <- c( aa.cnt_fst$nei_overall, WCFst=aa.cnt_fst$wc_overall_fst )
+
+		if ( ncol(out.perloc) > 11 ) {
+			out.perloc <- out.perloc[ ,c( 1:10, ncol(out.perloc) , 11:(ncol(out.perloc)-1) ) ]
+		}
+		if ( length(out.overall) > 11 ) {
+			out.overall <- out.overall[ c( 1:10, length(out.overall), 11:(length(out.overall)-1) ) ] 
+		}
 
 		write.table( out.perloc,  file=paste0(flist[i, 2], ".fst.perSite", sep=""), append=F, row.names=T, col.names=NA, quote=F, sep="\t" )
 		write.table( out.overall, file=paste0(flist[i, 2], ".fst.perWind", sep=""), append=F, row.names=T, col.names=NA, quote=F, sep="\t" )
