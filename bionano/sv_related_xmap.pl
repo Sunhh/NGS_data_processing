@@ -1,6 +1,7 @@
 #!/usr/bin/perl 
 use strict; 
 use warnings; 
+use mathSunhh; 
 use LogInforSunhh; 
 use Getopt::Long; 
 my %opts; 
@@ -36,13 +37,15 @@ while (<>) {
 
 	$ta[8] >= $opts{'minConfidence'} or next; 
 
-	my $cov_qLen = abs($ta[4]-$ta[4]); # I don't want add 1 because it shouldn't matter in the current length variations. 
+	my $cov_qLen = abs($ta[4]-$ta[3]); # I don't want add 1 because it shouldn't matter in the current length variations. 
 	my $cov_sLen = abs($ta[6]-$ta[5]); 
 	my $ttl_qLen = $ta[10]; 
 	my $ttl_sLen = $ta[11]; 
+	my $max_cov_qLen = &mathSunhh::min( &mathSunhh::max(@ta[3,4]), $ttl_qLen-&mathSunhh::min(@ta[3,4]) ); 
+	my $max_cov_sLen = &mathSunhh::min( &mathSunhh::max(@ta[5,6]), $ttl_qLen-&mathSunhh::min(@ta[5,6]) ); 
 	my $is_bad = 1; 
-	$cov_qLen >= $opts{'maxCov'} * $ttl_qLen and $is_bad = 0; 
-	$cov_sLen >= $opts{'maxCov'} * $ttl_sLen and $is_bad = 0; 
+	$cov_qLen >= $opts{'maxCov'} * $max_cov_qLen and $is_bad = 0; 
+	$cov_sLen >= $opts{'maxCov'} * $max_cov_sLen and $is_bad = 0; 
 
 	$is_bad == 1 and print STDOUT "$_\n"; 	
 }
