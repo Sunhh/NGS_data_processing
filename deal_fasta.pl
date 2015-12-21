@@ -459,7 +459,7 @@ sub baseCount {
 		while (<$fh>) {
 			chomp; 
 			my @ta = split(/\t/, $_); 
-			if ( $ta[0] eq 'ChromID' ) {
+			if ( $ta[0] =~ m/^(ChromID|key|chr|chrID)$/i  ) {
 				$is_oHead == 0 and print STDOUT join("\t", qw/Key A T G C N O All/, $_)."\n"; 
 				$is_oHead = 1; 
 				next; 
