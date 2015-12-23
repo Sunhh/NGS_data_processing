@@ -670,6 +670,7 @@ sub best_uniqCol{
 					$lines{$key} .= "\n$_"; 
 					next READING; 
 				}
+				no warnings; 
 				COMP:for (my $i=0; $i<@SelctCol; $i++) {
 					my ($slctCol,$slctRule,$originSlct) = ($SelctCol[$i],$SelctRule[$i],$OriginSelct[$i]);
 					my $sym_cmp = ($temp[$slctCol] <=> $originSlct || $temp[$slctCol] cmp $originSlct); 
