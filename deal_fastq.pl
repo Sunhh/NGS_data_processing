@@ -54,7 +54,8 @@ perl $0 in.fastq
 -frag_r       [Boolean] give out reversed string; 
 -frag_c       [Boolean] give out complemented string as DNA; 
 
--phred_scale [INT] 33/64. Set scale value to get phred quality score. 
+-phred_scale  [INT] 33/64. Set scale value to get phred quality score. 
+-guess_scale  [Boolean] Guess the phred scale if given. This will overwrite -phred_scale option. 
 
 -search       [String] Pattern to search in read. 
 -srch_strand  [f/r/b] forward/reverse/both. 
@@ -72,7 +73,7 @@ HELP
 }
 
 GetOptions(\%opts, 
-	"phred_scale:i", 
+	"phred_scale:i", "guess_scale!", 
 	"rdKey!", 
 	"fq2fa!", "oQfile:s", 
 	"fq2Val!", 
@@ -93,6 +94,8 @@ GetOptions(\%opts,
 #****************************************************************#
 
 &usage() if ( $opts{help} or ( -t and !@ARGV ) );
+$opts{'phred_scale'} //= 33; 
+defined $opts{'guess_scale'} and $opts{'phred_scale'} = undef(); 
 
 
 # Making File handles for reading;
