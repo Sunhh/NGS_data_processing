@@ -82,7 +82,7 @@ for (@kks) {
  $seq{$_} =~ s/\s//g; 
  $seq{$_} = uc($seq{$_}); 
  my $l = length($seq{$_}); 
- my $tail_tag = ($opts{rawID}) ? ":$sframe" : '' ; 
+ my $tail_tag = ($opts{rawID}) ? '' : ":$sframe" ; 
  print STDOUT ">$_${tail_tag} [sframe=$sframe]$head{$_}\n"; 
  print STDERR ">$_${tail_tag} [sframe=$sframe]$head{$_}\n"; 
  my $aa = ''; 
