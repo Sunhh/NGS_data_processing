@@ -281,7 +281,7 @@ sub sep_ctg_name {
 	print STDOUT join("\t", qw/key len coverage/)."\n"; 
 	for (my $i=0; $i<@InFp; $i+=1) {
 		my $fh1 = $InFp[$i]; 
-		while ( !eof($fh1) ) {
+		while ( <$fh1> ) {
 			m/^>(\S+)/ or next; 
 			m/^>(\S+)\s+length\s+(\d+)\s+cvg_([\d.]+)_tip_\d+\s*$/ or die "Bad name: $_\n"; 
 			my ($tk, $tl, $tc) = ($1, $2, $3); 
