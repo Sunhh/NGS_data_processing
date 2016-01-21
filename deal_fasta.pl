@@ -41,6 +41,7 @@
 ### 2015-04-09 Add -rmDefinition to keep only sequence ID in the definition line. 
 ### 2015-04-10 Reorder sequences according to an input seqID list. 
 ### 2015-06-26 Use -joinR12 to join to .fasta R1/R2 files. 
+### 2016-01-21 Use '-sep_soapdenovo_ctg_name' to separate soapdenovo contig names. 
 
 use strict;
 use warnings; 
@@ -156,6 +157,8 @@ Usage: $0  <fasta_file | STDIN>
   -rmTailXN           [Boolean] Remove continuous [\*XNxn]+ from the tail of sequence. 
   -rmTailX_prot       [Boolean] Remove continuous [\*X]+ from the tail of sequence. 
 
+  -sep_soapdenovo_ctg_name  [Boolean] Separate soapdenovo contig names. 
+
 #******* Instruction of this program *********#
 HELP
 	exit (1); 
@@ -187,6 +190,7 @@ GetOptions(\%opts,"help!",
 	"rna2dna!", 
 	"rmTailXN!", 
 	"rmTailX_prot!", 
+	"sep_soapdenovo_ctg_name!", 
 	);
 &usage if ($opts{"help"}); 
 !@ARGV and -t and &usage; 
@@ -256,6 +260,7 @@ my %goodStr = qw(
 &rna2dna() if ( $opts{'rna2dna'} ); 
 &rmTailXN() if ( $opts{'rmTailXN'} ); 
 &rmTailX_prot() if ( $opts{'rmTailX_prot'} ); 
+&sep_ctg_name() if ( $opts{'sep_soapdenovo_ctg_name'} ); 
 
 for (@InFp) {
 	close ($_); 
@@ -270,6 +275,21 @@ for (@InFp) {
 #****************************************************************#
 #--------------Subprogram------------Start-----------------------#
 #****************************************************************#
+
+# 2016-01-21 
+sub sep_ctg_name {
+	print STDOUT join("\t", qw/key len coverage/)."\n"; 
+	for (my $i=0; $i<@InFp; $i+=1) {
+		my $fh1 = $InFp[$i]; 
+		while ( !eof($fh1) ) {
+			m/^>(\S+)/ or next; 
+			m/^>(\S+)\s+length\s+(\d+)\s+cvg_([\d.]+)_tip_\d+\s*$/ or die "Bad name: $_\n"; 
+			my ($tk, $tl, $tc) = ($1, $2, $3); 
+			print STDOUT join("\t", $tk, $tl, $tc)."\n"; 
+		}
+	}
+	return; 
+}# sep_ctg_name() 
 
 # 2015-11-24
 sub rmTailX_prot {
