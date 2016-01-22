@@ -113,7 +113,7 @@ sub filter_sam {
 		chomp; 
 		my @ta = split(/\t/, $_); 
 		($ta[0] =~ m/^@/ and @ta <= 10) and do { print STDOUT "$_\n"; next; }; 
-		my $sam_href = &SeqAlnSunhh::sam_line2hash(\@ta, ['hDiff_Pair']); 
+		my $sam_href = &SeqAlnSunhh::sam_line2hash(\@ta, []); 
 
 		$sam_href->{'mapq'} >= $opts{'min_mapQ'} or do { next; }; 
 
