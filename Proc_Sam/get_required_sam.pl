@@ -10,6 +10,7 @@
 #                 I don't care if the two ends map to the same chrID; 
 #   Purpose 5 : Trim aligned reads in sam file. Trim the reads from their both ends to center by given length. 
 #                 Please note thate in the new sam file, there will be no 'TAG:VALUE' pairs, and the mate-information is not correct ever. 
+#   Purpose 6 : Filter sam alignments with global filtering rules. 
 use strict; 
 use warnings; 
 use SeqAlnSunhh; 
@@ -24,6 +25,7 @@ GetOptions(\%opts,
 	'best_pair!', # Purpose 3. 
 	'both_aln!',  # Purpose 4. 
 	'trim_readEnds!', # Purpose 5. 
+	'filter_sam!', # Purpose 6. 
 	
 	# Local for 'well_pair'
 	# Local for 'trim_readEnd'
@@ -64,6 +66,8 @@ if ( defined $opts{'uniq_pair'} or defined $opts{'well_pair'} or defined $opts{'
 	&get_both_aln(); 
 } elsif ( defined $opts{'trim_readEnds'} ) {
 	&trim_readEnds(); 
+} elsif ( defined $opts{'filter_sam'} ) {
+	&filter_sam(); 
 }
 
 &tsmsg("[Rec] Finish $0\n"); 
@@ -90,6 +94,8 @@ sub usage {
 #
 # -trim_readEnds  [Boolean] Trim the reads alignment by removing the terminate bases from both ends. 
 #   -trimLen      [$opts{'trimLen'}] The trimming length from each read end. 
+#
+# -filter_sam     [Boolean]
 # 
 # Global filtering: 
 # -max_NM_ratio   [-1] Maximum NM/rdLen ratio accepted. 
@@ -100,6 +106,29 @@ sub usage {
 HH
 	exit 1; 
 }
+
+sub filter_sam {
+	while (<>) {
+		$. % 100e3 == 1 and &tsmsg("[Msg] Processing $. line.\n"); 
+		chomp; 
+		my @ta = split(/\t/, $_); 
+		($ta[0] =~ m/^@/ and @ta <= 10) and do { print STDOUT "$_\n"; next; }; 
+		my $sam_href = &SeqAlnSunhh::sam_line2hash(\@ta, ['hDiff_Pair']); 
+
+		$sam_href->{'mapq'} >= $opts{'min_mapQ'} or do { next; }; 
+
+		if ($opts{'max_NM_ratio'} >= 0) {
+			&SeqAlnSunhh::sam_hash_addKey($sam_href, ['NM', 'read_len']); 
+			$sam_href->{'NM'} > $sam_href->{'read_len'} * $opts{'max_NM_ratio'} and do { next; }; 
+		}
+		if ($opts{'noClip'}) {
+			&SeqAlnSunhh::sam_hash_addKey($sam_href, ['cigar_href']); 
+			( $sam_href->{'cigar_href'}{'Hlen'} > 0 or $sam_href->{'cigar_href'}{'Slen'} > 0 ) and do { next; }; 
+		}
+
+		print STDOUT "$_\n"; 
+	}
+}# filter_sam() 
 
 # Local  parameters: -uniq_pair
 # Global parameters: -max_NM_ratio [:f] -min_mapQ [:i]
