@@ -155,6 +155,7 @@ for (my $i=0; $i<@{$alnInfo}; $i++) {
 		}
 		$img->setPoints(\@xdata, \@ydata, $color . ' line points dot'); 
 	}
+	@xdata=(); @ydata=(); 
 	if ( defined $scfInfo_x->{'hash'}{$chr2} and defined $scfInfo_y->{'hash'}{$chr1} ) {
 		for ( my $i=0; $i<@gen2; $i++ ) {
 			for my $j ( @{ $scfInfo_x->{'hash'}{$chr2} } ) {
