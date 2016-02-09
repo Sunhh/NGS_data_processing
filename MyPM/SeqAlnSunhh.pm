@@ -40,6 +40,7 @@ $infor_flag{ 7 } = [qw/7     0x0080  2/, "the read is the second read in a pair"
 $infor_flag{ 8 } = [qw/8     0x0100  s/, "the alignment is not primary"];
 $infor_flag{ 9 } = [qw/9     0x0200  f/, "the read fails platform/vendor quality checks"];
 $infor_flag{ 10} = [qw/10    0x0400  d/, "the read is either a PCR or an optical duplicate"];
+$infor_flag{ 11} = [qw/11    0x0800  d/, "the alignment is supplementary alignment"]; 
 
 my %flag_grp; 
 
@@ -508,7 +509,7 @@ sub _sam_flag_href {
 	my %flag; 
 	for ( 0 .. 4095 ) {
 		my $binum = unpack( "B32", pack("N", $_) ); 
-		$flag{$_} = [ reverse( split(//, sprintf("%011d", $binum) ) ) ]; 
+		$flag{$_} = [ reverse( split(//, sprintf("%012d", $binum) ) ) ]; 
 	}
 	return \%flag; 
 }# _sam_flag_href ()
@@ -544,13 +545,15 @@ $infor_flag[ 9 ] = [qw/9     0x0200  f/, "the read fails platform/vendor quality
 
 $infor_flag[ 10] = [qw/10    0x0400  d/, "the read is either a PCR or an optical duplicate"];
 
+$infor_flag{ 11} = [qw/11    0x0800  d/, "the alignment is supplementary alignment"]; 
+
 =cut
 sub sam_flag_infor {
 	my $flag_num = shift; 
 	$flag_num =~ m/^\d+$/ or &stopErr("[Err] Unknown flag_num [$flag_num] in &sam_flag_infor()\n"); 
-	$flag_num <= 2047 or &stopErr("sam_flag_number should not be larger than 2047.\n"); 
+	$flag_num <= 4095 or &stopErr("sam_flag_number should not be larger than 4095.\n"); 
 	my $binum = unpack("B32", pack("N", $flag_num)); 
-	my @flag_arr = reverse( split(//, sprintf("%011d", $binum) ) ); 
+	my @flag_arr = reverse( split(//, sprintf("%012d", $binum) ) ); 
 	my @flag_back; 
 	for (my $i=0; $i<@flag_arr; $i++) {
 		$flag_back[$i] = [ $flag_arr[$i], $infor_flag{$i}[3] ]; 
