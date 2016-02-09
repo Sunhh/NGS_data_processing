@@ -11,6 +11,7 @@
 #   Purpose 5 : Trim aligned reads in sam file. Trim the reads from their both ends to center by given length. 
 #                 Please note thate in the new sam file, there will be no 'TAG:VALUE' pairs, and the mate-information is not correct ever. 
 #   Purpose 6 : Filter sam alignments with global filtering rules. 
+#   Purpose 7 : Add 'XT:i:##' information from in_picard_illuminaAdapterMarked.bam to input sam file, changing 'XT' to 'YT'; 
 use strict; 
 use warnings; 
 use SeqAlnSunhh; 
@@ -26,15 +27,22 @@ GetOptions(\%opts,
 	'both_aln!',  # Purpose 4. 
 	'trim_readEnds!', # Purpose 5. 
 	'filter_sam!', # Purpose 6. 
+	'add_XTi!', # Purpose 7. 
 	
 	# Local for 'well_pair'
 	# Local for 'trim_readEnd'
 	'trimLen:i', # Default 10 bp. 
+
+	# Local for 'add_XTi'
+	'bam_wiXTi:s', # The .bam file with 'XT:i:##' tag. 
+	'tag4XTi:s',   # Default 'YT:i:', used to replace 'XT:i:' to avoid conflict with 'XT:A:?' ; 
 	
 	# Global filtering 
 	'max_NM_ratio:f', # Default none. Recommend 0.01 for self_mapping. 
 	'min_mapQ:i', # Default 0. 
 	'noClip!', 
+	'exe_samtools:s', # 
+	'jar_picard:s', # 
 	
 	'help!', 
 ); 
@@ -50,6 +58,7 @@ $opts{'min_mapQ'} //= 0;
 
 # Local parameters. 
 $opts{'trimLen'} //= 10; 
+$opts{'tag4XTi'} //= 'YT'; 
 
 
 ################################################################################
@@ -68,6 +77,8 @@ if ( defined $opts{'uniq_pair'} or defined $opts{'well_pair'} or defined $opts{'
 	&trim_readEnds(); 
 } elsif ( defined $opts{'filter_sam'} ) {
 	&filter_sam(); 
+} elsif ( defined $opts{'add_XTi'} ) {
+	&add_XTi(); 
 }
 
 &tsmsg("[Rec] Finish $0\n"); 
@@ -95,17 +106,68 @@ sub usage {
 # -trim_readEnds  [Boolean] Trim the reads alignment by removing the terminate bases from both ends. 
 #   -trimLen      [$opts{'trimLen'}] The trimming length from each read end. 
 #
-# -filter_sam     [Boolean]
+# -filter_sam     [Boolean] Filter sam alignments with global filtering rules. 
+#
+# -add_XTi        [Boolean] Add 'XT:i:##' information for adapter information to input sam. 
+#   -bam_wiXTi    [filename] Required with -add_XTi . The raw 'XT:i:##' exists here. 
+#   -tag4XTi      [$opts{'tag4XTi'}] A string to replace 'XT:i:'. 
 # 
 # Global filtering: 
 # -max_NM_ratio   [-1] Maximum NM/rdLen ratio accepted. 
 # -min_mapQ       [0] Minimum mapping quality accepted. 
 # -noClip         [Boolean] Do not allow hard/soft clip if given. 
+# -exe_samtools   [String] for samtools path. 
+# -jar_picard     [String] for picard.jar path. Preferred. 
 # 
 ################################################################################
 HH
 	exit 1; 
 }
+
+sub add_XTi {
+	defined $opts{'bam_wiXTi'} or &stopErr("[Err] -bam_wiXTi needed when using -add_XTi .\n"); 
+	if (defined $opts{'jar_picard'}) {
+		open(XTBAM, '-|', "java -jar $opts{'jar_picard'} ViewSam INPUT=$opts{'bam_wiXTi'} RECORDS_ONLY=true ") or &stopErr("[Err] $!\n"); 
+	} elsif (defined $opts{'exe_samtools'}) {
+		my $opt_S = ( $opts{'bam_wiXTi'} =~ m/\.sam$/i ) ? '-S' : ''; 
+		open(XTBAM, '-|', "$opts{'exe_samtools'} view $opt_S $opts{'bam_wiXTi'}") or &stopErr("[Err] $!\n"); 
+	} else {
+		&stopErr("[Err] At least need one of -jar_picard and -exe_samtools \n"); 
+	}
+	my %flag_R1 = map { $_ => 'R1' } keys %{ &SeqAlnSunhh::mk_flag( 'keep'=>'6=1' ) }; 
+	my %flag_R2 = map { $_ => 'R2' } keys %{ &SeqAlnSunhh::mk_flag( 'keep'=>'7=1' ) }; 
+	my %flag_R12 = (%flag_R1, %flag_R2); 
+	$flag_R12{'4'} //= 'R1'; 
+	my %rd2XTi; 
+	while (<XTBAM>) {
+		$. % 1e6 == 1 and &tsmsg("[Msg] Pre-reading $. reads.\n"); 
+		chomp; 
+		my @ta = split(/\t/, $_); 
+		my $xt_tag = ''; 
+		for (my $i=11; $i<@ta; $i++) {
+			$ta[$i] =~ s!^XT:i:(\S+)$!$opts{'tag4XTi'}:i:$1!o or next; 
+			$xt_tag = $ta[$i]; 
+			last; 
+		}
+		$xt_tag eq '' and next; 
+		defined $flag_R12{ $ta[1] } or &stopErr("[Err] Bad flag [$ta[1]]\n"); 
+		$rd2XTi{$ta[0]}{ $flag_R12{$ta[1]} } = $xt_tag; 
+	}
+	close(XTBAM); 
+	while (<>) {
+		$. % 1e6 == 1 and &tsmsg("[Msg] Current sam $. line.\n"); 
+		chomp; 
+		my @ta = split(/\t/, $_); 
+		scalar(@ta) >= 11 or do { $ta[0] =~ m/^@/ or &stopErr("[Err] Bad line : $_\n"); print STDOUT "$_\n"; next; }; 
+		if (defined $rd2XTi{$ta[0]}) {
+			defined $flag_R12{$ta[1]} or &stopErr("[Err] Bad flag [$ta[1]]\n"); 
+			my $r12 = $flag_R12{$ta[1]}; 
+			defined $rd2XTi{$ta[0]}{$r12} and $_ .= "\t$rd2XTi{$ta[0]}{$r12}"; 
+		}
+		print STDOUT "$_\n"; 
+	}
+	return (); 
+}# sub add_XTi() 
 
 sub filter_sam {
 	while (<>) {
@@ -128,6 +190,7 @@ sub filter_sam {
 
 		print STDOUT "$_\n"; 
 	}
+	return (); 
 }# filter_sam() 
 
 # Local  parameters: -uniq_pair
