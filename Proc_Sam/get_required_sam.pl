@@ -136,10 +136,11 @@ sub add_XTi {
 	}
 	my %flag_R1 = map { $_ => 'R1' } keys %{ &SeqAlnSunhh::mk_flag( 'keep'=>'6=1' ) }; 
 	my %flag_R2 = map { $_ => 'R2' } keys %{ &SeqAlnSunhh::mk_flag( 'keep'=>'7=1' ) }; 
+	my %flag_Rx = map { $_ => 'R1' } keys %{ &SeqAlnSunhh::mk_flag( 'keep'=>'6=0,7=0' ) }; 
 	my %flag_R12 = (%flag_R1, %flag_R2); 
-	$flag_R12{'4'} //= 'R1'; 
-	$flag_R12{'0'} //= 'R1'; 
-	$flag_R12{'16'} //= 'R1'; 
+	for my $tk (keys %flag_Rx) {
+		$flag_R12{$tk} //= 'R1'; 
+	}
 	my %rd2XTi; 
 	while (<XTBAM>) {
 		$. % 1e6 == 1 and &tsmsg("[Msg] Pre-reading $. reads.\n"); 
