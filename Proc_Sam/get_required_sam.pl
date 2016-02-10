@@ -137,19 +137,16 @@ sub add_XTi {
 	} elsif (defined $opts{'exe_samtools'}) {
 		my $opt_S = ( $opts{'bam_wiXTi'} =~ m/\.sam$/i ) ? '-S' : ''; 
 		open(XTBAM, '-|', "$opts{'exe_samtools'} view $opt_S $opts{'bam_wiXTi'}") or &stopErr("[Err] $!\n"); 
-	} elsif (-e '~/bin/picard.jar') {
-		$opts{'jar_picard'} = '~/bin/picard.jar'; 
+	} elsif (-e "$ENV{'HOME'}/bin/picard.jar") {
+		$opts{'jar_picard'} = "$ENV{'HOME'}/bin/picard.jar"; 
 		goto P1_in_add_XTi; 
 	} else {
 		&stopErr("[Err] At least need one of -jar_picard and -exe_samtools \n"); 
 	}
 	my %flag_R1 = map { $_ => 'R1' } keys %{ &SeqAlnSunhh::mk_flag( 'keep'=>'6=1' ) }; 
 	my %flag_R2 = map { $_ => 'R2' } keys %{ &SeqAlnSunhh::mk_flag( 'keep'=>'7=1' ) }; 
-	my %flag_Rx = map { $_ => 'R1' } keys %{ &SeqAlnSunhh::mk_flag( 'keep'=>'6=0,7=0' ) }; 
-	my %flag_R12 = (%flag_R1, %flag_R2); 
-	for my $tk (keys %flag_Rx) {
-		$flag_R12{$tk} //= 'R1'; 
-	}
+	my %flag_Ru = map { $_ => 'Ru' } keys %{ &SeqAlnSunhh::mk_flag( 'keep'=>'6=0,7=0' ) }; 
+	my %flag_R12 = (%flag_R1, %flag_R2, %flag_Ru); 
 	my %rd2XTi; 
 	while (<XTBAM>) {
 		$. % 1e6 == 1 and &tsmsg("[Msg] Pre-reading $. reads.\n"); 
