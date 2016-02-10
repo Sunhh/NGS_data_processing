@@ -16,6 +16,9 @@ use strict;
 use warnings; 
 use SeqAlnSunhh; 
 use mathSunhh; 
+# use IO::Handle; my $io = IO::Handle->new(); $io->fdopen(fileno(STDOUT), "w"); $io->autoflush(1);
+use FileHandle; 
+use IO::Handle; 
 use LogInforSunhh; 
 use Getopt::Long; 
 my %opts; 
@@ -46,6 +49,8 @@ GetOptions(\%opts,
 	
 	'help!', 
 ); 
+
+STDOUT->autoflush(1); 
 
 my %t_opts = %opts; 
 
@@ -157,17 +162,20 @@ sub add_XTi {
 		$rd2XTi{$ta[0]}{ $flag_R12{$ta[1]} } = $xt_tag; 
 	}
 	close(XTBAM); 
+	open(OO, '>', "/dev/stdout") or die "$!\n"; 
+	select(OO); 
+	$| = 1; 
 	while (<>) {
 		$. % 1e6 == 1 and &tsmsg("[Msg] Current sam $. line.\n"); 
 		chomp; 
 		my @ta = split(/\t/, $_); 
-		scalar(@ta) >= 11 or do { $ta[0] =~ m/^@/ or &stopErr("[Err] Bad line : $_\n"); print STDOUT "$_\n"; next; }; 
+		scalar(@ta) >= 11 or do { $ta[0] =~ m/^@/ or &stopErr("[Err] Bad line : $_\n"); print OO "$_\n"; next; }; 
 		if (defined $rd2XTi{$ta[0]}) {
 			defined $flag_R12{$ta[1]} or &stopErr("[Err] Bad flag [$ta[1]]\n"); 
 			my $r12 = $flag_R12{$ta[1]}; 
 			defined $rd2XTi{$ta[0]}{$r12} and $_ .= "\t$rd2XTi{$ta[0]}{$r12}"; 
 		}
-		print STDOUT "$_\n"; 
+		print OO "$_\n"; 
 	}
 	return (); 
 }# sub add_XTi() 
