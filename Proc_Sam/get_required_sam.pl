@@ -131,11 +131,15 @@ HH
 
 sub add_XTi {
 	defined $opts{'bam_wiXTi'} or &stopErr("[Err] -bam_wiXTi needed when using -add_XTi .\n"); 
+	P1_in_add_XTi: 
 	if (defined $opts{'jar_picard'}) {
 		open(XTBAM, '-|', "java -jar $opts{'jar_picard'} ViewSam INPUT=$opts{'bam_wiXTi'} RECORDS_ONLY=true ") or &stopErr("[Err] $!\n"); 
 	} elsif (defined $opts{'exe_samtools'}) {
 		my $opt_S = ( $opts{'bam_wiXTi'} =~ m/\.sam$/i ) ? '-S' : ''; 
 		open(XTBAM, '-|', "$opts{'exe_samtools'} view $opt_S $opts{'bam_wiXTi'}") or &stopErr("[Err] $!\n"); 
+	} elsif (-e '~/bin/picard.jar') {
+		$opts{'jar_picard'} = '~/bin/picard.jar'; 
+		goto P1_in_add_XTi; 
 	} else {
 		&stopErr("[Err] At least need one of -jar_picard and -exe_samtools \n"); 
 	}
