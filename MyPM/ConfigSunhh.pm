@@ -69,7 +69,9 @@ sub getConfig {
 		chomp; 
 		m/^\s*(#|$)/ and next; 
 		s/[^\S\t]+$//; 
-		my ($tk, $tv) = split(/\s+/, $_); 
+		$_ =~ s!^(\S+)\s+!!; 
+		my $tk = $1; 
+		my $tv = $_; 
 		while ($tv =~ m/__([^\s_]+)__/) {
 			my $pk = $1; 
 			defined $parm{'hash_r'}{$pk} or &stopErr("[Err] Unknown key [$pk]\n"); 
