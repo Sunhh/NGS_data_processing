@@ -11,8 +11,9 @@ while (<>) {
 	chomp; 
 	my @ta = split(/\t/, $_); 
 	(defined $ta[0] and $ta[0] ne "" and $ta[0] =~ m/^(\d+)$/ and $ta[0] > 0) or next; 
+	my $cov_len = $ta[12]-$ta[11]; 
 	for my $r1 (@lvls) {
-		$ta[0] >= $ta[10] * $r1 and $calc{$r1}{$ta[9]}++; 
+		$cov_len >= $ta[10] * $r1 and $calc{$r1}{$ta[9]}++; 
 	}
 }
 print STDOUT join("\t", qw/Olap_Ratio EST_Number/)."\n"; 

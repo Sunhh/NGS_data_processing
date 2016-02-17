@@ -36,6 +36,9 @@ GetOptions(\%opts,
 	
 	"addFaToGff!", # Finished. 
 	
+	"list_intron!",  # Working. 
+	 "intron_byFeat:s", # [CDS], could be 'CDS|Exon'. 
+	
 	# Filter options. 
 	"extractFeat:s", # Not used. 
 	"help!", 
@@ -90,6 +93,9 @@ sub usage {
 #                     If no featParent_ID exists, set featParent_ID=featID
 #   -joinLoc        [Boolean] Output joined table by featParent_ID, the format is like : 
 #                     LengthInFeat\\tfeatParent_ID\\tchrID\\tfeat_Start_min\\tfeat_End_max\\tStrand(+/-)\tfeat_Start_1,feat_End_1;feat_Start2,feat_End_2;...
+#----------------------------------------------------------------------------------------------------
+# -list_intron      [Boolean] Provide intron table according to '-intron_byFeat'. 
+#   -intron_byFeat  [CDS] Could be a feature of CDS/exon ; 
 #----------------------------------------------------------------------------------------------------
 # -compare2gffC     [] Name of gff3 file (gffC) to compare with. 
 #
@@ -176,31 +182,52 @@ if ( defined $opts{'getLoc'} ) {
 	my @ta = grep { $_ ne '' } map { s!^\s+|\s+$!!g; lc($_); } split(/,/, $opts{'getLoc'}); 
 	$gff_obj->_setTypeHash( $opts{'gff_top_hier'}, \@ta ); 
 }
+if ( defined $opts{'list_intron'} ) {
+	$opts{'gff_top_hier'} = {}; 
+	$opts{'intron_byFeat'} //= 'CDS'; 
+	$gff_obj->_setTypeHash( $opts{'gff_top_hier'}, [$opts{'intron_byFeat'}] ); 
+}
 $opts{'sortGffBy'} //= 'lineNum'; 
 
 
 # Step1. Read in gff file and sequence files. 
 my (%in_gff, %in_seq ); 
-{
-	my ( $in_gff_href, $in_seq_href ) = $gff_obj->read_gff3File('gffFH'=>$iFh, 'saveFa'=>$opts{'seqInGff'}, 'top_hier'=>$opts{'gff_top_hier'} ); 
-	%in_gff = %$in_gff_href; 
-	%in_seq = %$in_seq_href; 
-	if ( defined $opts{'scfFa'} ) {
-		my $tmp_kseq_href = $fas_obj->save_seq_to_hash( 'faFile'=>$opts{'scfFa'} ); 
-		for (keys %$tmp_kseq_href) {
-			if (defined $in_seq{$_}) {
-				&tsmsg("[Wrn] Skip repeated seqID [$_] in file [-scfFa $opts{'scfFa'}]\n"); 
-			} else {
-				( $in_seq{$_} = $tmp_kseq_href->{$_}{'seq'} ) =~ s!\s!!gs; 
-			}
-		}#End for 
-	}
-}
+&load_gff_fas( \%in_gff, \%in_seq ); 
 
 # Step2. Different actions. 
 if ( $opts{'addFaToGff'} ) { 
-	$gff_obj->write_gff3File( 'outFH'=>$oFh, 'gff3_href'=>\%in_gff, 'seq_href'=>\%in_seq, 'sort_by'=>$opts{'sortGffBy'} ); 
+	&action_addFaToGff(); 
 } elsif ( defined $opts{'compare2gffC'} ) {
+	&action_compare2gffC(); 
+} elsif ( $opts{'gffInRegion'} ) {
+	&action_gffInRegion(); 
+} elsif ( $opts{'ovlapLongest'} ) {
+	&action_ovlapLongest(); 
+} elsif ( defined $opts{'islandGene'} ) {
+	&action_islandGene(); 
+} elsif ( defined $opts{'gffret'} ) {
+	&action_gffret(); 
+} elsif ( $opts{'listTopID'} ) {
+	&action_listTopID(); 
+} elsif ( defined $opts{'getLoc'} ) {
+	&action_getLoc(); 
+} elsif ( $opts{'fixTgt'} ) { 
+	&action_fixTgt(); 
+} elsif ( $opts{'list_intron'} ) {
+	&action_list_intron(); 
+} else {
+	&tsmsg("[Err] No valid action.\n"); 
+	exit; 
+}
+
+################################################################################
+############### StepX. action sub-routines here. 
+################################################################################
+sub action_addFaToGff {
+	$gff_obj->write_gff3File( 'outFH'=>$oFh, 'gff3_href'=>\%in_gff, 'seq_href'=>\%in_seq, 'sort_by'=>$opts{'sortGffBy'} ); 
+}# action_addFaToGff()
+
+sub action_compare2gffC {
 	my $cFh = &openFH($opts{'compare2gffC'}, '<'); 
 	my ($co_gff_href) = $gff_obj->read_gff3File('gffFH'=>$cFh, 'saveFa'=>0, 'top_hier'=>$opts{'gff_top_hier'}); 
 	my %co_gff = %$co_gff_href; 
@@ -221,7 +248,9 @@ if ( $opts{'addFaToGff'} ) {
 	} else {
 		&stopErr("[Err] Nothing to do with -compare2gffC\n"); 
 	}
-} elsif ( $opts{'gffInRegion'} ) { 
+}# action_compare2gffC() 
+
+sub action_gffInRegion {
 	# $opts{'idType'} //= 'mRNA'; 
 	my $tmp_idType = (split(/,/, $opts{'idType'}))[0]; 
 	my $regionFh = &openFH($opts{'gffInRegion'}, '<'); 
@@ -264,7 +293,9 @@ if ( $opts{'addFaToGff'} ) {
 	$gff_obj->write_gff3File( 'outFH'=>$oFh, 'gff3_href'=>\%in_gff, 'topIDs_aref'=>$kept_topIDs_aref, 'sort_by'=>$opts{'sortGffBy'} ); 
 	
 	unlink($tmpGff); 
-} elsif ( $opts{'ovlapLongest'} ) {
+}# action_gffInRegion() 
+
+sub action_ovlapLongest {
 	$opts{'ovlapRatio'} //= -1; 
 	$opts{'ovlapLength'} //= ( ( $opts{'ovlapRatio'} == -1 ) ? 1 : -1 ); 
 	$opts{'ovlapStrand'} //= 'Both'; 
@@ -276,7 +307,9 @@ if ( $opts{'addFaToGff'} ) {
 	 'ovlapFeatType'=>$opts{'ovlapFeatType'}
 	); 
 	$gff_obj->write_gff3File( 'outFH'=>$oFh, 'gff3_href'=>\%in_gff, 'topIDs_aref'=>$kept_topIDs_aref, 'sort_by'=>$opts{'sortGffBy'} ); 
-} elsif ( defined $opts{'islandGene'} ) {
+}# action_ovlapLongest() 
+
+sub action_islandGene {
 	$opts{'islandFeatType'} //= 'CDS,exon,match_part'; 
 	$opts{'islandStrand'} //= 'Both'; 
 	
@@ -287,7 +320,9 @@ if ( $opts{'addFaToGff'} ) {
 	 'islandFlank' => $opts{'islandGene'}
 	); 
 	$gff_obj->write_gff3File( 'outFH'=>$oFh, 'gff3_href'=>\%in_gff, 'topIDs_aref'=>$kept_topIDs_aref, 'sort_by'=>$opts{'sortGffBy'} ); 
-} elsif ( defined $opts{'gffret'} ) {
+}# action_islandGene() 
+
+sub action_gffret {
 	my $kept_topIDs_aref = []; 
 	my $lisFh = &openFH($opts{'gffret'}, '<'); 
 	while (<$lisFh>) {
@@ -297,13 +332,18 @@ if ( $opts{'addFaToGff'} ) {
 	}
 	close ($lisFh); 
 	$gff_obj->write_gff3File( 'outFH'=>$oFh, 'gff3_href'=>\%in_gff, 'topIDs_aref'=>$kept_topIDs_aref, 'sort_by'=>$opts{'sortGffBy'} ); 
-} elsif ( $opts{'listTopID'} ) {
+}# action_gffret() 
+
+sub action_listTopID {
 	for ( sort { $in_gff{'ID2lineN'}{$a}<=>$in_gff{'ID2lineN'}{$b} } keys %{$in_gff{'lineN_group'}} ) {
 		my $ln = $in_gff{'ID2lineN'}{$_}; 
 		my $outFeatID = $in_gff{'lineN2hash'}{ $ln }{'attrib'}{'featID'} // $_; 
 		print {$oFh} "$outFeatID\n"; 
 	}
-} elsif ( defined $opts{'getLoc'} ) {
+}# action_listTopID () 
+
+
+sub action_getLoc {
 	my @chkTypes = map { lc($_) } split(/,/, $opts{'getLoc'}); 
 	if ( $opts{'joinLoc'} ) {
 		# featParent_ID\\tchr_ID\\tfeat_Start_min\\tfeat_End_max\\tStrand(+/-)\tfeat_Start_1,feat_End_1;feat_Start2,feat_End_2;...
@@ -361,20 +401,87 @@ if ( $opts{'addFaToGff'} ) {
 			}
 		}
 	}# End if ( $opts{'joinLoc'} ) else 
-} elsif ( $opts{'fixTgt'} ) { 
+}# action_getLoc() 
+
+sub action_list_intron {
+	print {$oFh} join("\t", qw/ParentID Intron_Order ChrID Start End Strand/)."\n"; 
+	my %ok_parentID; 
+	for my $featID ( sort { $in_gff{'ID2lineN'}{$a} <=> $in_gff{'ID2lineN'}{$b} } keys %{$in_gff{'lineN_group'}} ) {
+		my $featLn = $in_gff{'ID2lineN'}{$featID}; 
+		defined $in_gff{'lineN2hash'}{$featLn} or next; 
+		my $feat_href = $in_gff{'lineN2hash'}{$featLn}; 
+		my $rawFeatID = $feat_href->{'attrib'}{'featID'} // $featID ; 
+		my @parentIDs = sort { $a cmp $b } grep { !(defined $ok_parentID{$_}) } keys %{$in_gff{'CID2PID'}{$featID}} ; 
+		# my @parentIDs = sort { $a cmp $b } grep { !(defined $ok_parentID{$_}) } keys %{$in_gff{'lineN2hash'}{$featLn}{'attrib'}{'parentID'}} ; 
+		@parentIDs > 0 or next; 
+		# @parentIDs > 0 or @parentIDs = ( $featID ); 
+		@parentIDs > 1 and do { &tsmsg("[Wrn] Be careful! There are more than 1 parents for feature [$rawFeatID]\n"); }; 
+		for my $tid1 (@parentIDs) {
+			my %exLocLis = &id_to_locLis(\%in_gff, $tid1, [ lc($opts{'intron_byFeat'}) ]); 
+			#@{$exLocLis{'locLis'}} > 0 or next; 
+			&fix_locLis( \%exLocLis ); 
+			my %intronLoc = &interval_locLis( $exLocLis{'locLis'}, 0 ); 
+			$exLocLis{'strand'} =~ m/^[+-]$/ or &stopErr("[Err] Bad strand [$exLocLis{'strand'}]\n"); 
+			$exLocLis{'strand'} eq '-' and @{$intronLoc{'locLis'}} = reverse( @{$intronLoc{'locLis'}} ); 
+			for (my $j=0; $j<@{$intronLoc{'locLis'}}; $j++) {
+				my $k = $j+1; 
+				print {$oFh} join("\t", 
+				 $tid1, 
+				 $k, 
+				 $exLocLis{'scfID'}, 
+				 $intronLoc{'locLis'}[$j][0], 
+				 $intronLoc{'locLis'}[$j][1], 
+				 $exLocLis{'strand'} 
+				) . "\n"; 
+			}
+			$ok_parentID{$tid1} = 1; 
+		}
+	}
+	return (); 
+}# action_list_intron() 
+
+sub action_fixTgt {
 	for my $line ( grep {defined $_ and $_ !~ m!^\s*(#|$)!} values %{$in_gff{'lineN2line'}} ) {
 		my @ta = split(/\t/, $line); 
 		$ta[8] =~ s!(Target=\s*\S+\s+)0+(\s+\d+)!${1}1${2}!i; 
 		$line = join("\t", @ta); 
 	}
 	$gff_obj->write_gff3File( 'outFH'=>$oFh, 'gff3_href'=>\%in_gff, 'sort_by'=>$opts{'sortGffBy'} ); 
-} else {
-	&tsmsg("[Err] No valid action.\n"); 
-	exit; 
-}
+}# action_fixTgt() 
 
+################################################################################
+############### StepX. inner sub-routines here. 
+################################################################################
 
-# StepX. sub-routines here. 
+# Input  : (\%out_of_id_to_locLis)
+# Return : () , the input hash \%out_of_id_to_locLis will be changed (sorted by 'strand'). 
+sub fix_locLis {
+	my ($hr) = @_; 
+	for my $a1 ( @{$hr->{'locLis'}} ) {
+		$a1->[0] > $a1->[1] and ($a1->[0], $a1->[1]) = ($a1->[1], $a1->[0]); 
+	}
+	if ( $hr->{'strand'} eq '+' ) {
+		@{$hr->{'locLis'}} 
+		= 
+		map {
+		 $_->[2] //= $hr->{'strand'}; 
+		 $_->[2] eq $hr->{'strand'} or do { &tsmsg("[Wrn] Change feature_strand [$_->[2]] to [$hr->{'strand'}]\n"); $_->[2] = $hr->{'strand'}; }; 
+		 $_; 
+		} sort { $a->[0] <=> $b->[0] || $a->[1] <=> $b->[1] } @{$hr->{'locLis'}}; 
+	} elsif ( $hr->{'strand'} eq '-' ) {
+		@{$hr->{'locLis'}} 
+		= 
+		map {
+		 $_->[2] //= $hr->{'strand'}; 
+		 $_->[2] eq $hr->{'strand'} or do { &tsmsg("[Wrn] Change feature_strand [$_->[2]] to [$hr->{'strand'}]\n"); $_->[2] = $hr->{'strand'}; }; 
+		 $_; 
+		} sort { $b->[1] <=> $a->[1] || $b->[0] <=> $a->[0] } @{$hr->{'locLis'}}; 
+	} else {
+		&stopErr("[Err] Unknown strand [$hr->{'strand'}] [$hr->{'locLis'}[0] $hr->{'locLis'}[1]]\n"); 
+	}
+	return(); 
+}# fix_locLis() 
+
 
 # Input : (\%in_gff, '')
 # Output: (\@topIDs_accepted)
@@ -948,5 +1055,29 @@ sub id_to_chr {
 	}
 	return ($chrIDs[0]); 
 }#sub id_to_chr() 
+
+sub load_gff_fas {
+	my ($gff_href, $seq_href) = @_; 
+	$gff_href //= {}; 
+	$seq_href //= {}; 
+	my %in_gff = %$gff_href; 
+	my %in_seq = %$seq_href; 
+	my ( $in_gff_href, $in_seq_href ) = $gff_obj->read_gff3File('gffFH'=>$iFh, 'saveFa'=>$opts{'seqInGff'}, 'top_hier'=>$opts{'gff_top_hier'} ); 
+	%in_gff = %$in_gff_href; 
+	%in_seq = %$in_seq_href; 
+	if ( defined $opts{'scfFa'} ) {
+		my $tmp_kseq_href = $fas_obj->save_seq_to_hash( 'faFile'=>$opts{'scfFa'} ); 
+		for (keys %$tmp_kseq_href) {
+			if (defined $in_seq{$_}) {
+				&tsmsg("[Wrn] Skip repeated seqID [$_] in file [-scfFa $opts{'scfFa'}]\n"); 
+			} else {
+				( $in_seq{$_} = $tmp_kseq_href->{$_}{'seq'} ) =~ s!\s!!gs; 
+			}
+		}#End for 
+	}
+	%$gff_href = %in_gff; 
+	%$seq_href = %in_seq; 
+	return ($gff_href, $seq_href); 
+}# load_gff_fas
 
 
