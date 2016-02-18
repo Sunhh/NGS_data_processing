@@ -43,6 +43,9 @@ GetOptions(\%opts,
 	  "splitXmlByID:s", # Used to prepare input of blast2go pipeline. 
 	   "fitB2G!", 
 	  "showV4convert!", 
+	  "jnTSV_iprID!", # Used to join ipr-IDs and GO-IDs in in.iprV5.tsv file for futher usage. 
+	   "fmt_raw!",    # In .raw format in iprV4, the columns are different. 
+	   "srt_byChar!",   # Sort annotations by ther character order. 
 	# task="go"
 	  "go_obo:s", # gene_ontology_edit_20150309.obo
 	   "goIDColN:i", 
@@ -106,6 +109,13 @@ sub usage {
 #                               OutDir must not exist. 
 #               -fitB2G      : [Boolean] Use this if you are splitting xml files for B2G. 
 #                               This will add another node name 'EBIInterProScanResults'. 
+# 
+#              -jnTSV_iprID  : [Boolean] Merge ipr-IDs and GO-IDs in input.ipr.tsv file. 
+#                              Ref : https://github.com/ebi-pf-team/interproscan/wiki/OutputFormats 
+#               -fmt_raw     : [Boolean] The input table is in iprV4.raw format instead of iprV5.tsv format. 
+#               -srt_byChar  : [Boolean] Sort annotations by character order. 
+#
+#
 #              go : 
 #               -go_obo      : [gene_ontology_edit_20150309.obo] The GO .obo file being used. 
 #               -goIDColN    : [0] The column number of GO ID. 
@@ -194,10 +204,127 @@ $goType{'CELLULAR_COMPONENT'} = 'Cellular Component';
 &dbV5_to_dbV4() if ( $opts{'task'} eq 'convert' and $opts{'dbV5_to_dbV4'} ); 
 &splitXmlByID() if ( $opts{'task'} eq 'convert' and defined $opts{'splitXmlByID'} ); 
 &showV4convert() if ( $opts{'task'} eq 'convert' and $opts{'showV4convert'} ); 
+&jnTSV_iprID() if ( $opts{'task'} eq 'convert' and defined $opts{'jnTSV_iprID'} ); 
 &addInfor() if ( defined $opts{'addInfor'} ); 
 &go2ahrd() if ( defined $opts{'go2ahrd'} ); 
 
 # Sub-functions
+sub jnTSV_iprID {
+# Format of TSV : 
+# https://github.com/ebi-pf-team/interproscan/wiki/OutputFormats
+# The TSV format presents the match data in columns as follows:
+#
+# C  1: Protein Accession (e.g. P51587)
+# C  2: Sequence MD5 digest (e.g. 14086411a2cdf1c4cba63020e1622579)
+# C  3: Sequence Length (e.g. 3418)
+# C  4: Analysis (e.g. Pfam / PRINTS / Gene3D)
+# C  5: Signature Accession (e.g. PF09103 / G3DSA:2.40.50.140)
+# C  6: Signature Description (e.g. BRCA2 repeat profile)
+# C  7: Start location
+# C  8: Stop location
+# C  9: Score - is the e-value of the match reported by member database method (e.g. 3.1E-52)
+# C 10: Status - is the status of the match (T: true)
+# C 11: Date - is the date of the run
+# C 12: (InterPro annotations - accession (e.g. IPR002093) - optional column; only displayed if -iprlookup option is switched on)
+# C 13: (InterPro annotations - description (e.g. BRCA2 repeat) - optional column; only displayed if -iprlookup option is switched on)
+# C 14: (GO annotations (e.g. GO:0005515) - optional column; only displayed if --goterms option is switched on)
+# C 15: (Pathways annotations (e.g. REACT_71) - optional column; only displayed if --pathways option is switched on)
+#
+# Format of iprV4.raw : 
+# ftp://ftp.ebi.ac.uk/pub/software/unix/iprscan/4/README.html
+#
+# C  1: NF00181542	is the id of the input sequence.
+# C  2: 27A9BBAC0587AB84	is the crc64 (checksum) of the protein sequence (supposed to be unique).
+# C  3: 272	is the length of the sequence (in AA).
+# C  4: HMMPIR	is the anaysis method launched.
+# C  5: PIRSF001424	is the database members entry for this match.
+# C  6: Prephenate dehydratase	is the database member description for the entry.
+# C  7: 1	is the start of the domain match.
+# C  8: 270	is the end of the domain match.
+# C  9: 6.5e-141	is the evalue of the match (reported by member database method).
+# C 10: T	is the status of the match (T: true, ?: unknown).
+# C 11: 06-Aug-2005	is the date of the run.
+# C 12: IPR008237	is the corresponding InterPro entry (if iprlookup requested by the user).
+# C 13: Prephenate dehydratase with ACT region	is the description of the InterPro entry.
+# C 14: Molecular Function:prephenate dehydratase activity (GO:0004664)	is the GO (gene ontology) description for the InterPro entry.
+#
+#
+	my %gene_infor; 
+	my %cnt; 
+	for my $fh ( @InFp ) {
+		while (<$fh>) {
+			$cnt{'line'}++; 
+			m/^\s*(#|$)/ and next; 
+			chomp; 
+			my @ta = split(/\t/, $_); 
+			$cnt{'gene_order'}{$ta[0]} //= $cnt{'line'}; 
+
+			# For interpro-ID : Col = 11(ID) + 12(Description) 
+			if (defined $ta[11] and $ta[11] ne '') {
+				$ta[11] =~ m!^IPR\d+$! or &stopErr("[Err] Unknown iprID [$ta[11]] in line: $_\n"); 
+				$gene_infor{$ta[0]}{ipr}{$ta[11]} //= [ $cnt{'line'}, "$ta[11] ($ta[12])" ]; 
+			}
+			unless ( defined $opts{'fmt_raw'} ) {
+				# For interpro-ID : Col = 11(ID) + 12(Description) 
+				# For GO-ID : Col = 13
+				if (defined $ta[13] and $ta[13] ne '' and $ta[13] !~ m!^\s+$!) {
+					for my $tb (split(/\s*\|\s*/, $ta[13])) {
+						$tb =~ m!^GO:\d+$! or &stopErr("[Err] Unknown GO ID [$tb] in line: $_\n"); 
+						$gene_infor{$ta[0]}{'go'}{$tb} //= [ $cnt{'line'}, "$tb ()" ]; 
+					}
+				}
+				# For Pathways annotations : Col = 14
+				if (defined $ta[14] and $ta[14] ne '' and $ta[14] !~ m!^\s+$!) {
+					for my $tb (split(/\s*\|\s*/, $ta[14])) {
+						$tb =~ m!^([^\s:]+):\s+\S+$! or &stopErr("[Err] Unknown PWY infor [$tb] in line: $_\n"); 
+						$gene_infor{$ta[0]}{'pwy'}{$tb} //= [ $cnt{'line'}, $tb ]; 
+					}
+				}
+			} else {
+				# For interpro-ID : Col = 11(ID) + 12(Description) ; Same to V5; 
+				# For GO-ID : Col = 13 
+				if (defined $ta[13] and $ta[13] ne '' and $ta[13] !~ m!^\s+$!) {
+					while ( $ta[13] =~ s!^(\S.*?)\s+\((GO:\d+)\),\s+!! ) {
+						my ($desc, $id) = ($1, $2); 
+						$gene_infor{$ta[0]}{'go'}{$id} //= [ $cnt{'line'}, "$id ($desc)" ]; 
+					}
+					if ($ta[13] ne '' and $ta[13] !~ m!^\s+$!) {
+						$ta[13] =~ m!^(\S.*?)\s+\((GO:\d+)\)\s*$! or &stopErr("[Err] Bad format [$ta[13]] in line: $_\n"); 
+						my ($desc, $id) = ($1, $2); 
+						$gene_infor{$ta[0]}{'go'}{$id} //= [ $cnt{'line'}, "$id ($desc)" ]; 
+					}
+				}
+				# For Pathways annotations : Col = NA 
+			}
+		}
+	}
+
+	print {$outFh} join("\t", qw/GeneID IPRs GOs PWYs/)."\n"; 
+	for my $geneID ( sort { $cnt{'gene_order'}{$a} <=> $cnt{'gene_order'}{$b} } keys %{$cnt{'gene_order'}} ) {
+		for my $tk (qw/ipr go pwy/) {
+			$gene_infor{$geneID}{$tk} //= { '-fake' => [-1, ''] }; 
+		}
+		if (defined $opts{'srt_byChar'}) {
+			print {$outFh} join("\t", 
+			 $geneID, 
+			 join( ', ', map { $gene_infor{$geneID}{'ipr'}{$_}[1] } sort { $a cmp $b } keys %{$gene_infor{$geneID}{'ipr'}} ), 
+			 join( ', ', map { $gene_infor{$geneID}{'go' }{$_}[1] } sort { $a cmp $b } keys %{$gene_infor{$geneID}{'go' }} ), 
+			 join( ';;', map { $gene_infor{$geneID}{'pwy'}{$_}[1] } sort { $a cmp $b } keys %{$gene_infor{$geneID}{'pwy'}} ) 
+			)."\n"; 
+		} else {
+			print {$outFh} join("\t", 
+			 $geneID, 
+			 join( ', ', map { $gene_infor{$geneID}{'ipr'}{$_}[1] } sort { $gene_infor{$geneID}{'ipr'}{$a}[0] <=> $gene_infor{$geneID}{'ipr'}{$b}[0] } keys %{$gene_infor{$geneID}{'ipr'}} ), 
+			 join( ', ', map { $gene_infor{$geneID}{'go' }{$_}[1] } sort { $gene_infor{$geneID}{'go' }{$a}[0] <=> $gene_infor{$geneID}{'go' }{$b}[0] } keys %{$gene_infor{$geneID}{'go' }} ), 
+			 join( ';;', map { $gene_infor{$geneID}{'pwy'}{$_}[1] } sort { $gene_infor{$geneID}{'pwy'}{$a}[0] <=> $gene_infor{$geneID}{'pwy'}{$b}[0] } keys %{$gene_infor{$geneID}{'pwy'}} ) 
+			)."\n"; 
+		}
+	}
+
+	return(); 
+}# jnTSV_iprID() 
+
+
 sub go2ahrd {
 	my $oname_Fh = &openFH("$opts{'go2ahrd'}.GOname", '>'); 
 	my $oanno_Fh = &openFH("$opts{'go2ahrd'}.annot", '>'); 
