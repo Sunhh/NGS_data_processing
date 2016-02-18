@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# 2016-02-18 Further trimming '(Similarity to unknown protein)'; 
 use strict; 
 use warnings; 
 while (<>) {
@@ -33,6 +34,8 @@ sub trim {
 	$sss =~ s!^([^()]*\([^()]+\)[^()]*)\s*\)\s*$!$1!; 
 	$sss =~ s!^\s+|\s+$!!; 
 	$sss =~ s!^protein$!!i; 
+	$sss =~ s!\(Similarity to unknown protein\)!!i; 
+	$sss =~ s!^\s+$!!; 
 	$sss eq '' and $sss = "Unknown protein"; 
 	return $sss; 
 }
