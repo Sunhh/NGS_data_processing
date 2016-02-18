@@ -35,6 +35,8 @@ sub trim {
 	$sss =~ s!^\s+|\s+$!!; 
 	$sss =~ s!^protein$!!i; 
 	$sss =~ s!\(Similarity to unknown protein\)!!i; 
+	$sss =~ s!^Full=!!; 
+
 	$sss =~ s!^\s+$!!; 
 	$sss eq '' and $sss = "Unknown protein"; 
 	return $sss; 

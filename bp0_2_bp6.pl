@@ -7,6 +7,7 @@
 # edit 2014-06-02 Now can be used for both results from blast and blast+, and can give infor for subject_description. 
 
 use strict; 
+use fileSunhh; 
 
 #-t and !@ARGV and die "perl $0 *.bn0\n"; 
 -t and !@ARGV and &usage(); 
@@ -27,13 +28,14 @@ HELP
 	exit(0); 
 }#end for usage(); 
 
-sub openFH {
-	my $f = shift;
-	my $type = shift; (defined $type and $type =~ /^[<>|]+$/) or $type = '<';
-	local *FH;
-	open FH,$type,"$f" or die "Failed to open file [$f]:$!\n";
-	return *FH;
-}# end sub openFH
+#sub openFH {
+#	my $f = shift;
+#	my $type = shift; (defined $type and $type =~ /^[<>|]+$/) or $type = '<';
+#	local *FH;
+#	open FH,$type,"$f" or die "Failed to open file [$f]:$!\n";
+#	return *FH;
+#}# end sub openFH
+
 
 $opts{help} and &usage(); 
 
@@ -64,8 +66,9 @@ if ($opts{snp}) {
 #    When not provided, the default value is:
 #   'qseqid sseqid pident length mismatch gapopen qstart qend sstart send
 #   evalue bitscore', which is equivalent to the keyword 'std'
-open BN0,'<',"$opts{in}" or do { print "failed to open file(-in) $opts{in}. $!\n"; &usage(); }; 
-while (<BN0>) {
+my $fh_bn0 = &openFH("$opts{'in'}", '<'); 
+# open BN0,'<',"$opts{in}" or do { print "failed to open file(-in) $opts{in}. $!\n"; &usage(); }; 
+while (<$fh_bn0>) {
 	s/[^\S\t]+$//; 
 	if ($region eq 'head') {
 		if (@ta = /^Query\s*=\s*(\S+)\s*(.*)/i) {
@@ -283,8 +286,8 @@ while (<BN0>) {
 			; 
 		}
 	}
-}#end while for BN0
-close BN0; 
+}#end while for BN0 ($fh_bn0)
+close($fh_bn0); 
 $opts{snp} or close ($obn6fh); 
 
 sub outline {
