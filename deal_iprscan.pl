@@ -45,7 +45,8 @@ GetOptions(\%opts,
 	  "showV4convert!", 
 	  "jnTSV_iprID!", # Used to join ipr-IDs and GO-IDs in in.iprV5.tsv file for futher usage. 
 	   "fmt_raw!",    # In .raw format in iprV4, the columns are different. 
-	   "srt_byChar!",   # Sort annotations by ther character order. 
+	   "srt_byChar!", # Sort annotations by ther character order. 
+	   "rm_GOdesc!",  # Remove GO-description from iprV4 annotation if given. 
 	# task="go"
 	  "go_obo:s", # gene_ontology_edit_20150309.obo
 	   "goIDColN:i", 
@@ -114,6 +115,7 @@ sub usage {
 #                              Ref : https://github.com/ebi-pf-team/interproscan/wiki/OutputFormats 
 #               -fmt_raw     : [Boolean] The input table is in iprV4.raw format instead of iprV5.tsv format. 
 #               -srt_byChar  : [Boolean] Sort annotations by character order. 
+#               -rm_GOdesc   : [Boolean] Remove GO description infor if given. (should work only for V4.raw)
 #
 #
 #              go : 
@@ -286,11 +288,13 @@ sub jnTSV_iprID {
 				if (defined $ta[13] and $ta[13] ne '' and $ta[13] !~ m!^\s+$!) {
 					while ( $ta[13] =~ s!^(\S.*?)\s+\((GO:\d+)\),\s+!! ) {
 						my ($desc, $id) = ($1, $2); 
+						$opts{'rm_GOdesc'} and $desc = ''; 
 						$gene_infor{$ta[0]}{'go'}{$id} //= [ $cnt{'line'}, "$id ($desc)" ]; 
 					}
 					if ($ta[13] ne '' and $ta[13] !~ m!^\s+$!) {
 						$ta[13] =~ m!^(\S.*?)\s+\((GO:\d+)\)\s*$! or &stopErr("[Err] Bad format [$ta[13]] in line: $_\n"); 
 						my ($desc, $id) = ($1, $2); 
+						$opts{'rm_GOdesc'} and $desc = ''; 
 						$gene_infor{$ta[0]}{'go'}{$id} //= [ $cnt{'line'}, "$id ($desc)" ]; 
 					}
 				}
