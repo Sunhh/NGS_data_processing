@@ -35,8 +35,8 @@ for my $gid (sort keys %{$cnt{'gene_order'}}) {
 	print STDOUT join("\t", 
 	  $gid, 
 	  join(';; ', map { $_->[1] } sort { $a->[0] <=> $b->[0] } values %{$gene_infor{$gid}{'def'}}), 
-	  join(', ', map { $_->[1] } sort { $a->[0] <=> $b->[0] } values %{$gene_infor{$gid}{'def'}}), 
-	  join(', ', map { $_->[1] } sort { $a->[0] <=> $b->[0] } values %{$gene_infor{$gid}{'def'}}), 
+	  join(', ',  map { $_->[1] } sort { $a->[0] <=> $b->[0] } values %{$gene_infor{$gid}{'go' }}), 
+	  join(', ',  map { $_->[1] } sort { $a->[0] <=> $b->[0] } values %{$gene_infor{$gid}{'ec' }}), 
 	)."\n"; 
 }
 
