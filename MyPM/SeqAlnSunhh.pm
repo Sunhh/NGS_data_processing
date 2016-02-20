@@ -570,6 +570,7 @@ Return      : (\@cigar_num_array)
 sub cigar_str2array {
 	my $str = shift; 
 	my @back; 
+	$str eq '*' and do { $str = ''; push(@back, [-1, 'N']);  }; 
 	while ($str =~ s!^(\d+)([MIDNSHP=X])!!) {
 		push(@back, [$1, $2]); 
 	}
@@ -643,7 +644,9 @@ sub trim_cigar_arr ($$) {
 			push(@new_cigar_arr, $_); 
 			next; 
 		}
-		if ( $_->[1] =~ m/^[MP=X]$/i ) {
+		if ( $_->[0] == -1 and $_->[1] eq 'N' ) {
+			; 
+		} elsif ( $_->[1] =~ m/^[MP=X]$/i ) {
 			my ($trimmed_RdP, $rest_RdBp) = &trim_pos( $trimmed_rd_len, $_[1], $_->[0] ); 
 			$trimmed_ref_len += ($trimmed_RdP - $trimmed_rd_len); 
 			$trimmed_rd_len = $trimmed_RdP; 
@@ -691,13 +694,13 @@ Return      : (\%type2Number)
   Plen : Read 'Padded SAM' sectioin in manual. standing for '*'. (silent deletion from padded reference)
   Elen : '=', sequence match 
   Xlen : 'X', sequence mismatch 
-  Nlen : 'N', this means an intron. 
+  Nlen : 'N', this means an intron. If return '-1', it means this read is not aligned, and its cigar is '*', so its 'SpanRefLen' will be '-1' too. 
   Mlen : 'M', alignment match, can be match or mismatch. 
   Ilen : 'I', insertion to the reference. 
   Dlen : 'D', deletion from the reference. 
   Slen : 'S', soft clipping (clipped sequences present in SEQ)
   Hlen : 'H', hard clipping (clipped sequences NOT present in SEQ)
-  SpanRefLen : Mlen + Dlen + Nlen + Plen + Elen + Xlen
+  SpanRefLen : Mlen + Dlen + Nlen + Plen + Elen + Xlen. '-1' for non-aligned read. 
   RdLen      : Mlen + Ilen + Slen + Elen + Xlen
 
 =cut
@@ -709,6 +712,10 @@ sub parseCigar {
 	}
 	for my $tag (qw/SpanRefLen RdLen/) {
 		$back{$tag} = 0;
+	}
+	if ( $cigarString eq '*' ) {
+		$cigarString = ''; 
+		$back{'Nlen'} = -1; 
 	}
 	while ($cigarString =~ s/^(\d+)([MIDNSHP=X])//) {
 		# CIGAR String \*|([0-9]+[MIDNSHPX=])+
