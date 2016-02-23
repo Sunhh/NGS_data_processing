@@ -42,6 +42,7 @@ GetOptions(\%opts,
 	
 	# Global filtering 
 	'max_NM_ratio:f', # Default none. Recommend 0.01 for self_mapping. 
+	'max_NM_ratio_inRdMatch:f', # Default none. Recommend 0.01 for self_mapping.
 	'min_mapQ:i', # Default 0. 
 	'noClip!', 
 	'exe_samtools:s', # 
@@ -59,6 +60,7 @@ my %t_opts = %opts;
 #$flag_class{'hDiff_Forward'} = &SeqAlnSunhh::mk_flag( 'keep'=>'0=1,2=0,3=0,4=0,5=1' , 'drop'=>'' ); 
 #$flag_class{'hDiff_Reverse'} = &SeqAlnSunhh::mk_flag( 'keep'=>'0=1,2=0,3=0,4=1,5=0' , 'drop'=>'' ); 
 $opts{'max_NM_ratio'} //= -1; 
+$opts{'max_NM_ratio_inRdMatch'} //= -1; 
 $opts{'min_mapQ'} //= 0; 
 
 # Local parameters. 
@@ -119,6 +121,7 @@ sub usage {
 # 
 # Global filtering: 
 # -max_NM_ratio   [-1] Maximum NM/rdLen ratio accepted. 
+# -max_NM_ratio_inRdMatch [-1] NM/Match_rdLen ratio. Only for filter_sam
 # -min_mapQ       [0] Minimum mapping quality accepted. 
 # -noClip         [Boolean] Do not allow hard/soft clip if given. 
 # -exe_samtools   [String] for samtools path. 
@@ -191,6 +194,10 @@ sub filter_sam {
 
 		$sam_href->{'mapq'} >= $opts{'min_mapQ'} or do { next; }; 
 
+		if ($opts{'max_NM_ratio_inRdMatch'} >= 0) {
+			&SeqAlnSunhh::sam_hash_addKey($sam_href, ['NM', 'cigar_href']); 
+			$sam_href->{'NM'} > $sam_href->{'cigar_href'}->{'MatchRdLen'} * $opts{'max_NM_ratio_inRdMatch'} and do { next; }; 
+		}
 		if ($opts{'max_NM_ratio'} >= 0) {
 			&SeqAlnSunhh::sam_hash_addKey($sam_href, ['NM', 'read_len']); 
 			$sam_href->{'NM'} > $sam_href->{'read_len'} * $opts{'max_NM_ratio'} and do { next; }; 

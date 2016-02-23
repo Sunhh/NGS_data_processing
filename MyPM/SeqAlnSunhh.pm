@@ -702,6 +702,8 @@ Return      : (\%type2Number)
   Hlen : 'H', hard clipping (clipped sequences NOT present in SEQ)
   SpanRefLen : Mlen + Dlen + Nlen + Plen + Elen + Xlen. '-1' for non-aligned read. 
   RdLen      : Mlen + Ilen + Slen + Elen + Xlen
+  MatchRdLen : Mlen + Ilen + Elen + Xlen
+  MatchRefLen: Mlen + Dlen + Plen + Elen + Xlen # Do not include intron region!!! 
 
 =cut
 sub parseCigar {
@@ -747,6 +749,8 @@ sub parseCigar {
 	$cigarString eq '' or &stopErr("[Err] Left unknown Cigar string $cigarString\n");
 	$back{'SpanRefLen'} = $back{'Mlen'} + $back{'Dlen'} + $back{'Nlen'} + $back{'Plen'} + $back{'Elen'} + $back{'Xlen'};
 	$back{'RdLen'} = $back{'Mlen'} + $back{'Ilen'} + $back{'Slen'} + $back{'Elen'} + $back{'Xlen'};
+	$back{'MatchRdLen'} = $back{'Mlen'} + $back{'Ilen'} + $back{'Elen'} + $back{'Xlen'}; 
+	$back{'MatchRefLen'} = $back{'Mlen'} + $back{'Dlen'} + $back{'Plen'} + $back{'Elen'} + $back{'Xlen'}; 
 	return \%back;
 
 }# sub parseCigar() 
