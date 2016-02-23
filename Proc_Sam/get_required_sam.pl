@@ -186,7 +186,7 @@ sub add_XTi {
 
 sub filter_sam {
 	while (<>) {
-		$. % 100e3 == 1 and &tsmsg("[Msg] Processing $. line.\n"); 
+		$. % 1000e3 == 1 and &tsmsg("[Msg] Processing $. line.\n"); 
 		chomp; 
 		my @ta = split(/\t/, $_); 
 		($ta[0] =~ m/^@/ and @ta <= 10) and do { print STDOUT "$_\n"; next; }; 
