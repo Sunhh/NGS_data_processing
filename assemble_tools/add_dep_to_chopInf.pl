@@ -4,8 +4,34 @@ use warnings;
 use LogInforSunhh; 
 use fileSunhh; 
 use mathSunhh; 
+use Getopt::Long; 
+my %opts; 
+GetOptions(\%opts, 
+	"help!", 
+	"wind_len:i", # default 100
+	"wind_step:i", # Default -wind_len 
+); 
 
-!@ARGV and die "perl $0 pen_R01.ctg.fa.chop_info in.bam.dep > pen_R01.ctg.fa.chop_info_aD\n"; 
+my $help_txt = <<HH; 
+
+perl $0 pen_R01.ctg.fa.chop_info in.bam.dep > pen_R01.ctg.fa.chop_info_aD
+
+# Method to generate in.chop_info : 
+# perl deal_fasta.pl pen_R01.scf_Gt5h.fa -chop_seq -chop_len 100 -chop_step 100 -chop_min 100 -chop_info > pen_R01.scf_Gt5h.fa.chop_info
+# ### The .chop_info format : key     WI      WS      WE      GC      AG      Wkey    All     N    wN
+
+-help
+
+-wind_len       [100]. 
+-wind_step      [-wind_len]. 
+
+
+HH
+
+$opts{'wind_len'} //= 100; 
+$opts{'wind_step'} //= $opts{'wind_len'}; 
+
+!@ARGV and &LogInforSunhh::usage($help_txt); 
 
 my $info_file = shift; 
 
@@ -20,13 +46,33 @@ while (<>) {
 	chomp; 
 	my @ta = split(/\t/, $_); 
 	defined $wInfo{$ta[0]} or next; 
-	my $idx = int( ($ta[1]-1)/100 )+1; 
-	defined $wInfo{$ta[0]}{$idx} or next; 
-	push(@{$wInfo{$ta[0]}{$idx}[1]}, $ta[2]); 
+	my ( $idx_aref ) = &idx_by_WL_WStep( $ta[1], $opts{'wind_len'}, $opts{'wind_step'} ); 
+	for my $idx ( @$idx_aref ) {
+		defined $wInfo{$ta[0]}{$idx} or next; 
+		push(@{$wInfo{$ta[0]}{$idx}[1]}, $ta[2]); 
+	}
 }
 
-for my $cid (keys %wInfo) {
-	for my $wi ( keys %{$wInfo{$cid}} ) {
+sub idx_by_WL_WStep {
+	my ($p, $len, $step, $start) = @_; 
+	$start //= 1; 
+
+	my @back; 
+	my $med_idx = int( ($p-$start+1-1)/$len )+1; 
+	for (my $i=$med_idx; $i>0; $i--) {
+		$start+($i-1)*$step+$len-1 < $p and last; 
+		$start+($i-1)*$step > $p and &stopErr("[Err] Something wrong! $start+($i-1)*$step > $p (\$p)\n"); 
+		unshift(@back, $i); 
+	}
+	for (my $i=$med_idx+1; $start+($i-1)*$step <= $p; $i++) {
+		push(@back, $i); 
+	}
+
+	return(\@back); 
+} # sub idx_by_WL_WStep() 
+
+for my $cid (sort keys %wInfo) {
+	for my $wi ( sort { $a <=> $b } keys %{$wInfo{$cid}} ) {
 		if ( @{$wInfo{$cid}{$wi}[1]} < 50 ) {
 			print STDOUT "$wInfo{$cid}{$wi}[0]\t0\t0\n"; 
 			next; 

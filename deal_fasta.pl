@@ -149,6 +149,7 @@ Usage: $0  <fasta_file | STDIN>
   -chop_step          [chop_len] Distance of two closest pieces' start position. 
   -chop_min           [0] Minimum length of pieces. 
   -chop_noPos         [Boolean] Default add raw position of pieces. 
+  -chop_info          [Boolean] If given, the output is a table instead of a sequence file. 
 
   -joinR12            [Boolean] Input files as paired, and join R1/R2 reads in a same stream. 
 
@@ -185,7 +186,7 @@ GetOptions(\%opts,"help!",
 	"fa2fq!", "fa2fqQChar:s", "fq2fa!", 
 	"replaceID!", "replaceIDlist:s", "replaceIDcol:s", "replaceIDadd!", 
 	"reorderByList:s", 
-	"chop_seq!", "chop_len:i", "chop_step:i", "chop_min:i", "chop_noPos!", 
+	"chop_seq!", "chop_len:i", "chop_step:i", "chop_min:i", "chop_noPos!", "chop_info!", 
 	"joinR12!", 
 	"rna2dna!", 
 	"rmTailXN!", 
@@ -359,12 +360,20 @@ sub chop_seq {
 	$opts{'chop_len'}  //= 100; 
 	$opts{'chop_step'} //= $opts{'chop_len'}; 
 	$opts{'chop_min'}  //= 0; 
+
+	if ($opts{'chop_info'}) {
+		print STDOUT join("\t", qw/key WI WS WE GC AG Wkey len N wN/)."\n"; 
+	}
 	
 	for my $fh ( @InFp ) {
 		for ( my ($relHR, $get) = &get_fasta_seq($fh); defined $relHR; ($relHR, $get) = &get_fasta_seq($fh) ) {
 			$relHR->{'seq'} =~ s!\s!!g; 
 			my $seqLen = length( $relHR->{'seq'} ); 
 			my $tkey = $relHR->{'key'} ; 
+			my %cnt; 
+			if ( $opts{'chop_info'} ) {
+				$cnt{'N'} = ( $relHR->{'seq'} =~ tr/nN/nN/ ); 
+			}
 			for (my $i=1; ($i-1) * $opts{'chop_step'} + 1 < $seqLen ; $i++) {
 				my $s = ($i-1) * $opts{'chop_step'} + 1 ; 
 				my $e = $s + $opts{'chop_len'} - 1; 
@@ -373,7 +382,20 @@ sub chop_seq {
 				my $sub_seq = substr( $relHR->{'seq'}, $s-1, $e-$s+1 ); 
 				my $tag = " [${s}-${e}]"; 
 				$opts{'chop_noPos'} and $tag = ''; 
-				print STDOUT ">${tkey}_$i${tag}\n$sub_seq\n"; 
+				if ( $opts{'chop_info'} ) {
+					my $c_a = ( $sub_seq =~ tr/aA/aA/ ); 
+					my $c_t = ( $sub_seq =~ tr/tT/tT/ ); 
+					my $c_g = ( $sub_seq =~ tr/gG/gG/ ); 
+					my $c_c = ( $sub_seq =~ tr/cC/cC/ ); 
+					my $c_all = ($c_a+$c_t+$c_g+$c_c); 
+					my $gc = ( $c_all > 0 ) ? sprintf("%0.4f", ($c_g+$c_c)/$c_all) : 'Null' ; 
+					my $ag = ( $c_all > 0 ) ? sprintf("%0.4f", ($c_g+$c_a)/$c_all) : 'Null' ; 
+					my $wn = $e-$s+1 - $c_all; 
+					
+					print STDOUT join("\t", $tkey, $i, $s, $e, $gc, $ag, "${tkey}_$i", $seqLen, $cnt{'N'}, $wn)."\n"; 
+				} else {
+					print STDOUT ">${tkey}_$i${tag}\n$sub_seq\n"; 
+				}
 				$e >= $seqLen and last; 
 			}
 		}
