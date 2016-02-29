@@ -199,8 +199,8 @@ sub filter_sam {
 			$sam_href->{'NM'} > $sam_href->{'cigar_href'}->{'MatchRdLen'} * $opts{'max_NM_ratio_inRdMatch'} and do { next; }; 
 		}
 		if ($opts{'max_NM_ratio'} >= 0) {
-			&SeqAlnSunhh::sam_hash_addKey($sam_href, ['NM', 'read_len']); 
-			$sam_href->{'NM'} > $sam_href->{'read_len'} * $opts{'max_NM_ratio'} and do { next; }; 
+			&SeqAlnSunhh::sam_hash_addKey($sam_href, ['NM', 'read_len', 'cigar_href']); 
+			$sam_href->{'NM'} + $sam_href->{'cigar_href'}{'Hlen'} + $sam_href->{'cigar_href'}{'Slen'} > $sam_href->{'read_len'} * $opts{'max_NM_ratio'} and do { next; }; 
 		}
 		if ($opts{'noClip'}) {
 			&SeqAlnSunhh::sam_hash_addKey($sam_href, ['cigar_href']); 
@@ -249,8 +249,8 @@ sub get_uniq_pair {
 			$sam_href->{'is_uniqBest'} == 1 or do { $bad_rd{$rdID} = 1; next; } ; 
 		}
 		if ($opts{'max_NM_ratio'} >= 0) {
-			&SeqAlnSunhh::sam_hash_addKey($sam_href, ['NM', 'read_len']); 
-			$sam_href->{'NM'} > $sam_href->{'read_len'} * $opts{'max_NM_ratio'} and do { $bad_rd{$rdID} = 1; next; }; 
+			&SeqAlnSunhh::sam_hash_addKey($sam_href, ['NM', 'read_len', 'cigar_href']); 
+			$sam_href->{'NM'} + $sam_href->{'cigar_href'}{'Hlen'} + $sam_href->{'cigar_href'}{'Slen'} > $sam_href->{'read_len'} * $opts{'max_NM_ratio'} and do { $bad_rd{$rdID} = 1; next; }; 
 		}
 		if ($opts{'noClip'}) {
 			&SeqAlnSunhh::sam_hash_addKey($sam_href, ['cigar_href']); 
@@ -287,9 +287,9 @@ sub get_both_aln {
 		defined $bad_rd{ $rdID } and next; 
 		$sam_href->{'mapq'} >= $opts{'min_mapQ'} or do { $bad_rd{$rdID} = 1; next; }; 
 		if ($opts{'max_NM_ratio'} >= 0) {
-			&SeqAlnSunhh::sam_hash_addKey($sam_href, ['NM', 'read_len', 'XA_minNM']); 
+			&SeqAlnSunhh::sam_hash_addKey($sam_href, ['NM', 'read_len', 'XA_minNM', 'cigar_href']); 
 			my $vv = &mathSunhh::min( $sam_href->{'NM'}, $sam_href->{'XA_minNM'} ); 
-			$vv > $sam_href->{'read_len'} * $opts{'max_NM_ratio'} and do { $bad_rd{$rdID} = 1; next; }; 
+			$vv + $sam_href->{'cigar_href'}{'Hlen'} + $sam_href->{'cigar_href'}{'Slen'} > $sam_href->{'read_len'} * $opts{'max_NM_ratio'} and do { $bad_rd{$rdID} = 1; next; }; 
 		}
 		if ($opts{'noClip'}) {
 			&SeqAlnSunhh::sam_hash_addKey($sam_href, ['cigar_href']); 
@@ -328,9 +328,9 @@ sub trim_readEnds {
 		($ta[0] =~ m/^@/ and @ta <= 10) and do { print STDOUT "$_\n"; next; }; 
 		$ta[4] >= $opts{'min_mapQ'} or next; 
 		if ( $opts{'max_NM_ratio'} >= 0 ) {
-			my $sam_href = &SeqAlnSunhh::sam_line2hash( \@ta, ['NM', 'read_len', 'XA_minNM'] ); 
+			my $sam_href = &SeqAlnSunhh::sam_line2hash( \@ta, ['NM', 'read_len', 'XA_minNM', 'cigar_href'] ); 
 			my $vv = &mathSunhh::min( $sam_href->{'NM'}, $sam_href->{'XA_minNM'} ); 
-			$vv > $sam_href->{'read_len'} * $opts{'max_NM_ratio'} and next; 
+			$vv + $sam_href->{'cigar_href'}{'Hlen'} + $sam_href->{'cigar_href'}{'Slen'} > $sam_href->{'read_len'} * $opts{'max_NM_ratio'} and next; 
 		}
 		(defined $flag_fwd{$ta[1]} or defined $flag_rev{$ta[1]}) or do { print STDOUT join("\t", @ta[0 .. 10])."\n"; next; }; 
 		my ($rd_len, $ref_span) = &SeqAlnSunhh::cigar_array2len( &SeqAlnSunhh::cigar_str2array( $ta[5] ) );
