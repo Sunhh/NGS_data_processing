@@ -58,6 +58,7 @@ while (<>) {
 	$ta[2] >= 100 * $opts{'minIdent'} or next; 
 	my ($scfID1) = &sep_ctgID( $ta[0] ); 
 	my ($scfID2) = &sep_ctgID( $ta[1] ); 
+	$scfID1 eq $scfID2 and next; 
 	$ta[6] > $ta[7] and @ta[6,7] = @ta[7,6]; 
 	push(@{$blk{$scfID1}{$scfID2}}, [$ta[6], $ta[7]]); 
 }
