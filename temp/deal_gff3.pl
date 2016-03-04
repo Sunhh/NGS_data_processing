@@ -36,8 +36,11 @@ GetOptions(\%opts,
 	
 	"addFaToGff!", # Finished. 
 	
-	"list_intron!",  # Working. 
+	"list_intron!",  # Finished. 
 	 "intron_byFeat:s", # [CDS], could be 'CDS|Exon'. 
+	
+	"ch_makerID:s", # Finished. The input gff must be exactly as maker output. 
+	 "geneID_list:s", # [file], "oldGeneID \t newGeneID"
 	
 	# Filter options. 
 	"extractFeat:s", # Not used. 
@@ -64,6 +67,10 @@ sub usage {
 #                     position : Sort offspring lines by 'scfID' and 'position' only. 
 # 
 # Action options: 
+#----------------------------------------------------------------------------------------------------
+# -ch_makerID       [oldID_newID] Convert mRNA ID and gene IDs according to file 'oldID_newID'. 
+#                     'oldID_newID' should have two column, old ID and new ID. 
+#   -geneID_list    [oldID_newID] Additionally provide a list to change gene IDs. 
 #----------------------------------------------------------------------------------------------------
 # -addFaToGff       [Boolean] Add -scfFa to the tail of -inGff . 
 #----------------------------------------------------------------------------------------------------
@@ -189,7 +196,6 @@ if ( defined $opts{'list_intron'} ) {
 }
 $opts{'sortGffBy'} //= 'lineNum'; 
 
-
 # Step1. Read in gff file and sequence files. 
 my (%in_gff, %in_seq ); 
 &load_gff_fas( \%in_gff, \%in_seq ); 
@@ -215,6 +221,8 @@ if ( $opts{'addFaToGff'} ) {
 	&action_fixTgt(); 
 } elsif ( $opts{'list_intron'} ) {
 	&action_list_intron(); 
+} elsif ( defined $opts{'ch_makerID'} ) {
+	&action_ch_makerID(); 
 } else {
 	&tsmsg("[Err] No valid action.\n"); 
 	exit; 
@@ -223,6 +231,82 @@ if ( $opts{'addFaToGff'} ) {
 ################################################################################
 ############### StepX. action sub-routines here. 
 ################################################################################
+sub action_ch_makerID {
+	my $fh = &openFH( $opts{'ch_makerID'}, '<' ); 
+	my %o2n_m; 
+	my %o2n_g; 
+	# my %n2o_g; 
+	while (<$fh>) {
+		&isSkipLine($_) and next; 
+		chomp; s/[^\t\S]+$//; 
+		my @ta = &splitL("\t", $_); 
+		$o2n_m{$ta[0]} //= $ta[1]; 
+		$ta[0] =~ s/\-mRNA\-\d+$//i; 
+		$o2n_g{$ta[0]} //= "$ta[1]-gene"; 
+		# push(@{$n2o_g{ "$ta[1]-gene" }}, $ta[0] ); 
+	}
+	close($fh); 
+	if ( defined $opts{'geneID_list'} ) {
+		my $fh_g = &openFH( $opts{'geneID_list'}, '<' ); 
+		while (<$fh_g>) {
+			&isSkipLine($_) and next; 
+			chomp; s/[^\t\S]+$//; 
+			my @ta = &splitL("\t", $_); 
+			$o2n_g{$ta[0]} = $ta[1]; 
+		}
+		close($fh_g); 
+	}
+	
+	for my $line_txt (values %{$in_gff{'lineN2line'}}) {
+		my @ta = &splitL("\t", $line_txt); 
+		scalar(@ta) >= 9 or next; 
+		my %attrHash = %{ $gff_obj->_getAttrHash( 'attribText'=>$ta[8] ) }; 
+		if ( lc($ta[2]) eq 'gene' ) {
+			if ( defined $o2n_g{$attrHash{'featID'}} ) {
+				my $s=$attrHash{'featID'}; 
+				my $v=$o2n_g{$attrHash{'featID'}}; 
+				$ta[8] =~ s!(ID|Name)=$s!$1=$v!ig; 
+			}
+		} elsif ( lc($ta[2]) eq 'mrna' ) {
+			if ( defined $o2n_m{$attrHash{'featID'}} ) {
+				my $s=$attrHash{'featID'}; 
+				my $v=$o2n_m{$attrHash{'featID'}}; 
+				$ta[8] =~ s!(ID|Name)=$s!$1=$v!ig; 
+				my @aa = sort { $attrHash{'parentID'}{$a} <=> $attrHash{'parentID'}{$b} } keys %{$attrHash{'parentID'}}; 
+				if (@aa == 1) {
+					my $ps = $aa[0]; 
+					my $pv = $o2n_g{$ps}; $pv //= $ps; 
+					$ta[8] =~ s!(Parent=)$ps!$1$pv!ig; 
+				} else {
+					for (my $i=0; $i<$#aa; $i++) {
+						my $ps = $aa[$i]; 
+						my $pv = $o2n_g{$ps}; $pv //= $ps; 
+						$ta[8] =~ s!(Parent=[^;]*)$ps,!$1$pv,!ig; 
+					}
+					my $ps = $aa[-1]; 
+					my $pv = $o2n_g{$ps}; $pv //= $ps; 
+					$ta[8] =~ s!(Parent=[^;]+)$ps(;|$)!$1$pv$2!ig; 
+				}
+			}
+		} elsif ( lc($ta[2]) =~ m/^(exon|cds|five_prime_utr|three_prime_utr)$/i  ) {
+			if ( $ta[8] =~ m!(?:ID|Parent)=([^\s=;]+)!i ) {
+				my $s=$1; $s =~ s![\s;]+$!!; $s =~ s!:(exon|cds|five_prime_utr|three_prime_utr)(:\d+)?$!!i; 
+				my $v=$o2n_m{$s}; $v //= $s; 
+				if ( $s ne $v ) {
+					$ta[8] =~ s!(ID|Parent|Name)=$s!$1=$v!ig; 
+				}
+			}
+		} else {
+			&stopErr("[Err] Unknown feature type [$ta[2]] in line $line_txt\n"); 
+		}
+		$line_txt = join("\t", @ta); 
+	}
+	
+	$gff_obj->write_gff3File( 'outFH'=>$oFh, 'gff3_href'=>\%in_gff, 'sort_by'=>$opts{'sortGffBy'} ); 
+	
+	return(); 
+}# action_ch_makerID() 
+
 sub action_addFaToGff {
 	$gff_obj->write_gff3File( 'outFH'=>$oFh, 'gff3_href'=>\%in_gff, 'seq_href'=>\%in_seq, 'sort_by'=>$opts{'sortGffBy'} ); 
 }# action_addFaToGff()
