@@ -16,7 +16,7 @@ use Cwd;
 use Exporter qw(import); 
 
 # our @EXPORT = qw(tsmsg stopErr exeCmd);
-our @EXPORT = qw(openFH renameByPat);
+our @EXPORT = qw(openFH renameByPat isSkipLine splitL);
 our @EXPORT_OK = qw();
 
 my %goodFileType = qw(
@@ -139,6 +139,26 @@ sub openFH ($$) {
 	}
 	return $fh; 
 }#End openFH() 
+
+=head1 splitL( "\t", $line )
+Return         : (@splitted_line)
+=cut
+sub splitL {
+	chomp($_[1]); 
+	my @back = split(/$_[0]/, "$_[1]\n"); 
+	chomp($back[-1]); 
+	return (@back); 
+}# splitL() 
+
+=head1 isSkipLine( $line )
+Return         : 0/1
+   0 - for good lines 
+   1 - for bad line which is empty or begins with '#' 
+=cut
+sub isSkipLine {
+	$_[0] =~ m/^\s*(?:#|$)/ and return 1; 
+	return 0; 
+}# isSkipLine() 
 
 =head1 new_tmp_dir( 'maxNum' => 999999 )
 
