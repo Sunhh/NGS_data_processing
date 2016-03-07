@@ -1,0 +1,68 @@
+perl /data/Sunhh/src/Align/tassel/tassel4-standalone/run_pipeline.pl -Xmx10g -fork1 \
+ -FastqToTagCountPlugin -i fastq -k key2.txt -e ApeKI \
+ -s 300000000 -c 1 -o tagCounts -endPlugin -runfork1 \
+ 1>tagCounts/FastqToTagCountPlugin-set1.log 2>tagCounts/FastqToTagCountPlugin-set1.err
+
+perl /data/Sunhh/src/Align/tassel/tassel4-standalone/run_pipeline.pl -Xmx10g -fork1 \
+ -MergeMultipleTagCountPlugin -i tagCounts/ \
+ -o mergedTagCounts/gourd.cnt \
+ -c 10 \
+ -endPlugin -runfork1 \
+ 1>mergedTagCounts/mergedTagCounts_c10_nb.log 2>mergedTagCounts/mergedTagCounts_c10_nb.err
+
+perl /data/Sunhh/src/Align/tassel/tassel4-standalone/run_pipeline.pl -fork1 -TagCountToFastqPlugin \
+ -i mergedTagCounts/gourd.cnt \
+ -o mergedTagCounts/gourd.cnt.fq \
+ -endPlugin -runfork1 \
+ 1>mergedTagCounts/TagCountToFastqPlugin-gourd.log 2>mergedTagCounts/TagCountToFastqPlugin-gourd.err
+
+# 3. Run bwa alignment : 
+bwa_0710 aln -t 20 db/Gourd969_pilon_Gt5h_V1.scf.forGBS.fa mergedTagCounts/gourd.cnt.fq > mergedTagCounts/gourd.cnt.fq.sai 
+bwa_0710 samse db/Gourd969_pilon_Gt5h_V1.scf.forGBS.fa mergedTagCounts/gourd.cnt.fq.sai mergedTagCounts/gourd.cnt.fq > mergedTagCounts/gourd.cnt.fq.sam
+perl ./filter_sam.pl mergedTagCounts/gourd.cnt.fq.sam > topm/gourd_bwa_aln_f.sam
+
+/data/Sunhh/src/Align/tassel/tassel4-standalone/run_pipeline.pl -Xmx10g  -fork1 \
+ -SAMConverterPlugin \
+ -i topm/gourd_bwa_aln_f.sam \
+ -o topm/gourd.topm \
+ -endPlugin -runfork1 \
+> topm/topm_gourd.log 2>topm/topm_gourd.err
+
+/data/Sunhh/src/Align/tassel/tassel4-standalone/run_pipeline.pl -Xmx10g -fork1 \
+ -FastqToTBTPlugin \
+ -i fastq \
+ -k ./key2.txt \
+ -e ApeKI -o tbt -y \
+ -t mergedTagCounts/gourd.cnt \
+ -endPlugin -runfork1 \
+ > tbt/tbt0.log 2> tbt/tbt0.err
+
+/data/Sunhh/src/Align/tassel/tassel4-standalone/run_pipeline.pl -Xmx10g -fork1 \
+ -MergeTagsByTaxaFilesPlugin \
+ -i tbt/ \
+ -o mergedTBT/gourd_merged.tbt.byte \
+ -s 200000000 \
+ -endPlugin -runfork1 \
+ 1>mergedTBT/tbtm_nb.log 2> mergedTBT/tbtm_nb.err
+
+/data/Sunhh/src/Align/tassel/tassel4-standalone/run_pipeline.pl -Xmx10g -fork1 \
+ -DiscoverySNPCallerPlugin \
+ -i mergedTBT/gourd_merged.tbt.byte \
+ -y \
+ -m topm/gourd.topm \
+ -o vcf/gourd.chr+ -vcf \
+ -mxSites 1000000 \
+ -inclRare -sC 1 -eC 2677  -ref db/Gourd969_pilon_Gt5h_V1.scf.forGBS.fa \
+ -endPlugin -runfork1 \
+ > vcf/vcf1.log 2> vcf/vcf1.err
+
+/data/Sunhh/src/Align/tassel/tassel4-standalone/run_pipeline.pl -Xmx250g -fork1 \
+ -MergeDuplicateSNPsPlugin  \
+ -vcf vcf/gourd.chr+.vcf \
+ -o vcf/gourd.chr+.rmdup.vcf \
+ -maxAlleleVCF 4 -sC 1 -eC 2677 \
+ -endPlugin -runfork1 \
+ 1> vcf/merge_dup_vcf1.log 2> vcf/merge_dup_vcf1.err 
+
+cat vcf/*rmdup.vcf  | grep -v ^## | deal_table.pl -UniqColLine 0,1 > vcf_Jn_raw/gourd_v4.jn.vcf
+
