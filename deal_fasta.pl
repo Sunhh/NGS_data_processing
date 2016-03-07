@@ -106,6 +106,7 @@ Usage: $0  <fasta_file | STDIN>
   -N50_minLen         [INT] Minimum length of sequences used for calculating N50. 
   -N50_GenomSize      [INT] Estimated genome size used for calculate NG50; 
   -N50_levels         [String] Quantile levels used to calculate. Default [00 05 10 15 25 50 60 70 80 90 95 96 97 98 99 100]
+  -N50_byNumber       [Boolean]
 
   -chopKey            'expr'
   -startCodonDist     calc input CDSs\' start codon usage distribution;
@@ -174,7 +175,7 @@ GetOptions(\%opts,"help!",
 	"frag:s","frag_width:i","frag_head!","frag_c!","frag_r!",
 	"qual:s","qual_width:i","qual_r!","qual_head!",
 	"listSite:s","listNum:s","listBoth!","listSeq!", 
-	"N50!", "N50_minLen:i", "N50_GenomSize:i", "N50_levels:s", 
+	"N50!", "N50_minLen:i", "N50_GenomSize:i", "N50_levels:s", "N50_byNumber!", 
 	"chopKey:s","startCodonDist!","comma3!",
 	"rmDefinition!", 
 	"uniqSeq!", "uniqSeq_bySeq!", 
@@ -921,6 +922,18 @@ sub N50 {
 	}
 
 	for my $fh (@InFp) {
+		if ( $opts{'N50_byNumber'} ) {
+			while (<$fh>) {
+				chomp; m/^\s*(#|$)/ and next; 
+				my @ta = split(/\t/, $_); 
+				$ta[1] //= $ta[0]; 
+				$min_len > 0 and $ta[0] < $min_len and next; 
+				push(@Length, [$ta[0], $ta[1]]); 
+				$totalLen += $Length[-1][0]; 
+				$totalLen_atgc += $Length[-1][1]; 
+			}
+			next; 
+		}
 		for ( my ($relHR, $get) = &get_fasta_seq($fh); defined $relHR; ($relHR, $get) = &get_fasta_seq($fh) ) {
 			$relHR->{seq} =~ s/\s+//g; 
 			my $ttl_len = length($relHR->{seq}); 

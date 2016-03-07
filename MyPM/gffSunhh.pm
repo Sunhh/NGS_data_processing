@@ -764,7 +764,9 @@ sub _getAttrHash {
 				$backH{'alias'} = $backH{'alias'} // {}; 
 				$self->_setTypeHash( $backH{'alias'}, $self->_txt2Array('txt'=>$val, 'sepSym'=>",")  ); 
 			} else {
-				$parm{'debug'} and &tsmsg("[Wrn] Skip unknown attribute_tag [$tag=$val]\n"); 
+				$parm{'debug'} and &tsmsg("[Wrn] Unknown attribute_tag [$tag=$val]\n"); 
+				$backH{$tag} //= []; 
+				push(@{$backH{$tag}}, $val); 
 			}
 		}# End for (my $i=0; $i<@tv_pairs; $i+=2)  
 	}# End if () 
