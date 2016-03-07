@@ -1,0 +1,74 @@
+# 1. GBSSeqToTagDBPlugin : 
+### -kmerLength 90 -mnQS 20 : all sequence positions from 0 to (barcode length + mxKmerL) must have quality scores equal to or greater than the user supplied minimum quality score to be kept. 
+perl /data/Sunhh/src/Align/tassel/tassel-5-standalone/run_pipeline.pl -Xms100G -Xmx200G \
+  -fork1 -GBSSeqToTagDBPlugin \
+    -e ApeKI \
+    -i  /data/Sunhh/temp/Gourd/gbs/02.tassel/fastq/ \
+    -db /data/Sunhh/temp/Gourd/gbs/02.tassel/GBSV2.db \
+    -k  /data/Sunhh/temp/Gourd/gbs/02.tassel/key2.txt \
+    -kmerLength 64 -minKmerL 40 -mnQS 13 -mxKmerNum 500000000 \
+  -endPlugin -runfork1 \
+1> std.01_GBSSeqToTagDBPlugin 2> err.01_GBSSeqToTagDBPlugin
+
+# 2. 
+perl /data/Sunhh/src/Align/tassel/tassel-5-standalone/run_pipeline.pl \
+  -fork1 -TagExportToFastqPlugin \
+    -db /data/Sunhh/temp/Gourd/gbs/02.tassel/GBSV2.db \
+    -o  /data/Sunhh/temp/Gourd/gbs/02.tassel/tagsForAlign.fa.gz \
+    -c  1 \
+  -endPlugin -runfork1 \
+1> std.02_TagExportToFastqPlugin 2>err.02_TagExportToFastqPlugin
+
+# 3. Run bwa alignment : 
+bwa_0710 aln -t 20 db/Gourd969_pilon_Gt5h_V1.scf.forGBS.fa tagsForAlign.fa.gz > tagsForAlign.fa.sai
+bwa_0710 samse db/Gourd969_pilon_Gt5h_V1.scf.forGBS.fa tagsForAlign.fa.sai tagsForAlign.fa.gz > tagsForAlign.sam
+# .... 
+
+
+# 4. 
+perl /data/Sunhh/src/Align/tassel/tassel-5-standalone/run_pipeline.pl \
+  -fork1 -SAMToGBSdbPlugin \
+    -i  /data/Sunhh/temp/Gourd/gbs/02.tassel/tagsForAlign.sam \
+    -db /data/Sunhh/temp/Gourd/gbs/02.tassel/GBSV2.db \
+    -aProp 0.0 -aLen 40 \
+  -endPlugin -runfork1 \
+1> std.04_SAMToGBSdbPlugin 2> err.04_SAMToGBSdbPlugin 
+
+# 5. 
+### Not used parameters : -sC 1 -eC 2677 
+### Not used parameters : -maxTagsPerCutSite 64 
+### Not used parameters : -ref /data/Sunhh/temp/Gourd/gbs/02.tassel/db/Gourd969_pilon_Gt5h_V1.scf.forGBS.fa \
+perl /data/Sunhh/src/Align/tassel/tassel-5-standalone/run_pipeline.pl \
+  -fork1 -DiscoverySNPCallerPluginV2 \
+    -db /data/Sunhh/temp/Gourd/gbs/02.tassel/GBSV2.db \
+    -mnLCov 0.1 -mnMAF 0.01 -deleteOldData true \
+    -inclRare true \
+  -endPlugin -runfork1 \
+1> std.05_DiscoverySNPCallerPluginV2 2> err.05_DiscoverySNPCallerPluginV2
+
+# 6. 
+### Not used parameters : -taxa /Users/lcj34/development/files/IBMGBSTaxalist.txt 
+perl /data/Sunhh/src/Align/tassel/tassel-5-standalone/run_pipeline.pl \
+  -fork1 -SNPQualityProfilerPlugin \
+    -db /data/Sunhh/temp/Gourd/gbs/02.tassel/GBSV2.db \
+    -tname 'Gourd_GBS' \
+    -statFile 'outputStats.txt' \
+    -deleteOldData true \
+  -endPlugin -runfork1 \
+1> std.06_SNPQualityProfilerPlugin 2> err.06_SNPQualityProfilerPlugin
+
+# 7. 
+perl /data/Sunhh/src/Align/tassel/tassel-5-standalone/run_pipeline.pl \
+  -fork1 -ProductionSNPCallerPluginV2 \
+    -db /data/Sunhh/temp/Gourd/gbs/02.tassel/GBSV2.db \
+    -e ApeKI \
+    -i  /data/Sunhh/temp/Gourd/gbs/02.tassel/fastq/ \
+    -mnQS 13 \
+    -k  /data/Sunhh/temp/Gourd/gbs/02.tassel/key2.txt \
+    -kmerLength 64 \
+    -o  /data/Sunhh/temp/Gourd/gbs/02.tassel/run01_productioHapMap_noKO.vcf \
+    -do true \
+  -endPlugin -runfork1 \
+1> std.07_ProductionSNPCallerPluginV2 2> err.07_ProductionSNPCallerPluginV2 
+
+
