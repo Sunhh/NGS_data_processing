@@ -21,6 +21,7 @@
 # 2013-11-26 Add in uniqComb.pl function. Add time tag for message output. 
 # 2015-04-21 Add -colByTbl to select columns according to an input table. 
 # 2015-07-14 Add -spec_loci_1from2 to find region in -spec_loci_f1 (Format: ID\tstart\tEnd) that is absent in -spec_loci_f2 (Format: ID\tStart\tEnd). 
+# 2016=03-09 Add -col_sort_rule for more flexible. 
 
 use strict;
 use warnings; 
@@ -33,7 +34,7 @@ GetOptions(\%opts,
 	"max_col:s","min_col:s",
 	"skip:i",
 	"reverse!",
-	"col_sort:s",
+	"col_sort:s", "col_sort_rule:s", 
 	"col_uniq:s","col_reps:s","col_repCount:s", # uniq/repeat columns pick.
 	"col_stat:i", "col_stat_asINS!", 
 	"symbol:s",
@@ -56,7 +57,7 @@ sub usage {
 	my $info=<<INFO;
 ##################################################
 command:perl $0 <STDIN|parameters>
-# 2013-11-26 
+# 2016-03-09
 
   -help           help infomation;
   -combine        combine files;
@@ -66,7 +67,8 @@ command:perl $0 <STDIN|parameters>
   -max_col        Similar to -column, compare by order;
   -min_col        Similar to -column, compare by order;
   -skip<int>      Skip first <int> lines.Usually for skipping head lines;
-  -col_sort       sort by col.
+  -col_sort       [num,num,num,...]sort by col (0-based).
+  -col_sort_rule  [-1,-1,-1,...] -1 for small to max, 1 for max to small. 
 
   -col_uniq       pick lines with its columns uniq
   -col_reps       pick lines with its columns repeat
@@ -155,6 +157,9 @@ my $symbol = "\t";
 &extreme() if ( &goodVar($opts{max_col}) || &goodVar($opts{min_col}) );
 &colStat() if ( &goodVar($opts{col_stat}) );
 if ( &goodVar($opts{col_sort}) ) {
+
+	&_prep_cSort_ruls(); 
+
 	my @file;
 	for my $fh (@InFp) {
 		while (<$fh>) {
@@ -802,19 +807,40 @@ sub extreme{
 	@file=();
 }# end extreme
 
-sub col_sort{
+sub col_sort {
 	no strict; 
+	&_prep_cSort_ruls(); 
 	my @tempa=split(/$symbol/o,$a);
 	my @tempb=split(/$symbol/o,$b);
-	my @cols = &parseCol($opts{col_sort});
 	no warnings; 
-	foreach my $col (@cols) {
-		if (my $result=(($tempa[$col]<=>$tempb[$col]) || ($tempa[$col] cmp $tempb[$col]))) {
+	foreach my $rul (@{$opts{'col_sort_ruls'}}) {
+		if ( my $result=( ($tempa[$rul->[0]]<=>$tempb[$rul->[0]]) || ($tempa[$rul->[0]] cmp $tempb[$rul->[0]]) ) * $rul->[1] ) {
 			return $result;
 		}
 	}
 	0;
 }#end col_sort
+
+sub _prep_cSort_ruls {
+	defined $opts{'col_sort_ruls'} and @{$opts{'col_sort_ruls'}} > 0 and return; 
+	$opts{col_sort} //= 0; 
+	$opts{'col_sort_cols'} = [ &parseCol($opts{col_sort}) ]; 
+	$opts{'col_sort_ruls'} = []; 
+	if (defined $opts{'col_sort_rule'}) {
+		my @rr = map { $_ =~ s/\s//g; $_ eq '' and $_ = -1; ($_ eq '1' or $_ eq '-1') or die "[Err] col_sort_rule should be like ' -1,1,-1,...'\n"; $_ * -1; } split(/,/, $opts{'col_sort_rule'}); 
+		for (my $i=0; $i<@{$opts{'col_sort_cols'}}; $i++) {
+			$rr[$i] //= 1; 
+			push(@{$opts{'col_sort_ruls'}}, [$opts{'col_sort_cols'}[$i], $rr[$i]]); 
+		}
+	} else {
+		for ( my $i=0; $i<@{$opts{'col_sort_cols'}}; $i++ ) {
+			push(@{$opts{'col_sort_ruls'}}, [$opts{'col_sort_cols'}[$i], 1]); 
+		}
+	}
+	return; 
+}# sub _prep_cSort_ruls() 
+
+
 
 #### cols select.with the form "num,num,num".., 0 for first column.
 sub uniq_rep{
