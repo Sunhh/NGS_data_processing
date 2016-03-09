@@ -41,6 +41,9 @@ GetOptions(\%opts,
 	
 	"ch_makerID:s", # Finished. The input gff must be exactly as maker output. 
 	 "geneID_list:s", # [file], "oldGeneID \t newGeneID"
+
+	"ch_locByAGP:s", # Finished. I think I should add 'sortTopIDBy' to &write_gff3File() . 
+	 "sortTopIDBy:s", # raw/lineNum/position
 	
 	# Filter options. 
 	"extractFeat:s", # Not used. 
@@ -71,6 +74,9 @@ sub usage {
 # -ch_makerID       [oldID_newID] Convert mRNA ID and gene IDs according to file 'oldID_newID'. 
 #                     'oldID_newID' should have two column, old ID and new ID. 
 #   -geneID_list    [oldID_newID] Additionally provide a list to change gene IDs. 
+#----------------------------------------------------------------------------------------------------
+# -ch_locByAGP      [in_ref.agp] Change IDs and locations according to this agp. Here assume to change agp_ctg to agp_scaff. 
+#   -sortTopIDBy    ['raw'] raw/lineNum/position. In fact, raw should be equal to lineNum. 
 #----------------------------------------------------------------------------------------------------
 # -addFaToGff       [Boolean] Add -scfFa to the tail of -inGff . 
 #----------------------------------------------------------------------------------------------------
@@ -195,6 +201,7 @@ if ( defined $opts{'list_intron'} ) {
 	$gff_obj->_setTypeHash( $opts{'gff_top_hier'}, [$opts{'intron_byFeat'}] ); 
 }
 $opts{'sortGffBy'} //= 'lineNum'; 
+$opts{'sortTopIDBy'} //= 'raw'; $opts{'sortTopIDBy'} = lc($opts{'sortTopIDBy'}); # raw/lineNum/position 
 
 # Step1. Read in gff file and sequence files. 
 my (%in_gff, %in_seq ); 
@@ -223,6 +230,8 @@ if ( $opts{'addFaToGff'} ) {
 	&action_list_intron(); 
 } elsif ( defined $opts{'ch_makerID'} ) {
 	&action_ch_makerID(); 
+} elsif ( defined $opts{'ch_locByAGP'} ) {
+	&action_ch_locByAGP(); 
 } else {
 	&tsmsg("[Err] No valid action.\n"); 
 	exit; 
@@ -231,6 +240,102 @@ if ( $opts{'addFaToGff'} ) {
 ################################################################################
 ############### StepX. action sub-routines here. 
 ################################################################################
+sub action_ch_locByAGP {
+	my $fh = &openFH( $opts{'ch_locByAGP'}, '<' ); 
+	my %info_ctg2scf; # {ctgID}=>[ [ctgS, ctgE, scfID, scfS, scfE, scfStr(+/-/?)], [], ... ]
+	while (<$fh>) {
+		m/^\s*(#|$)/ and next; 
+		chomp; s![^\s\t]+$!!g; 
+		my @ta = &splitL("\t", $_); 
+		$ta[4] eq 'W' or next; 
+		$ta[8] eq '?' and $ta[8] = '+'; 
+		push(@{$info_ctg2scf{$ta[5]}}, [$ta[6], $ta[7], $ta[0], $ta[1], $ta[2], $ta[8]]); 
+	}
+	close($fh); 
+	for my $tk (keys %info_ctg2scf) {
+		@{$info_ctg2scf{$tk}} = sort { $a->[0] <=> $b->[0] || $a->[1] <=> $b->[1] } @{$info_ctg2scf{$tk}}; 
+	}
+	
+	for my $lineN (sort {$a <=> $b} keys %{$in_gff{'lineN2line'}}) {
+		defined $in_gff{'lineN2hash'}{$lineN} or next; 
+		my $line_txt = $in_gff{'lineN2line'}{$lineN}; 
+		my @ta = &splitL("\t", $line_txt); 
+		my ($ctgID, $ctgS, $ctgE, $ctgStr) = @ta[0, 3,4, 6]; 
+		defined $info_ctg2scf{$ctgID} or next; 
+		my @loc1 = $mat_obj->switch_position( 'qry2ref' => \%info_ctg2scf, 'qryID'=>$ctgID, 'qryPos'=>$ctgS, 'qryStr'=>$ctgStr ); 
+		my @loc2 = $mat_obj->switch_position( 'qry2ref' => \%info_ctg2scf, 'qryID'=>$ctgID, 'qryPos'=>$ctgE, 'qryStr'=>$ctgStr ); 
+		( @loc1 > 1 or @loc2 > 1 ) and do { &tsmsg("[Wrn] Multiple loci found for ($ctgID, $ctgS, $ctgE, $ctgStr)\n"); }; 
+		$loc1[0][0] eq $loc2[0][0] or &stopErr("[Err] Found different scaffold IDs for ($ctgID, $ctgS, $ctgE, $ctgStr): $loc1[0][0] & $loc2[0][0]\n"); 
+		$ta[0] = $loc1[0][0]; 
+		$ta[3] = $loc1[0][1]; 
+		$ta[4] = $loc2[0][1]; 
+		$ta[6] = $loc1[0][2]; 
+		@ta[3,4] = sort {$a<=>$b} @ta[3,4]; 
+		
+		$in_gff{'lineN2line'}{$lineN} = join("\t", @ta); 
+		# Replace 'lineN2hash' 
+		$in_gff{'lineN2hash'}{$lineN}{'seqID'}  = $ta[0]; 
+		$in_gff{'lineN2hash'}{$lineN}{'start'}  = $ta[3]; 
+		$in_gff{'lineN2hash'}{$lineN}{'end'}    = $ta[4]; 
+		$in_gff{'lineN2hash'}{$lineN}{'strand'} = $ta[6]; 
+	}
+	
+	# Give topID loc: 
+	my %topID_loc; 
+	my @topIDs; 
+	my %doneID; 
+	LINE_N: 
+	for my $lineN (sort {$a <=> $b} keys %{$in_gff{'lineN2line'}}) {
+		defined $in_gff{'lineN2hash'}{$lineN} or next; 
+		my $lineN2hash_href = $in_gff{'lineN2hash'}{$lineN}; 
+		
+		my $featID = $in_gff{'lineN2ID'}{$lineN}; 
+		defined $doneID{$featID} and next LINE_N; 
+		defined $in_gff{'lineN_group'}{$featID} and do { $topID_loc{$featID} = [ @{$lineN2hash_href}{qw/seqID start end strand/} ]; next LINE_N;  }; 
+		
+		my @parentIDs = keys %{$in_gff{'CID2PID'}{$featID}}; 
+		for my $pID (@parentIDs) {
+			defined $doneID{$pID} and next; 
+			defined $in_gff{'lineN_group'}{$pID} or next; 
+			my $p_lineN = $in_gff{'ID2lineN'}{$pID}; 
+			if (defined $in_gff{'lineN2hash'}{$p_lineN}) {
+				$topID_loc{$pID} = [ @{$in_gff{'lineN2hash'}{$p_lineN}}{qw/seqID start end strand/} ]; 
+			} else {
+				$topID_loc{$pID} = [ @{$lineN2hash_href}{qw/seqID start end strand/} ]; 
+			}
+			$doneID{$pID} = 1; 
+		}
+	}
+	
+	
+	my $use_topID = 0; 
+	my $lineN_group_href = $in_gff{'lineN_group'}; 
+	if ($opts{'sortTopIDBy'} eq 'raw') { 
+		# # raw/lineNum/position 
+		$use_topID = 0 ; 
+	} elsif ($opts{'sortTopIDBy'} eq 'linenum') {
+		$use_topID = 1 ; 
+		@topIDs = sort { $lineN_group_href->{$a}{'curLn'}[0]<=>$lineN_group_href->{$b}{'curLn'}[0] } keys %$lineN_group_href ; 
+	} elsif ($opts{'sortTopIDBy'} eq 'position') {
+		$use_topID = 1 ; 
+		for (keys %$lineN_group_href) {
+			defined $topID_loc{$_} or die "$_\n"; 
+		}
+		@topIDs = sort { 
+		 $topID_loc{$a}[0] cmp $topID_loc{$b}[0] 
+		 || $topID_loc{$a}[1] <=> $topID_loc{$b}[1]
+		 || $topID_loc{$a}[2] <=> $topID_loc{$b}[2]
+		 || $topID_loc{$a}[3] cmp $topID_loc{$b}[3]
+		} keys %$lineN_group_href; 
+	} else {
+		&tsmsg("[Wrn] Unknown -sortTopIDBy [$opts{'sortTopIDBy'}] skipped\n"); 
+	}
+
+	$use_topID == 0 and $gff_obj->write_gff3File( 'outFH'=>$oFh, 'gff3_href'=>\%in_gff, 'sort_by'=>$opts{'sortGffBy'} ); 
+	$use_topID == 1 and $gff_obj->write_gff3File( 'outFH'=>$oFh, 'gff3_href'=>\%in_gff, 'sort_by'=>$opts{'sortGffBy'}, 'topIDs_aref' => \@topIDs ); 
+	
+	return(); 
+}# sub action_ch_locByAGP() 
 sub action_ch_makerID {
 	my $fh = &openFH( $opts{'ch_makerID'}, '<' ); 
 	my %o2n_m; 
