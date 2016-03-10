@@ -89,6 +89,37 @@ sub write2file {
 	return 0; 
 }# sub write2file ()
 
+=head1 load_agpFile( $filename )
+
+Required   : $filename
+
+Function   : load in an agp file into a hash, which can be input into $mathSunhh_obj->switch_position(); 
+
+Return     : ( \%ctg2scf )
+
+  %ctg2scf = ( $ctgID => [ [ctgS, ctgE, scfID, scfS, scfE, scfStr(+/-/?)], [], ... ] ) # This is sorted. 
+
+=cut
+sub load_agpFile {
+	my ( $fn ) = @_; 
+	my $fh = &openFH( $fn, '<' ); 
+	my %ctg2scf; 
+	while (<$fh>) {
+		m/^\s*(#|$)/ and next; 
+		chomp; s/[^\S\t]+$//; 
+		my @ta = &splitL("\t", $_); 
+		$ta[4] eq 'W' or next; 
+		$ta[8] eq '?' and $ta[8] = '+'; 
+		push( @{$ctg2scf{$ta[5]}}, [@ta[ 6,7,0,1,2,8 ]] ); 
+	}
+	close($fh); 
+	for my $tk (keys %ctg2scf) {
+		@{$ctg2scf{$tk}} = sort { $a->[0] <=> $b->[0] || $a->[1] <=> $b->[1] } @{ $ctg2scf{$tk} }; 
+	}
+	
+	return(\%ctg2scf); 
+}# load_agpFile ()
+
 
 =head1 openFH( $filename, $open_type )
 
@@ -141,7 +172,9 @@ sub openFH ($$) {
 }#End openFH() 
 
 =head1 splitL( "\t", $line )
+
 Return         : (@splitted_line)
+
 =cut
 sub splitL {
 	chomp($_[1]); 
@@ -151,9 +184,11 @@ sub splitL {
 }# splitL() 
 
 =head1 isSkipLine( $line )
+
 Return         : 0/1
    0 - for good lines 
    1 - for bad line which is empty or begins with '#' 
+
 =cut
 sub isSkipLine {
 	$_[0] =~ m/^\s*(?:#|$)/ and return 1; 
