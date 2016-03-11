@@ -21,10 +21,12 @@
 # 2013-11-26 Add in uniqComb.pl function. Add time tag for message output. 
 # 2015-04-21 Add -colByTbl to select columns according to an input table. 
 # 2015-07-14 Add -spec_loci_1from2 to find region in -spec_loci_f1 (Format: ID\tstart\tEnd) that is absent in -spec_loci_f2 (Format: ID\tStart\tEnd). 
-# 2016=03-09 Add -col_sort_rule for more flexible. 
+# 2016-03-09 Add -col_sort_rule for more flexible. 
+# 2016-03-11 Finally, I accept to add my own perl modules into this frequently used script. Change all split to &splitL(); 
 
 use strict;
 use warnings; 
+use fileSunhh; 
 
 use Getopt::Long;
 my %opts;
@@ -258,10 +260,9 @@ sub colByTbl {
 	my (%needColID, $cnt); 
 	$cnt = 0; 
 	while (<$idxFh>) {
-		my @ta = split(/$symbol/, $_); 
-		chomp; chomp($ta[-1]); 
+		chomp; 
+		my @ta = &splitL($symbol, $_); 
 		defined $needColID{$ta[0]} or do { $needColID{$ta[0]} = $cnt; $cnt ++; }; 
-		
 	}
 	close($idxFh); 
 	
@@ -270,8 +271,8 @@ sub colByTbl {
 		{
 			my $first_line = <$fh>; 
 			my %cur_ID2ColN; 
-			my @ta = split(/$symbol/, $first_line); 
-			chomp($first_line); chomp($ta[-1]); 
+			chomp($first_line); 
+			my @ta = &splitL($symbol, $first_line); 
 			for (my $i=0; $i<@ta; $i++) {
 				defined $needColID{$ta[$i]} and $cur_ID2ColN{$ta[$i]} = $i; 
 			}
@@ -285,8 +286,8 @@ sub colByTbl {
 			print STDOUT join("\t", map { ( $_ eq 'NA' ) ? '' : $ta[$_] ; } @cur_ColNs)."\n"; 
 		}
 		while (<$fh>) {
-			my @ta = split(/\t/, $_); 
-			chomp; chomp($ta[-1]); 
+			chomp; 
+			my @ta = &splitL($symbol, $_); 
 			print STDOUT join("\t", map { ( $_ eq 'NA' ) ? '' : $ta[$_] ; } @cur_ColNs)."\n"; 
 		}
 		close ($fh); 
@@ -305,8 +306,8 @@ sub chRowColName {
 	my $lisFH = &openFH($opts{chID_RefLis}, '<'); 
 	my %old2new; 
 	while (<$lisFH>) {
-		my @ta = split(/\t/, $_); 
-		chomp; chomp($ta[-1]); 
+		chomp; 
+		my @ta = &splitL($symbol, $_); 
 		$old2new{ $ta[ $opts{chID_OldColN} ] } = $ta[ $opts{chID_NewColN} ]; 
 	}
 	close ($lisFH); 
@@ -327,15 +328,11 @@ sub chRowColName {
 			}
 	
 			if ( $is_rowID ) {
-				$_ .= "\n"; 
-				my @ta = split(/\t/, $_); 
-				chomp; chomp($ta[-1]); 
+				my @ta = &splitL($symbol, $_); 
 				$ta[$opts{chID_RowColN}] = $old2new{ $ta[$opts{chID_RowColN}] } // $ta[$opts{chID_RowColN}] ; 
 				print STDOUT join("\t", @ta)."\n"; 
 			} elsif ( $cur_n == 0 ) {
-				$_ .= "\n"; 
-				my @ta = split(/\t/, $_); 
-				chomp; chomp($ta[-1]); 
+				my @ta = &splitL($symbol, $_); 
 				for my $tb (@ta) {
 					$tb = $old2new{$tb} // $tb; 
 				}
@@ -352,8 +349,8 @@ sub chRowColName {
 sub showHeader {
 	for my $fh ( @InFp ) {
 		while (<$fh>) {
-			my @ta = split(/$symbol/, "$_"); 
-			chomp; chomp($ta[-1]); 
+			chomp; 
+			my @ta = &splitL($symbol, $_); 
 			for (my $i=0; $i<@ta; $i++) {
 				print STDOUT join("\t", $i, $ta[$i])."\n"; 
 			}
@@ -378,7 +375,7 @@ sub kSrch {
 	my @src_Cols = ( defined $opts{kSrch_srcCol} ) ? ( &parseCol( $opts{ kSrch_srcCol } ) ) : ( 0 ) ; 
 	my @idx_Cols = ( defined $opts{kSrch_idxCol} ) ? ( &parseCol( $opts{ kSrch_idxCol } ) ) : ( 0 ) ; 
 	my %idx_key; 
-	for my $idxF ( split(/,/, $opts{kSrch_idx}) ) {
+	for my $idxF ( &splitL(",", $opts{'kSrch_idx'}) ) {
 		my $fh = &openFH( $idxF, '<' ); 
 		if ( $opts{kSrch_line} ) {
 			while (<$fh>) {
@@ -386,8 +383,8 @@ sub kSrch {
 			}
 		}else{
 			while (<$fh>) {
-				my @temp = split(/$symbol/o, $_); 
-				chomp; chomp($temp[-1]); 
+				chomp; 
+				my @temp = &splitL($symbol, $_); 
 				my $tkey = join("\t", @temp[@idx_Cols]); 
 				$idx_key{$tkey} = 1; 
 			}
@@ -408,8 +405,8 @@ sub kSrch {
 		}else{
 			# Using the selected columns as key. 
 			while (<$fh>) {
-				my @temp = split(/$symbol/o, $_); 
-				chomp; chomp($temp[-1]); 
+				chomp; 
+				my @temp = &splitL($symbol, $_); 
 				my $tkey = join("\t", @temp[@src_Cols]); 
 				if ($opts{kSrch_drop}) {
 					$idx_key{$tkey} or print STDOUT "$_\n"; 
@@ -428,8 +425,8 @@ sub t {
 	for my $fh (@InFp) {
 		while (<$fh>) {
 			$opts{skip_null_line} and /^\s*$/ and next; # Here empty line should not be skipped until demanded. 
-			my @ta = split(/$symbol/o, $_); 
-			chomp; chomp($ta[-1]); 
+			chomp; 
+			my @ta = &splitL($symbol, $_); 
 			$line_idx ++; 
 			for (my $i=0; $i<@ta; $i++) {
 				$result_lines[$i][$line_idx] = $ta[$i]; 
@@ -487,8 +484,8 @@ sub cluster_group {
 		while (<$fh>) {
 			$. % 1000 == 1 and warn "$. lines.\n"; 
 			/^\s*$/ and next; 
-			my @ta=split(/$symbol/o, $_); 
-			chomp; chomp($ta[-1]); 
+			chomp; 
+			my @ta = &splitL($symbol, $_); 
 	
 			$is_col == 1 and @ta = @ta[@tcols]; 
 			my @ta1; 
@@ -578,7 +575,7 @@ sub cbind {
 				}elsif ($col_len[$i] != $coln) {
 					&tmsg("[Wrn]Column number of file $ARGV[$i] changed at line ($col_len[$i] to $coln): '$tl'\n"); 
 					&tmsg("[Wrn]I modify columns to $col_len[$i].\n"); 
-					$tl = join("$symbol", (split(/$symbol/o, $tl))[0..($col_len[$i]-1)]); 
+					$tl = join("$symbol", (&splitL($symbol, $tl))[0..($col_len[$i]-1)]); 
 				}
 			}# End chkColNum 
 			push(@line, $tl); 
@@ -595,7 +592,7 @@ sub cbind {
 sub LabelTbl {
 	my ($mark) = @_;
 	$mark =~ s/^\s+//; $mark =~ s/\s+$//g;
-	my @Marks = split(/::/,$mark);
+	my @Marks = &splitL("::", $mark); 
 	my @markT = ();
 	for (my $i=0; $i<@Marks; $i++) {
 		if ($Marks[$i] =~ /^([^.].*)\.{2}/ ) {
@@ -627,9 +624,10 @@ sub UniqColLineF{
 	$opts{'topN'} //= 1; 
 	for my $fh (@InFp) {
 		while (<$fh>) {
-			my @temp = split(/$symbol/o,$_);
+			chomp; 
+			s/[^\S$symbol]+$//; 
+			my @temp = &splitL($symbol, $_); 
 			$temp[-1] =~ s/[^\S$symbol]+$//; 
-			chomp; s/[^\S$symbol]+$//;
 			my $key = join($symbol,@temp[@Cols]);
 			if (defined $uniqLine{$key}) {
 				$uniqLine{$key} ++; 
@@ -652,7 +650,7 @@ sub best_uniqCol{
 	my @BestCol   = &parseCol($opts{best_uniqCol});
 	my @SelctCol  = &parseCol($opts{select_col});
 #	my @SelctRule = &parseCol($opts{select_rule});
-	my @SelctRule = split(/,/, $opts{select_rule});
+	my @SelctRule = &splitL(',', $opts{'select_rule'}); 
 	foreach my $test (@SelctRule) {
 		$test =~ s/(^\s+|\s+$)//; 
 		($test == 1 or $test == -1) or &stop( "[Err] select_rule mustbe 1/-1!\n" );
@@ -666,12 +664,12 @@ sub best_uniqCol{
 	my @Keys;
 	for my $fh (@InFp) {
 		READING:while (<$fh>) {
-			my @temp = split(/$symbol/o,$_);
-			chomp; chomp($temp[-1]); 
+			chomp; 
+			my @temp = &splitL($symbol, $_); 
 			my $key = ($opts{best_disOrdCol}) ? join($symbol, (sort @temp[@BestCol])) : join($symbol,@temp[@BestCol]) ; # 2013-02-08 
 			my $newSlct = join($symbol,@temp[@SelctCol]);
 			if (defined $slctLines{$key}) {
-				my @OriginSelct = split(/$symbol/o,$slctLines{$key});
+				my @OriginSelct = &splitL($symbol, $slctLines{$key}); 
 				if ( $newSlct eq $slctLines{$key} ) {
 					if ( $rep == 1 ) {
 						$repLines{$key} .= "\n$_"; 
@@ -755,9 +753,8 @@ sub column{
 	my @cols=&parseCol($opts{column});
 	for my $fh (@InFp) {
 		while (<$fh>) {
-			# chomp; s/[^\S$symbol]+$//; 
-			my @temp=split(/$symbol/o,$_); # When only the first column contain non-null char, the following will be missed. 
-			$temp[-1] =~ s/[^\S$symbol]+$//;
+			chomp; s/[^\S$symbol]+$//; 
+			my @temp = &splitL($symbol, $_); 
 			print STDOUT join("\t",@temp[@cols])."\n";
 		}
 	}# End for $fh in @InFp 
@@ -785,10 +782,10 @@ sub extreme{
 	foreach my $col (@cols) {
 		$#file>0 or last; # Should not be ">=". 
 		my @rest;
-		my @temp_extrm=split(/$symbol/o,$file[0]);
+		my @temp_extrm = &splitL($symbol, $file[0]); 
 		my $extreme=$temp_extrm[$col];
 		foreach my $line (@file) {
-			my @temp_line=split(/$symbol/o,$line);
+			my @temp_line = &splitL($symbol, $line); 
 			if ($mode) {
 				($extreme<$temp_line[$col])?($extreme=$temp_line[$col]):();
 			}else{
@@ -796,7 +793,7 @@ sub extreme{
 			}
 		}
 		foreach my $line (@file) {
-			my @temp_line=split(/$symbol/o,$line);
+			my @temp_line = &splitL($symbol, $line); 
 			($extreme==$temp_line[$col])?(push(@rest,$line)):();
 		}
 		@file=@rest;
@@ -810,8 +807,8 @@ sub extreme{
 sub col_sort {
 	no strict; 
 	&_prep_cSort_ruls(); 
-	my @tempa=split(/$symbol/o,$a);
-	my @tempb=split(/$symbol/o,$b);
+	my @tempa = &splitL($symbol, $a); 
+	my @tempb = &splitL($symbol, $b); 
 	no warnings; 
 	foreach my $rul (@{$opts{'col_sort_ruls'}}) {
 		if ( my $result=( ($tempa[$rul->[0]]<=>$tempb[$rul->[0]]) || ($tempa[$rul->[0]] cmp $tempb[$rul->[0]]) ) * $rul->[1] ) {
@@ -827,7 +824,12 @@ sub _prep_cSort_ruls {
 	$opts{'col_sort_cols'} = [ &parseCol($opts{col_sort}) ]; 
 	$opts{'col_sort_ruls'} = []; 
 	if (defined $opts{'col_sort_rule'}) {
-		my @rr = map { $_ =~ s/\s//g; $_ eq '' and $_ = -1; ($_ eq '1' or $_ eq '-1') or die "[Err] col_sort_rule should be like ' -1,1,-1,...'\n"; $_ * -1; } split(/,/, $opts{'col_sort_rule'}); 
+		my @rr = map { 
+		  $_ =~ s/\s//g; 
+		  $_ eq '' and $_ = -1; 
+		  ($_ eq '1' or $_ eq '-1') or die "[Err] col_sort_rule should be like ' -1,1,-1,...'\n"; 
+		  $_ * -1; 
+		} &splitL(',', $opts{'col_sort_rule'}); 
 		for (my $i=0; $i<@{$opts{'col_sort_cols'}}; $i++) {
 			$rr[$i] //= 1; 
 			push(@{$opts{'col_sort_ruls'}}, [$opts{'col_sort_cols'}[$i], $rr[$i]]); 
@@ -859,8 +861,8 @@ sub uniq_rep{
 	}
 	for my $fh (@InFp) {
 		while (<$fh>) {
-			my @temp=split(/$symbol/o,$_);
-			chomp; chomp($temp[-1]); 
+			chomp; 
+			my @temp = &splitL($symbol, $_); 
 			my $key = join("\t",@temp[@cols]);
 			if (defined $line{$key}) {
 				$line{$key} .= "\n$_";
@@ -897,7 +899,8 @@ sub colStat{
 	my $useful_count = 0; 
 	for my $fh (@InFp) {
 		while (<$fh>) {
-			my @temp=split(/$symbol/o,$_); 
+			chomp; 
+			my @temp = &splitL($symbol, $_); 
 			chomp; chomp($temp[-1]); 
 			(defined $temp[$col] and $temp[$col] =~ m/^[\d.\-e]+$/) or next; 
 			$useful_count ++; 
@@ -973,7 +976,7 @@ sub openFH ($$) {
 
 
 sub parseCol {
-	my @cols = split(/,/, $_[0]); 
+	my @cols = &splitL(',', $_[0]); 
 	my @ncols; 
 	for my $tc (@cols) {
 		$tc =~ s/(^\s+|\s+$)//g; 
@@ -1022,8 +1025,8 @@ sub loc_tbl2hash {
 	my $fh = shift; 
 	my %loc; 
 	while (<$fh>) {
-		my @ta = split(/\t/, $_); 
-		chomp; chomp($ta[-1]); 
+		chomp; 
+		my @ta = &splitL($symbol, $_); 
 		push(@{$loc{$ta[0]}}, [$ta[1] , $ta[2]]); 
 	}
 	for my $id (keys %loc) {
