@@ -2,9 +2,13 @@
 # 2016-02-18 Further trimming '(Similarity to unknown protein)'; 
 use strict; 
 use warnings; 
+use fileSunhh; 
 while (<>) {
+	if ( m/^\s*(#|$)/ ) {
+		next; 
+	}
 	chomp; 
-	my @ta = split(/\t/, $_);
+	my @ta = &splitL("\t", $_); 
 	if ( defined $ta[3] ) {
 		my $prev_ss = $ta[3]; 
 		my $aftr_ss = &trim($prev_ss); 
