@@ -1,14 +1,45 @@
 #!/usr/bin/perl 
 use strict; 
+use LogInforSunhh; 
+use Getopt::Long; 
+my %opts; 
+GetOptions(\%opts, 
+	"help!", 
+	"jf_db:s", # Required. 
+	"jf_klen:i", # Default 17
+	"jf_exe:s", # Default jellyfish
+	"step:i", # Default 1 
+); 
+
+&_prepare_para(); 
+
+sub _prepare_para {
+	$opts{'jf_exe'}  //= 'jellyfish'; 
+	$opts{'jf_klen'} //= 17; 
+	$opts{'step'}    //= 1; 
+}
+
+my $help_txt = <<HH; 
+
+perl $0   -jf_db  in.jf_database 
+
+-jf_exe       [$opts{'jf_exe'}]
+-jf_klen      [$opts{'jf_klen'}]
+-step         [$opts{'step'}]
+
+HH
+
+defined $opts{'jf_db'} or &LogInforSunhh::usage($help_txt); 
+$opts{'help'} and &LogInforSunhh::usage($help_txt);
+
+
+my $db_jf = $opts{'jf_db'}; 
+my $db_km = $opts{'jf_klen'}; 
+my $exe_jf2 = $opts{'jf_exe'}; 
+my $step = $opts{'step'}; 
+
 
 # jellyfish-2.0 query P1_Cor1st_1k_m81.jf GTCGATTAAATACGCAAGTTTGCCACTAGCTGTAGCAGCACTGTCTACGAGTCACGAGATGATGTACAAATGACCGCATAGCGCAGTGGATTAGCGCCTCTGACTTCGGATCAGAAGGTTGTGGGTTTGACTCCCACTGTGGTCATCTGT
-my $db_jf = 'P1_Cor1st_1k_m61.jf'; 
-$db_jf = 'P1_Cor1st_3h5h1k_m61.jf'; 
-my $db_km = 61; 
-my $exe_jf2 = '/home/Sunhh/src/Assemble/MaSuRCA/MaSuRCA-2.2.2/bin/jellyfish-2.0'; 
-
-my $step = 10; 
-$step = 1; 
 
 my (@IDs, %seqs); 
 my $tk='unknown'; 
