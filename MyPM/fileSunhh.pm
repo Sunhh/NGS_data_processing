@@ -16,7 +16,7 @@ use Cwd;
 use Exporter qw(import); 
 
 # our @EXPORT = qw(tsmsg stopErr exeCmd);
-our @EXPORT = qw(openFH renameByPat isSkipLine splitL);
+our @EXPORT = qw(openFH renameByPat isSkipLine splitL wantLine wantLineC);
 our @EXPORT_OK = qw();
 
 my %goodFileType = qw(
@@ -182,6 +182,44 @@ sub splitL {
 	chomp($back[-1]); 
 	return (@back); 
 }# splitL() 
+
+=head1 wantLine( $fileHandle )
+
+Return         : ($line_text)
+
+Description    : This $line_text is not modified, but this line should not pass check of &isSkipLine(). 
+
+=cut
+sub wantLine {
+	if (defined $_[0]) {
+		while ( readline($_[0]) ) {
+			&isSkipLine($_) and next; 
+			return($_); 
+		}
+	} else {
+		while ( readline() ) {
+			&isSkipLine($_) and next; 
+			return($_); 
+		}
+	}
+	return; 
+}# wantLine() 
+
+=head1 wantLineC( $fileHandle )
+
+Return         : ($line_text_wo_return)
+
+Function       : Remove the tailing '\r|\n's in good input line and return it. 
+
+=cut
+sub wantLineC {
+	$_ = &wantLine( @_ ); # Here and elsewhere I continuously use '$_' to ignore problem in using. '$_' is always changed when using, so do be careful with it. 
+	defined $_ or return(); 
+	$_ =~ s/[\r\n]+$//; 
+	return( $_ ); 
+}# wantLineC() 
+
+
 
 =head1 isSkipLine( $line )
 
