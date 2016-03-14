@@ -936,45 +936,6 @@ sub colStat{
 ######################################################################
 ##     Inner sub-routines. 
 ######################################################################
-sub openFH ($$) {
-	my $f = shift;
-	my $type = shift;
-	my %goodFileType = qw(
-		<       read
-		>       write
-		read    read
-		write   write
-	);
-	defined $type or $type = 'read';
-	defined $goodFileType{$type} or &stop("[Err]Unknown open method tag [$type].\n");
-	$type = $goodFileType{$type};
-	local *FH;
-	# my $tfh;
-	if ($type eq 'read') {
-		if ($f =~ m/\.gz$/) {
-			open (FH, '-|', "gzip -cd $f") or &stop("[Err]$! [$f]\n");
-			# open ($tfh, '-|', "gzip -cd $f") or &stop "[Err]$! [$f]\n";
-		} elsif ( $f =~ m/\.bz2$/ ) {
-			open (FH, '-|', "bzip2 -cd $f") or &stop("[Err]$! [$f]\n");
-		} else {
-			open (FH, '<', "$f") or &stop("[Err]$! [$f]\n");
-		}
-	} elsif ($type eq 'write') {
-		if ($f =~ m/\.gz$/) {
-			open (FH, '|-', "gzip - > $f") or &stop("[Err]$! [$f]\n");
-		} elsif ( $f =~ m/\.bz2$/ ) {
-			open (FH, '|-', "bzip2 - > $f") or &stop("[Err]$! [$f]\n");
-		} else {
-			open (FH, '>', "$f") or &stop("[Err]$! [$f]\n");
-		}
-	} else {
-		# Something is wrong.
-		&stop("[Err]Something is wrong here.\n");
-	}
-	return *FH;
-}#End sub openFH
-
-
 sub parseCol {
 	my @cols = &splitL(',', $_[0]); 
 	my @ncols; 
