@@ -12,6 +12,7 @@ GetOptions(\%opts,
 	"task:s", # convert 
 	  "dbXml2GOlist!", "xpath2go:s", 
 	  "xml5_to_raw4!", 
+	  "join_xml5!", 
 	  "dbV5_to_dbV4!", 
 	   "dirV5:s", "dirV4old:s", "dirV4new:s", 
 	   "hmmconvert:s", "doIndex!", 
@@ -68,6 +69,8 @@ sub usage {
 #               -xpath2go    : [/interprodb/interpro/class_list/classification] Normally no need to change. 
 #
 #              -xml5_to_raw4 : [Boolean] Convert interproV5.xml file to interproV4.raw file. 
+#
+#              -join_xml5    : [Boolean]
 #
 #              -showV4convert: [Boolean] Show the command to convert ipsV4_result from .raw to others. 
 #               -dirV4new    : [/home/Sunhh/iprscan/iprscanV4_wiV5/] This is the new dir of iprV4 for converting files. 
@@ -203,6 +206,7 @@ $goType{'CELLULAR_COMPONENT'} = 'Cellular Component';
 # Invoke sub-functions
 &dbXml2GOlist() if ( $opts{'task'} eq 'convert' and $opts{'dbXml2GOlist'} ); 
 &xml5_to_raw4() if ( $opts{'task'} eq 'convert' and $opts{'xml5_to_raw4'} ); 
+&join_xml5() if ( $opts{'task'} eq 'convert' and $opts{'join_xml5'} ) ; 
 &dbV5_to_dbV4() if ( $opts{'task'} eq 'convert' and $opts{'dbV5_to_dbV4'} ); 
 &splitXmlByID() if ( $opts{'task'} eq 'convert' and defined $opts{'splitXmlByID'} ); 
 &showV4convert() if ( $opts{'task'} eq 'convert' and $opts{'showV4convert'} ); 
@@ -211,6 +215,32 @@ $goType{'CELLULAR_COMPONENT'} = 'Cellular Component';
 &go2ahrd() if ( defined $opts{'go2ahrd'} ); 
 
 # Sub-functions
+sub join_xml5 {
+	my $header_out = 0; 
+	my $tail_txt = ''; 
+	for my $fh ( @InFp ) {
+		while (<$fh>) {
+			if ( m!^\<\?xml version=! ) {
+				my $to = $_; 
+				my $tl = <$fh>; 
+				$to .= $tl; 
+				$tl =~ m!^\<protein\-matches! or &stopErr("[Err] Unknown format: $to"); 
+				$header_out == 0 and print {$outFh} $to; 
+				$header_out = 1; 
+				next; 
+			}
+			if ( m!^\s*\</protein\-matches!o ) {
+				$tail_txt = $_; 
+				$tail_txt =~ m!^\</protein\-matches\>! or &stopErr("[Err] Unknown format: $tail_txt"); 
+				next; 
+			}
+			print {$outFh} $_; 
+		}
+	}
+	print {$outFh} $tail_txt; 
+	close($outFh); 
+	return; 
+}# sub join_xml5 
 sub jnTSV_iprID {
 # Format of TSV : 
 # https://github.com/ebi-pf-team/interproscan/wiki/OutputFormats
