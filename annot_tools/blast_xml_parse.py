@@ -172,7 +172,7 @@ def report_best_hit_on_query(infile, outfile = './best_hit.csv'):
     # Keep in mind here that the names for the fields cannot have a comma.
     # header_list = ['query id',  'subject id', '% identity', 'alignment length', 'mismatches', 'gap opens', 'q. start', 'q. end', 's. start', 's. end', 'evalue', 'bit score', 'subject description']
     header_list = ['qseqid',  'sseqid', 'pident', 'length', 'mismatch', 'gapopen', 'qstart', 'qend', 'sstart', 'send', 'evalue', 'bitscore', 'subject_description']
-    header = ','.join(header_list)
+    header = delim.join(header_list)
     result.append(header)
     
     cur_query = ''
