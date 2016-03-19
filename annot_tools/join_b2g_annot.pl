@@ -10,6 +10,8 @@ GetOptions(\%opts,
 	"gene_list:s", 
 ); 
 
+-t and !@ARGV and die "perl $0 -gene_list gene_id_V1p7 b2g.final.annot > b2g.final.annot.perGene\n"; 
+
 my %hash; 
 if (defined $opts{'gene_list'}) {
 	my $fh = &openFH($opts{'gene_list'}, '<'); 
