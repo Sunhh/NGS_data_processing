@@ -46,7 +46,7 @@ while (&wantLineC($fh)) {
 	if ( $ta[2] eq 'mRNA' ) {
 		$ta[8] =~ m/^ID=([^\s;]+)/ or die "[Err] $_\n"; 
 		my $mID = $1; 
-		defined $prot_fa{ $mID } or die "[Err] mID=$mID\n"; 
+		defined $prot_fa{ $mID } or do { &tsmsg("[Wrn] Missing seq for mID=$mID\n"); next; }; 
 		defined $h{'mID'}{$mID} and next; 
 		defined $h{'chr'}{$ta[0]} or do { $h{'chrN'}++; $h{'chr'}{$ta[0]} = sprintf("%05d", $h{'chrN'}); $h{'IDg_chr'}{$ta[0]} = 0; }; 
 		$h{'IDf_all'} ++; 
@@ -65,8 +65,8 @@ while (&wantLineC($fh)) {
 		); 
 		print {$o2} join( "\t", 'gene', $mID, @tb )."\n"; 
 		my $ss = $prot_fa{ $mID }{'seq'}; 
-		$ss =~ s/\s//sg; $ss =~ s/\*$//; $ss =~ s/(.{60})/$1\n/g; chomp($ss); 
-		print {$o3} join('', join("\t", ">$prot_fa{$mID}{'key'}", @tb), $ss )."\n"; 
+		$ss =~ s/\s//sg; $ss =~ s/\*+$//; $ss =~ s/(.{60})/$1\n/g; chomp($ss); 
+		print {$o3} join('', join("\t", ">$prot_fa{$mID}{'key'}", @tb)."\n" , $ss )."\n"; 
 	}
 }
 close($fh); 
