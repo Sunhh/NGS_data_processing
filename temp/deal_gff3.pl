@@ -33,6 +33,7 @@ GetOptions(\%opts,
 	"gffInRegion:s", "bothStr!", "onlyFull!", # 
 	"listTopID!", # Finished. 
 	"getLoc:s", "joinLoc!", # Doing. Could be mRNA/CDS/gene/intron, others may work but not guaranteed. 
+	"getJnLoc!", # Doing. 
 	
 	"addFaToGff!", # Finished. 
 	
@@ -107,6 +108,8 @@ sub usage {
 #   -joinLoc        [Boolean] Output joined table by featParent_ID, the format is like : 
 #                     LengthInFeat\\tfeatParent_ID\\tchrID\\tfeat_Start_min\\tfeat_End_max\\tStrand(+/-)\tfeat_Start_1,feat_End_1;feat_Start2,feat_End_2;...
 #----------------------------------------------------------------------------------------------------
+# -getJnLoc         [Boolean]
+#----------------------------------------------------------------------------------------------------
 # -list_intron      [Boolean] Provide intron table according to '-intron_byFeat'. 
 #   -intron_byFeat  [CDS] Could be a feature of CDS/exon ; 
 #----------------------------------------------------------------------------------------------------
@@ -163,6 +166,7 @@ my $gff_obj = gffSunhh->new();
 my $fas_obj = fastaSunhh->new(); 
 my $mat_obj = mathSunhh->new(); 
 my $iFh; 
+
 if ( defined $opts{'inGff'} ) {
 	$iFh = &openFH($opts{'inGff'}, '<'); 
 } elsif ( @ARGV > 0 ) {
@@ -172,8 +176,16 @@ if ( defined $opts{'inGff'} ) {
 } else {
 	&usage(); 
 }
+
 my $oFh = \*STDOUT; 
 defined $opts{'out'} and $oFh = &openFH($opts{'out'}, '>'); 
+
+if ( $opts{'getJnLoc'} ) {
+	&action_getJnLoc(); 
+}
+
+
+
 $opts{'seqInGff'} = ( $opts{'seqInGff'} ) ? 1 : 0; 
 if (defined $opts{'gff_top_hier'}) {
 	my @ta = grep { $_ ne '' } map { s!^\s+|\s+$!!g; lc($_); } split(/,/, $opts{'gff_top_hier'}); 
@@ -240,6 +252,53 @@ if ( $opts{'addFaToGff'} ) {
 ################################################################################
 ############### StepX. action sub-routines here. 
 ################################################################################
+sub action_getJnLoc {
+	my $wrk_dir = &fileSunhh::new_tmp_dir(); 
+	mkdir($wrk_dir); 
+	open O,'>',"$wrk_dir/in.gff" or die; 
+	while (<$iFh>) {
+		print O $_; 
+	}
+	close O; 
+	open I1,'-|',"perl $0 -getLoc mRNA -inGff $wrk_dir/in.gff" or die; 
+	open O1,'>',"$wrk_dir/in.gff.loc_mrna" or die; 
+	while (&wantLineC( \*I1 )) {
+		if ($. == 1) {
+			my @ta = &splitL("\t", $_); 
+			$ta[0] eq 'FeatID' and $ta[0] = 'mrnaID'; 
+			$ta[1] eq 'ParentID' and $ta[1] = 'geneID'; 
+			@ta[3,4,5] = qw/mrnaStart mrnaEnd mrnaStrand/; 
+			print O1 join("\t", @ta)."\n"; 
+			next; 
+		}
+		print O1 "$_\n"; 
+	}
+	close O1; 
+	close I1; 
+	open I2,'-|',"perl $0 -getLoc CDS -joinLoc -inGff $wrk_dir/in.gff" or die; 
+	open O2,'>',"$wrk_dir/in.gff.loc_cds" or die; 
+	while ( &wantLineC( \*I2 ) ) {
+		if ($. == 1) {
+			my @ta = &splitL("\t", $_); 
+			@ta = qw/LenInCDS       mrnaID  SeqID   CDSStart     CDSEnd    CDSStrand       CDSBlocks/; 
+			print O2 join("\t", @ta)."\n"; 
+			next; 
+		}
+		print O2 "$_\n"; 
+	}
+	close I2; 
+	close O2; 
+	open I3,'-|', "ColLink.pl $wrk_dir/in.gff.loc_cds -f1 $wrk_dir/in.gff.loc_mrna -keyC1 0 -keyC2 1 -add -COl1 1,3,4,5 | deal_table.pl -column 1,7,2,8,9,10,3,4,0,6" or die; 
+	while (<I3>) {
+		print {$oFh} $_; 
+	}
+	close I3; 
+
+	&fileSunhh::_rmtree($wrk_dir); 
+
+	return; 
+
+}# action_getJnLoc() 
 sub action_ch_locByAGP {
 	my $fh = &openFH( $opts{'ch_locByAGP'}, '<' ); 
 	my %info_ctg2scf; # {ctgID}=>[ [ctgS, ctgE, scfID, scfS, scfE, scfStr(+/-/?)], [], ... ]
