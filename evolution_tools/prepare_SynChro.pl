@@ -19,8 +19,12 @@ my $fs_obj = fastaSunhh->new();
 
 !@ARGV and die "perl $0 P1Genom_V1p2.prot.fa P1Genom_V1p2.prot_chr.gff3 outPref badIDs\n"; 
 
-$ARGV[2] //= 'OUT'; 
+$ARGV[2] //= 'OUT0'; # This must be exactly four characters length! 
 $ARGV[3] //= ''; 
+
+$ARGV[2] = sprintf("%4.4s", $ARGV[2]); 
+$ARGV[2] =~ s/\s/_/g; 
+
 my %bad_chrID; 
 if ($ARGV[3] ne '') {
 	for my $ta (split(/,/, $ARGV[3])) {
