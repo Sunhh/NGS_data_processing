@@ -25,10 +25,10 @@ $opts{'exe_java'} //= 'java';
 
 defined $opts{'fq1_pref_list'} and push( @{$opts{'fq1_pref'}}, @{ &load_prefList( $opts{'fq1_pref_list'} ) } ); 
 defined $opts{'fq2_pref_list'} and push( @{$opts{'fq2_pref'}}, @{ &load_prefList( $opts{'fq2_pref_list'} ) } ); 
-$opts{'fq1_pref_list'} //= []; 
-$opts{'fq2_pref_list'} //= []; 
-my @fq1_pref = @{ $opts{'fq1_pref_list'} }; 
-my @fq2_pref = @{ $opts{'fq2_pref_list'} }; 
+$opts{'fq1_pref'} //= []; 
+$opts{'fq2_pref'} //= []; 
+my @fq1_pref = @{ $opts{'fq1_pref'} }; 
+my @fq2_pref = @{ $opts{'fq2_pref'} }; 
 
 my $help_txt = <<HH; 
 perl $0 -fq1_pref inFq1_pref -fq1_suff _R1.ndupB   [ -fq2_pref inFq2_pref -fq2_suff _R2.ndupB ]
