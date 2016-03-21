@@ -47,7 +47,7 @@ perl $0 -fq1_pref inFq1_pref -fq1_suff _R1.ndupB   [ -fq2_pref inFq2_pref -fq2_s
 -paraJar_trimmo         [$opts{'paraJar_trimmo'}]
 -exe_java               [$opts{'exe_java'}]
 
--pref_list              [Boolean]
+-trimPolyAT             [Boolean]
 -paraSE_trimmo_polyAT   [$opts{'paraSE_trimmo_polyAT'}]
 
 HH
