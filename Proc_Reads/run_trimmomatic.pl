@@ -43,10 +43,12 @@ perl $0 -fq1_pref inFq1_pref -fq1_suff _R1.ndupB   [ -fq2_pref inFq2_pref -fq2_s
 -fq2_pref_list
 -jar_trimmo             [$opts{'jar_trimmo'}]
 -paraSE_trimmo          [$opts{'paraSE_trimmo'}]
--paraSE_trimmo_polyAT   [$opts{'paraSE_trimmo_polyAT'}]
 -paraPE_trimmo          [$opts{'paraPE_trimmo'}]
 -paraJar_trimmo         [$opts{'paraJar_trimmo'}]
 -exe_java               [$opts{'exe_java'}]
+
+-pref_list              [Boolean]
+-paraSE_trimmo_polyAT   [$opts{'paraSE_trimmo_polyAT'}]
 
 HH
 $opts{'help'} and &LogInforSunhh::usage($help_txt); 
