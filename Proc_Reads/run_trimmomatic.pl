@@ -11,8 +11,9 @@ GetOptions(\%opts,
 	"fq1_pref:s@", "fq1_suff:s", "fq1_pref_list:s", 
 	"fq2_pref:s@", "fq2_suff:s", "fq2_pref_list:s", 
 	"jar_trimmo:s", 
-	"paraSE_trimmo:s", "paraPE_trimmo:s", "paraJar_trimmo:s", 
+	"paraSE_trimmo:s", "paraPE_trimmo:s", "paraJar_trimmo:s", "paraSE_trimmo_polyAT:s", 
 	"exe_java:s", 
+	"trimPolyAT!", 
 ); 
 
 $opts{'fq1_suff'} //= '_R1.ndupB'; 
@@ -21,7 +22,12 @@ $opts{'jar_trimmo'} //= '/home/Sunhh/src/Assemble/Trimmomatic/Trimmomatic-0.32/t
 $opts{'paraJar_trimmo'} //= '-threads 20'; 
 $opts{'paraSE_trimmo'} //= 'ILLUMINACLIP:/home/Sunhh/src/Assemble/Trimmomatic/Trimmomatic-0.32/adapters/TruSeq3-SE.fa:2:30:10 SLIDINGWINDOW:4:20 LEADING:3 TRAILING:3 MINLEN:40';
 $opts{'paraPE_trimmo'} //= 'ILLUMINACLIP:/home/Sunhh/src/Assemble/Trimmomatic/Trimmomatic-0.32/adapters/TruSeq3-PE-2.fa:2:30:10:1:TRUE SLIDINGWINDOW:4:20 LEADING:3 TRAILING:3 MINLEN:40'; 
+$opts{'paraSE_trimmo_polyAT'} //= 'ILLUMINACLIP:/home/Sunhh/tools/github/NGS_data_processing/Proc_Reads/polyAT_adp.fa:2:30:7 MINLEN:40'; 
 $opts{'exe_java'} //= 'java'; 
+
+if ( $opts{'trimPolyAT'} ) {
+	$opts{'paraSE_trimmo'} = $opts{'paraSE_trimmo_polyAT'}; 
+}
 
 defined $opts{'fq1_pref_list'} and push( @{$opts{'fq1_pref'}}, @{ &load_prefList( $opts{'fq1_pref_list'} ) } ); 
 defined $opts{'fq2_pref_list'} and push( @{$opts{'fq2_pref'}}, @{ &load_prefList( $opts{'fq2_pref_list'} ) } ); 
@@ -37,6 +43,7 @@ perl $0 -fq1_pref inFq1_pref -fq1_suff _R1.ndupB   [ -fq2_pref inFq2_pref -fq2_s
 -fq2_pref_list
 -jar_trimmo             [$opts{'jar_trimmo'}]
 -paraSE_trimmo          [$opts{'paraSE_trimmo'}]
+-paraSE_trimmo_polyAT   [$opts{'paraSE_trimmo_polyAT'}]
 -paraPE_trimmo          [$opts{'paraPE_trimmo'}]
 -paraJar_trimmo         [$opts{'paraJar_trimmo'}]
 -exe_java               [$opts{'exe_java'}]
