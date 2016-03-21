@@ -52,6 +52,7 @@ while (&wantLineC($fh)) {
 		$h{'IDf_all'} ++; 
 		$h{'IDg_all'} ++; 
 		$h{'IDg_chr'}{$ta[0]} ++; 
+		$h{'IDf_all_chr'}{$ta[0]} = $h{'IDf_all'}; 
 		my $tag_tf = 't'; $ta[6] eq '-' and $tag_tf = 'f'; 
 		my @tb = (
 		  $h{'chr'}{$ta[0]}, 
@@ -77,8 +78,8 @@ for ( @tks ) {
 	$h{'chr'}{$_} += 0; 
 }
 print {$o1} join("\t", @{$h{'chr'}}{@tks})."\n"; 
-print {$o1} join("\t", @{$h{'IDg_chr'}}{@tks})."\n"; 
-print {$o1} join("\t", @{$h{'IDg_chr'}}{@tks})."\n"; 
+print {$o1} join("\t", @{$h{'IDf_all_chr'}}{@tks})."\n"; 
+print {$o1} join("\t", @{$h{'IDf_all_chr'}}{@tks})."\n"; 
 
 # [Sunhh@whale 01Genomes]$ head ZYRO.def
 # type    name            chr     start   end     strand  sens    IDg/chr IDg/all IDf/all
