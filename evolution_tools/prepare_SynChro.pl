@@ -50,6 +50,10 @@ while (&wantLineC($fh)) {
 	if ( $ta[2] eq 'mRNA' ) {
 		$ta[8] =~ m/^ID=([^\s;]+)/ or die "[Err] $_\n"; 
 		my $mID = $1; 
+		$mID = sprintf("%.64s", $mID); 
+		defined $h{'chk_IDrep'}{$mID} and &stopErr("[Err] truncated_mID=[$mID] is repetitive.\n"); 
+		$h{'chk_IDrep'}{$mID} = 1; 
+
 		defined $prot_fa{ $mID } or do { &tsmsg("[Wrn] Missing seq for mID=$mID\n"); next; }; 
 		defined $h{'mID'}{$mID} and next; 
 		defined $h{'chr'}{$ta[0]} or do { $h{'chrN'}++; $h{'chr'}{$ta[0]} = sprintf("%05d", $h{'chrN'}); $h{'IDg_chr'}{$ta[0]} = 0; }; 
