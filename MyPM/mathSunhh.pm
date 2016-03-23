@@ -682,6 +682,15 @@ sub max {
 	return $max; 
 }# max() 
 
+=head1 log10( $number )
+
+
+=cut
+sub log10 {
+	my $n = shift; 
+	return log($n)/log(10); 
+}# log10() 
+
 =head1 ins_calc( \@numbers, $min_valid_number_count )
 
 Function: This is not a method, but a sub-routine(). 

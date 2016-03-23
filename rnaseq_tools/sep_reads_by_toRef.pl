@@ -82,6 +82,9 @@ perl $0 -inSam1 in_toRef1.sam   -inSam2 in_toRef2.sam   -inFq1 in_src.fq [ -inFq
 -exe_perl     ['perl']
 -pl_extractFq [/home/Sunhh/tools/github/NGS_data_processing/extract_fq_by_list.pl]
 
+-help         [Boolean]
+-tell_grp     [Boolean]
+
 HH
 
 $opts{'help'} and &LogInforSunhh::usage($help_txt); 
