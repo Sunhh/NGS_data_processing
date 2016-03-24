@@ -1796,6 +1796,10 @@ sub _binRealLoc2BinLoc {
 
 	# Construct windows (bins)
 	my %wind = %{ $ms_obj->setup_windows( 'ttl_start'=>$ah->{'minV'}, 'ttl_end'=>$ah->{'maxV'}, 'wind_size'=>$ah->{'binSize'}, 'wind_step'=>$ah->{'binSize'}, 'minRatio'=>0 ) }; 
+	my %wind_si2wi; 
+	for (my $i=0; $i<@{$wind{'info'}{'windSloci'}}; $i++) {
+		$wind_si2wi{ $wind{'info'}{'windSloci'}[$i] } = $i; 
+	}
 	my %used_wi; 
 	my %wi2realIdx; # {$wi} = [$realIdx_1, $realIdx_2, ...] 
 	for my $tmp_idx_ar (@{$locDb{'sorted_rawIdx'}}) {
@@ -1805,7 +1809,8 @@ sub _binRealLoc2BinLoc {
 			my @real_SE = @{$ah->{'realLoc'}[$realIdx]}; 
 			my @idxS_arr = @{ $ms_obj->map_windows( 'position' => $real_SE[0], 'wind_hash'=>\%wind ) }; 
 			my @idxE_arr = @{ $ms_obj->map_windows( 'position' => $real_SE[1], 'wind_hash'=>\%wind ) }; 
-			my ($wi_S, $wi_E) = &minmax( [@idxS_arr, @idxE_arr] ); 
+			my ($si_S, $si_E) = &minmax( [@idxS_arr, @idxE_arr] ); 
+			my ($wi_S, $wi_E) = ( $wind_si2wi{$si_S}, $wind_si2wi{$si_E} ); 
 			for my $t_wi ($wi_S .. $wi_E) {
 				$used_wi{$t_wi} = 1; 
 				push(@{ $wi2realIdx{$t_wi} }, $realIdx); 
@@ -1814,7 +1819,8 @@ sub _binRealLoc2BinLoc {
 	}
 	my @used_wi_arr = sort {$a<=>$b} keys %used_wi; 
 	for my $t_wi (@used_wi_arr) {
-		push(@{$ah->{'rawLoc'}}, [ @{$wind{'loci'}{$t_wi}}[0,1] ]); 
+		my $t_si = $wind{'info'}{'windSloci'}[$t_wi]; 
+		push(@{$ah->{'rawLoc'}}, [ @{$wind{'loci'}{$t_si}}[0,1] ]); 
 		$ah->{'rawIdx2realIdx'}{ $#{$ah->{'rawLoc'}} } = [ @{ $wi2realIdx{$t_wi} } ]; 
 		push(@{$ah->{'rawNum'}}, $ah->{'rawLoc'}[-1][0]); 
 	}
@@ -1840,7 +1846,7 @@ sub _fill_sorted_rawIdx {
 ### Add ->{'rawN2rawIdx'}{$rawN} => [ $rawIdx1, $rawIdx2, ... ]
 sub _fill_rawN2rawIdx {
 	my ($ah) = @_; 
-	for (my $i=0; $i<@{$ah->{'rawNum'}}; $i++) {
+	for (my $i=0; $i<@{ $ah->{'rawNum'} }; $i++) {
 		push(@{$ah->{'rawN2rawIdx'}{ $ah->{'rawNum'}[$i] }}, $i); 
 	}
 	return; 
