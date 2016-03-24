@@ -755,6 +755,49 @@ sub parseCigar {
 
 }# sub parseCigar() 
 
+=head1 cnt_sam_mismatch (\@sam_line_array, 'set_rna|set_dna')
+
+Return      : ($mismatch_number)
+
+Description : 
+   For 'set_rna' :(default). For hisat2. 'S|H|I|D' in cigar and 'XM:i:(\d+)' are added together. Here I don't use 'Xlen' because 'XM:i:(\d+)' covers it in hisat2. 
+   For 'set_dna' : 'S|H' in cigar and 'NM:i:(\d+)' are added together. 'X|I|D' are all covered by 'NM:i:'. 
+   This function is only used when I don't want to use line2hash() function. 
+
+=cut
+sub cnt_sam_mismatch {
+	my ($ar, $type) = @_; 
+	$type //= 'set_rna'; 
+	$type =~ m/^(set_rna|set_dna)$/ or &stopErr("[Err] Bad type [$type] for cnt_sam_mismatch()\n"); 
+	my %cigar_h = %{ &parseCigar( $ar->[5] ) }; 
+
+	my $cnt = 0; 
+	if ($type eq 'set_rna') {
+		for my $tk (qw/Slen Hlen Ilen Dlen/) {
+			defined $cigar_h{$tk} and $cnt += $cigar_h{$tk}; 
+		}
+		for my $tb (@{$ar}[ 11 .. $#$ar]) {
+			$tb =~ m/^XM:i:(\d+)$/ or next; 
+			$cnt += $1; 
+			last; 
+		}
+	} elsif ($type eq 'set_dna') {
+		for my $tk (qw/Slen Hlen/) {
+			defined $cigar_h{$tk} and $cnt += $cigar_h{$tk}; 
+		}
+		for my $tb (@{$ar}[ 11 .. $#$ar]) {
+			$tb =~ m/^NM:i:(\d+)$/ or next; 
+			$cnt += $1; 
+			last; 
+		}
+	} else {
+		&stopErr("[Err] why here.\n"); 
+	}
+	
+	
+	return($cnt); 
+}# cnt_sam_mismatch ()
+
 =head1 sam_line2hash(\@sam_line_array, [@required_infor], $is_ignore_TAGs)
 
 Required    : \@sam_line_array 

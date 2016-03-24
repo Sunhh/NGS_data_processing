@@ -71,7 +71,7 @@ sub outSam_byRdID {
 		defined $rd_info_h->{$ta[0]} or next; 
 		defined $flag_aln{$ta[1]} or next; 
 		if ( $opts{'maxmismatchN'} >= 0 ) {
-			my $cnt_mismat = &cnt_mismatch(\@ta); 
+			my $cnt_mismat = &SeqAlnSunhh::cnt_sam_mismatch(\@ta, 'set_rna'); 
 			$cnt_mismat <= $opts{'maxmismatchN'} or next; 
 		}
 
@@ -80,23 +80,6 @@ sub outSam_byRdID {
 
 	return; 
 }# sub outSam_byRdID() 
-
-sub cnt_mismatch {
-	my ($ar) = @_; 
-	my %cigar_h = %{ &SeqAlnSunhh::parseCigar( $ar->[5] ) };
-
-	my $cnt = 0; 
-	for my $tk (qw/Slen Hlen Ilen Dlen Xlen/) {
-		defined $cigar_h{$tk} and $cnt += $cigar_h{$tk}; 
-	}
-	for my $tb ( @{$ar}[11 .. $#$ar] ) {
-		$tb =~ m/^XM:i:(\d+)$/ or next; 
-		$cnt += $1; 
-		last; 
-	}
-
-	return($cnt); 
-}
 
 sub openSam {
 	my ($fn, $type, $wiH) = @_; 
