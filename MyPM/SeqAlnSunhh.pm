@@ -392,6 +392,10 @@ sub bwaSE {
 
 Return   : ($file_handle)
 
+Description : 
+              $sam_fmt could be 'sam' or 'bam'. 
+              If $sam_fmt is undefined, I will try to infer from $sam_filename's .ext. If I failed to infer, I use 'sam'. 
+
 =cut
 sub openSam {
 	my ($fn, $fmt, $pH) = @_; 
@@ -400,6 +404,7 @@ sub openSam {
 	$pH->{'verbose'} //= 0; 
 
 	$fn =~ m/\.(bam|sam)$/i and $fmt //= lc($1); 
+	$fmt //= 'sam'; 
 
 	$pH->{'verbose'} and &tsmsg("[Msg] Reading sam file [$fn]\n"); 
 
@@ -410,7 +415,7 @@ sub openSam {
 		my $tagH = ( $pH->{'wiH'} ) ? ' -h ' : ''; 
 		open $back_fh, '-|', "$pH->{'exe_samtools'} view $tagH $fn" or &stopErr("[Err] Failed to open $fn\n");
 	} else {
-		&stopErr("[Err] Unknown type [$type], which should be sam/bam\n"); 
+		&stopErr("[Err] Unknown type [$fmt], which should be sam/bam\n"); 
 	}
 
 	return ($back_fh);
