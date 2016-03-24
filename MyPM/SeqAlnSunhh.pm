@@ -10,6 +10,7 @@ use LogInforSunhh;
 use Exporter qw(import); 
 use mathSunhh; # For usage of mathSunhh->_setHashFromArr(); 
 my $ms=mathSunhh->new(); 
+use fileSunhh; 
 
 our @EXPORT = qw(olap_e2e_A2B); 
 our @EXPORT_OK; 
@@ -386,6 +387,35 @@ sub bwaSE {
 ############################################################
 #  Sub-routines. 
 ############################################################
+
+=head1 openSam ( $sam_filename, $sam_fmt, { 'wiH' => '0|1', 'exe_samtools' => 'samtools', 'verbose'=>0 } )
+
+Return   : ($file_handle)
+
+=cut
+sub openSam {
+	my ($fn, $fmt, $pH) = @_; 
+	$pH->{'wiH'} //= 0; 
+	$pH->{'exe_samtools'} //= 'samtools'; 
+	$pH->{'verbose'} //= 0; 
+
+	$fn =~ m/\.(bam|sam)$/i and $fmt //= lc($1); 
+
+	$pH->{'verbose'} and &tsmsg("[Msg] Reading sam file [$fn]\n"); 
+
+	my $back_fh; 
+	if ( $fmt eq 'sam' ) {
+		$back_fh = &openFH( $fn, '<' ); 
+	} elsif ( $fmt eq 'bam' ) {
+		my $tagH = ( $pH->{'wiH'} ) ? ' -h ' : ''; 
+		open $back_fh, '-|', "$pH->{'exe_samtools'} view $tagH $fn" or &stopErr("[Err] Failed to open $fn\n");
+	} else {
+		&stopErr("[Err] Unknown type [$type], which should be sam/bam\n"); 
+	}
+
+	return ($back_fh);
+}# openSam () 
+
 
 =head1 not_uniqBest( \@sam_line_array )
 

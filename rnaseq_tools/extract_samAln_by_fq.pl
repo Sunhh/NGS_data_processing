@@ -61,7 +61,7 @@ sub outSam_byRdID {
 	$opts{'verbose'} and &tsmsg("[Msg] Processing sam file [$fnSam]\n"); 
 	my %flag_aln    = %{ &SeqAlnSunhh::mk_flag( 'keep' => '0=0,2=0;0=1,2=0,6=1,7=0;0=1,2=0,6=0,7=1' ) }; 
 
-	my $fhSam = &openSam( $fnSam, $fmtSam, 1 ); 
+	my $fhSam = &SeqAlnSunhh::openSam( $fnSam, $fmtSam, { 'wiH'=>1, 'verbose'=>$opts{'verbose'}, 'exe_samtools'=>$opts{'exe_samtools'} } ); 
 	
 	my %tmp_cnt = ('cntN_step'=>5e6); 
 	while ( &wantLineC($fhSam) ) {
@@ -80,22 +80,6 @@ sub outSam_byRdID {
 
 	return; 
 }# sub outSam_byRdID() 
-
-sub openSam {
-	my ($fn, $type, $wiH) = @_; 
-	$wiH //= 0; 
-	$opts{'verbose'} and &tsmsg("[Msg] Reading sam file [$fn]\n"); 
-	my $back_fh; 
-	if ($type eq 'sam') {
-		$back_fh = &openFH( $fn, '<' ); 
-	} elsif ($type eq 'bam') {
-		my $tagH = ( $wiH ) ? ' -h ' : '' ; 
-		open $back_fh, '-|', "$opts{'exe_samtools'} view $tagH $fn" or &stopErr("[Err] Failed to open $fn\n"); 
-	} else {
-		&stopErr("[Err] Unknown type [$type], which should be sam/bam\n"); 
-	}
-	return ($back_fh); 
-}# sub openSam() 
 
 sub load_fqID_toHash {
 	my $cnt = -1; 

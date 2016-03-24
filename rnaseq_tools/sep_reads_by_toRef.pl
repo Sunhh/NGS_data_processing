@@ -160,7 +160,7 @@ sub set_info_bySam {
 	my %flag_aln_R1 = %{ &SeqAlnSunhh::mk_flag( 'keep' => '0=1,2=0,6=1,7=0;0=0,2=0' ) }; 
 	my %flag_aln_R2 = %{ &SeqAlnSunhh::mk_flag( 'keep' => '0=1,2=0,6=0,7=1' ) }; 
 
-	my $fhSam = &openSam( $fnSam, $fmtSam ); 
+	my $fhSam = &SeqAlnSunhh::openSam( $fnSam, $fmtSam, { 'wiH'=>0, 'exe_samtools' => $opts{'exe_samtools', 'verbose'=> $opts{'verbose'} } } ); 
 	my %tmp_cnt = ('cntN_step'=>5e6); 
 	while ( &wantLineC($fhSam) ) {
 		&fileSunhh::log_section($., \%tmp_cnt) and &tsmsg("[Msg]   Processing $. line.\n"); 
@@ -188,21 +188,6 @@ sub _ch_val_inAR {
 	$ar->[$arI+$r12_add] < $v and $ar->[$arI+$r12_add] = $v; 
 	return; 
 }# sub _ch_val_inAR() 
-
-
-sub openSam {
-	my ($fn, $type) = @_; 
-	$opts{'verbose'} and &tsmsg("[Msg] Reading sam file [$fn]\n"); 
-	my $back_fh; 
-	if ($type eq 'sam') {
-		$back_fh = &openFH( $fn, '<' ); 
-	} elsif ($type eq 'bam') {
-		open $back_fh, '-|', "$opts{'exe_samtools'} view $fn" or &stopErr("[Err] Failed to open $fn\n"); 
-	} else {
-		&stopErr("[Err] Unknown type [$type], which should be sam/bam\n"); 
-	}
-	return ($back_fh); 
-}# sub openSam() 
 
 sub prepare_input {
 	$opts{'exe_samtools'} //= 'samtools'; 
