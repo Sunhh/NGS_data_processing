@@ -16,7 +16,7 @@ my %opts;
 GetOptions(\%opts, 
 	"help!", 
 	"inSam1:s", 
-	"inFq1:s", 
+	"inFq1:s@", 
 	"fmtSam1:s", 
 	"outSam1:s", 
 	"maxmismatchN:i", 
@@ -28,7 +28,7 @@ GetOptions(\%opts,
 
 my $help_txt = <<HH; 
 
-perl $0 -inSam1 in_toRef1.sam   -inFq1 in_src.fq 
+perl $0 -inSam1 in_toRef1.sam   -inFq1 in_src.fq [ -inFq1 in_src_2.fq ... ]
 
 -outSam1      [<STDOUT>] output to STDOUT if not given. Only when given filename as 'out.bam', I will output bam format. Otherwise, output sam format. 
 
@@ -115,19 +115,20 @@ sub openSam {
 }# sub openSam() 
 
 sub load_fqID_toHash {
-	my ($fn) = @_; 
-	$opts{'verbose'} and &tsmsg("[Msg] Loading fq file [$fn] start.\n"); 
-	my %back_hash; 
-	my $fh = &openFH( $fn, '<' ) or &stopErr("[Err] Failed to open file [$fn]\n"); 
 	my $cnt = -1; 
-	while (<$fh>) {
-		m/^\@(\S+)/ or &stopErr("[Err] Bad ID!\n"); 
-		$cnt ++; 
-		$back_hash{$1} = $cnt; 
-		<$fh>; <$fh>; <$fh>; 
+	my %back_hash; 
+	for my $fn (@{$_[0]}) {
+		$opts{'verbose'} and &tsmsg("[Msg] Loading fq file [$fn] start.\n"); 
+		my $fh = &openFH( $fn, '<' ) or &stopErr("[Err] Failed to open file [$fn]\n"); 
+		while (<$fh>) {
+			m/^\@(\S+)/ or &stopErr("[Err] Bad ID!\n"); 
+			$cnt ++; 
+			$back_hash{$1} = $cnt; 
+			<$fh>; <$fh>; <$fh>; 
+		}
+		close($fh); 
+		$opts{'verbose'} and &tsmsg("[Msg] Loading fq file [$fn] finished.\n"); 
 	}
-	close($fh); 
-	$opts{'verbose'} and &tsmsg("[Msg] Loading fq file [$fn] finished.\n"); 
 	return(\%back_hash); 
 }# load_fqID_toHash()
 
