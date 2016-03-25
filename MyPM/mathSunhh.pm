@@ -1371,30 +1371,30 @@ sub insert_SEloc_toSEArray {
 	return; 
 }# insert_SEloc_toSEArray() 
 
-=head1 _decode_deciN( $Number )
+=head1 _encode_deciN( $Number )
 
 Return       : ( $aN, $bN, $cN )
 
 =cut
-sub _decode_deciN {
+sub _encode_deciN {
 	my $n = shift; 
-	$n < 0 and &stopErr("[Err] _decode_deciN() input should not smaller than 0.\n"); 
+	$n < 0 and &stopErr("[Err] _encode_deciN() input should not smaller than 0.\n"); 
 	$n == 0 and return(0, 0, 0); 
 	my $aN = int( &log10($n) ); 
 	my $bN = int( $n/(10**$aN) ); 
 	my $cN = $n - 10**$aN * $bN; 
 	return($aN, $bN, $cN); 
-}# sub _decode_deciN() 
+}# sub _encode_deciN() 
 
-=head1 _recover_deciN( $aN, $bN, $cN )
+=head1 _decode_deciN( $aN, $bN, $cN )
 
 Return      : ($number)
 
 =cut
-sub _recover_deciN {
+sub _decode_deciN {
 	my ($aN, $bN, $cN) = @_; 
 	return ( 10**$aN * $bN + $cN ); 
-}# _recover_deciN() 
+}# _decode_deciN() 
 
 =head1 index_SEloc( [ [$loc_1_S, $loc_1_E], [$loc_2_S, $loc_2_E], ... ], {'binSize' => 1000 } )
 
@@ -1549,6 +1549,7 @@ sub _map_loc_to_rawIdx {
 	my @back; 
 
 	my $find_idxS = &_map_number_to_srtIdx( $locDB_hr, $locSE[0] ); 
+return(\@back); 
 	# Check reverse 
 	CHK_REV: 
 	for ( my $srtIdx=$find_idxS; $srtIdx>=0; $srtIdx-- ) {
@@ -1570,7 +1571,6 @@ sub _map_loc_to_rawIdx {
 			push(@back, $rawIdx); 
 		}
 	}
-
 	return(\@back); 
 }# _map_loc_to_rawIdx () 
 
@@ -1652,9 +1652,10 @@ sub _map_number_to_srtIdx {
 	defined $chkNum or &stopErr("[Err] No chkNum input in _map_number_to_srtIdx()\n"); 
 	my $back_sorted_rawIdx; # Return smaller one for equal distant two. 
 
-	my ($chk_aN, $chk_bN, $chk_cN) = &_decode_deciN($chkNum); 
+	my ($chk_aN, $chk_bN, $chk_cN) = &_encode_deciN($chkNum); 
 	my ($find_aN, $find_bN, $find_cN); 
 	# Fisrtly, we roughly locate (find_aN, find_bN, find_cN)
+	# This step needs about 1s per 1e4 lines. 
 	$find_aN = &_closest_number($chk_aN, $ah->{'abc_srtN_a'}); 
 	if ( $find_aN == $chk_aN ) {
 		$find_bN = &_closest_number($chk_aN, $ah->{'abc_srtN_b'}{$find_aN}); 
@@ -1673,12 +1674,16 @@ sub _map_number_to_srtIdx {
 		$find_cN = &min( @{$ah->{'abc_srtN_c'}{$find_aN}{$find_bN}} ); 
 	}
 	# Then, we make these finds accurate. 
-	my $find_rawN = _recover_deciN($find_aN, $find_bN, $find_cN); 
+	# This step is fast. 
+	my $find_rawN = _decode_deciN($find_aN, $find_bN, $find_cN); 
 	my $find_srtIdx = $ah->{'rawN2srtIdx'}{$find_rawN}; 
 	my %best_info = ( 'srtIdx' => $find_srtIdx , 'abs_diff' => abs($find_rawN - $chkNum) ); 
 	### Check reverse 
+	# This step is super SLOW!!! 
+my $tc = 0; 
 	for (my $i=$best_info{'srtIdx'}-1; $i>=0; $i--) {
 		my $rev_diff = abs( $ah->{'rawNum'}[ $ah->{'sorted_rawIdx'}[$i][0] ] - $chkNum ); 
+$tc++; 
 		if ( $rev_diff <= $best_info{'abs_diff'} ) {
 			$best_info{'srtIdx'}   = $i; 
 			$best_info{'abs_diff'} = $rev_diff; 
@@ -1686,6 +1691,12 @@ sub _map_number_to_srtIdx {
 			last; 
 		}
 	}
+
+if ($tc >= 5) {
+	&tsmsg("tc=$tc chkN=$chkNum chk_abc=${chk_aN}:${chk_bN}:${chk_cN} find_rawN=$find_rawN find_abc=${find_aN}:${find_bN}:${find_cN} find_srtIdx=$find_srtIdx best_srtIdx=$best_info{'srtIdx'} abs_diff=$best_info{'abs_diff'}\n"); 
+}
+return(0); 
+
 	### Check forword
 	for (my $i=$best_info{'srtIdx'}+1; $i<@{ $ah->{'sorted_rawIdx'} }; $i++) {
 		my $fwd_diff = abs( $ah->{'rawNum'}[ $ah->{'sorted_rawIdx'}[$i][0] ] - $chkNum ); 
@@ -1859,7 +1870,7 @@ sub _fill_rawN2rawIdx {
 sub _fill_abc {
 	my ($ah) = @_; 
 	for my $rawN (keys %{$ah->{'rawN2rawIdx'}}) {
-		my ($aN, $bN, $cN) = &_decode_deciN($rawN); 
+		my ($aN, $bN, $cN) = &_encode_deciN($rawN); 
 		$ah->{'abc'}{$aN}{$bN}{$cN} //= $ah->{'rawN2rawIdx'}{$rawN}; 
 	}
 	$ah->{'abc_srtN_a'} = [ sort {$a<=>$b} keys %{$ah->{'abc'}} ]; 
