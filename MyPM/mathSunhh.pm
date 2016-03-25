@@ -1371,363 +1371,6 @@ sub insert_SEloc_toSEArray {
 	return; 
 }# insert_SEloc_toSEArray() 
 
-=head1 _encode_deciN( $Number )
-
-Return       : ( $aN, $bN, $cN )
-
-=cut
-sub _encode_deciN {
-	my $n = shift; 
-	$n < 0 and &stopErr("[Err] _encode_deciN() input should not smaller than 0.\n"); 
-	$n == 0 and return(0, 0, 0); 
-	my $aN = int( &log10($n) ); 
-	my $bN = int( $n/(10**$aN) ); 
-	my $cN = $n - 10**$aN * $bN; 
-	return($aN, $bN, $cN); 
-}# sub _encode_deciN() 
-
-=head1 _decode_deciN( $aN, $bN, $cN )
-
-Return      : ($number)
-
-=cut
-sub _decode_deciN {
-	my ($aN, $bN, $cN) = @_; 
-	return ( 10**$aN * $bN + $cN ); 
-}# _decode_deciN() 
-
-=head1 index_SEloc( [ [$loc_1_S, $loc_1_E], [$loc_2_S, $loc_2_E], ... ], {'binSize' => 1000 } )
-
-Return        : (\%loc_db_hash)
-
-Usage case 1  : 
-    my @loc = ( [1,100], [10,21], [50,60], [20,55], [4,11], [10,20], [10,21], [10,19]); 
-    print "\nraw data S:\n"; 
-    for ( sort {$a->[0] <=> $b->[0] || $a->[1] <=> $b->[1]} @loc ) {
-      print join("\t", @$_)."\n";
-    }
-    print "raw data E:\n"; 
-
-    my %locDb_h = %{ &index_SEloc( \@loc, { 'binSize' => 100 } ) }; 
-
-    ## Check if it is well sorted : 
-    my @sorted_realLoc = @{ &ret_sortedRealLoc( \%locDb_h ) }; 
-    for my $ar1 (@sorted_realLoc) {
-      print join("\t", @$ar1)."\n"; 
-    }
-
-    ## Find overlapping realLocs with given SEloc
-    my @seLoc = (21, 30); 
-    @ARGV >= 2 and @seLoc = @ARGV[0,1]; 
-    print "\nRegion to overlap to: $seLoc[0] - $seLoc[1]\n\n"; 
-    my @loc_realIdx = @{ &_map_loc_to_realIdx( \%locDb_h, \@seLoc ) }; 
-    my @loc_realLoc = @{$locDb_h{'realLoc'}}[@loc_realIdx]; 
-    for (my $i=0; $i<@loc_realIdx; $i++) {
-      print join("\t", "realIdx:$loc_realIdx[$i]", "realLoc:_$loc_realLoc[$i][0]_-_$loc_realLoc[$i][1]")."\n";
-    }
-
-
-
-Description   : This is the main function I want to use in RNAseq counting. 
-               $loc_N_S should be no larger than (<=) $loc_N_E ; 
-### Add ->{'realLoc'}             => [ [$rawLoc_1_S, $rawLoc_1_E], [$rawLoc_2_S, $rawLoc_2_E], ... ]
-### Add ->{'binSize'}             => 1000 ; 
-#
-##  By _binRealLoc2BinLoc() 
-###  When 'binSize' <= 0 , no BIN action is processed. In this case, 'rawLoc' is identical to 'realLoc'. 
-### Add ->{'rawIdx2realIdx'}{$rawIdx}    -> [$realIdx_1, $realIdx_2, ...] 
-###       # This relationship is the most important to transform 'rawLoc' to 'realLoc' information. 
-### Add ->{'rawLoc'}              => [ [$rawLoc_1_S, $rawLoc_1_E], [$rawLoc_2_S, $rawLoc_2_E], ... ]
-###       # Here 'rawLoc' stands for 'binLoc'; 
-### Add ->{'rawNum'}              => [ $rawLoc_1_S, $rawLoc_2_S, $rawLoc_3_S, ... ]
-###       # Here 'rawNum' is related to 'rawLoc' instead of 'realLoc'
-#
-##  By _fill_rawN2rawIdx()
-### Add ->{'rawN2rawIdx'}{$rawLoc_S} => [ $rawIdx1, $rawIdx2, ... ]
-###                      # Here $rawLoc_S === 'rawNum' 
-#
-##  By _fill_abc_SEloc() 
-### Add ->{'abc'}{$aN}{$bN}{$cN}   => ->{'rawN2rawIdx'}{$rawLocS} === [ $rawIdx1, $rawIdx2, ... ]
-### Add ->{'abc_srtN_a'}           => [@aN]
-### Add ->{'abc_srtN_b'}{$aN}      => [@bN]
-### Add ->{'abc_srtN_c'}{$aN}{$bN} => [@cN]
-##  By _fill_sorted_rawIdx() 
-### Add ->{'sorted_rawIdx'} => [ [$rawIdx3, $rawIdx8, ...], [$rawIdx2], ... ] 
-###                            # Here $rawIdx3_rawNumber is equal to $rawIdx8_rawNumber, and smaller than $rawIdx2_rawNumber . 
-### Add ->{'rawN2srtIdx'}{$rawN} => $sorted_idx_in_'sorted_rawIdx_array'
-
-=cut
-sub index_SEloc {
-	my ($arLoc, $ph) = @_; 
-	my %back; 
-	$ph->{'binSize'} //= 1000; 
-	$back{'binSize'} = $ph->{'binSize'}; 
-	@{$back{'realLoc'}} = map { ($_->[0] > $_->[1]) ? [ @{$_}[1,0] ] : [ @{$_}[0,1] ] ; } @$arLoc; 
-	($back{'minV'}, $back{'maxV'}) = &minmax( [ map { ($_->[0], $_->[1]) } @{$back{'realLoc'}} ] ); 
-	&_binRealLoc2BinLoc( \%back ); 
-	&_fill_rawN2rawIdx( \%back ); 
-	&_fill_abc_SEloc( \%back ); 
-	&_fill_sorted_rawIdx( \%back ); 
-	
-	return(\%back); 
-}# index_SEloc ()
-
-=head1 _map_loc_to_realIdx ( \%loc_db_hash, [$chkLoc_S, $chkLoc_E] ) 
-
-Return       : ( [ $overlap_realLocIdx_1, $overlap_realLocIdx_2, ... ] )
-
-Description  : $overlap_realLocIdx can be used in $loc_db_hash{'realLoc'}[$overlap_realLocIdx] (Value=[$realS, $realE]); 
-
-=cut
-sub _map_loc_to_realIdx {
-	my ($locDB_hr, $locSE_ar) = @_; 
-	my @back; 
-	my @loc_rawIdx = @{ &_map_loc_to_rawIdx( $locDB_hr , $locSE_ar ) }; 
-	my ($tS,$tE) = @$locSE_ar; 
-	my @realIdx_arr = @{ &_locDb_rawIdx2realIdx( $locDB_hr, \@loc_rawIdx, 1 ) }; 
-#	# I don't want to make it too too too complex, so here I just compare loci from the beginnning. Or esle I should try to use _closest_number(); 
-#	# This loci_array should be from small to big. (increasing)
-	for my $realIdx ( @realIdx_arr ) {
-		my ($curS, $curE) = @{ $locDB_hr->{'realLoc'}[$realIdx] }; 
-		$curS > $tE and last; 
-		$curE < $tS and next; 
-		push(@back, $realIdx); 
-	}
-
-	return(\@back); 
-} # _map_loc_to_realIdx () 
-
-=head1 ret_sortedRealLoc (\%loc_db_hash) 
-
-Return     : ( [ [loc1_S, loc1_E], [loc2_S, loc2_E], ... ] )
-
-=cut
-sub ret_sortedRealLoc {
-	my ($ah) = @_; 
-	my @back; 
-	my @sorted_rawIdx = map { @$_ } @{$ah->{'sorted_rawIdx'}}; 
-	my @sorted_realIdx = @{ &_locDb_rawIdx2realIdx( $ah, \@sorted_rawIdx, 1 ) }; 
-	@back = map { [@$_] } @{$ah->{'realLoc'}}[ @sorted_realIdx ]; 
-
-	return(\@back); 
-}# ret_sortedRealLoc () 
-
-=head1 _locDb_rawIdx2realIdx( \%loc_db_hash, \@rawIdx_ar, [1|0"if removing duplicated realIdx"] )
-
-Return        : ( [realLocIdx_1, realLocIdx_2, ...] )
-
-Description   : Change 'rawIdx' in database to 'realIdx' numbers; 
-                If the third parameter is true (default) (not zero or null), the duplicated realIdx will be removed. 
-
-=cut
-sub _locDb_rawIdx2realIdx {
-	my ($ah, $rawIdx_ar, $rmDup) = @_; 
-	$rmDup //= 1; 
-	my @back; 
-	my %used_realIdx; 
-	for my $realIdx ( map { @{ $ah->{'rawIdx2realIdx'}{$_} } } @$rawIdx_ar ) {
-		defined $used_realIdx{$realIdx} and next; 
-		$rmDup and $used_realIdx{$realIdx} //= 1; 
-		push(@back, $realIdx); 
-	}
-	return(\@back); 
-}# _locDb_rawIdx2realIdx() 
-
-=head1 _map_loc_to_rawIdx ( \%loc_db_hash, [$chkLoc_S, $chkLoc_E] )
-
-Return        : ([$idx1_in_'rawLoc_array', $idx2_in_'rawLoc_array', ...]) 
-
-Description   : Better ignore this inner function. 
-                $idx1_in_'rawLoc_array' can be used in $loc_db_hash{'rawLoc'}[$idx1_in_rawLoc_array] (Value=[$rawLocS, $rawLocE]). 
-                Be aware that when there are overlaps between rawLocs, the return might be not complete!!! 
-
-=cut
-sub _map_loc_to_rawIdx {
-	my ($locDB_hr, $locSE_ar) = @_; 
-	my @locSE = (@$locSE_ar); 
-	$locSE[0] > $locSE[1] and @locSE = @locSE[1,0]; 
-	my @back; 
-
-	my $find_idxS = &_map_number_to_srtIdx( $locDB_hr, $locSE[0] ); 
-return(\@back); 
-	# Check reverse 
-	CHK_REV: 
-	for ( my $srtIdx=$find_idxS; $srtIdx>=0; $srtIdx-- ) {
-		for my $rawIdx (reverse @{ $locDB_hr->{'sorted_rawIdx'}[$srtIdx] }) {
-			my ($curLocS, $curLocE) = @{ $locDB_hr->{'rawLoc'}[$rawIdx] }; 
-			$curLocE < $locSE[0] and last CHK_REV; 
-			$curLocS > $locSE[1] and next; 
-			push(@back, $rawIdx); 
-		}
-	}
-	@back = reverse(@back); 
-	# Check forward 
-	CHK_FWD: 
-	for ( my $srtIdx=$find_idxS+1; $srtIdx < @{$locDB_hr->{'sorted_rawIdx'}}; $srtIdx++ ) {
-		for my $rawIdx ( @{ $locDB_hr->{'sorted_rawIdx'}[$srtIdx] } ) {
-			my ($curLocS, $curLocE)  = @{ $locDB_hr->{'rawLoc'}[$rawIdx] }; 
-			$curLocS > $locSE[1] and last CHK_FWD; 
-			$curLocE < $locSE[0] and next; 
-			push(@back, $rawIdx); 
-		}
-	}
-	return(\@back); 
-}# _map_loc_to_rawIdx () 
-
-=head1 index_numbers( \@numbers )
-
-Return      : (\%db_number)
-
-### Add ->{'rawNum'}        => [ $rawN_1, $rawN_2, ... ]
-##  By _fill_rawN2rawIdx()
-### Add ->{'rawN2rawIdx'}{$rawN} => [ $rawIdx1, $rawIdx2, ... ]
-##  By _fill_abc()
-### Add ->{'abc'}{$aN}{$bN}{$cN}   => ->{'rawN2rawIdx'}{$rawN} === [ $rawIdx1, $rawIdx2, ... ]
-### Add ->{'abc_srtN_a'}           => [@aN]
-### Add ->{'abc_srtN_b'}{$aN}      => [@bN]
-### Add ->{'abc_srtN_c'}{$aN}{$bN} => [@cN]
-##  By _fill_sorted_rawIdx() 
-### Add ->{'sorted_rawIdx'} => [ [$rawIdx3, $rawIdx8, ...], [$rawIdx2], ... ] 
-###                            # Here $rawIdx3_rawNumber is equal to $rawIdx8_rawNumber, and smaller than $rawIdx2_rawNumber . 
-### Add ->{'rawN2srtIdx'}{$rawN} => $sorted_idx_in_'sorted_rawIdx_array'
-
-Usage case 1: 
-    my @numbers = ( 1.. 100, 40 .. 50 ,105, 103, 105, 150 ); 
-    my %numDb_h = %{ &index_numbers( \@numbers ) }; 
-
-    ## Get sorted numbers : 
-    for ( @{ &ret_sortedNum( \%numDb_h ) } ) {
-      print "$_\n"; 
-    }
-
-    ## Locate a number in database : 
-    my $number_to_check = 104; 
-    my $srtIdx = &_map_number_to_srtIdx( \%numDb_h, $number_to_check ); 
-    print join("\t", "chkN:$number_to_check", "srtIdx:$srtIdx", join(":", "rawNumbers", @{$numDb_h{'rawNum'}}[ @{$numDb_h{'sorted_rawIdx'}[$srtIdx]} ]))."\n";
-    # Printing : chkN:104        srtIdx:100      rawNumbers:103
-
-    ## Get sorted raw indices : 
-    my @sorted_rawIdx = map { @$_ } @{$numDb_h{'sorted_rawIdx'}}; 
-    for my $rawIdx ( @sorted_rawIdx ) {
-      print join("\t", "rawIdx:$rawIdx", "rawNum:$numDb_h{'rawNum'}[$rawIdx]")."\n"; 
-    }
-
-
-Description : 
-              N = (10 ** aN) * bN + cN 
-              In which, N is Number , and 
-                aN can be (0,1,2,...)
-                bN can be (1,2,3,4,5,6,7,8,9), and [ when aN == 0 , bN == 0 ]; 
-                cN can be (0,1,2,3,4,5,6,7,8,9)
-              In this way, 
-                N == 0     => aN=bN=cN=0
-                N == 1-9   => aN=bN=0 , cN = N 
-                N == 10    => aN=bN=1 , cN = 0 
-                .... 
-              Any number (number > 0) could be decoded as {aN}{bN}{cN}; 
-
-
-
-
-=cut
-sub index_numbers {
-	my ($arN) = @_; 
-	my %back; 
-	### Add ->{'rawNum'}        => [ $rawN_1, $rawN_2, ... ]
-	@{$back{'rawNum'}} = @$arN; 
-	&_fill_rawN2rawIdx( \%back ); 
-	&_fill_abc( \%back ); 
-	&_fill_sorted_rawIdx( \%back ); 
-
-	return(\%back); 
-}# sub index_numbers() 
-
-=head1 _map_number_to_srtIdx( \%db_number, $number_to_locate )
-
-### Return ($idx_in_'sorted_rawIdx_array')
-
-=cut
-sub _map_number_to_srtIdx {
-	my ($ah, $chkNum) = @_; 
-	defined $chkNum or &stopErr("[Err] No chkNum input in _map_number_to_srtIdx()\n"); 
-	my $back_sorted_rawIdx; # Return smaller one for equal distant two. 
-
-	my ($chk_aN, $chk_bN, $chk_cN) = &_encode_deciN($chkNum); 
-	my ($find_aN, $find_bN, $find_cN); 
-	# Fisrtly, we roughly locate (find_aN, find_bN, find_cN)
-	# This step needs about 1s per 1e4 lines. 
-	$find_aN = &_closest_number($chk_aN, $ah->{'abc_srtN_a'}); 
-	if ( $find_aN == $chk_aN ) {
-		$find_bN = &_closest_number($chk_aN, $ah->{'abc_srtN_b'}{$find_aN}); 
-		if ($find_bN == $chk_bN) {
-			$find_cN = &_closest_number($chk_aN, $ah->{'abc_srtN_c'}{$find_aN}{$find_bN}); 
-		} elsif ( $find_bN < $chk_bN ) {
-			$find_cN = &max( @{$ah->{'abc_srtN_c'}{$find_aN}{$find_bN}} ); 
-		} else {
-			$find_cN = &min( @{$ah->{'abc_srtN_c'}{$find_aN}{$find_bN}} ); 
-		}
-	} elsif ( $find_aN < $chk_aN ) {
-		$find_bN = &max( @{$ah->{'abc_srtN_b'}{$find_aN}} ); 
-		$find_cN = &max( @{$ah->{'abc_srtN_c'}{$find_aN}{$find_bN}} ); 
-	} else {
-		$find_bN = &min( @{$ah->{'abc_srtN_b'}{$find_aN}} ); 
-		$find_cN = &min( @{$ah->{'abc_srtN_c'}{$find_aN}{$find_bN}} ); 
-	}
-	# Then, we make these finds accurate. 
-	# This step is fast. 
-	my $find_rawN = _decode_deciN($find_aN, $find_bN, $find_cN); 
-	my $find_srtIdx = $ah->{'rawN2srtIdx'}{$find_rawN}; 
-	my %best_info = ( 'srtIdx' => $find_srtIdx , 'abs_diff' => abs($find_rawN - $chkNum) ); 
-	### Check reverse 
-	# This step is super SLOW!!! 
-my $tc = 0; 
-	for (my $i=$best_info{'srtIdx'}-1; $i>=0; $i--) {
-		my $rev_diff = abs( $ah->{'rawNum'}[ $ah->{'sorted_rawIdx'}[$i][0] ] - $chkNum ); 
-$tc++; 
-		if ( $rev_diff <= $best_info{'abs_diff'} ) {
-			$best_info{'srtIdx'}   = $i; 
-			$best_info{'abs_diff'} = $rev_diff; 
-		} else {
-			last; 
-		}
-	}
-
-if ($tc >= 5) {
-	&tsmsg("tc=$tc chkN=$chkNum chk_abc=${chk_aN}:${chk_bN}:${chk_cN} find_rawN=$find_rawN find_abc=${find_aN}:${find_bN}:${find_cN} find_srtIdx=$find_srtIdx best_srtIdx=$best_info{'srtIdx'} abs_diff=$best_info{'abs_diff'}\n"); 
-}
-return(0); 
-
-	### Check forword
-	for (my $i=$best_info{'srtIdx'}+1; $i<@{ $ah->{'sorted_rawIdx'} }; $i++) {
-		my $fwd_diff = abs( $ah->{'rawNum'}[ $ah->{'sorted_rawIdx'}[$i][0] ] - $chkNum ); 
-		if ( $fwd_diff < $best_info{'abs_diff'} ) {
-			$best_info{'srtIdx'}   = $i; 
-			$best_info{'abs_diff'} = $fwd_diff; 
-		} else {
-			last; 
-		}
-	}
-
-	$back_sorted_rawIdx = $best_info{'srtIdx'}; 
-	
-	return( $back_sorted_rawIdx ); 
-}# _map_number_to_srtIdx () 
-
-=head1 ret_sortedNum (\%db_number) 
-
-Return     : ( [smallest_number1, smallest_number2, ...] )
-
-=cut
-sub ret_sortedNum {
-	my ($ah) = @_; 
-	my @back; 
-	for my $rawIdx_ar ( @{$ah->{'sorted_rawIdx'}} ) {
-		push( @back, @{ $ah->{'rawNum'} }[@$rawIdx_ar] ); 
-	}
-	
-	return(\@back); 
-}# ret_sortedNum () 
-
 =head1 minmax(\@numbers)
 
 Return      : ($min, $max)
@@ -1754,40 +1397,724 @@ sub log10 {
 	return(log($n)/log(10)); 
 }# log10() 
 
-=head1 _closest_number( $number_toCheck, \@source_numbers )
+############################################################
+#  Sub-routines for number and loci indexing. 
+############################################################
+=head1 _Encode_deciN ( $Number, $max_position_len'Default:11' )
 
-Return       : ( $number_from_source_closest_to_number_toCheck )
+Return        : ( \@num_in_each_position )
 
-Description  : If there are two numbers with same distance flanking $number_toCheck, the smaller one will be chosen. 
+Description   :
+
+                I am still used to this forward direction instead of reverse direction. 
+                Divide input $Number 13456 with $max_position_len==11 into [0,0,0,0,0,0,1,3,4,5,6].
+                $Number must be a positive integer.
+                Output of _Encode_deciN( 8123456789012 , 11 ) will be [qw/812 3 4 5 6 7 8 9 0 1 2/]
 
 =cut
-sub _closest_number {
-	my ($chkN, $ar) = @_; 
-	@$ar > 0 or &stopErr("[Err] No database numbers for checking in\n"); 
-	my %best = ( 'idx' => 0, 'abs_diff' => abs( $ar->[0]-$chkN ) ); 
-	my $cnt = -1; 
-	for my $dbN (@$ar) {
-		$cnt ++; 
-		my $diff = abs( $dbN - $chkN ); 
-		if ($diff < $best{'abs_diff'}) {
-			$best{'idx'} = $cnt; 
-			$best{'abs_diff'} = $diff; 
+sub _Encode_deciN {
+        my ($n, $maxP) = @_;
+        $maxP //= 11;
+        my @back = (0) x $maxP;
+        my $i = -1;
+        my $t_n;
+        for (my $i=$maxP-1; $i >= 0 and $n > 0; $i--) {
+                $t_n = int($n/10);
+                $back[$i] = $n - $t_n*10;
+                $n = $t_n;
+        }
+	if ( $n > 0 ) {
+		$back[0] += $n*10; 
+	}
+
+        return(\@back);
+}# _Encode_deciN ()
+
+=head1 _Decode_deciN ( \@deciN_array )
+
+Return        : ( $decimal_integer )
+
+Description   : Convert [qw/2 1 0 9 8 7 6 5 4 3 2 810] to number 8123456789012 . 
+
+=cut
+sub _Decode_deciN {
+	my ($ar) = @_; 
+	my $back = 0; 
+	my $i=-1; 
+	for my $t (reverse @$ar) {
+		$i++; 
+		$back += 10 ** $i * $t; 
+	}
+
+	return($back); 
+}# _Decode_deciN ()
+
+=head1 index_SEloc( [ [$loc_1_S, $loc_1_E], [$loc_2_S, $loc_2_E], ... ], {'binSize' => 1000 , 'maxP' => 11 } )
+
+Return        : (\%db_loc)
+
+Usage case 1  : 
+    my @loc = ( [1,100], [2 , 384745], [10,21], [50,60], [384745, 984672], [20,55], [1, 9999], [4,11], [10,20], [10,21], [10,19]); 
+    my %locDb_h = %{ &index_SEloc( \@loc, { 'binSize' => 100 , 'maxP' => 11 } ) }; 
+    print "intact raw data Start:\n"; 
+    for (my $i=0; $i<@loc; $i++) {
+      print join("\t", "$loc[$i][0]-$loc[$i][1]", "$locDb_h{'realLoc'}[$i][0]-$locDb_h{'realLoc'}[$i][0][1]")."\n"; 
+    }
+    print "intact raw data End:\n"; 
+
+
+    ## Check if it is well sorted : 
+    print "newly sorted Start :\n"; 
+    my @sorted_realLoc = @{ &ret_sortedRealLoc( \%locDb_h ) }; 
+    for my $ar1 (@sorted_realLoc) {
+      print join("\t", @$ar1)."\n"; 
+    }
+    print "newly sorted End :\n"; 
+
+    ## Find overlapping realLocs with given SEloc
+    my @seLoc = (21, 30); 
+    @ARGV >= 2 and @seLoc = @ARGV[0,1]; 
+    print "\nRegion to overlap to: $seLoc[0] - $seLoc[1]\n\n"; 
+    my @loc_realIdx = @{ &_map_loc_to_realIdx( \%locDb_h, \@seLoc ) }; 
+    my @loc_realLoc = @{$locDb_h{'realLoc'}}[@loc_realIdx]; 
+    for (my $i=0; $i<@loc_realIdx; $i++) {
+      print join("\t", "realIdx:$loc_realIdx[$i]", "realLoc:_$loc_realLoc[$i][0]_-_$loc_realLoc[$i][1]")."\n";
+    }
+
+
+
+Description   : This is the main function I want to use in RNAseq counting. 
+               $loc_N_S should be no larger than (<=) $loc_N_E ; 
+By self()
+    Add ->{'binSize'}             => 1000 ; 
+    Add ->{'maxP'}                => 11 ; 
+    Add ->{'realLoc'}             => [ [$rawLoc_1_S, $rawLoc_1_E], [$rawLoc_2_S, $rawLoc_2_E], ... ]
+    Add ->{'minV'}                => $min_of_locS_locE_value; 
+    Add ->{'maxV'}                => $max_of_locS_locE_value; 
+By _binRealLoc2BinLoc() 
+    Add ->{'rawIdx2realIdx'}{$rawIdx}    -> [$realIdx_1, $realIdx_2, ...]
+          # This relationship is the most important to transform 'rawLoc' to 'realLoc' information. 
+    Add ->{'rawLoc'}              => [ [$rawLoc_1_S, $rawLoc_1_E], [$rawLoc_2_S, $rawLoc_2_E], ... ]
+          # Here 'rawLoc' stands for 'binLoc'; 
+    Add ->{'rawNum'}              => [ $rawLoc_1_S, $rawLoc_2_S, $rawLoc_3_S, ... ]
+          # Here 'rawNum' is related to 'rawLoc' instead of 'realLoc'
+By _fill_rawN2rawIdx()
+    Add ->{'rawN2rawIdx'}{$rawLoc_S} => [ $rawIdx1, $rawIdx2, ... ]
+                         # Here $rawLoc_S === $rawNum
+                         # This value will be replaced by the following _fill_struct_SEloc() function. 
+By _fill_struct_SEloc()
+    Add ->{'struct'}           => [ structure_database ]
+                                  # final value of 'struct' is ->{'rawN2rawIdx'}{$rawN} in a corrected order. 
+                                  # and here $rawN is the start of each location. 
+                                  # Formatted as [ $rawIdx1, $rawIdx2, ... ]
+                                  # Note that the 'raw' here related to 'rawLoc' instead of 'realLoc'. 
+    Replace ->{'rawN2rawIdx'}  => $final_value_of_"$ah->{'struct'}", which is now in a corrected order. 
+By _fill_sorted_rawIdx()
+    Add ->{'sorted_rawIdx'} => [ [$rawIdx3, $rawIdx8, ...], [$rawIdx2], ... ];
+          # Here $rawIdx3_rawNumber is equal to $rawIdx8_rawNumber, and smaller than $rawIdx2_rawNumber;
+          # The array_reference in values is linked to ->{'rawN2rawIdx'}{$rawN} for easy changes;
+    Add ->{'rawN2srtIdx'}{$rawN} => $sorted_idx_in_'sorted_rawIdx_array';
+
+=cut
+sub index_SEloc {
+	my ($arLoc, $ph) = @_; 
+	my %back; 
+	$ph->{'binSize'} //= 1000; $back{'binSize'} = $ph->{'binSize'}; 
+	$ph->{'maxP'}    //= 11;   $back{'maxP'}    = $ph->{'maxP'}; 
+	@{$back{'realLoc'}} = map { ($_->[0] > $_->[1]) ? [ @{$_}[1,0] ] : [ @{$_}[0,1] ] ; } @$arLoc; 
+	($back{'minV'}, $back{'maxV'}) = &minmax( [ map { ($_->[0], $_->[1]) } @{$back{'realLoc'}} ] ); 
+	&_binRealLoc2BinLoc( \%back ); 
+	&_fill_rawN2rawIdx( \%back ); 
+	&_fill_struct_SEloc( \%back ); 
+	&_fill_sorted_rawIdx( \%back ); 
+	
+	return(\%back); 
+}# index_SEloc ()
+
+=head1 _map_loc_to_realIdx ( \%db_loc, [$chkLoc_S, $chkLoc_E] ) 
+
+Return       : ( [ $overlap_realLocIdx_1, $overlap_realLocIdx_2, ... ] )
+
+Description  : $overlap_realLocIdx can be used in $db_loc{'realLoc'}[$overlap_realLocIdx] (Value=[$realS, $realE]); 
+
+=cut
+sub _map_loc_to_realIdx {
+	my ($locDB_hr, $locSE_ar) = @_; 
+	my @back; 
+	my @loc_rawIdx = @{ &_map_loc_to_rawIdx( $locDB_hr , $locSE_ar ) }; 
+	my ($tS,$tE) = @$locSE_ar; 
+	my @realIdx_arr = @{ &_locDb_rawIdx2realIdx( $locDB_hr, \@loc_rawIdx, 1 ) }; 
+#	# I don't want to make it too too too complex, so here I just compare loci from the beginnning. Or esle I should try to use _closest_number(); 
+#	# This loci_array should be from small to big. (increasing)
+	for my $realIdx ( @realIdx_arr ) {
+		my ($curS, $curE) = @{ $locDB_hr->{'realLoc'}[$realIdx] }; 
+		$curS > $tE and last; 
+		$curE < $tS and next; 
+		push(@back, $realIdx); 
+	}
+
+	return(\@back); 
+} # _map_loc_to_realIdx () 
+
+=head1 ret_sortedRealLoc (\%db_loc) 
+
+Return     : ( [ [loc1_S, loc1_E], [loc2_S, loc2_E], ... ] )
+
+=cut
+sub ret_sortedRealLoc {
+	my ($ah) = @_; 
+	my @back; 
+	my @sorted_rawIdx = map { @$_ } @{$ah->{'sorted_rawIdx'}}; 
+	my @sorted_realIdx = @{ &_locDb_rawIdx2realIdx( $ah, \@sorted_rawIdx, 1 ) }; 
+	@back = map { [@$_] } @{$ah->{'realLoc'}}[ @sorted_realIdx ]; 
+
+	return(\@back); 
+}# ret_sortedRealLoc () 
+
+=head1 index_numbers( \@raw_numbers, { 'maxP' => 11 } )
+
+Return       : (\%db_num)
+
+Function     : Index the numbers, producing keys in \%db_num, including : {'maxP|rawNum|rawN2rawIdx|struct|sorted_rawIdx|rawN2srtIdx'}
+    ->{'maxP'}          =>  11 , or someother number (>0) showing the depth of structure and the depth (length)  of encoded number path (for &_Encode_deciN())
+    ->{'rawNum'}        =>  [@raw_numbers]
+    ->{'rawN2rawIdx'}   =>  { $rawNum => [ $rawIdx1, $rawIdx2, ... ] } according to ->{'rawNum'}
+    ->{'struct'}        =>  An array of arrays with depth (rows) of ->{'mapP'} and width (cols) of [0-9] or the maximum of the first(0) row. 
+    ->{'sorted_rawIdx'} =>  [ ->{'rawN2rawIdx'}{$rawNum_1}, {'rawN2rawIdx'}{$rawNum_2}, ... ] 
+                            === [ [$rawIdx3, $rawIdx8, ...], [$rawIdx2], ... ], 
+                               # Here, $rawIdx3_rawNumber ( === ->{'rawNum'}[$rawIdx3] ) is equal to $rawIdx8_rawNumber, and smaller than $rawIdx2_rawNumber;
+    ->{'rawN2srtIdx'}   =>  { $rawNum => $index_of_'sorted_rawIdx'_array }
+
+Usage case 1 : 
+    my @numbers = ( 1.. 100, 40 .. 50 ,105, 103, 105, 150, 1, 999, 3000, 888, 444, 999, 3000, 999, 99999999999999, 111, 99999999999399 ); 
+    my %numDb_h = %{ &index_numbers( \@numbers, { 'maxP' => 11 } ) }; 
+
+    print "input\@=@numbers\n"; 
+    print "stored=@{$numDb_h{'rawNum'}}\n"; 
+    ## Get sorted numbers : 
+    print "sorted=" . join(" ", @{ &ret_sortedNum( \%numDb_h )}) . "\n"; 
+    ## Get sorted raw indices : 
+    my @sorted_rawIdx = map { @$_ } @{$numDb_h{'sorted_rawIdx'}}; 
+    for my $rawIdx ( @sorted_rawIdx ) {
+      print join("\t", "rawIdx:$rawIdx", "rawNum:$numDb_h{'rawNum'}[$rawIdx]")."\n"; 
+    }
+
+    ## Locate a number in database : 
+    my $number_to_check = 99999999999300; 
+    print "searching=$number_to_check\n"; 
+    my $srtIdx = &_map_number_to_srtIdx( \%numDb_h, $number_to_check ); 
+    print join("\t", "srchN:$number_to_check", "srtIdx:$srtIdx", join(":", "rawNumbers", @{$numDb_h{'rawNum'}}[ @{$numDb_h{'sorted_rawIdx'}[$srtIdx]} ]))."\n";
+    # Printing : srchN:10000     srtIdx:107      rawNumbers:3000:3000
+
+=cut
+sub index_numbers {
+	my ($arN, $pH) = @_; 
+	$pH->{'maxP'} //= 11; 
+	my %back; 
+	$back{'maxP'} = $pH->{'maxP'}; 
+	### Add ->{'rawNum'}        => [ $rawN_1, $rawN_2, ... ]
+	@{$back{'rawNum'}} = @$arN; 
+	&_fill_rawN2rawIdx( \%back ); 
+	&_fill_struct( \%back ); 
+	&_fill_sorted_rawIdx( \%back ); 
+
+	return(\%back); 
+}# sub index_numbers() 
+
+=head1 _sideClose_pathInStruct( \@struct, \@path, 'both|left|right' )
+
+Return      : ( \@path_of_closest )
+
+When using 'both' sides, I will return the smaller one if the two sides are equally distant. 
+
+=cut
+sub _sideClose_pathInStruct {
+	my ( $ar_struct, $ar_path_in, $side ) = @_; 
+	$side //= 'both'; 
+	$side =~ m/^(left|right|both)$/ or &stopErr("[Err] Bad side [$side] parameter in _sideClose_pathInStruct()\n"); 
+	my $path_depth = $#$ar_path_in + 1; 
+
+	my $tmp_ar = $ar_struct; 
+	for (my $i=0; $i<$path_depth; $i++) {
+		if ( defined $tmp_ar->[ $ar_path_in->[$i] ] ) {
+			$tmp_ar = $tmp_ar->[ $ar_path_in->[$i] ]; 
+			next; 
+		}
+		if ( $side eq 'left' ) {
+			# S1: Check if the current level ($i) has a idxV < $ar_path_in->[$i]; 
+			for (my $j=$ar_path_in->[$i]-1; $j>=0; $j--) {
+				defined $tmp_ar->[$j] or next; 
+				# If has such an element 
+				return( &_get_subPathInStruct( $ar_struct, [ @{$ar_path_in}[0 .. $i-1], $j ], 'max', $path_depth ) ); 
+			}
+			# S2: There is no idxV smaller than input in current level ($i), so find the biggest in the most recent uppper level. 
+			#     I don't want to combine this and the S1 step, because I want to use &_defined_pathInStruct() to confirm there is no problem. 
+			for (my $lvl=$i-1; $lvl >= 0; $lvl--) {
+				my $lvl_struct = &_defined_pathInStruct( $ar_struct, [ @{$ar_path_in}[0 .. $lvl] ] ) or &stopErr("[Err] Weired get here! 'left'\n"); 
+				my $lvl_idx    = $ar_path_in->[$lvl]; 
+				# Check if this level ($lvl) has an idxV < $ar_path_in->[$lvl]; 
+				for ( my $j=$lvl_idx-1; $j>=0; $j-- ) {
+					defined $lvl_struct->[$j] or next; 
+					return( &_get_subPathInStruct( $ar_struct, [ @{$ar_path_in}[0 .. $lvl], $j ], 'max', $path_depth ) ); 
+				}
+			}
+			# S3: There is no smaller path found in total dataset, so I should use the smallest in database. 
+			return( &_get_pathInStruct( $ar_struct, 'min', $path_depth ) ); 
+		} elsif ( $side eq 'right' ) {
+			# S1: Check if the current level ($i) has a idxV > $ar_path_in->[$i]; 
+			for (my $j=$ar_path_in->[$i]+1; $j<=@$tmp_ar; $j++) {
+				defined $tmp_ar->[$j] or next; 
+				# If has such an element
+				return( &_get_subPathInStruct( $ar_struct, [ @{$ar_path_in}[0 .. $i-1], $j ], 'min', $path_depth ) ); 
+			}
+			# S2: Continue to check from the most recent upper level ($i-1). 
+			for (my $lvl=$i-1; $lvl >= 0; $lvl--) {
+				my $lvl_struct = &_defined_pathInStruct( $ar_struct, [ @{$ar_path_in}[0 .. $lvl] ] ) or &stopErr("[Err] Wiered get here! 'right'\n"); 
+				my $lvl_idx    = $ar_path_in->[$lvl]; 
+				# Check if this level contains an idxV > $ar_path_in->[$lvl]; 
+				for ( my $j=$lvl_idx+1; $j<=@$lvl_struct; $j++ ) {
+					defined $lvl_struct->[$j] or next; 
+					return( &_get_subPathInStruct( $ar_struct, [ @{$ar_path_in}[0 .. $lvl], $j ], 'min', $path_depth ) ); 
+				}
+			}
+			# S3: There is no smaller path found in total dataset, so I should use the biggest in database. 
+			return( &_get_pathInStruct( $ar_struct, 'max', $path_depth ) ); 
+		} elsif ( $side eq 'both' ) {
+			# S1: Find the left most path 
+			my $path_left = &_sideClose_pathInStruct( $ar_struct, $ar_path_in, 'left' ); 
+			my $dist_left = abs( &_distance_paths( $ar_path_in, $path_left ) ); 
+			# S2: Find the right most path 
+			my $path_right = &_sideClose_pathInStruct( $ar_struct, $ar_path_in, 'right' ); 
+			my $dist_right = abs( &_distance_paths( $path_right, $ar_path_in ) ); 
+			# S3: Compare distances between chk-left and right-chk, and find the smaller one. 
+			if ( $dist_left <= $dist_right ) {
+				return( $path_left ); 
+			} else {
+				return( $path_right ); 
+			}
+		} else {
+			&stopErr("[Err] Bad side information [$side]\n"); 
 		}
 	}
 
-	return( $ar->[$best{'idx'}] ); 
-}# _closest_number ()
+	# Arrive here only when the $ar_path_in exists. 
+	return([@$ar_path_in]); 
+}# _sideClose_pathInStruct ()
+
+=head1 _distance_paths( $path_1, $path_2 )
+
+Return        : ( $diff_value_by_decode_num )
+
+num($path_1) - num($path_2)
+
+=cut
+sub _distance_paths{
+	my ($p1, $p2) = @_; 
+	my $back = &_Decode_deciN($p1) - &_Decode_deciN($p2); 
+	return($back); 
+}# _distance_paths () 
+
+=head1 _defined_pathInStruct( \@struct, \@path ) 
+
+Return        : ('0|$ar_sub_struct') # 0 - undefined. 
+
+=cut
+sub _defined_pathInStruct {
+	my ($ar_struct, $path) = @_; 
+	my $tmp_ar = $ar_struct; 
+	for (my $i=0; $i<@$path; $i++) {
+		$path->[$i] < 0 and return 0; 
+		defined $tmp_ar->[$path->[$i]] or return 0; 
+		$tmp_ar = $tmp_ar->[$path->[$i]]; 
+	}
+	return $tmp_ar; 
+}# _defined_pathInStruct () 
+
+=head1 _lsAll_inStruct( \@struct, $maxP )
+
+Return        : ( [ [$struct_path, $struct_final_value], [$struct_path, $struct_final_value], ...  ] )
+
+From small (first) to big (last) order. 
+
+=cut
+sub _lsAll_inStruct {
+	my ($ar_struct, $maxP) = @_; 
+	my @back; 
+	$maxP <= 0 and &stopErr("[Err] maxP must be bigger than 0.\n"); 
+	if ($maxP == 1) {
+		for (my $i=0; $i<@$ar_struct; $i++) {
+			defined $ar_struct->[$i] or next; 
+			push(@back, [ [$i], $ar_struct->[$i] ]); 
+		}
+		return(\@back); 
+	} elsif ( $maxP > 1 ) {
+		for (my $i=0; $i<@$ar_struct; $i++) {
+			defined $ar_struct->[$i] or next; 
+			my $sub_back = &_lsAll_inStruct( $ar_struct->[$i], $maxP-1 ); 
+			for my $ar1 ( @$sub_back ) {
+				push(@back, [ [ $i, @{$ar1->[0]} ], $ar1->[1] ]); 
+			}
+		}
+		return(\@back); 
+	} else {
+		&stopErr("[Err] Bad here in _lsAll_inStruct()\n"); 
+	}
+	return; 
+}# _lsAll_inStruct () 
+
+=head1 ret_sortedNum (\%db_number) 
+
+Return       : ( [smallest_number1, smallest_number2, ...] )
+
+=cut
+sub ret_sortedNum {
+	my ($ah) = @_; 
+	return( [ map { @{ $ah->{'rawNum'} }[@$_] } @{$ah->{'sorted_rawIdx'}} ] ); 
+}# ret_sortedNum () 
+
+=head1 _map_number_to_rawNum( \%db_number, $number_to_locate, 'both|left|right' )
+
+Return       : ($rawNumber)
+
+Description  : The third parameter will be 'both' in default. 
+
+=cut
+sub _map_number_to_rawNum {
+	my ($ah, $number, $side) = @_; 
+	$side //= 'both'; 
+	my $num_path = &_Encode_deciN($number); 
+	my $closest_path = &_sideClose_pathInStruct( $ah->{'struct'}, $num_path, $side ); 
+	my $closest_rawN = $ah->{'rawNum'}[ &_get_valueFromStruct( $ah->{'struct'}, $closest_path )->[0] ]; 
+
+	return( $closest_rawN ); 
+}# _map_number_to_rawNum ()
+
+=head1 _map_number_to_srtIdx( \%db_number, $number_to_locate, 'both|left|right' )
+
+Return       : ($idx_in_'sorted_rawIdx_array')
+
+Description  : The third parameter will be 'both' in default. 
+
+=cut
+sub _map_number_to_srtIdx {
+	my ($ah, $number, $side) = @_; 
+	$side //= 'both'; 
+	my $closest_rawN = &_map_number_to_rawNum( $ah, $number, $side ); 
+	# my $closest_rawN = &_Decode_deciN($closest_path) ; 
+	my $closest_srtIdx = $ah->{'rawN2srtIdx'}{$closest_rawN}; 
+
+	return( $closest_srtIdx ); 
+}# _map_number_to_srtIdx ()
+
+=head1 _get_valueFromStruct( \@struct, \@encoded_num )
+
+Return        : ($final_value)
+
+Function      : 
+                $final_value should be $num_db_hash{'rawN2rawIdx'}{$rawN}; 
+
+=cut
+sub _get_valueFromStruct {
+	my ( $ar_1, $ar_2 ) = @_; 
+	my $back; 
+	my $tmp_ar = $ar_1; 
+	for (my $i=0; $i<@$ar_2; $i++) {
+		$tmp_ar = $tmp_ar->[$ar_2->[$i]]; 
+	}
+	$back = $tmp_ar; 
+
+	return($back); 
+}# _get_valueFromStruct () 
+
+=head1 _get_subPathInStruct( \@struct, \@root_sub_path, 'min|max', $path_depth ) 
+
+Return        : (\@path_of_minORmax)
+
+=cut
+sub _get_subPathInStruct {
+	my ( $ar_struct, $root_path, $mm, $path_depth ) = @_; 
+	my @back; 
+	$mm //= 'min'; 
+	$mm =~ m/^(min|max)$/ or &stopErr("[Err] bad mm_type [$mm] in _get_subPathInStruct()\n"); 
+
+	my $sub_struct = &_defined_pathInStruct( $ar_struct, $root_path ) or &stopErr("[Err] No structure exists\n"); 
+	my $sub_path   = &_get_pathInStruct( $sub_struct, $mm, $path_depth-scalar(@$root_path) ); 
+	@back = ( @$root_path, @$sub_path ); 
+	scalar(@back) == $path_depth or &stopErr("[Err] Unequal depth of resulting path ($#back+1) and input path depth ($path_depth).\n"); 
+
+	return(\@back); 
+}# _get_subPathInStruct () 
+
+=head1 _get_pathInStruct( \@struct, 'min|max', $path_depth )
+
+Return        : (\@path_in_struct)
+
+Function      : Get the min/max path in structure. All three parameters needed. 
+
+=cut
+sub _get_pathInStruct {
+	my ( $ar_struct, $type, $path_depth ) = @_; 
+	$path_depth //= 11; 
+	my $tmp_ar = $ar_struct; 
+	my @back = (0) x $path_depth; 
+
+	if ( $type eq 'min' or $type eq 'smallest' ) {
+#		# This method works in case that we know the structure of the final value . 
+#		my $find = 1; 
+#		while ( defined $tmp_ar and $find ) {
+#			$find = 0; 
+#			for (my $i=0; $i<@$tmp_ar; $i++) {
+#				defined $tmp_ar->[$i] or next; 
+#				$tmp_ar = $tmp_ar->[$i]; 
+#				push(@back, $i); 
+#				$find = 1; 
+#				last; 
+#			}
+#		}
+		for (my $i=0; $i<$path_depth; $i++) {
+			for (my $j=0; $j<@$tmp_ar; $j++) {
+				defined $tmp_ar->[$j] or next; 
+				$tmp_ar = $tmp_ar->[$j]; $back[$i] = $j; 
+				last; 
+			}
+		}
+	} elsif ( $type eq 'max' or $type eq 'biggest' ) {
+		for (my $i=0; $i<$path_depth; $i++) {
+			for (my $j=$#$tmp_ar; $j>=0; $j--) {
+				defined $tmp_ar->[$j] or next; 
+				$tmp_ar = $tmp_ar->[$j]; $back[$i] = $j; 
+				last; 
+			}
+		}
+	} else {
+		&stopErr("[Err] Bad type [$type] for _get_pathInStruct()\n"); 
+	}
+
+	return(\@back); 
+}# _get_pathInStruct()
+
+=head1 _put_num2Struct( \@struct, \@encoded_num, $final_value )
+
+Return        : ()
+
+Function      : 
+
+                Change values in @struct, which will be used in @{$num_db_hash{'struct'}}; 
+                @encoded_num comes from &_Encode_deciN() function, and it is treated as a full path in @struct. 
+                $final_value will be used for the terminal element if that element has not been defined. 
+                And $final_value should be generated as [ @{$num_db_hash{'rawN2rawIdx'}{$rawN}} ]. 
+                Here I directly use $final_value in order to make linkage between this element and $num_db_hash{'rawN2rawIdx'}{$rawN}; 
+
+=cut
+sub _put_num2Struct {
+	my ( $ar_1, $ar_2, $ar_3 ) = @_; 
+	# @$ar_1 is database structure. 
+	# @$ar_2 is the path from number (encoded by _Encode_deciN() )
+	# @$ar_3 is the array for value set. 
+	my $tmp_ar = $ar_1; 
+	for (my $i=0; $i<@$ar_2; $i++) {
+		$tmp_ar->[$ar_2->[$i]] //= ( ( $i == $#$ar_2 ) ? $ar_3 : [] ); 
+		$tmp_ar = $tmp_ar->[$ar_2->[$i]]; 
+	}
+
+	return; 
+}# _put_num2Struct () 
+
+=head1 _locDb_rawIdx2realIdx( \%db_loc, \@rawIdx_ar, [1|0"if removing duplicated realIdx"] )
+
+Return        : ( [realLocIdx_1, realLocIdx_2, ...] )
+
+Description   : Change 'rawIdx' in database to 'realIdx' numbers; 
+                If the third parameter is true (default) (not zero or null), the duplicated realIdx will be removed. 
+
+=cut
+sub _locDb_rawIdx2realIdx {
+	my ($ah, $rawIdx_ar, $rmDup) = @_; 
+	$rmDup //= 1; 
+	my @back; 
+	my %used_realIdx; 
+	for my $realIdx ( map { @{ $ah->{'rawIdx2realIdx'}{$_} } } @$rawIdx_ar ) {
+		defined $used_realIdx{$realIdx} and next; 
+		$rmDup and $used_realIdx{$realIdx} //= 1; 
+		push(@back, $realIdx); 
+	}
+	return(\@back); 
+}# _locDb_rawIdx2realIdx() 
+
+
+
+
+
+
 
 ############################################################
 #  Inner sub-routines. 
 ############################################################
 
+=head1 _fill_rawN2rawIdx( \%num_db_hash ) 
 
-### Add ->{'rawIdx2realIdx'}{$rawIdx}    -> [$realIdx_1, $realIdx_2, ...]
-### Add ->{'rawLoc'}              => [ [$rawLoc_1_S, $rawLoc_1_E], [$rawLoc_2_S, $rawLoc_2_E], ... ]
-###       # Here 'rawLoc' stands for 'binLoc'; 
-### Add ->{'rawNum'}              => [ $rawLoc_1_S, $rawLoc_2_S, $rawLoc_3_S, ... ]
-###       # Here 'rawNum' is related to 'rawLoc' instead of 'realLoc'
+Return        : () 
+
+FUnction      : 
+    Add ->{'rawN2rawIdx'}{$rawNum} => [ $rawIdx1, $rawIdx2, ... ] according to ->{'rawNum'}
+=cut
+sub _fill_rawN2rawIdx {
+	my ($ah) = @_; 
+	for (my $i=0; $i<@{ $ah->{'rawNum'} }; $i++) {
+		push(@{$ah->{'rawN2rawIdx'}{ $ah->{'rawNum'}[$i] }}, $i); 
+	}
+	return; 
+}# _fill_rawN2rawIdx ()
+
+=head1 _fill_struct( \%db_num ) 
+
+Function    : Add ->{'struct'}     => [ structure_database ]
+              final value of 'struct' is ->{'rawN2rawIdx'}{$rawN} 
+
+=cut
+sub _fill_struct {
+	my ( $ah ) = @_; 
+	$ah->{'struct'} = []; 
+	for my $rawN (keys %{$ah->{'rawN2rawIdx'}}) {
+		&_put_num2Struct( $ah->{'struct'}, &_Encode_deciN($rawN, $ah->{'maxP'}), $ah->{'rawN2rawIdx'}{$rawN} ); 
+	}
+	return; 
+}# _fill_struct () 
+
+=head1 _fill_struct_SEloc( \%db_loc , { 'maxP' => 11 } )
+
+Return       : ()
+
+Function     : 
+    The second added 'maxP' only works when $db_loc{'maxP'} is undefined. 
+    Add ->{'struct'}           => [ structure_database ]
+                                  # final value of 'struct' is ->{'rawN2rawIdx'}{$rawN} in a corrected order. 
+                                  # and here $rawN is the start of each location. 
+    Replace ->{'rawN2rawIdx'}  => $final_value_of_"$ah->{'struct'}", which is now in a corrected order. 
+=cut
+sub _fill_struct_SEloc {
+	my ($ah, $pH) = @_; 
+	$pH->{'maxP'} //= 11; 
+	$ah->{'maxP'} //= $pH->{'maxP'}; 
+
+	# Firstly sorted by locE : 
+	my @eLoc = map { $_->[1] } @{$ah->{'rawLoc'}}; 
+	my %eLoc_db = %{ &index_numbers(\@eLoc, { 'maxP' => $ah->{'maxP'} }) }; 
+	my %eLoc_info; 
+	for my $eLoc_rawIdx_ar ( @{$eLoc_db{'sorted_rawIdx'}} ) {
+		for my $eLoc_rawIdx_v (@$eLoc_rawIdx_ar) {
+			# Because @eLoc directly comes from @{$ah->{'rawLoc'}}, so $eLoc_rawIdx_v === ah:rawLocIdx; 
+			push(@{$eLoc_info{'srt_locSE'}}, $ah->{'rawLoc'}[$eLoc_rawIdx_v]); 
+			$eLoc_info{'srtIdx_to_rawIdx'}{ $#{$eLoc_info{'srt_locSE'}} } = $eLoc_rawIdx_v; # This srtIdx is not index of 'sorted_rawIdx'!!! 
+		}
+	}
+
+	# Secondly sorted by locS : 
+	my @sLoc = map { $_->[0] } @{$eLoc_info{'srt_locSE'}}; 
+	my %sLoc_db = %{ &index_numbers(\@sLoc, { 'maxP' => $ah->{'maxP'} } ) }; 
+	my %sLoc_info; 
+	for my $sLoc_rawIdx_ar ( @{$sLoc_db{'sorted_rawIdx'}} ) {
+		for my $sLoc_rawIdx_v (@$sLoc_rawIdx_ar) {
+			# Here $sLoc_rawIdx_v === $eLoc_srtIdx ; 
+			my $eLoc_srtIdx = $sLoc_rawIdx_v; 
+			push(@{$sLoc_info{'srt_locSE'}}, [ @{$eLoc_info{'srt_locSE'}[$eLoc_srtIdx]} ]); 
+			my $sLoc_srtIdx = $#{$sLoc_info{'srt_locSE'}}; 
+			# my $rawIdx = $eLoc_info{'srtIdx_to_rawIdx'}{$eLoc_srtIdx}; 
+			# $sLoc_info{'srtIdx_to_rawIdx'}{$sLoc_srtIdx} = $rawIdx; 
+		}
+	}
+	
+	# Now we can fill 'struct' related values : 
+	$ah->{'struct'} = [ @{ $sLoc_db{'struct'} } ]; 
+	for my $ar_rawIdx_INsLocDb ( map { $_->[1] } @{ &_lsAll_inStruct( $ah->{'struct'} , $ah->{'maxP'} ) } ) {
+		my $sLoc_rawLocS = $sLoc_db{'rawNum'}[ $ar_rawIdx_INsLocDb->[0] ]; 
+		@$ar_rawIdx_INsLocDb = @{$eLoc_info{'srtIdx_to_rawIdx'}}{@$ar_rawIdx_INsLocDb}; # Remember $sLoc_rawIdx_v === $eLoc_srtIdx ;
+		# We want to renew 'rawN2rawIdx' information, because we want to sort loci also with Eloc. 
+		# We have to do this because the current ->{'struct'} is constructed in %sLoc_db, so linked to things of that one. 
+		$ah->{'rawN2rawIdx'}{$sLoc_rawLocS} = $ar_rawIdx_INsLocDb; 
+		# The ->{'sorted_rawIdx'} has not been concerned yet. 
+	}
+
+	return; 
+}# _fill_struct_SEloc () 
+
+=head1 _fill_sorted_rawIdx( \%db_num )
+
+Function : 
+           Add ->{'sorted_rawIdx'} => [ [$rawIdx3, $rawIdx8, ...], [$rawIdx2], ... ];
+           # Here $rawIdx3_rawNumber is equal to $rawIdx8_rawNumber, and smaller than $rawIdx2_rawNumber;
+           # The array_reference in values is linked to ->{'rawN2rawIdx'}{$rawN} for easy changes;
+
+           Add ->{'rawN2srtIdx'}{$rawN} => $sorted_idx_in_'sorted_rawIdx_array';
+
+=cut
+sub _fill_sorted_rawIdx {
+	my ($ah) = @_; 
+
+	my $tmp_ar = $ah->{'struct'}; 
+	for my $ar ( @{ &_lsAll_inStruct( $ah->{'struct'}, $ah->{'maxP'} ) } ) {
+		my ( $t_path, $t_value ) = @$ar; 
+		push( @{$ah->{'sorted_rawIdx'}}, $t_value ); # Link this to ->{'rawN2rawIdx'}{$rawN}; 
+		$ah->{'rawN2srtIdx'}{ $ah->{'rawNum'}[ $t_value->[0] ] } = $#{ $ah->{'sorted_rawIdx'} }; 
+	}
+	return; 
+} # _fill_srtRawIdx() 
+
+=head1 _map_loc_to_rawIdx ( \%db_loc, [$chkLoc_S, $chkLoc_E] )
+
+Return        : ([$idx1_in_'rawLoc_array', $idx2_in_'rawLoc_array', ...]) 
+
+Description   : Better ignore this inner function. 
+                $idx1_in_'rawLoc_array' can be used in $db_loc{'rawLoc'}[$idx1_in_rawLoc_array] (Value=[$rawLocS, $rawLocE]). 
+                Be aware that when there are overlaps between rawLocs, the return might be not complete!!! 
+
+=cut
+sub _map_loc_to_rawIdx {
+	my ($locDB_hr, $locSE_ar) = @_; 
+	my @locSE = (@$locSE_ar); 
+	$locSE[0] > $locSE[1] and @locSE = @locSE[1,0]; 
+	my @back; 
+
+	my $find_idxS = &_map_number_to_srtIdx( $locDB_hr, $locSE[0], 'both' ); 
+	# Check reverse 
+	CHK_REV: 
+	for ( my $srtIdx=$find_idxS; $srtIdx>=0; $srtIdx-- ) {
+		for my $rawIdx (reverse @{ $locDB_hr->{'sorted_rawIdx'}[$srtIdx] }) {
+			my ($curLocS, $curLocE) = @{ $locDB_hr->{'rawLoc'}[$rawIdx] }; 
+			$curLocE < $locSE[0] and last CHK_REV; 
+			$curLocS > $locSE[1] and next; 
+			push(@back, $rawIdx); 
+		}
+	}
+	@back = reverse(@back); 
+	# Check forward 
+	CHK_FWD: 
+	for ( my $srtIdx=$find_idxS+1; $srtIdx < @{$locDB_hr->{'sorted_rawIdx'}}; $srtIdx++ ) {
+		for my $rawIdx ( @{ $locDB_hr->{'sorted_rawIdx'}[$srtIdx] } ) {
+			my ($curLocS, $curLocE)  = @{ $locDB_hr->{'rawLoc'}[$rawIdx] }; 
+			$curLocS > $locSE[1] and last CHK_FWD; 
+			$curLocE < $locSE[0] and next; 
+			push(@back, $rawIdx); 
+		}
+	}
+	return(\@back); 
+}# _map_loc_to_rawIdx () 
+
+
+=head1 _binRealLoc2BinLoc( \%db_loc )
+
+Return       : () 
+
+Function     : 
+    When 'binSize' <= 0 , no BIN action is processed. In this case, 'rawLoc' is identical to 'realLoc'. 
+
+    Add ->{'rawIdx2realIdx'}{$rawIdx}    -> [$realIdx_1, $realIdx_2, ...]
+          # This relationship is the most important to transform 'rawLoc' to 'realLoc' information. 
+    Add ->{'rawLoc'}              => [ [$rawLoc_1_S, $rawLoc_1_E], [$rawLoc_2_S, $rawLoc_2_E], ... ]
+          # Here 'rawLoc' stands for 'binLoc'; 
+    Add ->{'rawNum'}              => [ $rawLoc_1_S, $rawLoc_2_S, $rawLoc_3_S, ... ]
+          # Here 'rawNum' is related to 'rawLoc' instead of 'realLoc'
+=cut
 sub _binRealLoc2BinLoc {
 	my ($ah) = @_; 
 	my $ms_obj = mathSunhh->new(); 
@@ -1839,97 +2166,30 @@ sub _binRealLoc2BinLoc {
 	return; 
 }# _binRealLoc2BinLoc () 
 
-### Add ->{'sorted_rawIdx'} => [ [$rawIdx3, $rawIdx8, ...], [$rawIdx2], ... ] 
-###                            # Here $rawIdx3_rawNumber is equal to $rawIdx8_rawNumber, and smaller than $rawIdx2_rawNumber . 
-### Add ->{'rawN2srtIdx'}{$rawN} => $sorted_idx_in_'sorted_rawIdx_array'
-sub _fill_sorted_rawIdx {
-	my ($ah) = @_; 
-	for my $aN (@{$ah->{'abc_srtN_a'}}) {
-		for my $bN (@{$ah->{'abc_srtN_b'}{$aN}}) {
-			for my $cN (@{$ah->{'abc_srtN_c'}{$aN}{$bN}}) {
-				push(@{$ah->{'sorted_rawIdx'}}, [ @{ $ah->{'abc'}{$aN}{$bN}{$cN} } ]); 
-				$ah->{'rawN2srtIdx'}{ $ah->{'rawNum'}[ $ah->{'abc'}{$aN}{$bN}{$cN}[0] ] } = $#{$ah->{'sorted_rawIdx'}}; 
-			}
-		}
-	}
-} # _fill_srtRawIdx() 
+=head1 _closest_number( $number_toCheck, \@source_numbers )
 
-### Add ->{'rawN2rawIdx'}{$rawN} => [ $rawIdx1, $rawIdx2, ... ]
-sub _fill_rawN2rawIdx {
-	my ($ah) = @_; 
-	for (my $i=0; $i<@{ $ah->{'rawNum'} }; $i++) {
-		push(@{$ah->{'rawN2rawIdx'}{ $ah->{'rawNum'}[$i] }}, $i); 
-	}
-	return; 
-}
+Return       : ( $number_from_source_closest_to_number_toCheck )
 
-### Add ->{'abc'}{$aN}{$bN}{$cN}   => ->{'rawN2rawIdx'}{$rawLocS} === [ $rawIdx1, $rawIdx2, ... ]
-### Add ->{'abc_srtN_a'}           => [@aN]
-### Add ->{'abc_srtN_b'}{$aN}      => [@bN]
-### Add ->{'abc_srtN_c'}{$aN}{$bN} => [@cN]
-sub _fill_abc {
-	my ($ah) = @_; 
-	for my $rawN (keys %{$ah->{'rawN2rawIdx'}}) {
-		my ($aN, $bN, $cN) = &_encode_deciN($rawN); 
-		$ah->{'abc'}{$aN}{$bN}{$cN} //= $ah->{'rawN2rawIdx'}{$rawN}; 
-	}
-	$ah->{'abc_srtN_a'} = [ sort {$a<=>$b} keys %{$ah->{'abc'}} ]; 
-	for my $aN ( @{$ah->{'abc_srtN_a'}} ) {
-		$ah->{'abc_srtN_b'}{$aN} = [ sort {$a<=>$b} keys %{$ah->{'abc'}{$aN}} ]; 
-		for my $bN (@{$ah->{'abc_srtN_b'}{$aN}}) {
-			$ah->{'abc_srtN_c'}{$aN}{$bN} = [ sort {$a<=>$b} keys %{$ah->{'abc'}{$aN}{$bN}} ]; 
-		}
-	}
-	return; 
-}# sub _fill_abc() 
+Description  : If there are two numbers with same distance flanking $number_toCheck, the smaller one will be chosen. 
 
-sub _fill_abc_SEloc {
-	my ($ah) = @_; 
-	# Firstly sorted by locE : 
-	my @eLoc = map { $_->[1] } @{$ah->{'rawLoc'}}; 
-	my %eLoc_db = %{ &index_numbers(\@eLoc) }; 
-	my %eLoc_info; 
-	for my $eLoc_rawIdx_ar ( @{$eLoc_db{'sorted_rawIdx'}} ) {
-		for my $eLoc_rawIdx_v (@$eLoc_rawIdx_ar) {
-			# Because @eLoc directly comes from @{$ah->{'rawLoc'}}, so $eLoc_rawIdx_v === ah:rawLocIdx; 
-			push(@{$eLoc_info{'srt_locSE'}}, $ah->{'rawLoc'}[$eLoc_rawIdx_v]); 
-			$eLoc_info{'srtIdx_to_rawIdx'}{ $#{$eLoc_info{'srt_locSE'}} } = $eLoc_rawIdx_v; # This srtIdx is not index of 'sorted_rawIdx'!!! 
+=cut
+sub _closest_number {
+	my ($chkN, $ar) = @_; 
+	@$ar > 0 or &stopErr("[Err] No database numbers for checking in\n"); 
+	my %best = ( 'idx' => 0, 'abs_diff' => abs( $ar->[0]-$chkN ) ); 
+	my $cnt = -1; 
+	for my $dbN (@$ar) {
+		$cnt ++; 
+		my $diff = abs( $dbN - $chkN ); 
+		if ($diff < $best{'abs_diff'}) {
+			$best{'idx'} = $cnt; 
+			$best{'abs_diff'} = $diff; 
 		}
 	}
 
-	# Secondly sorted by locS : 
-	my @sLoc = map { $_->[0] } @{$eLoc_info{'srt_locSE'}}; 
-	my %sLoc_db = %{ &index_numbers(\@sLoc) }; 
-	my %sLoc_info; 
-	for my $sLoc_rawIdx_ar ( @{$sLoc_db{'sorted_rawIdx'}} ) {
-		for my $sLoc_rawIdx_v (@$sLoc_rawIdx_ar) {
-			# Here $sLoc_rawIdx_v === $eLoc_srtIdx ; 
-			my $eLoc_srtIdx = $sLoc_rawIdx_v; 
-			push(@{$sLoc_info{'srt_locSE'}}, [ @{$eLoc_info{'srt_locSE'}[$eLoc_srtIdx]} ]); 
-			my $sLoc_srtIdx = $#{$sLoc_info{'srt_locSE'}}; 
-			my $rawIdx = $eLoc_info{'srtIdx_to_rawIdx'}{$eLoc_srtIdx}; 
-			$sLoc_info{'srtIdx_to_rawIdx'}{$sLoc_srtIdx} = $rawIdx; 
-		}
-	}
-
-	# Now we can fill 'abc' related values : 
-	$ah->{'abc_srtN_a'} = [ @{$sLoc_db{'abc_srtN_a'}} ]; 
-	for my $aN (@{$ah->{'abc_srtN_a'}}) {
-		$ah->{'abc_srtN_b'}{$aN} = [ @{$sLoc_db{'abc_srtN_b'}{$aN}} ]; 
-		for my $bN (@{$ah->{'abc_srtN_b'}{$aN}}) {
-			$ah->{'abc_srtN_c'}{$aN}{$bN} = [ @{$sLoc_db{'abc_srtN_c'}{$aN}{$bN}} ]; 
-			for my $cN (@{$ah->{'abc_srtN_c'}{$aN}{$bN}}) {
-				my @sLoc_rawIdx_array = @{ $sLoc_db{'abc'}{$aN}{$bN}{$cN} }; # Remember $sLoc_rawIdx_v === $eLoc_srtIdx ; 
-				my $sLoc_rawLocS  = $sLoc_db{'rawNum'}[$sLoc_rawIdx_array[0]]; 
-				$ah->{'abc'}{$aN}{$bN}{$cN} = [ @{$eLoc_info{'srtIdx_to_rawIdx'}}{@sLoc_rawIdx_array} ]; 
-				# We need to renew 'rawN2rawIdx' information, because we want to sort loci also with Eloc. 
-				@{ $ah->{'rawN2rawIdx'}{$sLoc_rawLocS} } = @{ $ah->{'abc'}{$aN}{$bN}{$cN} }; 
-			}
-		}
-	}
-	
-	return; 
-}# _fill_abc_SEloc () 
+	return( $ar->[$best{'idx'}] ); 
+}# _closest_number ()
 
 
 1;
+
