@@ -1458,7 +1458,7 @@ Usage case 1  :
     my %locDb_h = %{ &index_SEloc( \@loc, { 'binSize' => 100 , 'maxP' => 11 } ) }; 
     print "intact raw data Start:\n"; 
     for (my $i=0; $i<@loc; $i++) {
-      print join("\t", "$loc[$i][0]-$loc[$i][1]", "$locDb_h{'realLoc'}[$i][0]-$locDb_h{'realLoc'}[$i][0][1]")."\n"; 
+      print join("\t", "$loc[$i][0]-$loc[$i][1]", "$locDb_h{'realLoc'}[$i][0]-$locDb_h{'realLoc'}[$i][1]")."\n"; 
     }
     print "intact raw data End:\n"; 
 
