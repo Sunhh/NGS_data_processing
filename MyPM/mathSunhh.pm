@@ -14,6 +14,7 @@ our @EXPORT_OK = qw();
 
 use LogInforSunhh; 
 
+my $ms_obj = mathSunhh->new(); 
 
 ############################################################
 #  Methods
@@ -2060,6 +2061,32 @@ sub _fill_sorted_rawIdx {
 	return; 
 } # _fill_srtRawIdx() 
 
+=head1 _hasPos_inLocDb ( \%db_loc, $position )
+
+Return       : (\@realIdx_with_inputPos) === ( [ $realIdx1, $realIdx2, ...  ] )
+
+Description  : This can be further used to extract realLoci by @{$ah->{'realLoc'}}[ @realIdx_with_inputPos ] ; 
+
+=cut
+sub _hasPos_inLocDb {
+	my ($ah, $posi) = @_; 
+	my $rawNum_toChk_ar = $ms_obj->map_windows( 'position' => $posi, 'wind_hash' => $ah->{'wind'} ); 
+	my @back; 
+	my %has; 
+	for my $rawNum_toChk ( @$rawNum_toChk_ar ) {
+		defined $ah->{'rawN2rawIdx'}{$rawNum_toChk} or next; 
+		# my $realIdx_ar = &_locDb_rawIdx2realIdx( $ah, $ah->{'rawN2rawIdx'}{$rawNum_toChk}, 1 ); 
+		for my $t ( @{ &_locDb_rawIdx2realIdx( $ah, $ah->{'rawN2rawIdx'}{$rawNum_toChk}, 1 ) } ) {
+			defined $has{ $t } and next; 
+			$has{ $t } = 1; 
+			$posi >= $ah->{'realLoc'}[$t][0] and $posi <= $ah->{'realLoc'}[$t][1] and push(@back, $t); 
+		}
+	}
+
+	return(\@back); 
+}# _hasPos_inLocDb ()
+
+
 =head1 _map_loc_to_rawIdx ( \%db_loc, [$chkLoc_S, $chkLoc_E] )
 
 Return        : ([$idx1_in_'rawLoc_array', $idx2_in_'rawLoc_array', ...]) 
@@ -2114,10 +2141,10 @@ Function     :
           # Here 'rawLoc' stands for 'binLoc'; 
     Add ->{'rawNum'}              => [ $rawLoc_1_S, $rawLoc_2_S, $rawLoc_3_S, ... ]
           # Here 'rawNum' is related to 'rawLoc' instead of 'realLoc'
+    Add ->{'wind'}                => $ms_obj->setup_windows(), in which ->{'wind'}{'loci'}
 =cut
 sub _binRealLoc2BinLoc {
 	my ($ah) = @_; 
-	my $ms_obj = mathSunhh->new(); 
 
 	if ( $ah->{'binSize'} <= 0 ) {
 		@{$ah->{'rawLoc'}} = @{$ah->{'realLoc'}}; 
@@ -2162,6 +2189,7 @@ sub _binRealLoc2BinLoc {
 		$ah->{'rawIdx2realIdx'}{ $#{$ah->{'rawLoc'}} } = [ @{ $wi2realIdx{$t_wi} } ]; 
 		push(@{$ah->{'rawNum'}}, $ah->{'rawLoc'}[-1][0]); 
 	}
+	$ah->{'wind'} = \%wind; 
 	
 	return; 
 }# _binRealLoc2BinLoc () 
