@@ -21,6 +21,8 @@ GetOptions(\%opts,
 	"outSam1:s", 
 	"maxmismatchN:i", 
 
+	"verbose!", 
+
 	"exe_samtools:s", # samtools 
 	"exe_perl:s", # perl 
 
@@ -49,7 +51,8 @@ my %cnt;
 &prepare_input(); # outSam1_fh
 
 my %rd_info = %{ &load_fqID_toHash( $opts{'inFq1'} ) }; 
-$cnt{'inRdNum'} = scalar(@{$rd_info{'map_idx'}}); 
+# $cnt{'inRdNum'} = scalar(@{$rd_info{'map_idx'}}); 
+$cnt{'inRdNum'} = $rd_info{'rdNum'}; 
 $opts{'verbose'} and &tsmsg("[Msg] inFq1 reads number : $cnt{'inRdNum'}\n"); 
 &outSam_byRdID( $opts{'inSam1'}, $opts{'fmtSam1'}, $opts{'outSam1_fh'}, \%rd_info ); 
 close($opts{'outSam1_fh'}); 
@@ -68,7 +71,7 @@ sub outSam_byRdID {
 		&fileSunhh::log_section($., \%tmp_cnt) and &tsmsg("[Msg]   Processing $. line.\n"); 
 		m/^\@/ and do { print {$outFh} "$_\n" ;  next; }; 
 		my @ta = &splitL("\t", $_); 
-		defined $rd_info_h->{$ta[0]} or next; 
+		defined $rd_info_h->{'ID2idx'}{$ta[0]} or next; 
 		defined $flag_aln{$ta[1]} or next; 
 		if ( $opts{'maxmismatchN'} >= 0 ) {
 			my $cnt_mismat = &SeqAlnSunhh::cnt_sam_mismatch(\@ta, 'set_rna'); 
@@ -84,20 +87,24 @@ sub outSam_byRdID {
 sub load_fqID_toHash {
 	my $cnt = -1; 
 	my %back_hash; 
+	my @back_id; 
 	for my $fn (@{$_[0]}) {
 		$opts{'verbose'} and &tsmsg("[Msg] Loading fq file [$fn] start.\n"); 
 		my $fh = &openFH( $fn, '<' ) or &stopErr("[Err] Failed to open file [$fn]\n"); 
 		while (<$fh>) {
 			m/^\@(\S+)/ or &stopErr("[Err] Bad ID!\n"); 
 			$cnt ++; 
+			push(@back_id, [0,0,0,0,$1]); 
 			$back_hash{$1} = $cnt; 
 			<$fh>; <$fh>; <$fh>; 
 		}
 		close($fh); 
 		$opts{'verbose'} and &tsmsg("[Msg] Loading fq file [$fn] finished.\n"); 
 	}
-	return(\%back_hash); 
+	# return( {'ID2idx' => \%back_hash}, 'map_idx' => [@back_id], 'rdNum' => $cnt ); 
+	return( { 'ID2idx' => \%back_hash, 'rdNum' => $cnt } ); 
 }# load_fqID_toHash()
+
 
 sub prepare_input {
 	$opts{'exe_samtools'} //= 'samtools'; 

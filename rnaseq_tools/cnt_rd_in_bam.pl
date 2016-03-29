@@ -149,7 +149,7 @@ while (<$sam_fh>) {
 close($sam_fh); 
 
 $cnt{'sum_cnt_all'} = scalar( keys %{$cnt{'rdID_hash'}} ); 
-&tsmsg("[Rec] Total $cnt{'sum_cnt_all'} reads accepted.\n"); 
+&tsmsg("[Rec] Total $cnt{'sum_cnt_all'} reads accepted in $fn_bam\n"); 
 
 if ( $opts{'senseStrand'} eq 'R' ) {
 	for my $ar1 ( map { @{ $bed_info{$_} } } keys %bed_info ) {
