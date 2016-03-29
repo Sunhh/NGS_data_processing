@@ -63,6 +63,10 @@ perl $0 in.fastq
 -srch_drop    [Boolean] Only valid if -srch_back == read. It will drop the reads matching to the pattern. 
 -srch_max     [Boolean] Return all patterns bp by bp if given. 
 
+-get_key      [Boolean] Return read keys
+
+
+
 -rdKey        [Boolean] Keep only the first non-blank characters for read key if given. 
 
 -randSlct     [1.0] Random select reads/pairs to a subset of ratio from (0-1]. 
@@ -86,6 +90,7 @@ GetOptions(\%opts,
 	"frag:s", "frag_r!", "frag_c!", 
 	"search:s", "srch_strand:s", "srch_back:s", "srch_drop!", "srch_max!", 
 	"randSlct:f", 
+	"get_key!", 
 	"help!", 
 ); 
 
@@ -142,6 +147,7 @@ my %good_str = qw(
 &searchPattern() if ( defined $opts{search} and $opts{search} ne '' ); 
 &rd_LenHist() if ( $opts{rd_LenHist} ); 
 &randSlct() if ( defined $opts{'randSlct'} ); 
+&get_key() if ( $opts{'get_key'} ); 
 
 #****************************************************************#
 #--------------Subprogram------------Start-----------------------#
@@ -395,6 +401,20 @@ sub fq2fa {
 	}# End for my $fh
 	&tsmsg("[Rec] Finish $rdNum reads.\n"); 
 }#sub fq2fa
+
+sub get_key {
+	my %cnt; 
+	$cnt{'cur_ln'} = 0; 
+	$cnt{'cntN_step'} = 5e6; 
+	for my $fh ( @InFp ) {
+		while ( my $rdRec = &get_fq_record($fh) ) {
+			$cnt{'cur_ln'} ++; 
+			&fileSunhh::log_section( $cnt{'cur_ln'}, \%cnt ) and &tsmsg("[Msg] Dealing $cnt{'cur_ln'} reads.\n"); 
+			print STDOUT $rdRec->{'id'}; 
+		}
+	}
+	&tsmsg("[Rec] get_key() done for $cnt{'cur_ln'} reads.\n"); 
+}# sub get_key ()
 
 sub rd_Num {
 	print STDOUT join("\t", qw/InFile Total_size Total_Rd_num Mean_Rd_size Range_Rd_size PhredCut Time/)."\n"; 

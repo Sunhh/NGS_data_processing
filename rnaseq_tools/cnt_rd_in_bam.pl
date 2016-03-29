@@ -25,7 +25,7 @@ GetOptions(\%opts,
 	"max_mismatchN:i",  # -1 . could be [0-...]
 	"max_mismatchR:f",  # -1 . could be [0-1]
 
-	"exe_samtools",     # samtools_1.3 
+	"exe_samtools:s",     # samtools_1.3 
 ); 
 
 $opts{'withYiBinMethod'} and $opts{'onlyCntRdSE'} = 1; 
@@ -140,7 +140,7 @@ while (<$sam_fh>) {
 	} elsif ( $flag_aln_R{$ta[1]} ) {
 		for my $ar1 (@{ $bed_info{$ta[2]} }[@loc_realIdx]) {
 			$cnt{'geneCnt'}{ $ar1->[2] }[1] ++; # Rev
-			$cnt{'geneCnt'}{ $ar1->[2] }[3] ++; 
+			$cnt{'geneCnt'}{ $ar1->[2] }[3]{ $ta[0] } ++; 
 		}
 	} else {
 		next SAM_LINE; 
