@@ -169,11 +169,11 @@ sub set_info_bySam {
 		defined $rd_info_h->{'ID2idx'}{$ta[0]} or next; 
 		if ( defined $flag_aln_R1{$ta[1]} ) {
 			# This is a aligned R1 read. 
-			my $cnt_mismat = &SeqAlnSunhh::cnt_sam_mismatch(\@ta, 'set_rna'); 
+			my ($cnt_mismat) = &SeqAlnSunhh::cnt_sam_mismatch(\@ta, 'set_rna'); 
 			my $newV = ($cnt_mismat == 0) ? 2 : 1; 
 			&_ch_val_inAR( $rd_info_h->{ 'map_idx' }[ $rd_info_h->{'ID2idx'}{$ta[0]} ], $newV, $arI, 0 ); 
 		} elsif ( defined $flag_aln_R2{$ta[1]} ) {
-			my $cnt_mismat = &SeqAlnSunhh::cnt_sam_mismatch(\@ta, 'set_rna'); 
+			my ($cnt_mismat) = &SeqAlnSunhh::cnt_sam_mismatch(\@ta, 'set_rna'); 
 			my $newV = ($cnt_mismat == 0) ? 2 : 1; 
 			&_ch_val_inAR( $rd_info_h->{ 'map_idx' }[ $rd_info_h->{'ID2idx'}{$ta[0]} ], $newV, $arI, 1 ); 
 		} else {

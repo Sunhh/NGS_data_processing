@@ -792,7 +792,7 @@ sub parseCigar {
 
 =head1 cnt_sam_mismatch (\@sam_line_array, 'set_rna|set_dna')
 
-Return      : ($mismatch_number)
+Return      : ($mismatch_number, \%cigar_hash)
 
 Description : 
    For 'set_rna' :(default). For hisat2. 'S|H|I|D' in cigar and 'XM:i:(\d+)' are added together. Here I don't use 'Xlen' because 'XM:i:(\d+)' covers it in hisat2. 
@@ -830,7 +830,7 @@ sub cnt_sam_mismatch {
 	}
 	
 	
-	return($cnt); 
+	return($cnt, \%cigar_h); 
 }# cnt_sam_mismatch ()
 
 =head1 sam_line2hash(\@sam_line_array, [@required_infor], $is_ignore_TAGs)
