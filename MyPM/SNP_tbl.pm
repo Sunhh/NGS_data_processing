@@ -5,6 +5,7 @@ use LogInforSunhh;
 use fileSunhh; 
 use mathSunhh; 
 my $ms_obj = mathSunhh->new(); 
+my $st_obj = SNP_tbl->new(); 
 
 # 2014-12-23 Time flies fast! It's time to step on higher perl skills. I am coming. 
 
@@ -1102,5 +1103,64 @@ sub file_tbl2csv {
 	&tsmsg("[Msg] Finish .csv\n"); 
 	return; 
 }# sub file_tbl2csv() 
+
+=head1 A2AA( $inGenotype, { 'considerAA' => '0|1' } ) 
+
+Return       : ( $doubled_genotype )
+
+Example      : 
+    &A2AA( 'A' ) returns 'A/A'; 
+    &A2AA( 'S' ) returns 'C/G'; 
+    &A2AA( 'AA') returns 'A/A'; 
+    &A2AA( 'H' ) returns './.'; # Here 'H' stands for ('A','C','T'); 
+    If 'considerAA' => 0 , then &A2AA( 'CG' ) === &A2AA( 'CCG' ) returns 'CG/CG'; &A2AA('CGA') returns 'CGA/CGA'; 
+    If 'considerAA' => 1 , then &A2AA( 'CG' ) === &A2AA( 'CCG' ) returns 'C/G';   &A2AA('CGA') returns './.';
+=cut
+sub A2AA {
+	my ( $base, $pH ) = @_; 
+	$pH->{'considerAA'} //= 0; 
+	$base =~ s/\s//g; 
+	$base eq '' and return('./.'); 
+	$base = uc($base); 
+	$base =~ m!^[^/\s]+/[^/\s]+$! and return($base); 
+	while ( $base =~ s!((.).*)\2!$1!g ) { 1; }
+	my $l = length($base); 
+	if ( $l == 1 ) {
+		if ($base eq 'N' or $base eq '-') {
+			return('./.'); 
+		} elsif ( $base =~ m/^([ATGCU])$/ ) {
+			return("$1/$1"); 
+		} elsif ( $base eq '*' ) {
+			return("*/*"); 
+		} elsif ( my @arr = &dna_d2b( $base ) ) {
+			@arr > 2 and return('./.'); 
+			return("$arr[0]/$arr[1]"); 
+		} else {
+			&tsmsg("[Wrn] Unknown input for A2AA [$base]\n"); 
+			return('./.'); 
+		}
+	} elsif ($pH->{'considerAA'}) {
+		if ( $base =~ m/^(.)(.)$/ ) {
+			return("$1/$2"); 
+		} else {
+			return("./."); 
+		}
+	} else {
+		return("$base/$base"); 
+	}
+	return; 
+}# sub A2AA () 
+
+=head1 AA2array( $aa )
+
+Return       : ( $allele1, $allele2 )
+
+=cut
+sub AA2array {
+	my ($aa) = @_; 
+	$aa =~ m!^(.)/(.)$! or &stopErr("[Err] bad input for AA2array() [$aa]\n"); 
+	return($1,$2); 
+}# sub AA2array ()
+
 
 1; # Terminate the package with the required 1; 
