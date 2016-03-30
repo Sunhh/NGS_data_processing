@@ -11,6 +11,8 @@ GetOptions(\%opts,
 	"mrk_info:s", 
 	"inList!", 
 	"maxNmissR:f", # 1 
+	"minGrp1N:i",  # 1
+	"minGrp2N:i",  # 1 
 	"rmNegNeiFst!", 
 	"rmNegWcFst!", 
 	"exe_Rscript:s", # ~/bin/Rscript 
@@ -18,12 +20,16 @@ GetOptions(\%opts,
 ); 
 $opts{'exe_Rscript'} //= '~/bin/Rscript'; 
 $opts{'maxNmissR'} //= 1; 
+$opts{'minGrp1N'} //= 1; 
+$opts{'minGrp2N'} //= 1; 
 my $help_txt = <<HH; 
 
 perl $0 -fst_in in_fst_prefix -mrk_info mrk_info -exe_Rscript '~/bin/Rscript' 
 
 -inList      [Bool] This option mask -mrk_info . 
 -maxNmissR   [$opts{'maxNmissR'}] [0-1] Maximum N missing ratio allowed in each group. 
+-minGrp1N    [$opts{'minGrp1N'}] [1-...] minimum genotyped individuals accepted in group 1. 
+-minGrp2N    [$opts{'minGrp2N'}] [1-...] minimum genotyped individuals accepted in group 2.
 -rmNegNeiFst [Bool] Set NA to sites with negative Nei_Fst if given. 
 -rmNegWcFst  [Bool] Set NA to sites with negative Wc_Fst if given. 
 
@@ -36,6 +42,8 @@ HH
 $opts{'help'} and &LogInforSunhh::usage($help_txt); 
 (defined $opts{'fst_in'}) or defined $opts{'generateR'} or &LogInforSunhh::usage($help_txt); 
 ( $opts{'maxNmissR'} >= 0 and $opts{'maxNmissR'} <= 1 ) or &LogInforSunhh::usage($help_txt); 
+( $opts{'minGrp1N'}  >= 1 ) or &LogInforSunhh::usage($help_txt); 
+( $opts{'minGrp2N'}  >= 1 ) or &LogInforSunhh::usage($help_txt); 
 
 if (defined $opts{'generateR'} and $opts{'generateR'} ne '') {
 	&_write_fst_R_byList( $opts{'generateR'} ); 
@@ -201,7 +209,9 @@ rmNegativeNeiFst <- FALSE # Tell if I should remove sites with nei_fst < 0
 rmNegativeWCFst  <- FALSE # Tell if I should remove sites with wc_fst < 0 
 
 L0
-	print {$fh} "maxNR <- $opts{'maxNmissR'}\n"; 
+	print {$fh} "maxNR  <- $opts{'maxNmissR'}\n"; 
+	print {$fh} "minGN1 <- $opts{'minGrp1N'}\n"; 
+	print {$fh} "minGN2 <- $opts{'minGrp2N'}\n"; 
 	$opts{'rmNegNeiFst'} and print {$fh} "rmNegativeNeiFst <- TRUE\n"; 
 	$opts{'rmNegWcFst'}  and print {$fh} "rmNegativeWCFst  <- TRUE\n"; 
 
@@ -219,11 +229,13 @@ if ( length(argvs) == 0 ) {
 flist <- read.table( file = argvs[1], stringsAsFactors=F, colClasses=c('character'), header=F ) ;
 # The first column is input file name, the second column is output file prefix.
 maxNR <- ifelse( !is.na(argvs[2]) & !is.na(as.numeric(argvs[2])), as.numeric(argvs[2]), maxNR )
+minGrp1N <- minGrp1N # I don't bother setting this parameter. 
+minGrp2N <- minGrp2N # I don't bother setting this parameter. 
 rmNegativeNeiFst <- switch( as.character(argvs[3]), '0'=FALSE, '1'=TRUE, 'TRUE'=TRUE, 'FALSE'=FALSE, 'T'=TRUE, 'F'=FALSE, rmNegativeNeiFst )
 rmNegativeWCFst  <- switch( as.character(argvs[4]), '0'=FALSE, '1'=TRUE, 'TRUE'=TRUE, 'FALSE'=FALSE, 'T'=TRUE, 'F'=FALSE, rmNegativeWCFst  )
 
 # Output : list( qw/ nei_perloc wc_perloc_fst nei_overall wc_overall_fst / )
-cnt_fst <- function( x=NULL, stats=NULL, maxNR=1, x.kk=NULL, rmNegativeNeiFst=FALSE, rmNegativeWCFst=FALSE ) {
+cnt_fst <- function( x=NULL, stats=NULL, maxNR=1, minGrp1N=1, minGrp2N=1, x.kk=NULL, rmNegativeNeiFst=FALSE, rmNegativeWCFst=FALSE ) {
 	# Note that length(x.kk) is always 1 less than nrow(x)
 	#   and x.kk should be a vector of TRUE/FALSE ; 
 	# Output : list( qw/ nei_perloc wc_perloc_fst nei_overall wc_overall_fst / )
@@ -268,7 +280,7 @@ cnt_fst <- function( x=NULL, stats=NULL, maxNR=1, x.kk=NULL, rmNegativeNeiFst=FA
 		; 
 	} else if ( sum(x.kk) == 1 ) {
 		x1 <- x[, c(1, which(x.kk)+1, which(x.kk)+1)]
-		tmp.back <- cnt_fst( x=x1, stats=NULL, maxNR=maxNR, x.kk=c(TRUE,TRUE), rmNegativeNeiFst=rmNegativeNeiFst, rmNegativeWCFst=rmNegativeWCFst )
+		tmp.back <- cnt_fst( x=x1, stats=NULL, maxNR=maxNR, minGrp1N=minGrp1N, minGrp2N=minGrp2N, x.kk=c(TRUE,TRUE), rmNegativeNeiFst=rmNegativeNeiFst, rmNegativeWCFst=rmNegativeWCFst )
 		back$nei_overall          <- tmp.back$nei_overall 
 		back$wc_overall_fst       <- tmp.back$wc_overall_fst
 		back$wc_perloc_fst[x.kk]  <- tmp.back$wc_perloc_fst[1]
@@ -282,7 +294,7 @@ cnt_fst <- function( x=NULL, stats=NULL, maxNR=1, x.kk=NULL, rmNegativeNeiFst=FA
 		if (is.null(stats)) {
 			x1 <- x[, c(1, which(x.kk)+1)]
 			x1.stats <- basic.stats(x1)
-			tmp.back <- cnt_fst( x=x1, stats=x1.stats, maxNR=maxNR, rmNegativeNeiFst=rmNegativeNeiFst, rmNegativeWCFst=rmNegativeWCFst )
+			tmp.back <- cnt_fst( x=x1, stats=x1.stats, maxNR=maxNR, minGrp1N=minGrp1N, minGrp2N=minGrp2N, rmNegativeNeiFst=rmNegativeNeiFst, rmNegativeWCFst=rmNegativeWCFst )
 			back$wc_overall_fst         <- tmp.back$wc_overall_fst
 			back$nei_overall            <- tmp.back$nei_overall
 			back$wc_perloc_fst[x.kk]    <- tmp.back$wc_perloc_fst
@@ -292,8 +304,8 @@ cnt_fst <- function( x=NULL, stats=NULL, maxNR=1, x.kk=NULL, rmNegativeNeiFst=FA
 			good1 <- sum(x.kk) # Must have ( good2 >= 2 ) 
 			need_num1 <- samp.num[1]-floor(maxNR*samp.num[1])
 			need_num2 <- samp.num[2]-floor(maxNR*samp.num[2])
-			enough_num1 <- sapply( stats$n.ind.samp[,1], FUN=function(y) {isTRUE(y >= need_num1)} )
-			enough_num2 <- sapply( stats$n.ind.samp[,2], FUN=function(y) {isTRUE(y >= need_num2)} )
+			enough_num1 <- sapply( stats$n.ind.samp[,1], FUN=function(y) {isTRUE(y >= need_num1 & y >= minGrp1N)} )
+			enough_num2 <- sapply( stats$n.ind.samp[,2], FUN=function(y) {isTRUE(y >= need_num2 & y >= minGrp2N)} )
 			x.kk <- x.kk & enough_num1 & enough_num2
 			if (isTRUE( rmNegativeNeiFst )) {
 				x.kk <- x.kk & sapply( stats$perloc[,7], FUN=function(y) {isTRUE(y >= 0)} )
@@ -311,7 +323,7 @@ cnt_fst <- function( x=NULL, stats=NULL, maxNR=1, x.kk=NULL, rmNegativeNeiFst=FA
 				}
 				if ( isTRUE(rmNegativeWCFst) ) {
 					x1.kk <- sapply( x1.wc$per.loc$FST, FUN=function(y) {isTRUE(y >= 0)} )
-					x1.cnt_fst <- cnt_fst( x=x1, stats=NULL, x.kk=x1.kk, maxNR=maxNR, rmNegativeNeiFst=rmNegativeNeiFst, rmNegativeWCFst=FALSE )
+					x1.cnt_fst <- cnt_fst( x=x1, stats=NULL, x.kk=x1.kk, maxNR=maxNR, minGrp1N=minGrp1N, minGrp2N=minGrp2N, rmNegativeNeiFst=rmNegativeNeiFst, rmNegativeWCFst=FALSE )
 					back$wc_overall_fst      <- x1.cnt_fst$wc_overall_fst
 					back$nei_overall         <- x1.cnt_fst$nei_overall
 					back$wc_perloc_fst[x.kk] <- x1.cnt_fst$wc_perloc_fst
@@ -324,7 +336,7 @@ cnt_fst <- function( x=NULL, stats=NULL, maxNR=1, x.kk=NULL, rmNegativeNeiFst=FA
 					back$nei_perloc          <- cbind( as.matrix( stats$perloc ), Hs_p1=stats$Hs[,1], Hs_p2=stats$Hs[,2] )
 				}
 			} else if (good2 < good1) {
-				tmp.back <- cnt_fst( x=x1, stats=NULL, maxNR=maxNR, rmNegativeNeiFst=rmNegativeNeiFst, rmNegativeWCFst=rmNegativeWCFst )
+				tmp.back <- cnt_fst( x=x1, stats=NULL, maxNR=maxNR, minGrp1N=minGrp1N, minGrp2N=minGrp2N, rmNegativeNeiFst=rmNegativeNeiFst, rmNegativeWCFst=rmNegativeWCFst )
 				back$wc_overall_fst      <- tmp.back$wc_overall_fst
 				back$nei_overall         <- tmp.back$nei_overall
 				back$wc_perloc_fst[x.kk] <- tmp.back$wc_perloc_fst
@@ -348,7 +360,7 @@ for ( i in 1:nrow(flist) ) {
 		# input file    : flist[i,1]
 		# output prefix : flist[i,2]
 		aa <- read.table( file= flist[i,1], header=T, colClasses="numeric", stringsAsFactors=F )
-		aa.cnt_fst <- cnt_fst( x=aa, stats=NULL, maxNR=maxNR, rmNegativeNeiFst=rmNegativeNeiFst, rmNegativeWCFst=rmNegativeWCFst )
+		aa.cnt_fst <- cnt_fst( x=aa, stats=NULL, maxNR=maxNR, minGrp1N=minGrp1N, minGrp2N=minGrp2N, rmNegativeNeiFst=rmNegativeNeiFst, rmNegativeWCFst=rmNegativeWCFst )
 		if (!is.null(aa.cnt_fst$error)) {
 			.tsmsg("[Err] Bad return of cnt_fst() for file [", flist[i,1],"]; error is \"", aa.cnt_fst$error, "\"\n")
 			q()
