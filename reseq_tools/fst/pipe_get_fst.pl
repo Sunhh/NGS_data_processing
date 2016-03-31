@@ -46,7 +46,7 @@ sub run_pipe {
 			&exeCmd_1cmd("mv $ta[0].fmt $ta[0]"); 
 		}
 		close F; 
-		&exeCmd_1cmd("perl $opts{'pl_run_hierfstat'} $para{'maxNmissR'} $para{'rmNegNeiFst'} $para{'rmNegWcFst'} -fst_in $fn -inList -exe_Rscript $opts{'exe_Rscript'} "); 
+		&exeCmd_1cmd("perl $opts{'pl_run_hierfstat'} $para{'maxNmissR'} $para{'minGrp1N'} $para{'minGrp2N'} $para{'rmNegNeiFst'} $para{'rmNegWcFst'} -fst_in $fn -inList -exe_Rscript $opts{'exe_Rscript'} ") and &stopErr("[Err] Failed to execute $opts{'pl_run_hierfstat'}\n"); 
 		$pm->finish; 
 	}
 	$pm->wait_all_children; 

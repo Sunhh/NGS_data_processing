@@ -142,7 +142,7 @@ sub load_mrk_info {
 sub run_fst_R_old {
 	my $tmp_R = &fileSunhh::new_tmp_file(); 
 	&_write_fst_R( $tmp_R ); 
-	&exeCmd_1cmd("$opts{'exe_Rscript'} $tmp_R $opts{'fst_in'}"); 
+	&exeCmd_1cmd("$opts{'exe_Rscript'} $tmp_R $opts{'fst_in'}") and &stopErr("[Err] Failed to run Rscript.\n"); 
 	unlink($tmp_R); 
 	return $tmp_R; 
 }
@@ -152,7 +152,7 @@ sub run_fst_R {
 	&_write_fst_R_byList( $tmp_R ); 
 	my $tmp_in_list = &fileSunhh::new_tmp_file(); 
 	&_write_fst_in_list( $tmp_in_list, $opts{'fst_in'} ); 
-	&exeCmd_1cmd("$opts{'exe_Rscript'} $tmp_R $tmp_in_list"); 
+	&exeCmd_1cmd("$opts{'exe_Rscript'} $tmp_R $tmp_in_list") and &stopErr("[Err] Failed to run Rscript $tmp_R $tmp_in_list.\n"); 
 	unlink($tmp_R); 
 	unlink($tmp_in_list); 
 	return $tmp_R; 
@@ -169,7 +169,7 @@ sub _write_fst_in_list {
 sub run_fst_R_byList {
 	my $tmp_R = &fileSunhh::new_tmp_file(); 
 	&_write_fst_R_byList( $tmp_R ); 
-	&exeCmd_1cmd("$opts{'exe_Rscript'} $tmp_R $opts{'fst_in'}"); 
+	&exeCmd_1cmd("$opts{'exe_Rscript'} $tmp_R $opts{'fst_in'}") and &stopErr("[Err] Failed in run_fst_R_byList() for $tmp_R $opts{'fst_in'}\n"); ; 
 	unlink($tmp_R); 
 	return($tmp_R); 
 }
@@ -210,8 +210,8 @@ rmNegativeWCFst  <- FALSE # Tell if I should remove sites with wc_fst < 0
 
 L0
 	print {$fh} "maxNR  <- $opts{'maxNmissR'}\n"; 
-	print {$fh} "minGN1 <- $opts{'minGrp1N'}\n"; 
-	print {$fh} "minGN2 <- $opts{'minGrp2N'}\n"; 
+	print {$fh} "minGrp1N <- $opts{'minGrp1N'}\n"; 
+	print {$fh} "minGrp2N <- $opts{'minGrp2N'}\n"; 
 	$opts{'rmNegNeiFst'} and print {$fh} "rmNegativeNeiFst <- TRUE\n"; 
 	$opts{'rmNegWcFst'}  and print {$fh} "rmNegativeWCFst  <- TRUE\n"; 
 
@@ -306,7 +306,9 @@ cnt_fst <- function( x=NULL, stats=NULL, maxNR=1, minGrp1N=1, minGrp2N=1, x.kk=N
 			need_num2 <- samp.num[2]-floor(maxNR*samp.num[2])
 			enough_num1 <- sapply( stats$n.ind.samp[,1], FUN=function(y) {isTRUE(y >= need_num1 & y >= minGrp1N)} )
 			enough_num2 <- sapply( stats$n.ind.samp[,2], FUN=function(y) {isTRUE(y >= need_num2 & y >= minGrp2N)} )
-			x.kk <- x.kk & enough_num1 & enough_num2
+			# Remove sites without variations, because it will cause wc() fail if there isn't any variation in dataset. 
+			var_site <- apply( x[,-1], MARGIN=2, FUN= function( x ) { dim(table(x)) > 1 } )
+			x.kk <- x.kk & enough_num1 & enough_num2 & var_site
 			if (isTRUE( rmNegativeNeiFst )) {
 				x.kk <- x.kk & sapply( stats$perloc[,7], FUN=function(y) {isTRUE(y >= 0)} )
 			}
