@@ -1255,13 +1255,15 @@ sub olap_e2e_A2B {
 
 return       : ( \%hash1 )
   %in_hash input requires: 
-    {'in_bp6'}           => $in_blastn_fmt6_file
+    {'in_bp6'}           => [$in_blastn_fmt6_file, $in_blastn_fmt6_file_2, ...]
     {'min_similarity'}   => 0 in [0-100], 0 means no filter for blastp similarity
     {'max_lenDiffR'}     => 0 or > 1,     0 means no filter (=== 1), if > 1, length_max/length_min should be <= 'max_lenDiffR'
     {'log_lines'}        => 0, 
+    {'gene1_need'}       => [ id1, id2, ... ], # The gene IDs considered in the query column of blast result. All genes accepted if empty. 
+    {'gene2_need'}       => [ id1, id2, ... ], # The gene IDs considered in the subject column of blast result. All genes accepted if empty. 
 
   %in_hash : 
-    {'in_bp6'}  => $in_blastn_fmt6_file 
+    {'in_bp6'}  => [$in_blastn_fmt6_file, $in_blastn_fmt6_file_2, ...] 
     {'cscore'}  => &cscore() 
     {'rbh'}{$geneA}{$geneB} = 1 
     {'rbh'}{$geneB}{$geneA} = 1 
@@ -1272,12 +1274,40 @@ sub rbh_byBp6 {
 	$pH->{'min_similarity'} //= 0; 
 	$pH->{'max_lenDiffR'} //= 0; 
 	$pH->{'log_lines'} //= 0; 
+	$pH->{'gene1_need'} //= []; 
+	$pH->{'gene2_need'} //= []; 
+	$pH->{'combine_gene12'} //= 0; 
+	$pH->{'paired_need'}  //= 0; 
 	if ( defined $pH1 ) {
 		for my $tk (keys %$pH1) {
 			$pH->{$tk} = $pH1->{$tk}; 
 		}
 	}
-	my $fh = &openFH( $pH->{'in_bp6'}, '<' ); 
+	$pH->{'paired_need'} and @{$pH->{'gene1_need'}} != @{$pH->{'gene2_need'}} and &stopErr("[Err] rbh_byBp6() unequal length of two gene list when paired_need=>$pH->{'paired_need'}\n"); 
+	my %th; 
+	if ( $pH->{'combine_gene12'} ) {
+		my @t1 = @{$pH->{'gene1_need'}}; 
+		push(@{$pH->{'gene1_need'}}, @{$pH->{'gene2_need'}}); 
+		push(@{$pH->{'gene2_need'}}, @t1); 
+	}
+	$th{'paired_need'} = $pH->{'paired_need'}; 
+	if ( $pH->{'paired_need'} ) {
+		@{$pH->{'gene1_need'}} > 0 or do { $th{'paired_need'} = 0; &tsmsg("[Wrn] geneX_need list is empty, so 'paired_need' is ignored.\n"); }; 
+		for ( my $i=0; $i<@{$pH->{'gene1_need'}}; $i++ ) {
+			$th{'pair'}{ $pH->{'gene1_need'}[$i] }{ $pH->{'gene2_need'}[$i] } = 1; 
+		}
+	}
+	for my $t1 (qw/gene1 gene2/) {
+		$th{"${t1}_need"} = 0; 
+		if (@{$pH->{"${t1}_need"}} > 0) {
+			&tsmsg("[Msg] [${t1}_need] filtration required.\n"); 
+			$th{"${t1}_need"} = 1; 
+			for my $tk ( @{$pH->{"${t1}_need"}} ) {
+				$th{${t1}}{$tk} = 1; 
+			}
+		}
+	}
+	
 	my %h_cs; 
 	if ( defined $pH2 ) {
 		for my $tk (keys %$pH2) {
@@ -1285,24 +1315,31 @@ sub rbh_byBp6 {
 		}
 	}
 	$h_cs{'want'} = 'addBestScore'; 
-	my %cnt; 
-	$cnt{'cntN_step'} = $pH->{'log_lines'}; 
-	LINE: 
-	while (&wantLineC($fh)) {
-		$pH->{'log_lines'} > 0 and &fileSunhh::log_section( $. , \%cnt ) and &tsmsg("[Msg] Processing $. line.\n"); 
-		my @ta = &splitL("\t", $_); 
-		$pH->{'min_similarity'} > 0 and $ta[2] < $pH->{'min_similarity'} and next LINE; 
-		if ( $pH->{'max_lenDiffR'} > 0 ) {
-			if ( $ta[12] < $ta[13] ) {
-				$ta[13]/$ta[12] > $pH->{'max_lenDiffR'} and next LINE; 
-			} else {
-				$ta[12]/$ta[13] > $pH->{'max_lenDiffR'} and next LINE; 
+	for my $fn ( @{$pH->{'in_bp6'}} ) {
+		my $fh = &openFH( $fn, '<' ); 
+		&tsmsg("[Msg] Processing bp6 file [$fn]\n"); 
+		my %cnt; 
+		$cnt{'cntN_step'} = $pH->{'log_lines'}; 
+		LINE: 
+		while (&wantLineC($fh)) {
+			$pH->{'log_lines'} > 0 and &fileSunhh::log_section( $. , \%cnt ) and &tsmsg("[Msg] Processing $. line.\n"); 
+			my @ta = &splitL("\t", $_); 
+			$th{'gene1_need'} and !(defined $th{'gene1'}{$ta[0]}) and next LINE; 
+			$th{'gene2_need'} and !(defined $th{'gene2'}{$ta[1]}) and next LINE; 
+			$th{'paired_need'} and !(defined $th{'pair'}{$ta[0]}{$ta[1]}) and next LINE; 
+			$pH->{'min_similarity'} > 0 and $ta[2] < $pH->{'min_similarity'} and next LINE; 
+			if ( $pH->{'max_lenDiffR'} > 0 ) {
+				if ( $ta[12] < $ta[13] ) {
+					$ta[13]/$ta[12] > $pH->{'max_lenDiffR'} and next LINE; 
+				} else {
+					$ta[12]/$ta[13] > $pH->{'max_lenDiffR'} and next LINE; 
+				}
 			}
+			$ta[11] =~ s/\s//g; 
+			&cscore( \%h_cs, { 'aln_score' => [ @ta[0,1,11] ] } ); 
 		}
-		$ta[11] =~ s/\s//g; 
-		&cscore( \%h_cs, { 'aln_score' => [ @ta[0,1,11] ] } ); 
+		close($fh); 
 	}
-	close($fh); 
 	&tsmsg("[Msg] Looking for RBH\n"); 
 	$pH->{'rbh'} = &cscore( \%h_cs, { 'want'=>'getRBH' } ); 
 	&tsmsg("[Msg] RBH found.\n"); 
