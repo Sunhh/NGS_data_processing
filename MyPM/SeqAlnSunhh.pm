@@ -1250,5 +1250,219 @@ sub olap_e2e_A2B {
 	return \%back; 
 }#End sub olap_e2e_A2B
 
+
+=head1 rbh_byBp6( \%hash1, \%to_replace_hash1, \%to_replace_cscore_para )
+
+return       : ( \%hash1 )
+  %in_hash input requires: 
+    {'in_bp6'}           => $in_blastn_fmt6_file
+    {'min_similarity'}   => 0 in [0-100], 0 means no filter for blastp similarity
+    {'max_lenDiffR'}     => 0 or > 1,     0 means no filter (=== 1), if > 1, length_max/length_min should be <= 'max_lenDiffR'
+    {'log_lines'}        => 0, 
+
+  %in_hash : 
+    {'in_bp6'}  => $in_blastn_fmt6_file 
+    {'cscore'}  => &cscore() 
+    {'rbh'}{$geneA}{$geneB} = 1 
+    {'rbh'}{$geneB}{$geneA} = 1 
+
+=cut
+sub rbh_byBp6 {
+	my ( $pH, $pH1, $pH2 ) = @_; 
+	$pH->{'min_similarity'} //= 0; 
+	$pH->{'max_lenDiffR'} //= 0; 
+	$pH->{'log_lines'} //= 0; 
+	if ( defined $pH1 ) {
+		for my $tk (keys %$pH1) {
+			$pH->{$tk} = $pH1->{$tk}; 
+		}
+	}
+	my $fh = &openFH( $pH->{'in_bp6'}, '<' ); 
+	my %h_cs; 
+	if ( defined $pH2 ) {
+		for my $tk (keys %$pH2) {
+			$h_cs{$tk} = $pH2->{$tk}; 
+		}
+	}
+	$h_cs{'want'} = 'addBestScore'; 
+	my %cnt; 
+	$cnt{'cntN_step'} = $pH->{'log_lines'}; 
+	LINE: 
+	while (&wantLineC($fh)) {
+		$pH->{'log_lines'} > 0 and &fileSunhh::log_section( $. , \%cnt ) and &tsmsg("[Msg] Processing $. line.\n"); 
+		my @ta = &splitL("\t", $_); 
+		$pH->{'min_similarity'} > 0 and $ta[2] < $pH->{'min_similarity'} and next LINE; 
+		if ( $pH->{'max_lenDiffR'} > 0 ) {
+			if ( $ta[12] < $ta[13] ) {
+				$ta[13]/$ta[12] > $pH->{'max_lenDiffR'} and next LINE; 
+			} else {
+				$ta[12]/$ta[13] > $pH->{'max_lenDiffR'} and next LINE; 
+			}
+		}
+		$ta[11] =~ s/\s//g; 
+		&cscore( \%h_cs, { 'aln_score' => [ @ta[0,1,11] ] } ); 
+	}
+	close($fh); 
+	&tsmsg("[Msg] Looking for RBH\n"); 
+	$pH->{'rbh'} = &cscore( \%h_cs, { 'want'=>'getRBH' } ); 
+	&tsmsg("[Msg] RBH found.\n"); 
+
+	$pH->{'cscore'} = \%h_cs; 
+	return($pH); 
+}# rbh_byBp6 ()
+
+
+
+=head1 cscore( { 'want' => 'getCscore|addBestScore|getBestScoreA|getBestScoreB|chkRBH|getScoreAB|getRBH', 'geneA'=>$geneA, 'geneB'=>$geneB, 'ignore_self'=>'1|0', 'both_sides'=>'1|0', 'aln_score'=>[$genA, $genB, $scoreAB], 'bsdata'=>\%bs_stored } )
+
+Return       : ( \%input_hash or something)
+
+Description: 
+  When 'want' => 'getCscore'     : returns ($cscore)     : Using - 'geneA', 'geneB', and 'bsdata'
+  When 'want' => 'addBestScore'  : returns ($input_href) : Using - 'ignore_self', 'both_sides', 'aln_score', and 'bsdata'
+  When 'want' => 'getBestScoreA' : returns ([ $bestScoreA, [$geneB1, $geneB2, ...] ]) : Using - 'geneA', and 'bsdata'
+  When 'want' => 'getBestScoreB' : returns ([ $bestScoreB, [$geneA1, $geneA2, ...] ]) : Using - 'geneB', and 'bsdata' 
+                                   $bestScore == -1 means there is no alignments found. 
+  When 'want' => 'chkRBH'        : returns (1|0)         : Using - 'geneA', 'geneB', and 'bsdata'
+  When 'want' => 'getScoreAB'    : returns ($scoreAB)    : Using - 'geneA', 'geneB', and 'bsdata'
+  When 'want' => 'getRBH'        : returns (\%rbh_hash)  : Using - 'bsdata'
+                                   In %rbh_hash, {$rbh_geneA}{$rbh_geneB} = 1 and {$rbh_geneB}{$rbh_geneA} = 1; 
+
+  If   'ignore_self' => 1        : An alignment (geneA, geneA, scoreAA) will be ignored. 
+  If   'both_sides'  => 1        : An alignemnt (geneA, geneB, scoreAB) will also be used as (geneB, geneA, scoreBA); 
+  
+  Fmt  'aln_score'   => [ $geneA, $geneB, $scoreAB ]; 
+  Fmt  'geneA|geneB' => $gene_ID used in 'aln_score'; 
+  Fmt 'bsdata' : %bs_stored , 
+    {'best_scoreA'}{$geneA} => [ $bestBscore, [ $geneB1, $geneB2, ... ] ]
+    {'best_scoreB'}{$geneB} => [ $bestBscore, [ $geneA1, $geneA2, ... ] ]
+    {'A2B'}{$geneA}{$geneB} => $bestAscore
+    {'B2A'}{$geneB}{$geneA} => $bestBscore
+
+
+References : 
+  https://github.com/tanghaibao/quota-alignment
+  in the supplementary of sea anemone paper : Putnam, Nicholas H., et al. "Sea anemone genome reveals ancestral eumetazoan gene repertoire and genomic organization." science 317.5834 (2007): 86-94.
+Words      : 
+  Specifically we define the "best C-value", for each Nematostella gene, to be the ratio of the BLAST score of its best hit to the human genome to the highest BLAST score of the best-hitting human gene to any Nematostella gene.
+
+=cut
+sub cscore {
+	my ( $pH ) = @_; 
+	if ( defined $_[1] ) {
+		# Replace values in $pH by $_[1]; 
+		for my $tk (sort keys %{$_[1]}) {
+			$pH->{$tk} = $_[1]->{$tk}; 
+		}
+	}
+
+
+	defined $pH or return( {} ); 
+	$pH->{'want'} //= 'getCscore'; 
+	if ( $pH->{'want'} =~ m/^chkRBH$/i ) {
+		# In fact, I can only check if &cscore( $pH, { 'want' => 'cscore' } ) == 1, but in the following should be faster. 
+		my $sAB = &cscore( $pH, { 'want' => 'getScoreAB' } ); 
+		$sAB > 0 or return 0; 
+		my $bA = &cscore( $pH, { 'want' => 'getBestScoreA' } ); 
+		$sAB == $bA->[0] or return 0; 
+		# $bA->[0] > 0 or return(0); 
+		my $bB = &cscore( $pH, { 'want' => 'getBestScoreB' } ); 
+		$sAB == $bB->[0] or return 0; 
+		# $bB->[0] > 0 or return(0); 
+		return 1; 
+	} elsif ( $pH->{'want'} =~ m/^getScoreAB$/i ) {
+		$pH->{'bsdata'}{'A2B'}{ $pH->{'geneA'} }{ $pH->{'geneB'} } //= 0; 
+		return( $pH->{'bsdata'}{'A2B'}{ $pH->{'geneA'} }{ $pH->{'geneB'} } ); 
+	} elsif ( $pH->{'want'} =~ m/^getCscore$/i ) {
+		my $bA = &cscore( $pH, { 'want' => 'getBestScoreA' } ); 
+		my $bB = &cscore( $pH, { 'want' => 'getBestScoreB' } ); 
+		my $t = ( $bA->[0] > $bB->[0] ) ? $bA->[0] : $bB->[0] ; 
+		my $sAB = &cscore( $pH, { 'want' => 'getScoreAB' } ); 
+		return( $sAB/$t ); 
+	} elsif ( $pH->{'want'} =~ m/^addBestScore$/i ) {
+		$pH->{'ignore_self'} //= 1; 
+		$pH->{'ignore_self'} and $pH->{'aln_score'}->[0] eq $pH->{'aln_score'}->[1] and return($pH); 
+		$pH->{'both_sides'}  //= 1; 
+
+		# Record raw data 
+		my ($gA, $gB, $sAB) = @{ $pH->{'aln_score'} }; 
+		my @aK = (qw/want geneA geneB/); 
+		my %hA; 
+		for my $tk (@aK) {
+			defined $pH->{$tk} and $hA{$tk} = $pH->{$tk}; 
+		}
+
+		# Setting 'A'
+		my $bA = &cscore( $pH, { 'want'=>'getBestScoreA', 'geneA'=>$gA } ); 
+		if ( $bA->[0] > $sAB ) {
+			; # Nothing to do 
+		} elsif ( $bA->[0] == $sAB ) {
+			if ( !(defined $pH->{'bsdata'}{'A2B'}{$gA}{$gB}) or $pH->{'bsdata'}{'A2B'}{$gA}{$gB} < $sAB ) {
+				$pH->{'bsdata'}{'A2B'}{$gA}{$gB} = $sAB; 
+				push(@{ $bA->[1] }, $gB); 
+			}
+		} else {
+			@$bA = ( $sAB, [$gB] ); 
+			$pH->{'bsdata'}{'A2B'}{$gA}{$gB} = $sAB; 
+		}
+
+		# Setting 'B'
+		my $bB = &cscore( $pH , { 'want'=>'getBestScoreB', 'geneB'=>$gB }); 
+		if ( $bB->[0] > $sAB ) {
+			; # Nothing to do 
+		} elsif ( $bB->[0] == $sAB ) {
+			if ( !(defined $pH->{'bsdata'}{'B2A'}{$gB}{$gA}) or $pH->{'bsdata'}{'B2A'}{$gB}{$gA} < $sAB ) {
+				$pH->{'bsdata'}{'B2A'}{$gB}{$gA} = $sAB; 
+				push(@{ $bB->[1] }, $gA); 
+			}
+		} else {
+			@$bB = ( $sAB, [$gB] ); 
+			$pH->{'bsdata'}{'B2A'}{$gB}{$gA} = $sAB; 
+		}
+
+		# Restore raw data
+		for my $tk (@aK) {
+			undef($pH->{$tk}); 
+			defined $hA{$tk} and $pH->{$tk} = $hA{$tk}; 
+		}
+
+		if ( $pH->{'both_sides'} ) {
+			my $t = $pH->{'both_sides'}; 
+			@{ $pH->{'aln_score'} }[0,1] = @{ $pH->{'aln_score'} }[1,0]; 
+			&cscore($pH, { 'both_sides'=>0 } ); 
+			$pH->{'both_sides'} = $t; 
+			@{ $pH->{'aln_score'} }[0,1] = @{ $pH->{'aln_score'} }[1,0]; 
+		}
+		return( $pH ); 
+	} elsif ( $pH->{'want'} =~ m/^getBestScoreA$/i ) {
+		$pH->{'bsdata'}{'best_scoreA'}{ $pH->{'geneA'} } //= [-1, []]; 
+		return( $pH->{'bsdata'}{'best_scoreA'}{ $pH->{'geneA'} } ); 
+	} elsif ( $pH->{'want'} =~ m/^getBestScoreB$/i ) {
+		$pH->{'bsdata'}{'best_scoreB'}{ $pH->{'geneB'} } //= [-1, []]; 
+		return( $pH->{'bsdata'}{'best_scoreB'}{ $pH->{'geneB'} } ); 
+	} elsif ( $pH->{'want'} =~ m/^getRBH$/i ) {
+		my %back_hash; 
+#my %cnt; 
+#$cnt{'cntN_step'} = 1000; 
+#$cnt{'cnt'} = 0; 
+		for my $gA ( keys %{ $pH->{'bsdata'}{'best_scoreA'} } ) {
+#$cnt{'cnt'} ++; 
+#&fileSunhh::log_section( $cnt{'cnt'}, \%cnt ) and &tsmsg("[Msg] Processing $cnt{'cnt'} [$gA]\n"); 
+			my $bA = $pH->{'bsdata'}{'best_scoreA'}{$gA}; 
+			$bA->[0] > 0 or next; 
+			for my $gB (@{$bA->[1]}) {
+				&cscore( $pH, { 'want'=>'chkRBH', 'geneA'=>$gA, 'geneB'=>$gB } ) or next; 
+				$back_hash{$gA}{$gB} = 1; 
+				$back_hash{$gB}{$gA} = 1; 
+			}
+		}
+		return( \%back_hash ); 
+	} else {
+		&stopErr("[Err] Bad 'want' type [$pH->{'want'}] in cscore()\n"); 
+	}
+	return($pH); 
+}# cscore ()
+
+
 1; # It is important to include this line. 
 
