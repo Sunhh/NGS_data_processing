@@ -1261,6 +1261,9 @@ return       : ( \%hash1 )
     {'log_lines'}        => 0, 
     {'gene1_need'}       => [ id1, id2, ... ], # The gene IDs considered in the query column of blast result. All genes accepted if empty. 
     {'gene2_need'}       => [ id1, id2, ... ], # The gene IDs considered in the subject column of blast result. All genes accepted if empty. 
+    {'combine_gene12'}   => 0 or 1; 1 means gene1_need and gene2_need are both used in query and subject filtration. 0 means they are used separately. 
+    {'paired_need'}      => 0 or 1; 1 means gene1_need and gene2_need are paired, and only alignments between paired genes in a right order are accepted. 
+                                      When 'paired_need' and 'combine_gene12' are both 1, alignments between paired genes are all accepted regardless of order. 
 
   %in_hash : 
     {'in_bp6'}  => [$in_blastn_fmt6_file, $in_blastn_fmt6_file_2, ...] 
