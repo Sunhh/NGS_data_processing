@@ -46,7 +46,7 @@ sub usage {
 #                   Need -in_gff , -in_aln 
 #                   This list can be viewed in excel, and each column contain an aligned block. 
 #   -addChr       [Boolean] Tell if add chromID to block genes. 
-#   -tgt_gff      [target.gff] Provide source of blocks. 
+#   -tgt_gff      [target.gff] Provide source of blocks. Only blocks with genes from this gff aligned to the backbone genes are kept. 
 #   -srt_by       ['min'] Sort the gene blocks by 'min|Q1|Q3|interval_mean|COUNT'
 # 
 # -aln2table      [Boolean] Reformat aligned blocks into one line. 
