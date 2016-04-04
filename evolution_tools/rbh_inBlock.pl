@@ -43,7 +43,7 @@ my %info_mcs_gff = %{ &load_mcs_gff($opts{'mcs_gff'}) };
 my $wrk_dir = &fileSunhh::new_tmp_dir(); 
 mkdir($wrk_dir) or &stopErr("[Err] Failed to create working dir [$wrk_dir]\n"); 
 for my $t1 (@info_mcs_tbl) {
-	my ( $blkID, $chr1,$chr1_S,$chr1_E, $chr2,$chr2_S,$chr2_E ) = @$t1; 
+	my ( $blkID, $chr1,$chr1_S,$chr1_E, $chr2,$chr2_S,$chr2_E, $strand ) = @$t1; 
 	&tsmsg("[Msg] Processing BlkID [$blkID][$chr1,$chr1_S,$chr1_E, $chr2,$chr2_S,$chr2_E]\n"); 
 
 	(defined $info_mcs_gff{$chr1} and defined $info_mcs_gff{$chr2}) or &stopErr("[Err] $chr1 $chr2\n"); 
@@ -78,13 +78,17 @@ for my $t1 (@info_mcs_tbl) {
 
 	&tsmsg("[Msg]   Exporting $wrk_dir/blk_rbh.pairs\n"); 
 	open F,'<',"$wrk_dir/blk_rbh.pairs" or &stopErr("[Err] Failed to open file [$wrk_dir/blk_rbh.pairs]\n"); 
+	my @out_pairs; 
 	while (&wantLineC(\*F)) {
 		my @ta = &splitL("\t", $_); 
-		defined $info_mcs_gff{$chr1}{'hash'}{$ta[0]} or @ta[0,1] = @ta[1,0]; 
+		(defined $info_mcs_gff{$chr1}{'hash'}{$ta[0]} and defined $info_mcs_gff{$chr2}{'hash'}{$ta[1]}) or @ta[0,1] = @ta[1,0]; 
 		(defined $info_mcs_gff{$chr1}{'hash'}{$ta[0]} and defined $info_mcs_gff{$chr2}{'hash'}{$ta[1]}) or &stopErr("[Err] Bad pair: $ta[0] $ta[1]\n"); 
-		print STDOUT join("\t", $blkID, $chr1, $ta[0], $chr2, $ta[1])."\n"; 
+		push(@out_pairs, [ $blkID, $chr1, $ta[0], $chr2, $ta[1], $info_mcs_gff{$chr1}{'hash'}{$ta[0]}[0], $info_mcs_gff{$chr2}{'hash'}{$ta[1]}[0], $strand ]); 
 	}
 	close F; 
+	for ( sort { $a->[5] <=> $b->[5] } @out_pairs ) {
+		print STDOUT join("\t", @{$_}[0, 1,2,5, 3,4,6, 7])."\n"; 
+	}
 }
 
 &fileSunhh::_rmtree($wrk_dir); 
@@ -115,9 +119,9 @@ sub load_mcs_tbl {
 	my $fh = &openFH($fn, '<'); 
 	while (&wantLineC($fh)) {
 		my @ta = &splitL("\t", $_); 
-		my ($blkID, $chr1,$chr1_S,$chr1_E, $chr2,$chr2_S,$chr2_E) = @ta[0, 1,2,3, 4,5,6]; 
+		my ($blkID, $chr1,$chr1_S,$chr1_E, $chr2,$chr2_S,$chr2_E, $strand) = @ta[0, 1,2,3, 4,5,6, 7]; 
 		$blkID eq 'BlkID' and next; 
-		push(@back, [ $blkID, $chr1,$chr1_S,$chr1_E, $chr2,$chr2_S,$chr2_E ]); 
+		push(@back, [ $blkID, $chr1,$chr1_S,$chr1_E, $chr2,$chr2_S,$chr2_E, $strand ]); 
 	}
 	close($fh); 
 	return(\@back); 
