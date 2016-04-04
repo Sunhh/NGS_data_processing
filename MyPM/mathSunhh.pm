@@ -696,7 +696,7 @@ Description: For calculating insert sizes.
 Input      : (\@ins_value_array)
 
 Output     : (\%hash_of_values) 
-             keys = qw(SUM COUNT MEAN MEDIAN Q1 Q3 interval_low interval_high interval_mean interval_median interval_var interval_stdev limit_low limit_high min max)
+             keys = qw(SUM COUNT MEAN MEDIAN Q1 Q3 interval_low interval_high interval_mean interval_median interval_var interval_stdev interval_cnt limit_low limit_high min max)
 
 =cut
 sub ins_calc {
@@ -732,6 +732,7 @@ sub ins_calc {
 		$ta >= $back{'interval_low'} and $ta <= $back{'interval_high'} and push(@sub_arr, $ta); 
 	}
 	$stat->add_data(@sub_arr); 
+	$back{'interval_cnt'}   = scalar( @sub_arr ); 
 	$back{'interval_mean'}  = $stat->mean(); 
 	$back{'interval_median'} = $stat->median(); 
 	$back{'interval_var'}   = $stat->variance(); 
