@@ -728,11 +728,14 @@ sub ins_calc {
 	
 	$stat->clear(); 
 	my @sub_arr; 
+	my $ti = -1; 
 	for my $ta (@$r_arr) {
-		$ta >= $back{'interval_low'} and $ta <= $back{'interval_high'} and push(@sub_arr, $ta); 
+		$ti ++; 
+		$ta >= $back{'interval_low'} and $ta <= $back{'interval_high'} and do { push(@sub_arr, $ta); push(@{$back{'interval_idx'}}, $ti); }; 
 	}
 	$stat->add_data(@sub_arr); 
 	$back{'interval_cnt'}   = scalar( @sub_arr ); 
+	$back{'interval_arr'}   = \@sub_arr; 
 	$back{'interval_mean'}  = $stat->mean(); 
 	$back{'interval_median'} = $stat->median(); 
 	$back{'interval_var'}   = $stat->variance(); 
