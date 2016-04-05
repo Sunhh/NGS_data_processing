@@ -182,6 +182,7 @@ defined $opts{'out'} and $oFh = &openFH($opts{'out'}, '>');
 
 if ( $opts{'getJnLoc'} ) {
 	&action_getJnLoc(); 
+	exit(); 
 }
 
 

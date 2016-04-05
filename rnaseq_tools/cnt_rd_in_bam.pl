@@ -20,6 +20,7 @@ GetOptions(\%opts,
 	"onlyCntRdSE!",     # Only count a read if this read's start/end position locates in a gene. 
 	"withYiBinMethod!", # Use Yi Zheng's bin method which is only suitable for -onlyCntRdSE counting. 
 	"senseStrand:s",    # Default 'R'; 'R' - for different strand of gene , 'F' - for same strand of gene. 
+	"OnlyCntTotal!",    # Only count total reads discarding if it locates in a gene. 
 
 	# Filters 
 	"max_mismatchN:i",  # -1 . could be [0-...]
@@ -91,7 +92,8 @@ while (<$sam_fh>) {
 	chomp; 
 	my @ta = &splitL("\t", $_); 
 	defined $flag_aln{ $ta[1] } or next SAM_LINE; 
-	defined $bed_db{$ta[2]} or next SAM_LINE; 
+	$opts{'OnlyCntTotal'} or defined $bed_db{$ta[2]} or next SAM_LINE; 
+	$opts{'OnlyCntTotal'} and defined $cnt{'rdID_hash'}{$ta[0]} and next; 
 	$cnt{'tmp_mismatchN'} = -2; 
 	if ( $opts{'max_mismatchN'} >= 0 ) {
 		($cnt{'tmp_mismatchN'}, $cnt{'tmp_cigarH'}) = &SeqAlnSunhh::cnt_sam_mismatch( \@ta, 'set_rna' ); 
@@ -102,6 +104,7 @@ while (<$sam_fh>) {
 		$cnt{'tmp_mismatchN'} <= $opts{'max_mismatchR'} * $cnt{'tmp_cigarH'}{'RdLen'} or next SAM_LINE; 
 	}
 	$cnt{'rdID_hash'}{$ta[0]} ++; 
+	$opts{'OnlyCntTotal'} and next SAM_LINE; 
 	my %cigar_h = %{ &SeqAlnSunhh::parseCigar( $ta[5] ) }; 
 	my ($spanS, $spanE) = ( $ta[3], $ta[3]+$cigar_h{'SpanRefLen'}-1 ); 
 	if ($opts{'highMemory'}) {
