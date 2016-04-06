@@ -619,7 +619,7 @@ sub msc_aln2table {
 	my ($alnInfo) = &_readInAln($parm{'in_aln'}); 
 	defined $alnInfo->[0]{'info'} or shift(@{$alnInfo}); 
 	
-	print {$outFh} join("\t", qw/BlkID Chrom1 Start1 End1 Chrom2 Start2 End2 Strand AlnScore AlnEvalue AlnNumber Gene1 Gene2 Ka Ks KaKs AVG_Ks Med_Ks UsedKs AVG_Ka Med_Ka UsedKa AVG_KaKs Med_KaKs UsedKaKs/)."\n"; 
+	print {$outFh} join("\t", qw/BlkID Chrom1 Start1 End1 Chrom2 Start2 End2 Strand AlnScore AlnEvalue AlnNumber Gene1 Gene2 Ka Ks KaKs AVG_Ks Med_Ks UsedKs AVG_Ka Med_Ka UsedKa AVG_KaKs Med_KaKs UsedKaKs INSavg_Ks INSmed_Ks INSused_Ks/)."\n"; 
 	for (my $i=0; $i<@{$alnInfo}; $i++) {
 		my (@gen1, @gen2, @ka, @ks, @w); 
 		for my $ar1 (@{$alnInfo->[$i]{'pair'}}) {
@@ -643,7 +643,7 @@ sub msc_aln2table {
 		 join(',', @ka), 
 		 join(',', @ks), 
 		 join(',', @w), 
-		 &_avg(@ks), &_avg(@ka), &_avg(@w) 
+		 &_avg(@ks), &_avg(@ka), &_avg(@w), &_avgINS(@ks) 
 		)."\n"; 
 	}
 }# msc_aln2table() 
@@ -884,6 +884,19 @@ sub _readInBn6 {
 	}
 	return \@bn6Info; 
 }# _readInBn6() 
+
+sub _avgINS {
+	my ($avg, $med) = ('nan', 'nan'); 
+	my @unn = grep { defined $_ and $_ !~ m!^(|\-?nan|\-?inf)$!i and $_ >= 0 } @_; 
+	my $validNum = scalar(@unn); 
+	if ( $validNum > 0 ) {
+		my $ic = $ms_obj->ins_calc(\@unn, 0); 
+		$avg = $ic->{'interval_mean'}; 
+		$med = $ic->{'interval_median'}; 
+		$validNum = $ic->{'interval_cnt'}; 
+	}
+	return ($avg, $med, $validNum); 
+}# _avgINS() 
 
 sub _avg {
 	my ($avg, $med) = ('nan', 'nan'); 
