@@ -593,6 +593,8 @@ Required :
   $min , $max : value range; 
   $val : current value. 
 
+Reference: http://stackoverflow.com/questions/20792445/calculate-rgb-value-for-a-range-of-values-to-create-heat-map
+
 =cut
 sub cnvt_to_rgb {
 	my ( $min, $max, $val, $col ) = @_; 
