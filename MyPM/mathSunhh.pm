@@ -584,6 +584,32 @@ sub switch_position {
 #  Sub-routines. 
 ############################################################
 
+=head1 cnvt_to_rgb ( $min, $max, $val, $col ) 
+
+Return : ( "rgb(R,G,B)" )
+
+Required : 
+  $col = [ [r1,g1,b1], [r2,g2,b2], [r3,g3,b3], ... ]
+  $min , $max : value range; 
+  $val : current value. 
+
+=cut
+sub cnvt_to_rgb {
+	my ( $min, $max, $val, $col ) = @_; 
+	my $col_i = $#$col;
+	my $v = ($val-$min)/($max-$min) * $col_i;
+	my $i1 = &min( int($v), $col_i );
+	my $i2 = &min( int($v)+1, $col_i);
+	my $f = $v - $i1;
+	my @back;
+	for (my $j=0; $j<3; $j++) {
+		$back[$j] = int( $col->[$i1][$j] + $f * ($col->[$i2][$j]-$col->[$i1][$j]) );
+	}
+	return( sprintf("rgb(%.0f,%.0f,%.0f)", $back[0], $back[1], $back[2])  );
+}# cnvt_to_rgb () 
+
+
+
 =head1 _parseCol( $col_string )
 
 Required    : $col_string
