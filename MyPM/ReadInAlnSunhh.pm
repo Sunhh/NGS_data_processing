@@ -10,11 +10,17 @@ use Exporter qw(import);
 our @EXPORT = qw(readMAF splitMafSline); 
 our @EXPORT_OK = qw(normMAFloc); 
 
+=head1 readMAF( $file_handle ) 
 
-# Input : (FILE_Handle)
-# Return: \%{ "a"=>Score_lines, "o"=>Aligned_sequence_lines }
 # MAF format : multiple alignment format. 
 # https://cgwb.nci.nih.gov/FAQ/FAQformat.html#format5
+Return       : (\%{ "a"=>Score_lines, "o"=>Aligned_sequence_lines })
+
+ll -9 28184 
+Description  : Read in one record each time. :q
+
+
+=cut
 sub readMAF {
 	my $fh = shift; 
 	my %back_record; 
