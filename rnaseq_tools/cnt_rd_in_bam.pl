@@ -22,6 +22,9 @@ GetOptions(\%opts,
 	"senseStrand:s",    # Default 'R'; 'R' - for different strand of gene , 'F' - for same strand of gene. 
 	"OnlyCntTotal!",    # Only count total reads discarding if it locates in a gene. 
 
+	# converters 
+	"loc_1to1:s",       # filename. file format : old_ID \\t old_posi \\t new_ID \\t new_posi
+
 	# Filters 
 	"max_mismatchN:i",  # -1 . could be [0-...]
 	"max_mismatchR:f",  # -1 . could be [0-1]
@@ -50,6 +53,8 @@ perl $0 in.bed_fit_YZpipe in.bam   1>in.bam.cnt   2>in.bam.cnt.err
 
 -senseStrand                ['R'] R/F
 
+-loc_1to1                   [filename] file format : old_ID \\t old_posi \\t new_ID \\t new_posi
+
 -max_mismatchN              [-1]
 -max_mismatchR              [-1]
 
@@ -74,6 +79,9 @@ $opts{'help'} and &LogInforSunhh::usage( $help_txt );
 my $fn_bed = shift; 
 my $fn_bam = shift; 
 
+my %loc_1to1; 
+defined $opts{'loc_1to1'} and &load_loc_1to1( $opts{'loc_1to1'}, \%loc_1to1 ); 
+
 my %bed_info = %{ &load_bed($fn_bed) }; 
 # Return : ( { "$chrID"=>[ [ chrS_1idx, chrE_1idx, geneID, geneLen, strand, inputOrder, $chrID ], [], ...], ""=>, ...   } )
 &tsmsg("[Msg] Indexing.\n"); 
@@ -91,9 +99,12 @@ while (<$sam_fh>) {
 	&fileSunhh::log_section( $. , $cnt{'log_section'} ) and &tsmsg("[Msg] Reading $. line.\n"); 
 	chomp; 
 	my @ta = &splitL("\t", $_); 
-	defined $flag_aln{ $ta[1] } or next SAM_LINE; 
-	$opts{'OnlyCntTotal'} or defined $bed_db{$ta[2]} or next SAM_LINE; 
-	$opts{'OnlyCntTotal'} and defined $cnt{'rdID_hash'}{$ta[0]} and next; 
+	my ($aln_rdID, $aln_flag, $aln_chrID, $aln_chrP, $aln_cigar) = @ta[0,1,2,3,5]; 
+	defined $flag_aln{ $aln_flag } or next SAM_LINE; 
+	if ( !defined $opts{'loc_1to1'} ) {
+		$opts{'OnlyCntTotal'} or defined $bed_db{$aln_chrID} or next SAM_LINE; 
+		$opts{'OnlyCntTotal'} and defined $cnt{'rdID_hash'}{$aln_rdID} and next SAM_LINE; 
+	}
 	$cnt{'tmp_mismatchN'} = -2; 
 	if ( $opts{'max_mismatchN'} >= 0 ) {
 		($cnt{'tmp_mismatchN'}, $cnt{'tmp_cigarH'}) = &SeqAlnSunhh::cnt_sam_mismatch( \@ta, 'set_rna' ); 
@@ -103,18 +114,30 @@ while (<$sam_fh>) {
 		$cnt{'tmp_mismatchN'} == -2 and ($cnt{'tmp_mismatchN'}, $cnt{'tmp_cigarH'}) = &SeqAlnSunhh::cnt_sam_mismatch( \@ta, 'set_rna' ); 
 		$cnt{'tmp_mismatchN'} <= $opts{'max_mismatchR'} * $cnt{'tmp_cigarH'}{'RdLen'} or next SAM_LINE; 
 	}
-	$cnt{'rdID_hash'}{$ta[0]} ++; 
+	$cnt{'rdID_hash'}{$aln_rdID} ++; 
 	$opts{'OnlyCntTotal'} and next SAM_LINE; 
-	my %cigar_h = %{ &SeqAlnSunhh::parseCigar( $ta[5] ) }; 
-	my ($spanS, $spanE) = ( $ta[3], $ta[3]+$cigar_h{'SpanRefLen'}-1 ); 
+	my %cigar_h = %{ &SeqAlnSunhh::parseCigar( $aln_cigar ) }; 
+	my ($spanS, $spanE) = ( $aln_chrP, $aln_chrP+$cigar_h{'SpanRefLen'}-1 ); 
+
+	if ( defined $opts{'loc_1to1'} ) {
+		my ( $s_chrID, $s_chrP ) = &get_newLoc( \%loc_1to1, $aln_chrID, $spanS ); 
+		my ( $e_chrID, $e_chrP ) = &get_newLoc( \%loc_1to1, $aln_chrID, $spanE ); 
+		if ( $s_chrID eq $e_chrID and $s_chrID ne '' ) {
+			($aln_chrID, $spanS, $spanE) = ( $s_chrID, $s_chrP, $e_chrP ); 
+			$spanS > $spanE and ($spanS, $spanE) = ($spanE, $spanS); 
+		} else {
+			next SAM_LINE; 
+		}
+	}
+
 	if ($opts{'highMemory'}) {
-		$cnt{'t_pos'} = "$ta[2]:$spanS-$spanE"; 
+		$cnt{'t_pos'} = "$aln_chrID:$spanS-$spanE"; 
 		if ( defined $cnt{'pos2genes'}{ $cnt{'t_pos'} } ) {
-			if ( $flag_aln_F{$ta[1]} ) {
+			if ( $flag_aln_F{$aln_flag} ) {
 				for my $ar1 ( @{$cnt{'pos2genes'}{ $cnt{'t_pos'} }} ) {
 					$cnt{'geneCnt'}{ $ar1->[2] }[0] ++; # Fwd
 				}
-			} elsif ( $flag_aln_R{$ta[1]} ) {
+			} elsif ( $flag_aln_R{$aln_flag} ) {
 				for my $ar1 ( @{$cnt{'pos2genes'}{ $cnt{'t_pos'} }} ) {
 					$cnt{'geneCnt'}{ $ar1->[2] }[1] ++; # Fwd
 				}
@@ -125,25 +148,25 @@ while (<$sam_fh>) {
 	my @loc_realIdx; 
 	if ( $opts{'withYiBinMethod'} ) {
 		my %used; 
-		@loc_realIdx = grep { $used{$_}=1; } @{ &idxPos_byYi( $bed_db{$ta[2]}, $spanS ) }; 
-		push(@loc_realIdx, grep { !(defined $used{$_}) } @{ &idxPos_byYi( $bed_db{$ta[2]}, $spanE ) } ); 
+		@loc_realIdx = grep { $used{$_}=1; } @{ &idxPos_byYi( $bed_db{$aln_chrID}, $spanS ) }; 
+		push(@loc_realIdx, grep { !(defined $used{$_}) } @{ &idxPos_byYi( $bed_db{$aln_chrID}, $spanE ) } ); 
 	} elsif ( $opts{'onlyCntRdSE'} ) {
 		my %used; 
-		@loc_realIdx = grep { $used{$_}=1; } @{ &mathSunhh::_hasPos_inLocDb( $bed_db{$ta[2]}, $spanS ) }; 
-		push(@loc_realIdx, grep { !(defined $used{$_}) } @{ &mathSunhh::_hasPos_inLocDb( $bed_db{$ta[2]}, $spanE ) } ); 
+		@loc_realIdx = grep { $used{$_}=1; } @{ &mathSunhh::_hasPos_inLocDb( $bed_db{$aln_chrID}, $spanS ) }; 
+		push(@loc_realIdx, grep { !(defined $used{$_}) } @{ &mathSunhh::_hasPos_inLocDb( $bed_db{$aln_chrID}, $spanE ) } ); 
 	} else {
-		@loc_realIdx = @{ &mathSunhh::_map_loc_to_realIdx( $bed_db{$ta[2]}, [$spanS, $spanE] ) }; 
+		@loc_realIdx = @{ &mathSunhh::_map_loc_to_realIdx( $bed_db{$aln_chrID}, [$spanS, $spanE] ) }; 
 	}
-	$opts{'highMemory'} and $cnt{'pos2genes'}{ $cnt{'t_pos'} } = [ @{ $bed_info{$ta[2]} }[@loc_realIdx] ]; 
-	if ( $flag_aln_F{$ta[1]} ) {
-		for my $ar1 (@{ $bed_info{$ta[2]} }[@loc_realIdx]) {
+	$opts{'highMemory'} and $cnt{'pos2genes'}{ $cnt{'t_pos'} } = [ @{ $bed_info{$aln_chrID} }[@loc_realIdx] ]; 
+	if ( $flag_aln_F{$aln_flag} ) {
+		for my $ar1 (@{ $bed_info{$aln_chrID} }[@loc_realIdx]) {
 			$cnt{'geneCnt'}{ $ar1->[2] }[0] ++; # Fwd
-			$cnt{'geneCnt'}{ $ar1->[2] }[2]{ $ta[0] } ++; 
+			$cnt{'geneCnt'}{ $ar1->[2] }[2]{ $aln_rdID } ++; 
 		}
-	} elsif ( $flag_aln_R{$ta[1]} ) {
-		for my $ar1 (@{ $bed_info{$ta[2]} }[@loc_realIdx]) {
+	} elsif ( $flag_aln_R{$aln_flag} ) {
+		for my $ar1 (@{ $bed_info{$aln_chrID} }[@loc_realIdx]) {
 			$cnt{'geneCnt'}{ $ar1->[2] }[1] ++; # Rev
-			$cnt{'geneCnt'}{ $ar1->[2] }[3]{ $ta[0] } ++; 
+			$cnt{'geneCnt'}{ $ar1->[2] }[3]{ $aln_rdID } ++; 
 		}
 	} else {
 		next SAM_LINE; 
@@ -249,3 +272,33 @@ sub load_bed {
 	close($fh); 
 	return(\%bed_info); 
 }# load_bed 
+sub load_loc_1to1 {
+	my ($fn, $hr) = @_; 
+	$hr //= {}; 
+	my $fh = &openFH( $fn, '<' ); 
+	while (&fileSunhh::wantLineC( $fh )) {
+		my ( $oID, $oP, $nID, $nP ) = split(/\t/, $_); 
+		push( @{$hr->{$oID}{$oP}}, [ $nID, $nP ] ); 
+	}
+	close($fh); 
+	return(\$hr); 
+}# load_loc_1to1() 
+
+sub get_newLoc {
+	my ($hr, $oID, $oP) = @_; 
+	my ($nID, $nP) = ('', ''); 
+	my $flank_len = 50; 
+	defined $hr->{$oID} or return($nID, $nP); 
+	if (defined $hr->{$oID}{$nP}) {
+		($nID, $nP) = @{ $hr->{$oID}{$nP}[0] }; 
+	} else {
+		for (my $i=1; $i<=$flank_len; $i++) {
+			my $tP_1 = $oP-$i; 
+			defined $hr->{$oID}{$tP_1} and return( @{ $hr->{$oID}{$tP_1}[0] } ); 
+			my $tP_2 = $oP+$i; 
+			defined $hr->{$oID}{$tP_2} and return( @{ $hr->{$oID}{$tP_2}[0] } ); 
+		}
+	}
+	return($nID, $nP); 
+}# get_newLoc() 
+
