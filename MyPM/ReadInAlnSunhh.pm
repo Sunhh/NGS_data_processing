@@ -14,11 +14,18 @@ our @EXPORT_OK = qw(normMAFloc);
 
 # MAF format : multiple alignment format. 
 # https://cgwb.nci.nih.gov/FAQ/FAQformat.html#format5
-Return       : (\%{ "a"=>Score_lines, "o"=>Aligned_sequence_lines })
+Return       : (\%{ "a"=>[$Score_line1, $Score_line2, ... ], "o"=>[$Aligned_sequence_line1, $Aligned_sequence_line2, ... ] })
+  'o' : Including ^'s '  and ^'p ' or something following ^'a ' 
 
-ll -9 28184 
-Description  : Read in one record each time. :q
+Description  : Read in one record each time. 
 
+Example of MAF format : 
+
+ a score=9381 mismap=1e-09
+ s Cmo_Scf00001  14516 2214 + 11258782 ACTGTAATTCTTCATTCTtttttttttttttttttggggggggggggggATCAAGAAATGGCATACAATGGATGAACTAAATACAATGCTACAGTAATTCAATATTCACAAAAGCGACT
+ s Cma_Scf00047 710295 2197 +  1095042 ACTGTAATTCTTCATTCTttttttttttttttttttttgggggggggg---CAAGAAATGGTAGACAATGGATTTACTAAATACAATGCTACAGT----------TCACAAAAGCAACT
+ p                                     "%+06<BHNTZ`flrx~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~xsmmmmmmmmmmsx~~~~~~~~~~~~
+ p                                     &,28>DJPV\bhntz~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~xsmmmmmmmmmmrx~~~~~~~~~~~~
 
 =cut
 sub readMAF {
@@ -51,10 +58,19 @@ sub readMAF {
 	return \%back_record; 
 }# sub readMAF()
 
-# Input  : ($MafSline[, 0/1])
-# Input  : Single "s" line from MAF format file. 
-# Return : \%{} : Keys = qw/seqId seqStart blkSize seqStrand seqLen seqSeq normS normE/
-#          (normS, normE) are all 1-based and normS < normE ; 
+=head1 splitMafSline( $MafSline_txt, $want_normal_position_[0|1] )
+
+  $MafSline_txt         : Aligned "s" line from MAF format file. 
+    Example : 
+      s Cmo_Scf00001      0 2005 + 11258782 AATGTGAAACACCAACTGTCACACTGCACAGAACTGGATCCTGGAAACGGGGGAAGCAGAGTAGTGAGATAGCCTTTCCTTGAGGA
+  $want_normal_position : Default 0. If 1, the two keys qw/normS normE/ were calculated as the real (1-based) position of start and end loci. 
+
+Return       : (\%)
+  \% : Keys = qw/seqId         seqStart blkSize seqStrand seqLen    seqSeq normS normE/
+                 Cmo_Scf00001  0        2005    +         11258782  $AAT.  -1    -1
+    (normS, normE) are all 1-based and normS < normE ; If $want_normal_position == 0, these two will be (-1, -1); 
+
+=cut
 sub splitMafSline {
 	my $line = shift; 
 	my $want_normP = shift; 
@@ -75,13 +91,17 @@ sub splitMafSline {
 		my @tse = &normMAFloc( $back{seqStrand}, $back{seqLen}, [$back{seqStart}, $back{blkSize}] ); 
 		( $back{normS}, $back{normE} ) = @{$tse[0]}; 
 	}
-	return \%back; 
+	return (\%back); 
 }#End sub splitMafSline()
 
-# Input : ($strand, $total_length, @mafBlks)
-#          @mafBlks = ([mafStart, mafBlkSize], [mafStart, mafBlkSize], ...)
-# Output: (@normal_blkSE)
-#          @norm_blkSE = ([1-based-Block_Start, 1-based-Block_End], [1-based-Block_Start, 1-based-Block_End], ...)
+=head1 normMAFloc( $strand (+/-), $seqLen (number), @mafBlks )
+
+  @mafBlks = ([mafStart_1, mafBlkSize_1], [mafStart_2, mafBlkSize_2], ...)
+
+Return       : ( @normal_blkSE )
+  @norm_blkSE = ([1-based-Block_Start, 1-based-Block_End], [1-based-Block_Start, 1-based-Block_End], ...)
+
+=cut
 sub normMAFloc {
 	my ($str, $ttl_len, @mafBlks) = @_; 
 	( $str eq '+' or $str eq '-' ) or &stopErr("[Err] Input Strand is [$str] instead of +/-\n"); 
