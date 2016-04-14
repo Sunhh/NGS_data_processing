@@ -24,6 +24,7 @@ GetOptions(\%opts,
 
 	# converters 
 	"loc_1to1:s",       # filename. file format : old_ID \\t old_posi \\t new_ID \\t new_posi
+	"bam_isList!", 
 
 	# Filters 
 	"max_mismatchN:i",  # -1 . could be [0-...]
@@ -54,6 +55,7 @@ perl $0 in.bed_fit_YZpipe in.bam   1>in.bam.cnt   2>in.bam.cnt.err
 -senseStrand                ['R'] R/F
 
 -loc_1to1                   [filename] file format : old_ID \\t old_posi \\t new_ID \\t new_posi
+-bam_isList                 [Boolean] in.bam is a bam list [ bam_filename \\t out_prefix ] if given. 
 
 -max_mismatchN              [-1]
 -max_mismatchR              [-1]
@@ -86,11 +88,29 @@ my %bed_info = %{ &load_bed($fn_bed) };
 # Return : ( { "$chrID"=>[ [ chrS_1idx, chrE_1idx, geneID, geneLen, strand, inputOrder, $chrID ], [], ...], ""=>, ...   } )
 &tsmsg("[Msg] Indexing.\n"); 
 my %bed_db = %{ &index_bed( \%bed_info ) }; 
-my $sam_fh = &SeqAlnSunhh::openSam( $fn_bam, undef(), { 'wiH'=>0, 'verbose'=>1, 'exe_samtools'=>$opts{'exe_samtools'} } ); 
+
+my @bam_files; 
+if ($opts{'bam_isList'}) {
+	my $th = &openFH($fn_bam, '<'); 
+	while (&wantLineC($th)) {
+		my @ta = &splitL("\t", $_); 
+		( defined $ta[0] and $ta[0] ne '' ) or next; 
+		( defined $ta[1] and $ta[1] ne '' ) or &stopErr("[Err] bam_list needs two colums [bam_fn, out_prefix]\n"); 
+		push(@bam_files, [$ta[0], $ta[1]]); 
+	}
+	close($th); 
+} else {
+	push(@bam_files, [$fn_bam, $opts{'outPref'}]); 
+}
 
 my %flag_aln_F = %{ &SeqAlnSunhh::mk_flag( 'keep' => '2=0,4=0' ) }; 
 my %flag_aln_R = %{ &SeqAlnSunhh::mk_flag( 'keep' => '2=0,4=1' ) }; 
 my %flag_aln   = %{ &SeqAlnSunhh::mk_flag( 'keep' => '2=0' ) }; 
+
+for my $cur (@bam_files) {
+	my ($cur_bam, $cur_opref) = @$cur; 
+
+my $sam_fh = &SeqAlnSunhh::openSam( $cur_bam, undef(), { 'wiH'=>0, 'verbose'=>1, 'exe_samtools'=>$opts{'exe_samtools'} } ); 
 
 my %cnt; 
 $cnt{'log_section'} = { 'cntN_base' => 0, 'cntN_step' => 1e5 }; 
@@ -175,7 +195,7 @@ while (<$sam_fh>) {
 close($sam_fh); 
 
 $cnt{'sum_cnt_all'} = scalar( keys %{$cnt{'rdID_hash'}} ); 
-&tsmsg("[Rec] Total $cnt{'sum_cnt_all'} reads accepted in $fn_bam\n"); 
+&tsmsg("[Rec] Total $cnt{'sum_cnt_all'} reads accepted in $cur_bam\n"); 
 
 if ( $opts{'senseStrand'} eq 'R' ) {
 	for my $ar1 ( map { @{ $bed_info{$_} } } keys %bed_info ) {
@@ -203,12 +223,12 @@ if ( $opts{'senseStrand'} eq 'R' ) {
 	&stopErr("[Err] Unknown -senseStrand type [$opts{'senseStrand'}].\n"); 
 }
 
-open O1,'>',"$opts{'outPref'}.sense.cnt" or &stopErr("[Err] Failed to write file [$opts{'outPref'}.sense.cnt]\n"); 
-open O2,'>',"$opts{'outPref'}.anti.cnt" or &stopErr("[Err] Failed to write file [$opts{'outPref'}.sense.cnt]\n"); 
+open O1,'>',"$cur_opref.sense.cnt" or &stopErr("[Err] Failed to write file [$cur_opref.sense.cnt]\n"); 
+open O2,'>',"$cur_opref.anti.cnt" or &stopErr("[Err] Failed to write file [$cur_opref.sense.cnt]\n"); 
 
-print O1 join("\t", 'Gene_ID',  "CntSens_$fn_bam")."\n"; 
+print O1 join("\t", 'Gene_ID',  "CntSens_$cur_bam")."\n"; 
 print O1 join("\t", 'SumSense', scalar(keys %{$cnt{'sum_cnt_sense'}}))."\n"; 
-print O2 join("\t", 'Gene_ID',  "CntAnti_$fn_bam")."\n"; 
+print O2 join("\t", 'Gene_ID',  "CntAnti_$cur_bam")."\n"; 
 print O2 join("\t", 'SumAnti', scalar(keys %{$cnt{'sum_cnt_anti'}}))."\n"; 
 
 for my $ar1 (sort {$a->[5]<=>$b->[5]} map { @{ $bed_info{$_} } } sort keys %bed_info ) {
@@ -219,6 +239,8 @@ for my $ar1 (sort {$a->[5]<=>$b->[5]} map { @{ $bed_info{$_} } } sort keys %bed_
 
 close(O1); 
 close(O2); 
+
+}# End for (@bam_files)
 
 &tsmsg("[Rec] $0 done.\n"); 
 
