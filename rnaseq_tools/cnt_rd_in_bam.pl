@@ -276,11 +276,16 @@ sub load_loc_1to1 {
 	my ($fn, $hr) = @_; 
 	$hr //= {}; 
 	my $fh = &openFH( $fn, '<' ); 
+	&tsmsg("[Msg] Loading loc_1to1 [$fn]\n"); 
+	my %c; 
+	$c{'log_section'} = { 'cntN_base' => 0, 'cntN_step' => 1e5 }; 
 	while (&fileSunhh::wantLineC( $fh )) {
+		&fileSunhh::log_section( $. , $c{'log_section'} ) and &tsmsg("[Msg] Reading $. line.\n");
 		my ( $oID, $oP, $nID, $nP ) = split(/\t/, $_); 
 		push( @{$hr->{$oID}{$oP}}, [ $nID, $nP ] ); 
 	}
 	close($fh); 
+	&tsmsg("[Msg] Loaded [$fn]\n"); 
 	return(\$hr); 
 }# load_loc_1to1() 
 
