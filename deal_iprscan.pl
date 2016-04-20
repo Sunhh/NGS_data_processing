@@ -124,8 +124,10 @@ sub usage {
 #              go : 
 #               -go_obo      : [gene_ontology_edit_20150309.obo] The GO .obo file being used. 
 #               -goIDColN    : [0] The column number of GO ID. 
-#               -addInfor    : ['name'] Feature names being attached in lines. 
-#               -go2ahrd     : [out_ahrd_pref] Create out_ahrd_pref.GOname and out_ahrd_pref.annot files for AHRD Terms: 
+#               
+#              -addInfor    : ['name'] Feature names being attached in lines. 
+#
+#              -go2ahrd     : [out_ahrd_pref] Create out_ahrd_pref.GOname and out_ahrd_pref.annot files for AHRD Terms: 
 #                                                gene_ontology_result and blast2go 
 # -out        [out_file_name] 
 ################################################################################
@@ -211,8 +213,8 @@ $goType{'CELLULAR_COMPONENT'} = 'Cellular Component';
 &splitXmlByID() if ( $opts{'task'} eq 'convert' and defined $opts{'splitXmlByID'} ); 
 &showV4convert() if ( $opts{'task'} eq 'convert' and $opts{'showV4convert'} ); 
 &jnTSV_iprID() if ( $opts{'task'} eq 'convert' and defined $opts{'jnTSV_iprID'} ); 
-&addInfor() if ( defined $opts{'addInfor'} ); 
-&go2ahrd() if ( defined $opts{'go2ahrd'} ); 
+&addInfor() if ( $opts{'task'} eq 'go' and defined $opts{'addInfor'} ); 
+&go2ahrd() if ( $opts{'task'} eq 'go' and defined $opts{'go2ahrd'} ); 
 
 # Sub-functions
 sub join_xml5 {
