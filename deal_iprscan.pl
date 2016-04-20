@@ -366,16 +366,21 @@ sub go2ahrd {
 	my $oanno_Fh = &openFH("$opts{'go2ahrd'}.annot", '>'); 
 	my %annotGO; 
 	for my $fh ( @InFp ) {
-		while (<$fh>) {
-			chomp; m/^\s*(#|$)/ and next; 
-			my @ta = split(/\t/, $_); 
-			$ta[1] =~ m/^GO:/ or next; 
-			if ( defined $ta[2] ) {
-				if ( defined $annotGO{$ta[1]} ) {
+		while ( &wantLineC($fh) ) {
+			my @ta = &splitL("\t", $_); 
+			$ta[1] =~ m/^EC:[\d.\-]+$/ and next; 
+			$ta[1] =~ m/^GO:/ or do { &tsmsg("[Wrn] Skip bad line: $_\n"); next; }; 
+			if ( defined $ta[2] and $ta[2] ne '' ) {
+				if ( defined $annotGO{$ta[0]} ) {
 					&tsmsg("[Wrn] Skip repeated annotation description of [$ta[1]]\n"); 
 				} else {
 					print {$oanno_Fh} join("\t", @ta[0,1,2])."\n"; 
+					$annotGO{$ta[0]} = $ta[2]; 
 				}
+			} elsif ( defined $annotGO{$ta[0]} ) {
+				print {$oanno_Fh} join("\t", @ta[0,1], $annotGO{$ta[0]})."\n"; 
+			} else {
+				&stopErr("[Err] I need a annotation description for the first line of [$ta[0]]\n"); 
 			}
 			my $tr1 = &infor_by_goID($ta[1], \%go_obo); 
 			if ( defined $tr1 ) {
