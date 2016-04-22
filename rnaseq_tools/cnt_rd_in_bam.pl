@@ -106,6 +106,13 @@ if ($opts{'bam_isList'}) {
 my %flag_aln_F = %{ &SeqAlnSunhh::mk_flag( 'keep' => '2=0,4=0' ) }; 
 my %flag_aln_R = %{ &SeqAlnSunhh::mk_flag( 'keep' => '2=0,4=1' ) }; 
 my %flag_aln   = %{ &SeqAlnSunhh::mk_flag( 'keep' => '2=0' ) }; 
+my %flag_to_str; 
+for ( keys %{ &SeqAlnSunhh::mk_flag( 'keep' => '4=0' ) } ) {
+	$flag_to_str{$_} = '+'; 
+}
+for ( keys %{ &SeqAlnSunhh::mk_flag( 'keep' => '4=1' ) } ) {
+	$flag_to_str{$_} = '-'; 
+}
 
 for my $cur (@bam_files) {
 	my ($cur_bam, $cur_opref) = @$cur; 
@@ -138,12 +145,14 @@ while (<$sam_fh>) {
 	$opts{'OnlyCntTotal'} and next SAM_LINE; 
 	my %cigar_h = %{ &SeqAlnSunhh::parseCigar( $aln_cigar ) }; 
 	my ($spanS, $spanE) = ( $aln_chrP, $aln_chrP+$cigar_h{'SpanRefLen'}-1 ); 
+	my $spanStr = $flag_to_str{ $aln_flag }; 
 
 	if ( defined $opts{'loc_1to1'} ) {
-		my ( $s_chrID, $s_chrP ) = &get_newLoc( \%loc_1to1, $aln_chrID, $spanS ); 
-		my ( $e_chrID, $e_chrP ) = &get_newLoc( \%loc_1to1, $aln_chrID, $spanE ); 
+		my ( $s_chrID, $s_chrP, $s_str ) = &get_newLoc( \%loc_1to1, $aln_chrID, $spanS, $spanStr ); 
+		my ( $e_chrID, $e_chrP, $e_str ) = &get_newLoc( \%loc_1to1, $aln_chrID, $spanE, $spanStr ); 
 		if ( $s_chrID eq $e_chrID and $s_chrID ne '' ) {
-			($aln_chrID, $spanS, $spanE) = ( $s_chrID, $s_chrP, $e_chrP ); 
+			# If $s_str ne $e_str, I will use $s_str only. 
+			($aln_chrID, $spanS, $spanE, $spanStr) = ( $s_chrID, $s_chrP, $e_chrP, $s_str ); 
 			$spanS > $spanE and ($spanS, $spanE) = ($spanE, $spanS); 
 		} else {
 			next SAM_LINE; 
@@ -153,11 +162,11 @@ while (<$sam_fh>) {
 	if ($opts{'highMemory'}) {
 		$cnt{'t_pos'} = "$aln_chrID:$spanS-$spanE"; 
 		if ( defined $cnt{'pos2genes'}{ $cnt{'t_pos'} } ) {
-			if ( $flag_aln_F{$aln_flag} ) {
+			if ( $spanStr eq '+' ) {
 				for my $ar1 ( @{$cnt{'pos2genes'}{ $cnt{'t_pos'} }} ) {
 					$cnt{'geneCnt'}{ $ar1->[2] }[0] ++; # Fwd
 				}
-			} elsif ( $flag_aln_R{$aln_flag} ) {
+			} elsif ( $spanStr eq '-' ) {
 				for my $ar1 ( @{$cnt{'pos2genes'}{ $cnt{'t_pos'} }} ) {
 					$cnt{'geneCnt'}{ $ar1->[2] }[1] ++; # Fwd
 				}
@@ -178,12 +187,12 @@ while (<$sam_fh>) {
 		@loc_realIdx = @{ &mathSunhh::_map_loc_to_realIdx( $bed_db{$aln_chrID}, [$spanS, $spanE] ) }; 
 	}
 	$opts{'highMemory'} and $cnt{'pos2genes'}{ $cnt{'t_pos'} } = [ @{ $bed_info{$aln_chrID} }[@loc_realIdx] ]; 
-	if ( $flag_aln_F{$aln_flag} ) {
+	if ( $spanStr eq '+' ) {
 		for my $ar1 (@{ $bed_info{$aln_chrID} }[@loc_realIdx]) {
 			$cnt{'geneCnt'}{ $ar1->[2] }[0] ++; # Fwd
 			$cnt{'geneCnt'}{ $ar1->[2] }[2]{ $aln_rdID } ++; 
 		}
-	} elsif ( $flag_aln_R{$aln_flag} ) {
+	} elsif ( $spanStr eq '-' ) {
 		for my $ar1 (@{ $bed_info{$aln_chrID} }[@loc_realIdx]) {
 			$cnt{'geneCnt'}{ $ar1->[2] }[1] ++; # Rev
 			$cnt{'geneCnt'}{ $ar1->[2] }[3]{ $aln_rdID } ++; 
@@ -303,8 +312,8 @@ sub load_loc_1to1 {
 	$c{'log_section'} = { 'cntN_base' => 0, 'cntN_step' => 1e5 }; 
 	while (&fileSunhh::wantLineC( $fh )) {
 		&fileSunhh::log_section( $. , $c{'log_section'} ) and &tsmsg("[Msg] Reading $. line.\n");
-		my ( $oID, $oP, $nID, $nP ) = split(/\t/, $_); 
-		push( @{$hr->{$oID}{$oP}}, [ $nID, $nP ] ); 
+		my ( $oID, $oP, $nID, $nP, $nStr ) = split(/\t/, $_); 
+		push( @{$hr->{$oID}{$oP}}, [ $nID, $nP, $nStr ] ); 
 	}
 	close($fh); 
 	&tsmsg("[Msg] Loaded [$fn]\n"); 
@@ -312,20 +321,22 @@ sub load_loc_1to1 {
 }# load_loc_1to1() 
 
 sub get_newLoc {
-	my ($hr, $oID, $oP) = @_; 
-	my ($nID, $nP) = ('', ''); 
+	my ($hr, $oID, $oP, $oStr) = @_; # input Old coordinates. 
+	$oStr =~ m/^[+-]$/ or &stopErr("[Err] Bad strand input of get_newLoc( $hr, $oID, $oP, $oStr ).\n"); 
+	my ($nID, $nP, $nStr) = ('', '', ''); 
 	my $flank_len = 50; 
 	defined $hr->{$oID} or return($nID, $nP); 
 	if (defined $hr->{$oID}{$nP}) {
-		($nID, $nP) = @{ $hr->{$oID}{$nP}[0] }; 
+		($nID, $nP, $nStr) = @{ $hr->{$oID}{$nP}[0] }; 
 	} else {
 		for (my $i=1; $i<=$flank_len; $i++) {
 			my $tP_1 = $oP-$i; 
-			defined $hr->{$oID}{$tP_1} and return( @{ $hr->{$oID}{$tP_1}[0] } ); 
+			defined $hr->{$oID}{$tP_1} and do { ($nID, $nP, $nStr) = @{ $hr->{$oID}{$tP_1}[0] }; last; }; 
 			my $tP_2 = $oP+$i; 
-			defined $hr->{$oID}{$tP_2} and return( @{ $hr->{$oID}{$tP_2}[0] } ); 
+			defined $hr->{$oID}{$tP_2} and do { ($nID, $nP, $nStr) = @{ $hr->{$oID}{$tP_2}[0] }; last; }; 
 		}
 	}
-	return($nID, $nP); 
+	$oStr eq '-' and $nStr =~ tr/+-/-+/; 
+	return($nID, $nP, $nStr); 
 }# get_newLoc() 
 
