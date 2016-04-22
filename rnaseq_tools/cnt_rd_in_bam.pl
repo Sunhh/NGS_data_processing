@@ -168,7 +168,7 @@ while (<$sam_fh>) {
 				}
 			} elsif ( $spanStr eq '-' ) {
 				for my $ar1 ( @{$cnt{'pos2genes'}{ $cnt{'t_pos'} }} ) {
-					$cnt{'geneCnt'}{ $ar1->[2] }[1] ++; # Fwd
+					$cnt{'geneCnt'}{ $ar1->[2] }[1] ++; # Rev 
 				}
 			}
 			next SAM_LINE; 
