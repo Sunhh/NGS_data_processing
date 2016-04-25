@@ -164,11 +164,13 @@ while (<$sam_fh>) {
 		if ( defined $cnt{'pos2genes'}{ $cnt{'t_pos'} } ) {
 			if ( $spanStr eq '+' ) {
 				for my $ar1 ( @{$cnt{'pos2genes'}{ $cnt{'t_pos'} }} ) {
-					$cnt{'geneCnt'}{ $ar1->[2] }[0] ++; # Fwd
+					defined $cnt{'geneCnt'}{ $ar1->[2] }[2]{ $aln_rdID } or $cnt{'geneCnt'}{ $ar1->[2] }[0] ++; # Fwd
+					$cnt{'geneCnt'}{ $ar1->[2] }[2]{ $aln_rdID } ++; 
 				}
 			} elsif ( $spanStr eq '-' ) {
 				for my $ar1 ( @{$cnt{'pos2genes'}{ $cnt{'t_pos'} }} ) {
-					$cnt{'geneCnt'}{ $ar1->[2] }[1] ++; # Rev 
+					defined $cnt{'geneCnt'}{ $ar1->[2] }[3]{ $aln_rdID } or $cnt{'geneCnt'}{ $ar1->[2] }[1] ++; # Rev 
+					$cnt{'geneCnt'}{ $ar1->[2] }[3]{ $aln_rdID } ++; 
 				}
 			}
 			next SAM_LINE; 
@@ -189,12 +191,12 @@ while (<$sam_fh>) {
 	$opts{'highMemory'} and $cnt{'pos2genes'}{ $cnt{'t_pos'} } = [ @{ $bed_info{$aln_chrID} }[@loc_realIdx] ]; 
 	if ( $spanStr eq '+' ) {
 		for my $ar1 (@{ $bed_info{$aln_chrID} }[@loc_realIdx]) {
-			$cnt{'geneCnt'}{ $ar1->[2] }[0] ++; # Fwd
+			defined $cnt{'geneCnt'}{ $ar1->[2] }[2]{ $aln_rdID } or $cnt{'geneCnt'}{ $ar1->[2] }[0] ++; # Fwd
 			$cnt{'geneCnt'}{ $ar1->[2] }[2]{ $aln_rdID } ++; 
 		}
 	} elsif ( $spanStr eq '-' ) {
 		for my $ar1 (@{ $bed_info{$aln_chrID} }[@loc_realIdx]) {
-			$cnt{'geneCnt'}{ $ar1->[2] }[1] ++; # Rev
+			defined $cnt{'geneCnt'}{ $ar1->[2] }[3]{ $aln_rdID } or $cnt{'geneCnt'}{ $ar1->[2] }[1] ++; # Rev
 			$cnt{'geneCnt'}{ $ar1->[2] }[3]{ $aln_rdID } ++; 
 		}
 	} else {
