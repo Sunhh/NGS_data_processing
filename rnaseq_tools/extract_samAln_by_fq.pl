@@ -16,7 +16,7 @@ my %opts;
 GetOptions(\%opts, 
 	"help!", 
 	"inSam1:s", 
-	"inFq1:s@", 
+	"inFq1:s@", "inFq1_isList!", 
 	"fmtSam1:s", 
 	"outSam1:s", 
 	"maxmismatchN:i", 
@@ -39,6 +39,8 @@ perl $0 -inSam1 in_toRef1.sam   -inFq1 in_src.fq [ -inFq1 in_src_2.fq ... ]
 
 -exe_samtools ['samtools']
 -exe_perl     ['perl']
+
+-inFq1_isList [Boolean] Input -inFq1 is a ID list instead of fastq format. 
 
 -help         [Boolean]
 
@@ -87,16 +89,24 @@ sub outSam_byRdID {
 sub load_fqID_toHash {
 	my $cnt = -1; 
 	my %back_hash; 
-	my @back_id; 
+#	my @back_id; 
 	for my $fn (@{$_[0]}) {
 		$opts{'verbose'} and &tsmsg("[Msg] Loading fq file [$fn] start.\n"); 
 		my $fh = &openFH( $fn, '<' ) or &stopErr("[Err] Failed to open file [$fn]\n"); 
-		while (<$fh>) {
-			m/^\@(\S+)/ or &stopErr("[Err] Bad ID!\n"); 
-			$cnt ++; 
-			push(@back_id, [0,0,0,0,$1]); 
-			$back_hash{$1} = $cnt; 
-			<$fh>; <$fh>; <$fh>; 
+		if ($opts{'inFq1_isList'}) {
+			while (&wantLineC($fh)) {
+				$_ =~ m/^(\S+)/ or &stopErr("[Err] Bad ID [$_]!\n"); 
+				$cnt ++; 
+				$back_hash{$1} = $cnt; 
+			}
+		} else {
+			while (<$fh>) {
+				m/^\@(\S+)/ or &stopErr("[Err] Bad ID!\n"); 
+				$cnt ++; 
+#				push(@back_id, [0,0,0,0,$1]); 
+				$back_hash{$1} = $cnt; 
+				<$fh>; <$fh>; <$fh>; 
+			}
 		}
 		close($fh); 
 		$opts{'verbose'} and &tsmsg("[Msg] Loading fq file [$fn] finished.\n"); 
