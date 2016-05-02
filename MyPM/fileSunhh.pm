@@ -227,13 +227,15 @@ Return         : (1|0) # 1 - get to a new section divided by 'cntN_step|base' ; 
 Function       : %tmp_cnt = ( 'cntN_base'=>0 , 'cntN_step'=>5e6 ); 
                  Edit %tmp_cnt if needed when revoked. 
                  This function is used for recording usage. 
+                 When 'cntN_step' <= 0, always return 0. 
                  When $cntN_to_chk > $tmp_cnt{'cntN_base'} , return 1 and increase 'cntN_base'; 
 =cut
 sub log_section {
 	my ($v, $hr) = @_; 
 	$hr->{'cntN_step'} //= 5e6 ; 
 	$hr->{'cntN_base'} //= 0 ; 
-	$hr->{'cntN_step'} > 0 or &stopErr("[Err] 'cntN_step' for log_section() should > 0!\n"); 
+	$hr->{'cntN_step'} > 0 or return 0; 
+	# $hr->{'cntN_step'} > 0 or &stopErr("[Err] 'cntN_step' for log_section() should > 0!\n"); 
 	$v > $hr->{'cntN_base'} or return 0; 
 	while ($v > $hr->{'cntN_base'} ) {
 		$hr->{'cntN_base'} += $hr->{'cntN_step'}; 
