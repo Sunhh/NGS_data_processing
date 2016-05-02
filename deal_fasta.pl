@@ -42,11 +42,13 @@
 ### 2015-04-10 Reorder sequences according to an input seqID list. 
 ### 2015-06-26 Use -joinR12 to join to .fasta R1/R2 files. 
 ### 2016-01-21 Use '-sep_soapdenovo_ctg_name' to separate soapdenovo contig names. 
+### 2016-05-02 Add '-scf2ctg out_prefix' to separate scaffolds into contigs. 
 
 use strict;
 use warnings; 
 use File::Spec; # File::Spec->catfile("","",...); 
 use Getopt::Long;
+use fileSunhh; 
 my %opts;
 
 sub usage {
@@ -159,6 +161,8 @@ Usage: $0  <fasta_file | STDIN>
   -rmTailXN           [Boolean] Remove continuous [\*XNxn]+ from the tail of sequence. 
   -rmTailX_prot       [Boolean] Remove continuous [\*X]+ from the tail of sequence. 
 
+  -scf2ctg            ['out_prefix'] Output out_prefix.ctg.fa and out_prefix.ctg2scf.agp files. 
+
   -sep_soapdenovo_ctg_name  [Boolean] Separate soapdenovo contig names. 
 
 #******* Instruction of this program *********#
@@ -192,6 +196,7 @@ GetOptions(\%opts,"help!",
 	"rna2dna!", 
 	"rmTailXN!", 
 	"rmTailX_prot!", 
+	"scf2ctg:s", # out_prefix
 	"sep_soapdenovo_ctg_name!", 
 	);
 &usage if ($opts{"help"}); 
@@ -263,6 +268,7 @@ my %goodStr = qw(
 &rmTailXN() if ( $opts{'rmTailXN'} ); 
 &rmTailX_prot() if ( $opts{'rmTailX_prot'} ); 
 &sep_ctg_name() if ( $opts{'sep_soapdenovo_ctg_name'} ); 
+&scf2ctg_fas() if ( defined $opts{'scf2ctg'} ); 
 
 for (@InFp) {
 	close ($_); 
@@ -277,6 +283,46 @@ for (@InFp) {
 #****************************************************************#
 #--------------Subprogram------------Start-----------------------#
 #****************************************************************#
+
+# 2016-05-02
+sub scf2ctg_fas {
+	$opts{'scf2ctg'} //= 'out_prefix'; 
+	my $oFh_1 = &openFH( "$opts{'scf2ctg'}.ctg.fa", '>' ); 
+	my $oFh_2 = &openFH( "$opts{'scf2ctg'}.ctg2scf.agp", '>' ); 
+	for (my $i=0; $i<@InFp; $i++) {
+		my $fh1 = $InFp[$i]; 
+		RD:
+		while ( !eof($fh1) ) {
+			for ( my ($relHR1, $get1) = &get_fasta_seq($fh1); defined $relHR1; ($relHR1, $get1) = &get_fasta_seq($fh1) ) {
+				$relHR1->{'seq'} =~ s/\s//g; 
+				my $scfID = $relHR1->{'key'}; 
+				my $num = 0; 
+				pos( $relHR1->{'seq'} ) = 0; 
+				my @agp_lines; 
+				while ( $relHR1->{'seq'} =~ m/\G(?:.*?)([^Nn]+)/gs ) {
+					$num ++; 
+					my ($s, $e, $len) = ($-[1]+1, $+[1], $+[1]-$-[1]); 
+					my $ctgID = "${scfID}_$num"; 
+					print {$oFh_1} ">$ctgID [$s,$e,$len]\n$1\n"; 
+					if ( scalar(@agp_lines) > 0 ) {
+						my $tp = $agp_lines[-1]; 
+						push(@agp_lines, [ $scfID, $tp->[2]+1, $s-1, $tp->[3]+1, 'N', $s-1-$tp->[2], 'scaffold', 'yes',   'paired-ends' ]); 
+						$tp = $agp_lines[-1]; 
+						push(@agp_lines, [ $scfID, $s,         $e,   $tp->[3]+1, 'W', $ctgID,        1,          $e-$s+1, '+' ]); 
+					} else {
+						push(@agp_lines, [ $scfID, $s,         $e,   1,          'W', $ctgID,        1,          $e-$s+1, '+' ]); 
+					}
+				  pos($relHR1->{'seq'}) = $+[1]; 
+				}
+				for my $t_a (@agp_lines) {
+					print {$oFh_2} join("\t", @$t_a)."\n"; 
+				}
+			}
+		}
+	}
+	exit(0); 
+	return(); 
+}# scf2ctg ()
 
 # 2016-01-21 
 sub sep_ctg_name {
@@ -1392,43 +1438,43 @@ sub siteList ($$$) {
 #	return *FH;
 #}# end sub openFH
 
-sub openFH ($$) {
-	my $f = shift; 
-	my $type = shift; 
-	my %goodFileType = qw(
-		<       read
-		>       write
-		read    read
-		write   write
-	); 
-	defined $type or $type = 'read'; 
-	defined $goodFileType{$type} or die "[Err]Unknown open method tag [$type].\n"; 
-	$type = $goodFileType{$type}; 
-	local *FH; 
-	# my $tfh; 
-	if ($type eq 'read') {
-		if ($f =~ m/\.gz$/) {
-			open (FH, '-|', "gzip -cd $f") or die "[Err]$! [$f]\n"; 
-			# open ($tfh, '-|', "gzip -cd $f") or die "[Err]$! [$f]\n"; 
-		} elsif ( $f =~ m/\.bz2$/ ) {
-			open (FH, '-|', "bzip2 -cd $f") or die "[Err]$! [$f]\n"; 
-		} else {
-			open (FH, '<', "$f") or die "[Err]$! [$f]\n"; 
-		}
-	} elsif ($type eq 'write') {
-		if ($f =~ m/\.gz$/) {
-			open (FH, '|-', "gzip - > $f") or die "[Err]$! [$f]\n"; 
-		} elsif ( $f =~ m/\.bz2$/ ) {
-			open (FH, '|-', "bzip2 - > $f") or die "[Err]$! [$f]\n"; 
-		} else {
-			open (FH, '>', "$f") or die "[Err]$! [$f]\n"; 
-		}
-	} else {
-		# Something is wrong. 
-		die "[Err]Something is wrong here.\n"; 
-	}
-	return *FH; 
-}#End sub openFH
+#sub openFH ($$) {
+#	my $f = shift; 
+#	my $type = shift; 
+#	my %goodFileType = qw(
+#		<       read
+#		>       write
+#		read    read
+#		write   write
+#	); 
+#	defined $type or $type = 'read'; 
+#	defined $goodFileType{$type} or die "[Err]Unknown open method tag [$type].\n"; 
+#	$type = $goodFileType{$type}; 
+#	local *FH; 
+#	# my $tfh; 
+#	if ($type eq 'read') {
+#		if ($f =~ m/\.gz$/) {
+#			open (FH, '-|', "gzip -cd $f") or die "[Err]$! [$f]\n"; 
+#			# open ($tfh, '-|', "gzip -cd $f") or die "[Err]$! [$f]\n"; 
+#		} elsif ( $f =~ m/\.bz2$/ ) {
+#			open (FH, '-|', "bzip2 -cd $f") or die "[Err]$! [$f]\n"; 
+#		} else {
+#			open (FH, '<', "$f") or die "[Err]$! [$f]\n"; 
+#		}
+#	} elsif ($type eq 'write') {
+#		if ($f =~ m/\.gz$/) {
+#			open (FH, '|-', "gzip - > $f") or die "[Err]$! [$f]\n"; 
+#		} elsif ( $f =~ m/\.bz2$/ ) {
+#			open (FH, '|-', "bzip2 - > $f") or die "[Err]$! [$f]\n"; 
+#		} else {
+#			open (FH, '>', "$f") or die "[Err]$! [$f]\n"; 
+#		}
+#	} else {
+#		# Something is wrong. 
+#		die "[Err]Something is wrong here.\n"; 
+#	}
+#	return *FH; 
+#}#End sub openFH
 
 
 # input a fasta file's handle and a signal show whether it should has a head line; 
