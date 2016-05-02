@@ -413,7 +413,7 @@ sub openSam {
 		$back_fh = &openFH( $fn, '<' ); 
 	} elsif ( $fmt eq 'bam' ) {
 		my $tagH = ( $pH->{'wiH'} ) ? ' -h ' : ''; 
-		open $back_fh, '-|', "$pH->{'exe_samtools'} view $tagH $fn" or &stopErr("[Err] Failed to run CMD: '$pH->{'exe_samtools'} view $tagH $fn'\n");
+		open ($back_fh, '-|', "$pH->{'exe_samtools'} view $tagH $fn") or &stopErr("[Err] Failed to run CMD: '$pH->{'exe_samtools'} view $tagH $fn' : $!\n");
 	} else {
 		&stopErr("[Err] Unknown type [$fmt], which should be sam/bam\n"); 
 	}
