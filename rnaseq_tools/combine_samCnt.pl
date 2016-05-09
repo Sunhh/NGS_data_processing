@@ -34,7 +34,7 @@ for ( my $i=1; $i<@fn_lis; $i++ ) {
 	while ( &wantLineC($fh) ) {
 		$ln ++; # In this way, line number only corresponds to good lines. 
 		my @ta = &splitL("\t", $_); 
-		$#{$out_txt[$ln]} == $i or &stopErr("[Err] Not equal cols at @ta\n"); 
+#		$#{$out_txt[$ln]} == $i or &stopErr("[Err] Not equal cols at @ta\n"); 
 		$out_txt[$ln][0] eq $ta[0] or &stopErr("[Err] Different first column at @ta\n"); 
 		push( @{$out_txt[$ln]}, @ta[1 .. $#ta] ); 
 	}
