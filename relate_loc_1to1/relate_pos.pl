@@ -1,4 +1,5 @@
 #!/usr/bin/perl 
+# 2016-05-19 Fix bug for minus alignments. 
 use strict; 
 use warnings; 
 use fileSunhh; 
@@ -45,7 +46,7 @@ while ( my $rec = &ReadInAlnSunhh::readMAF($inFh) ) {
 		if ( $h2->{'seqStrand'} eq '+' ) {
 			@p2p = map { [$_->[0]+$h1->{'normS'}-1, $_->[1]+$h2->{'normS'}-1, '+'] } @p2p; 
 		} else {
-			@p2p = map { [$h1->{'normE'}-$_->[0]+1, $h2->{'normE'}-$_->[1]+1, '-'] } @p2p; 
+			@p2p = map { [$_->[0]+$h1->{'normS'}-1, $h2->{'normE'}-$_->[1]+1, '-'] } @p2p; 
 		}
 	} else {
 		&stopErr("[Err] I don't like this format! Strand of first seq is not '+': $rec->{'o'}[0]\n"); 
