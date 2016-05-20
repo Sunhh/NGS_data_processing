@@ -652,7 +652,7 @@ sub generate_r_limma_TS
 library(DESeq)
 library(limma)
 countsTable<-read.delim("$input", header=TRUE, stringsAsFactors=TRUE)
-rownames(countsTable)<-countsTable\$gene
+rownames(countsTable)<-countsTable[, 1]
 countsTable<-countsTable[, -1]
 conds <- factor( c($group) )
 cds<-newCountDataSet(countsTable, conds)
@@ -703,7 +703,7 @@ sub generate_r_deseq
 setwd(\'$pwd\')
 library(DESeq)
 countsTable<-read.delim("$input", header=TRUE, stringsAsFactors=TRUE)
-rownames(countsTable)<-countsTable\$gene
+rownames(countsTable)<-countsTable[,1]
 countsTable<-countsTable[, -1]
 
 sizeF.rowN <- which( rownames(countsTable) == "sizeFactor" )
