@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 # 2016-05-20 This script was written by Yi Zheng, and I modified it to get RPKM ratio with 4 digit demicals, and counting DESeq DE genes with a pre-provided sizeFactor. 
+# 2016-05-20 I think it is a good idea to check the histogram of adjust_P as this distribution should be normal in Qvalue calculation. 
 =head
 
 Plan: 1. make this pipeline to modular
