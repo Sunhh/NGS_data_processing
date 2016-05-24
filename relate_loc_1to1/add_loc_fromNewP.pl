@@ -71,7 +71,7 @@ sub get_newLoc {
 	my $flank_len = 50;
 	defined $hr->{$oID} or return($nID, $nP);
 	if (defined $hr->{$oID}{$oP}) {
-		($nID, $oP, $nStr) = @{ $hr->{$oID}{$oP}[0] };
+		($nID, $nP, $nStr) = @{ $hr->{$oID}{$oP}[0] };
 	} else {
 		for (my $i=1; $i<=$flank_len; $i++) {
 			my $tP_1 = $oP-$i;
