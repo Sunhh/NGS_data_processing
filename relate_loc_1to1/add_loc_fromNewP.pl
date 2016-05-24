@@ -29,8 +29,11 @@ while (&fileSunhh::wantLineC( $fh_bed )) {
 			$t2_ID_2 ne '' and $t2_ID_2 ne $nChrID1 and $t2_E = 'NA'; 
 			$t2_str_1 ne '' and $t2_str_1 ne $nStr1 and $t2_S = 'NA'; 
 			$t2_str_2 ne '' and $t2_str_2 ne $nStr1 and $t2_S = 'NA'; 
+			$nStr1 ne $oStr and ($t2_S, $t2_E) = ( $t2_E , $t2_S ); 
 			push( @nCDSLoc_arr, [$t2_S, $t2_E] ); 
 		}
+		$nStr1 ne $oStr and ($nChrS, $nChrE) = ($nChrE, $nChrS); 
+
 	} else {
 			$nChrID1=$nChrID2='NA'; 
 			$nChrS = $nChrE = 'NA'; 
@@ -50,7 +53,7 @@ sub load_loc_1to1 {
 	my $fh = &openFH( $fn, '<' );
 	&tsmsg("[Msg] Loading loc_1to1 [$fn]\n");
 	my %c;
-	$c{'log_section'} = { 'cntN_base' => 0, 'cntN_step' => 1e5 };
+	$c{'log_section'} = { 'cntN_base' => 0, 'cntN_step' => 1e6 };
 	while (&fileSunhh::wantLineC( $fh )) {
 		&fileSunhh::log_section( $. , $c{'log_section'} ) and &tsmsg("[Msg] Reading $. line.\n");
 		my ( $oID, $oP, $nID, $nP, $nStr ) = split(/\t/, $_);
@@ -67,8 +70,8 @@ sub get_newLoc {
 	my ($nID, $nP, $nStr) = ('', '', '');
 	my $flank_len = 50;
 	defined $hr->{$oID} or return($nID, $nP);
-	if (defined $hr->{$oID}{$nP}) {
-		($nID, $nP, $nStr) = @{ $hr->{$oID}{$nP}[0] };
+	if (defined $hr->{$oID}{$oP}) {
+		($nID, $oP, $nStr) = @{ $hr->{$oID}{$oP}[0] };
 	} else {
 		for (my $i=1; $i<=$flank_len; $i++) {
 			my $tP_1 = $oP-$i;
