@@ -185,6 +185,50 @@ sub chk_index {
 	return 1; 
 }# sub chk_index() 
 
+=head2 version_samtools( 'exe_samtools'=>'samtools', 'chk_version'=>1, 'ver_samtools' => '0.1.19', 'ver_samtools_detail' => 'NA' )
+
+Description   : Get version of 'exe_samtools' to 'ver_samtools'; 
+
+Return        : (\%parm)
+
+ For 'samtools' (version: 0.1.19-44428cd) :
+   'ver_samtools'        => '0.1.19-44428cd'
+   'ver_samtools_detail' => '0.1.19-44428cd'
+ For 'samtools_1.3' (version: 1.3 (using htslib 1.3)) :
+   'ver_samtools'        => '1.3'
+   'ver_samtools_detail' => '1.3 (using htslib 1.3)'
+
+=cut
+sub version_samtools {
+	my $self = shift; 
+	my %parm = $ms->_setHashFromArr(@_); 
+	$parm{'chk_version'} //= 1; 
+	$parm{'exe_samtools'} //= 'samtools'; 
+	$parm{'ver_samtools'} //= '0'; 
+	$parm{'ver_samtools_detail'} //= 'NA'; 
+
+	$parm{'chk_version'} or return( \%parm ); 
+	
+	open E,'-|',"$parm{'exe_samtools'} 2>&1 1>/dev/null" or die; 
+	while (<E>) {
+		chomp; 
+		$_ =~ m!^Version!i or next; 
+		if ( $_ =~ m!^Version:\s*(\S+\s*(?:\([^()]+\))?)$!i ) {
+			$parm{'ver_samtools_detail'} = $1; 
+			$parm{'ver_samtools'} = $parm{'ver_samtools_detail'}; 
+			$parm{'ver_samtools'} =~ m!^(\d+(?:\.\d+)*\S*)! or &stopErr("[Err] Failed to parse samtools version [$parm{'ver_samtools_detail'}]\n"); 
+			$parm{'ver_samtools'} = $1; 
+			$parm{'chk_version'} = '0'; 
+			last; 
+		}
+		&stopErr( "[Err] Failed at line: $_\n" ); 
+	}
+	close E; 
+
+	$parm{'chk_version'} eq '0' or &stopErr("[Err] No version line found for samtools [$parm{'exe_samtools'}].\n"); 
+
+	return(\%parm); 
+}# version_samtools ()
 
 =head2 bwaAln( inFq1=>$inFq1, aln_type=>'PE', %parameters_for_bwaPE_or_bwaSE_function )
 
@@ -240,6 +284,8 @@ sub bwaPE {
 	$parm{'oBamPre'} //= 'bwaPEOutPre'; 
 	$parm{'printCmd'} //= 0; 
 
+	%parm = %{ $self->version_samtools( %parm ) }; 
+
 	# Setting file names. 
 	my $inFq1 = $parm{'inFq1'}; 
 	my $inFq2 = $parm{'inFq2'}; 
@@ -266,7 +312,15 @@ sub bwaPE {
 			} elsif ( $c_step eq 'sam2bam' ) {
 				&exeCmd_1cmd("$parm{'exe_samtools'} view $parm{'para_sam2bam'} -bSh -o $oBamPre.bam $oBamPre.sam", $parm{'printCmd'}); 
 			} elsif ( $c_step eq 'bam_sort' ) {
-				&exeCmd_1cmd("$parm{'exe_samtools'} sort $parm{'para_bamSort'} $oBamPre.bam $oBamPre.srt", $parm{'printCmd'}); 
+				# %parm = %{ $self->version_samtools( %parm ) }; 
+				if ( $parm{'ver_samtools'} =~ m!^0\.!i ) {
+					&exeCmd_1cmd("$parm{'exe_samtools'} sort $parm{'para_bamSort'} $oBamPre.bam $oBamPre.srt", $parm{'printCmd'}); 
+				} elsif ( $parm{'ver_samtools'} =~ m!^1\.!i ) {
+					&exeCmd_1cmd("$parm{'exe_samtools'} sort $parm{'para_bamSort'} -o $oBamPre.srt.bam $oBamPre.bam", $parm{'printCmd'}); 
+				} else {
+					&tsmsg("[Wrn] Unknown samtools version [$parm{'ver_samtools'}], and treated as V1.3\n"); 
+					&exeCmd_1cmd("$parm{'exe_samtools'} sort $parm{'para_bamSort'} -o $oBamPre.srt.bam $oBamPre.bam", $parm{'printCmd'}); 
+				}
 			} elsif ( $c_step eq 'bam_index' ) {
 				&exeCmd_1cmd("$parm{'exe_samtools'} index $oBamPre.srt.bam", $parm{'printCmd'}); 
 			} elsif ( $c_step eq 'rm_sai' ) {
@@ -329,6 +383,8 @@ sub bwaSE {
 	$parm{'oBamPre'} //= 'bwaSEOutPre'; 
 	$parm{'printCmd'} //= 0; 
 
+	%parm = %{ $self->version_samtools( %parm ) }; 
+
 	# Setting file names. 
 	my $inFq1 = $parm{'inFq1'}; 
 	my $oBamPre = $parm{'oBamPre'}; 
@@ -351,7 +407,15 @@ sub bwaSE {
 			} elsif ( $c_step eq 'sam2bam' ) {
 				&exeCmd_1cmd("$parm{'exe_samtools'} view $parm{'para_sam2bam'} -bSh -o $oBamPre.bam $oBamPre.sam", $parm{'printCmd'}); 
 			} elsif ( $c_step eq 'bam_sort' ) {
-				&exeCmd_1cmd("$parm{'exe_samtools'} sort $parm{'para_bamSort'} $oBamPre.bam $oBamPre.srt", $parm{'printCmd'}); 
+				# %parm = %{ $self->version_samtools( %parm ) }; 
+				if ( $parm{'ver_samtools'} =~ m!^0\.!i ) {
+					&exeCmd_1cmd("$parm{'exe_samtools'} sort $parm{'para_bamSort'} $oBamPre.bam $oBamPre.srt", $parm{'printCmd'}); 
+				} elsif ( $parm{'ver_samtools'} =~ m!^1\.!i ) {
+					&exeCmd_1cmd("$parm{'exe_samtools'} sort $parm{'para_bamSort'} -o $oBamPre.srt.bam $oBamPre.bam", $parm{'printCmd'});
+				} else {
+					&tsmsg("[Wrn] Unknown samtools version [$parm{'ver_samtools'}], and treated as V1.3\n");
+					&exeCmd_1cmd("$parm{'exe_samtools'} sort $parm{'para_bamSort'} -o $oBamPre.srt.bam $oBamPre.bam", $parm{'printCmd'});
+				}
 			} elsif ( $c_step eq 'bam_index' ) {
 				&exeCmd_1cmd("$parm{'exe_samtools'} index $oBamPre.srt.bam", $parm{'printCmd'}); 
 			} elsif ( $c_step eq 'rm_sai' ) {
