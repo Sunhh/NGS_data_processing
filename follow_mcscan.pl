@@ -24,6 +24,8 @@ GetOptions(\%opts,
  "classDupGene!", "max_eval:f", "min_cscore:f", "max_proxN:i", "max_tandN:i", "tand_list:s", 
  "filterBlast!", "rm_repeat!", "repeat_eval:f", "rm_tandem!", 
  "add_KaKs!", "in_pair_list:s", "fas_cds:s", "fas_prot:s", "out_pref:s","alnMethod:s", "ncpu:i", "kaks_tab:s", 
+ "cvt_ctg2scf!", "scf_agp:s", 
+ "trim_block!", "trim_blkSE:s", 
  "help!", 
 ); 
 
@@ -109,6 +111,18 @@ sub usage {
 #   -alnMethod    ['muscle'] Could also be 'clustalw'
 #   -ncpu         [1] Use multiple-CPUs to compute KaKs, because it is too slow. 
 #   -kaks_tab     [NULL] Do not calculate KaKs again if given. 
+#
+# -cvt_ctg2scf    [Boolean] Convert contig IDs into scaffold IDs according to AGP file. 
+#                   Need -in_aln ; 
+#                   Please note that a contig should be related to only ONE scaffold here!!! 
+#   -scf_agp      [filename] AGP file from contigs to scaffolds. 
+#
+# -trim_block     [Boolean] Trim the blocks according to given blocks' start-end (SE) reference genes. 
+#                   Need -in_aln ; 
+#                   Please note that the e_value will not be changed. 
+#   -trim_blkSE   [filename] A file telling the new start and end genes in a block. 
+#                   Format : 'Block_ID \\t Start_Gene \\t End_Gene'
+#                   Blocks not mentioned will be output intactly. 
 ####################################################################################################
 HH
 	exit 1; 
@@ -194,6 +208,16 @@ if ( $opts{'aln2list'} ) {
 	 'ncpu' => $opts{'ncpu'}, 
 	 'kaks_tab' => $opts{'kaks_tab'}, 
 	); 
+} elsif ( $opts{'cvt_ctg2scf'} ) {
+	&cvt_ctg2scf_byAGP(
+	 'in_aln'  => $opts{'in_aln'}, 
+	 'scf_agp' => $opts{'scf_agp'}, 
+	); 
+} elsif ( $opts{'trim_block'} ) {
+	&trim_block(
+	 'in_aln'  => $opts{'in_aln'},
+	 'trim_blkSE' => $opts{'trim_blkSE'}, 
+	);  
 } else {
 	&usage(); 
 }
@@ -546,6 +570,122 @@ HEAD
 	}
 }# mcs_glist2html() 
 
+
+sub cvt_ctg2scf_byAGP {
+	my %parm = $ms_obj->_setHashFromArr(@_); 
+	
+	my %ctg2scf = %{ &fileSunhh::load_agpFile( $parm{'scf_agp'} ) }; 
+	# %ctg2scf = ( $ctgID => [ [ctgS, ctgE, scfID, scfS, scfE, scfStr(+/-/?)], [], ... ] ) # This is sorted. 
+	my ($alnInfo) = &_readInAln( $parm{'in_aln'} ); 
+
+	defined $alnInfo->[0]{'text'} and print {$outFh} $alnInfo->[0]{'text'}; 
+	for ( my $i=1; $i<@{$alnInfo}; $i++ ) {
+		my ( $alnID, $n_pairs, $ctg1, $ctg2, $strand ) = @{$alnInfo->[$i]{'info'}}[0, 3, 4,5,6]; 
+		$strand =~ m/^plus$/i and $strand = '+'; 
+		$strand =~ m/^minus$/i and $strand = '-'; 
+		$strand =~ m/^(\+|\-)$/i or &stopErr("[Err] Unknown strand [$strand]\n"); 
+		my ($scf1_aR) = $ms_obj->switch_position( 'qry2ref' => \%ctg2scf, 'qryID' => $ctg1, 'qryPos' => 1, 'strand' => '+' ); 
+		my ($scf2_aR) = $ms_obj->switch_position( 'qry2ref' => \%ctg2scf, 'qryID' => $ctg2, 'qryPos' => 1, 'strand' => $strand ); 
+		unless ( defined $scf1_aR->[0] ) {
+			&tsmsg("[Wrn] No contig information found for [$ctg1] in AGP file.\n"); 
+			$scf1_aR = [ $ctg1, 1, '+' ]; 
+		}
+		unless ( defined $scf2_aR->[0] ) {
+			&tsmsg("[Wrn] No contig information found for [$ctg2] in AGP file.\n"); 
+			$scf2_aR = [ $ctg2, 1, '+' ]; 
+		}
+
+		$scf1_aR->[2] eq $scf2_aR->[2] or $strand =~ tr/+-/-+/; 
+		my $rev = ( $scf1_aR->[2] eq '-' ) ? 1 : 0 ; 
+		&out_blk( $alnInfo->[$i]{'text'}, $scf1_aR->[0], $scf2_aR->[0], $strand, $rev ); 
+
+	}
+
+}# cvt_ctg2scf_byAGP() 
+
+sub out_blk {
+	my ($blk_text, $new_ctg1, $new_ctg2, $strand, $reverse) = @_; 
+	$strand eq '+' and $strand = 'plus'; 
+	$strand eq '-' and $strand = 'minus'; 
+	my @lines = split(/\n/, $blk_text); 
+	my $n ; 
+
+	if ($lines[0] =~ m!^(## Alignment \d+: score=\S+ e_value=\S+ )N=(\d+) ([^\&\s]+)\&([^\&\s]+) (plus|minus|X+)\s*$!) {
+		my ( $part1, $n_pairs, $chr1, $chr2, $str ) 
+		=  ( $1,     $2,       $3,    $4,    $5 ); 
+		$n = $n_pairs; 
+		my $new_line = "${part1}N=${n_pairs} $new_ctg1\&${new_ctg2} $strand"; 
+		print {$outFh} "$new_line\n"; 
+	} else {
+		&stopErr("[Err] Unknown block title: $lines[0]\n"); 
+	}
+
+	unless ( $reverse ) {
+		print {$outFh} join("\n", @lines[1 .. $#lines])."\n"; 
+		return; 
+	}
+
+	for my $tline ( reverse(@lines[1 .. $#lines]) ) {
+		$tline =~ m!^(\s*\d+)\-(\s*\d+):(\t\S+\t\S+\s*\S+.*)$! or &stopErr("[Err] Unknown block body: $tline\n"); 
+		my ($i1, $i2, $part3) = ($1, $2, $3); 
+		my $len2 = length($i2); 
+		$i2 =~ s/\s//g; 
+		$i2 = sprintf("%${len2}d", $n-$i2-1); 
+		my $new_line = "${i1}-${i2}:$part3"; 
+		print {$outFh} "$new_line\n"; 
+	}
+	
+	return; 
+}# out_blk() 
+
+sub trim_block {
+	my %parm = $ms_obj->_setHashFromArr(@_); 
+
+	my $fh1 = &openFH( $parm{'trim_blkSE'}, '<' ); 
+	my %toTrim; 
+	while ( &wantLineC($fh1) ) {
+		my @ta = &splitL("\t", $_); 
+		$toTrim{$ta[0]} = [ @ta[1,2] ]; 
+	}
+	close($fh1); 
+
+	my ($alnInfo) = &_readInAln( $parm{'in_aln'} ); 
+
+	defined $alnInfo->[0]{'text'} and print {$outFh} $alnInfo->[0]{'text'}; 
+
+	for ( my $i=1; $i<@{$alnInfo}; $i++ ) {
+		defined $toTrim{ $alnInfo->[$i]{'info'}[0] } or do { print {$outFh} $alnInfo->[$i]{'text'} ; next; }; 
+		my $blkID = $alnInfo->[$i]{'info'}[0]; 
+		my ( $sGID, $eGID ) = @{$toTrim{ $alnInfo->[$i]{'info'}[0] }}; 
+		my ($sj, $ej); 
+		my @ll = split(/\n/, $alnInfo->[$i]{'text'}); 
+		for (my $j=1; $j<@ll; $j++) {
+			my $gid1 = $alnInfo->[$i]{'pair'}[$j-1][0]; 
+			my $gid2 = $alnInfo->[$i]{'pair'}[$j-1][1]; 
+			$ll[$j] =~ m/\b${gid1}\b/ or &stopErr("[Err] geneID1 [$gid1] is not found in line : $ll[$j]\n"); 
+			$gid1 eq $sGID and $sj = $j; 
+			$gid1 eq $eGID and $ej = $j; 
+		}
+		defined $sj or do { &tsmsg("[Wrn] geneID1 [$sGID] is not found in block [$blkID]\n"); $sj = 1; }; 
+		defined $ej or do { &tsmsg("[Wrn] geneID1 [$eGID] is not found in block [$blkID]\n"); $ej = $#ll; }; 
+		$sj > $ej and ($sj, $ej) = ($ej, $sj); 
+		my $newN = $ej-$sj+1; 
+		$ll[0] =~ m!^(## Alignment \d+: score=\S+ e_value=\S+ )N=(\d+) ([^\&\s]+\&[^\&\s]+ (?i:plus|minus|X+))\s*$! or &stopErr("[Err] Unknown block line : $ll[0]\n"); 
+		print {$outFh} "$1N=${newN} $2\n"; 
+		for my $tline ( @ll[$sj .. $ej] ) {
+			$tline =~ m!^(\s*\d+)\-(\s*\d+):(\t\S+\t\S+\s*\S+.*)$! or &stopErr("[Err] Unknown block body: $tline\n"); 
+			my ($i1, $i2, $part3) = ($1, $2, $3);
+			my $len2 = length($i2);
+			$i2 =~ s/\s//g;
+			$i2 = sprintf("%${len2}d", $i2-$sj+1); 
+			my $new_line = "${i1}-${i2}:$part3"; 
+			print {$outFh} "$new_line\n";
+		}
+	}
+
+	return(); 
+}# trim_block() 
+
 sub mcs_blkByList {
 	my %parm = $ms_obj->_setHashFromArr(@_); 
 	
@@ -815,7 +955,7 @@ sub _readInAln{
 			$alnInfo[$aln_idx]{'text'} .= "$_\n"; 
 		} elsif ( m!^\s*(\d+)\-\s*(\d+):\t(\S+)\t(\S+)\s*(\S+)(?:\t(\S+)\t(\S+)(?:\t(\S+))?)?$! ) { 
 			# #  0-  0:        Cma_000007      Cma_000973        2e-57
-			$aln_idx > -1 or &stopErr("Too early to line: $_\n"); 
+			$aln_idx > 0 or &stopErr("Too early to line: $_\n"); 
 			my ($alnID, $alnID_id, $gid1, $gid2, $eval, $tka, $tks, $tw) 
 			= 
 			   ($1,     $2,        $3,    $4,    $5,    $6,   $7,   $8); 
@@ -825,8 +965,9 @@ sub _readInAln{
 			$alnInfo[$aln_idx]{'text'} .= "$_\n"; 
 		} elsif ( m!^\s*(\d+)\-\s*(\d+):\t(\S+)\t(\S+)\s*(\S+)(?:\t(\S+)\t(\S+)(?:\t(\S+)\t(\S+))?)?$! ) { 
 			# #  0-  0:  Cma_000007      Cma_000973        2e-57 0.5258  0.0154  0.5387  0.0148
+			#                                                    yn_Ks   yn_Ka   ng_Ks   ng_Ka
 			# This is to fit result from haibao tang's python ks calculation. 
-			$aln_idx > -1 or &stopErr("Too early to line: $_\n"); 
+			$aln_idx > 0 or &stopErr("Too early to line: $_\n"); 
 			my ($alnID, $alnID_id, $gid1, $gid2, $eval, $tks, $tka, $t_ngKs, $t_ngKa) 
 			= 
 			(   $1,     $2,        $3,    $4,    $5,    $6,   $7,   $8,      $9); 
