@@ -671,7 +671,7 @@ sub trim_block {
 		$sj > $ej and ($sj, $ej) = ($ej, $sj); 
 		my $newN = $ej-$sj+1; 
 		$ll[0] =~ m!^(## Alignment \d+: score=\S+ e_value=\S+ )N=(\d+) ([^\&\s]+\&[^\&\s]+ (?i:plus|minus|X+))\s*$! or &stopErr("[Err] Unknown block line : $ll[0]\n"); 
-		print {$outFh} "$1N=${newN} $2\n"; 
+		print {$outFh} "$1N=${newN} $3\n"; 
 		for my $tline ( @ll[$sj .. $ej] ) {
 			$tline =~ m!^(\s*\d+)\-(\s*\d+):(\t\S+\t\S+\s*\S+.*)$! or &stopErr("[Err] Unknown block body: $tline\n"); 
 			my ($i1, $i2, $part3) = ($1, $2, $3);
