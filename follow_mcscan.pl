@@ -18,6 +18,7 @@ GetOptions(\%opts,
  "out:s", # output filename 
  "aln2list!", "addChr!", "tgt_gff:s", "srt_by:s", "raw_order!", 
  "aln2table!",
+   "useYN!", 
  "glist2pairs!", "in_glist:s", "pivot_pat:s", "target_pat:s", 
  "slctBlk!", "slct_list:s", "slct_colN:i", "slct_type:s", 
  "glist2html!", "pivot_chrID:s", 
@@ -57,6 +58,8 @@ sub usage {
 #                   Need -in_gff , -in_aln 
 #                   Headers: BlkID / Chrom1 / Start1 / End1 / Chrom2 / Start2 / End2 / Strand / AlnScore / AlnEvalue / AlnNumber / Gene1 / Gene2 / 
 #                            Ka / Ks / KaKs / AVG_Ks / Med_Ks / UsedKs / AVG_Ka / Med_Ka / UsedKa / AVG_KaKs / Med_KaKs / UsedKaKs
+#   -useYN        [Boolean] By default, Nei-Gojobori (NG) will be chose in block Ks calculation. But
+#                   I will switch to use Yang-Nielson (YN) results if given this parameter. 
 # 
 # -glist2pairs    [Boolean] Extract non-redundant gene pairs in gene list. 
 #                   Here the gene list is the output of -aln2list. 
@@ -125,6 +128,10 @@ sub usage {
 #   -trim_blkSE   [filename] A file telling the new start and end genes in a block. 
 #                   Format : 'Block_ID \\t Start_Gene \\t End_Gene'
 #                   Blocks not mentioned will be output intactly. 
+#                   If the format is : 'Block_ID \\t Start_Gene \\t .Remove'
+#                   I will remove the 'Start_Gene' in related block. 
+#   -useYN        [Boolean] By default, Nei-Gojobori (NG) will be chose in block Ks calculation. But
+#                   I will switch to use Yang-Nielson (YN) results if given this parameter. 
 ####################################################################################################
 HH
 	exit 1; 
@@ -646,9 +653,14 @@ sub trim_block {
 
 	my $fh1 = &openFH( $parm{'trim_blkSE'}, '<' ); 
 	my %toTrim; 
+	my %toDelete; 
 	while ( &wantLineC($fh1) ) {
 		my @ta = &splitL("\t", $_); 
-		$toTrim{$ta[0]} = [ @ta[1,2] ]; 
+		if ( $ta[2] eq '.Remove' ) {
+			$toDelete{$ta[0]}{$ta[1]} = 1; 
+		} else {
+			$toTrim{$ta[0]} = [ @ta[1,2] ]; 
+		}
 	}
 	close($fh1); 
 
@@ -657,6 +669,28 @@ sub trim_block {
 	defined $alnInfo->[0]{'text'} and print {$outFh} $alnInfo->[0]{'text'}; 
 
 	for ( my $i=1; $i<@{$alnInfo}; $i++ ) {
+		if (defined $toDelete{ $alnInfo->[$i]{'info'}[0] }) {
+			my @ll = split(/\n/, $alnInfo->[$i]{'text'}); 
+			my @new_ll = ($ll[0]); 
+			my $new_cnt = -1; 
+			for (my $j=1; $j<@ll; $j++) {
+				my $gid1 = $alnInfo->[$i]{'pair'}[$j-1][0]; 
+				defined $toDelete{ $alnInfo->[$i]{'info'}[0] }{$gid1} and next; 
+				$new_cnt ++; 
+				$ll[$j] =~ m/\b${gid1}\b/ or &stopErr("[Err] geneID1 [$gid1] is not found in line : $ll[$j]\n"); 
+				$ll[$j] =~ m/^(\s*\d+)\-(\s*\d+):(\t\S+\t\S+\s*\S+.*)$/ or &stopErr("[Err] Unknown block body: $ll[$j]\n"); 
+				my ($i1, $i2, $part3) = ($1, $2, $3); 
+				my $len2 = length($i2); 
+				$i2 = sprintf("%${len2}d", $new_cnt); 
+				push(@new_ll, "${i1}-${i2}:$part3"); 
+			}
+			$new_ll[0] =~ m!^(## Alignment \d+: score=\S+ e_value=\S+ )N=(\d+) ([^\&\s]+\&[^\&\s]+ (?i:plus|minus|X+))\s*$! or &stopErr("[Err] Unknown block line : $new_ll[0]\n");
+			$new_ll[0] = "$1N=$#new_ll $3"; 
+			$alnInfo->[$i]{'text'} = join("\n", @new_ll)."\n"; 
+			&_update_alnInfo_byText( $alnInfo->[$i] ); 
+		}
+
+
 		defined $toTrim{ $alnInfo->[$i]{'info'}[0] } or do { print {$outFh} $alnInfo->[$i]{'text'} ; next; }; 
 		my $blkID = $alnInfo->[$i]{'info'}[0]; 
 		my ( $sGID, $eGID ) = @{$toTrim{ $alnInfo->[$i]{'info'}[0] }}; 
@@ -688,6 +722,43 @@ sub trim_block {
 
 	return(); 
 }# trim_block() 
+
+sub _update_alnInfo_byText {
+	my ($hr) = @_; 
+	my @ll = split(/\n/, $hr->{'text'}); 
+	$hr->{'info'}[3] == $#ll or do { &tsmsg("[Msg] Update Num_pairs to $#ll in Block [@{$hr->{'info'}}]\n"); $hr->{'info'}[3] = $#ll; }; 
+	my @new_pair; 
+	for my $tline (@ll) {
+		if ( $tline =~  m!^\s*(\d+)\-\s*(\d+):\t(\S+)\t(\S+)\s*(\S+)(?:\t(\S+)\t(\S+)(?:\t(\S+))?)?$! ) {
+			# This is the normal format or the KaKs output of MCscanX. 
+			my ($alnID, $alnID_id, $gid1, $gid2, $eval, $tka, $tks, $tw) 
+			= 
+			(   $1,     $2,        $3,    $4,    $5,    $6,   $7,   $8);
+			$tka //= ''; $tks //= ''; $tw //= '';
+			push(@new_pair, [$gid1, $gid2, $eval, $tka, $tks, $tw]);
+		} elsif ( $tline =~ m!^\s*(\d+)\-\s*(\d+):\t(\S+)\t(\S+)\s*(\S+)(?:\t(\S+)\t(\S+)(?:\t(\S+)\t(\S+))?)?$! ) {
+			# This is the format of KsKa addition from my follow_msc perl script. 
+			# #  0-  0:  Cma_000007      Cma_000973        2e-57 0.5258  0.0154  0.5387  0.0148
+			my ($alnID, $alnID_id, $gid1, $gid2, $eval, $tks, $tka, $t_ngKs, $t_ngKa)
+			= 
+			(   $1,     $2,        $3,    $4,    $5,    $6,   $7,   $8,      $9);
+			my $tw;
+			if ( defined $t_ngKs and !$opts{'useYN'} ) {
+				$tks = $t_ngKs; 
+				$tka = $t_ngKa; 
+			}
+			$tks < 0 and $tks = 'nan'; 
+			if ( defined $tks and $tks ne 'nan') {
+				$tw = ( $tks > 0 ) ? $tka/$tks : 'nan';
+			}
+			$tks eq 'nan' and $tw = 'nan';
+			$tka //= ''; $tks //= ''; $tw //= '';
+			push(@new_pair, [$gid1, $gid2, $eval, $tka, $tks, $tw]);
+		}
+	}
+	$hr->{'pair'} = [@new_pair]; 
+	return; 
+}# _update_alnInfo_byText() 
 
 sub mcs_blkByList {
 	my %parm = $ms_obj->_setHashFromArr(@_); 
@@ -988,7 +1059,7 @@ sub _readInAln{
 			= 
 			(   $1,     $2,        $3,    $4,    $5,    $6,   $7,   $8,      $9); 
 			my $tw; 
-			if ( defined $t_ngKs ) {
+			if ( !$opts{'useYN'} and defined $t_ngKs ) {
 				$tks = $t_ngKs; 
 				$tka = $t_ngKa; 
 			}
