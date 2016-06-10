@@ -128,8 +128,12 @@ sub usage {
 #   -trim_blkSE   [filename] A file telling the new start and end genes in a block. 
 #                   Format : 'Block_ID \\t Start_Gene \\t End_Gene'
 #                   Blocks not mentioned will be output intactly. 
+#                   If the format is : 'Block_ID \\t "Gene1_prev : Gene1 ; Gene2 ; Evalue ..." \\t .Add'
+#                   I will add the 'Gene1-Gene2' pair to Block_ID directly after Gene1_prev. 
+#                   If the Gene1_prev == '.Top', these pairs will be added to the top of the block. 
 #                   If the format is : 'Block_ID \\t Start_Gene \\t .Remove'
 #                   I will remove the 'Start_Gene' in related block. 
+#                     The order of modification is '.Add' => '.Remove' => trimming. 
 #   -useYN        [Boolean] By default, Nei-Gojobori (NG) will be chose in block Ks calculation. But
 #                   I will switch to use Yang-Nielson (YN) results if given this parameter. 
 ####################################################################################################
@@ -652,12 +656,19 @@ sub trim_block {
 	my %parm = $ms_obj->_setHashFromArr(@_); 
 
 	my $fh1 = &openFH( $parm{'trim_blkSE'}, '<' ); 
-	my %toTrim; 
+	my %toAdd; 
 	my %toDelete; 
+	my %toTrim; 
 	while ( &wantLineC($fh1) ) {
 		my @ta = &splitL("\t", $_); 
 		if ( $ta[2] eq '.Remove' ) {
 			$toDelete{$ta[0]}{$ta[1]} = 1; 
+		} elsif ( $ta[2] eq '.Add' ) {
+			my @tb = split(/ : /, $ta[1]); 
+			@tb == 2 or &stopErr("[Err] Bad input of field for .Add [$ta[1]]\n"); 
+			my @tc = split(/ ; /, $tb[1]); 
+			$tc[-1] =~ s/\s+$//; 
+			push( @{$toAdd{$ta[0]}{$tb[0]}}, join("\t", @tc) ); 
 		} else {
 			$toTrim{$ta[0]} = [ @ta[1,2] ]; 
 		}
@@ -669,6 +680,38 @@ sub trim_block {
 	defined $alnInfo->[0]{'text'} and print {$outFh} $alnInfo->[0]{'text'}; 
 
 	for ( my $i=1; $i<@{$alnInfo}; $i++ ) {
+		if (defined $toAdd{ $alnInfo->[$i]{'info'}[0] }) {
+			my @ll = split(/\n/, $alnInfo->[$i]{'text'}); 
+			my @new_ll = ($ll[0]); 
+			my $new_cnt = -1; 
+
+			for (my $j=1; $j<@ll; $j++) {
+				$new_cnt ++; 
+				my $gid1 = $alnInfo->[$i]{'pair'}[$j-1][0]; 
+				$ll[$j] =~ m/\b${gid1}\b/ or &stopErr("[Err] geneID1 [$gid1] is not found in line : $ll[$j]\n"); 
+				$ll[$j] =~ m/^(\s*\d+)\-(\s*\d+):(\t\S+\t\S+\s*\S+.*)$/ or &stopErr("[Err] Unknown block body: $ll[$j]\n"); 
+				my ($i1, $i2, $part3) = ($1, $2, $3); 
+				my $len2 = length($i2); 
+				if ( $j == 1 and defined $toAdd{ $alnInfo->[$i]{'info'}[0] }{'.Top'} ) {
+					for my $tl ( @{ $toAdd{ $alnInfo->[$i]{'info'}[0] }{'.Top'} } ) {
+						$i2 = sprintf("%${len2}d", $new_cnt); 
+						push(@new_ll, "${i1}-${i2}:\t$tl"); 
+						$new_cnt++; 
+					}
+				}
+				$i2 = sprintf("%${len2}d", $new_cnt); 
+				push(@new_ll, "${i1}-${i2}:$part3"); 
+				if ( defined $toAdd{ $alnInfo->[$i]{'info'}[0] }{$gid1} ) {
+					for my $tl ( @{ $toAdd{ $alnInfo->[$i]{'info'}[0] }{$gid1} } ) {
+						$new_cnt ++; 
+						$i2 = sprintf("%${len2}d", $new_cnt); 
+						push(@new_ll, "${i1}-${i2}:\t$tl"); 
+					}
+				}
+			}
+			$alnInfo->[$i]{'text'} = join("\n", @new_ll)."\n"; 
+			&_update_alnInfo_byText( $alnInfo->[$i] ); 
+		}
 		if (defined $toDelete{ $alnInfo->[$i]{'info'}[0] }) {
 			my @ll = split(/\n/, $alnInfo->[$i]{'text'}); 
 			my @new_ll = ($ll[0]); 
@@ -684,8 +727,6 @@ sub trim_block {
 				$i2 = sprintf("%${len2}d", $new_cnt); 
 				push(@new_ll, "${i1}-${i2}:$part3"); 
 			}
-			$new_ll[0] =~ m!^(## Alignment \d+: score=\S+ e_value=\S+ )N=(\d+) ([^\&\s]+\&[^\&\s]+ (?i:plus|minus|X+))\s*$! or &stopErr("[Err] Unknown block line : $new_ll[0]\n");
-			$new_ll[0] = "$1N=$#new_ll $3"; 
 			$alnInfo->[$i]{'text'} = join("\n", @new_ll)."\n"; 
 			&_update_alnInfo_byText( $alnInfo->[$i] ); 
 		}
@@ -727,6 +768,9 @@ sub _update_alnInfo_byText {
 	my ($hr) = @_; 
 	my @ll = split(/\n/, $hr->{'text'}); 
 	$hr->{'info'}[3] == $#ll or do { &tsmsg("[Msg] Update Num_pairs to $#ll in Block [@{$hr->{'info'}}]\n"); $hr->{'info'}[3] = $#ll; }; 
+	$ll[0] =~ m!^(## Alignment \d+: score=\S+ e_value=\S+ )N=(\d+) ([^\&\s]+\&[^\&\s]+ (?i:plus|minus|X+))\s*$! or &stopErr("[Err] Unknown block line : $ll[0]\n");
+	$ll[0] = "$1N=$#ll $3"; 
+	$hr->{'text'} = join("\n", @ll)."\n"; 
 	my @new_pair; 
 	for my $tline (@ll) {
 		if ( $tline =~  m!^\s*(\d+)\-\s*(\d+):\t(\S+)\t(\S+)\s*(\S+)(?:\t(\S+)\t(\S+)(?:\t(\S+))?)?$! ) {
