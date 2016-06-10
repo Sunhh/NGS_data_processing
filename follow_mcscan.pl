@@ -16,7 +16,7 @@ GetOptions(\%opts,
  "in_aln:s", # This is the output ".collinearity" file of mcscanX, which should be similar to .align of mcscan or previous mcscanX version. 
  "in_blast:s", # This is the input ".blast" file of mcscanX, 
  "out:s", # output filename 
- "aln2list!", "addChr!", "tgt_gff:s", "srt_by:s", 
+ "aln2list!", "addChr!", "tgt_gff:s", "srt_by:s", "raw_order!", 
  "aln2table!",
  "glist2pairs!", "in_glist:s", "pivot_pat:s", "target_pat:s", 
  "slctBlk!", "slct_list:s", "slct_colN:i", "slct_type:s", 
@@ -50,6 +50,8 @@ sub usage {
 #   -addChr       [Boolean] Tell if add chromID to block genes. 
 #   -tgt_gff      [target.gff] Provide source of blocks. Only blocks with genes from this gff aligned to the backbone genes are kept. 
 #   -srt_by       ['min'] Sort the gene blocks by 'min|Q1|Q3|interval_mean|COUNT'
+#   -raw_order    [Boolean] Do not sort the input gff according to their locations. 
+#                   Sometimes the orders of genes are different in scaffold and chromosome if there is a gene included by another one. (Rarely happen)
 # 
 # -aln2table      [Boolean] Reformat aligned blocks into one line. 
 #                   Need -in_gff , -in_aln 
@@ -149,7 +151,8 @@ if ( $opts{'aln2list'} ) {
 	 'in_aln'=>$opts{'in_aln'}, 
 	 'addChr'=>$opts{'addChr'}, 
 	 'tgt_gff'=>$opts{'tgt_gff'}, 
-	 'srt_by'=>$opts{'srt_by'}
+	 'srt_by'=>$opts{'srt_by'}, 
+	 'raw_order'=>$opts{'raw_order'}, 
 	); 
 } elsif ( $opts{'aln2table'} ) {
 	&msc_aln2table(
@@ -792,19 +795,26 @@ sub msc_aln2list{
 	my %parm = $ms_obj->_setHashFromArr(@_); 
 	$parm{'addChr'} //= 0; 
 	$parm{'srt_by'} //= 'min'; 
+	$parm{'raw_order'} //= 0; 
 	
 	my ($chr2gen, $gen2loc) = &_readInGff($parm{'in_gff'}); 
 	my ($chr2gen_tgt, $gen2loc_tgt) = ($chr2gen, $gen2loc); 
 	if (defined $parm{'tgt_gff'} and $parm{'tgt_gff'} ne '') {
 		($chr2gen_tgt, $gen2loc_tgt) = &_readInGff($parm{'tgt_gff'}); 
 	}
+
 	my ($alnInfo) = &_readInAln($parm{'in_aln'}); 
 	defined $alnInfo->[0]{'info'} or shift(@{$alnInfo}); 
-	
+
 	print {$outFh} join("\t", qw/Chromosome IntraDep InterDep InterTax Pivot PivotStart Blocks/)."\n"; 
 	for my $chrID ( sort keys %$chr2gen ) {
 		# ([genID, chrS], [], ...)
-		my @glist = map { [ $_->[0], $_->[1] ] } sort { $a->[1] <=> $b->[1] || $a->[2] <=> $b->[2] } @{$chr2gen->{$chrID}}; 
+		my @glist; 
+		unless ( $parm{'raw_order'} ) {
+			@glist = map { [ $_->[0], $_->[1] ] } sort { $a->[1] <=> $b->[1] || $a->[2] <=> $b->[2] } @{$chr2gen->{$chrID}}; 
+		} else {
+			@glist = map { [ $_->[0], $_->[1] ] } @{$chr2gen->{$chrID}}; 
+		}
 		# {genID} => index_number
 		my %gidx; for ( my $i=0; $i<@glist; $i++ ) { $gidx{ $glist[$i][0] } = $i; } 
 		my @sub_alnInfo; 
@@ -825,6 +835,7 @@ sub msc_aln2list{
 			}
 		}# for my $tr (@$alnInfo) 
 		@sub_alnInfo = sort { $a->{'idx'} <=> $b->{'idx'} } @sub_alnInfo; 
+
 		my ($glist_fed, $depth, $use_tax) = &_fill_glist_wiALN(
 		 'glist'=>\@glist, 
 		 'alnInfo'=>\@sub_alnInfo, 
@@ -891,7 +902,12 @@ sub _fill_glist_wiALN {
 			}
 			for ( my ($j,$k)=($minIdx, 0); $j<=$maxIdx and $k<@gpair; $j++ ) {
 				$depth[$j]{$tax[$nb]} ++; 
-				defined $use_tax{$tax[$nb]} or $use_tax{$tax[$nb]} = 1; 
+				$use_tax{$tax[$nb]} //= 1; 
+
+defined $parm{'gindex'}{ $gpair[$k][$na] } or &stopErr("[Err] No gene location found for [$gpair[$k][$na]]\n"); 
+my $needIdx = $parm{'gindex'}{ $gpair[$k][$na] }; 
+$j > $needIdx and &stopErr("[Err] The location of gene [$gpair[$k][$na]] might be different from .aln file.\n"); 
+
 				$glist_wiALN[$j][0] ne $gpair[$k][$na] and do { $glist_wiALN[$j][$track] = '||'; next; }; 
 				$glist_wiALN[$j][$track] = $gpair[$k][$nb]; 
 				$k == 0       and $glist_wiALN[$j][$track] .= "-s"; 
