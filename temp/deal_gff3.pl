@@ -442,6 +442,8 @@ sub action_ch_makerID {
 					my $ps = $aa[0]; 
 					my $pv = $o2n_g{$ps}; $pv //= $ps; 
 					$ta[8] =~ s!(Parent=)$ps!$1$pv!ig; 
+				} elsif ( @aa == 0 ) {
+					&tsmsg("[Wrn] There is no parent for mrnaID [$s] found: $line_txt\n"); 
 				} else {
 					for (my $i=0; $i<$#aa; $i++) {
 						my $ps = $aa[$i]; 
