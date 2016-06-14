@@ -301,20 +301,8 @@ sub action_getJnLoc {
 
 }# action_getJnLoc() 
 sub action_ch_locByAGP {
-	my $fh = &openFH( $opts{'ch_locByAGP'}, '<' ); 
 	my %info_ctg2scf; # {ctgID}=>[ [ctgS, ctgE, scfID, scfS, scfE, scfStr(+/-/?)], [], ... ]
-	while (<$fh>) {
-		m/^\s*(#|$)/ and next; 
-		chomp; s![^\s\t]+$!!g; 
-		my @ta = &splitL("\t", $_); 
-		$ta[4] eq 'W' or next; 
-		$ta[8] eq '?' and $ta[8] = '+'; 
-		push(@{$info_ctg2scf{$ta[5]}}, [$ta[6], $ta[7], $ta[0], $ta[1], $ta[2], $ta[8]]); 
-	}
-	close($fh); 
-	for my $tk (keys %info_ctg2scf) {
-		@{$info_ctg2scf{$tk}} = sort { $a->[0] <=> $b->[0] || $a->[1] <=> $b->[1] } @{$info_ctg2scf{$tk}}; 
-	}
+	%info_ctg2scf = %{ &fileSunhh::load_agpFile( $opts{'ch_locByAGP'} ) }; 
 	
 	for my $lineN (sort {$a <=> $b} keys %{$in_gff{'lineN2line'}}) {
 		defined $in_gff{'lineN2hash'}{$lineN} or next; 
