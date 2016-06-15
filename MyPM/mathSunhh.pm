@@ -572,7 +572,7 @@ sub switch_position {
 			$refPos = $ta->[4] - ($parm{'qryPos'}-$ta->[0]); 
 			$refStr =~ tr!+-!-+!; 
 		} else {
-			&stopErr("[Err] Unknown refStr($ta->[5])\n"); 
+			&stopErr("[Err] Unknown refStr($ta->[5]) in ID=$parm{'qryID'} [@$ta]\n"); 
 		}
 		push(@back, [$refID, $refPos, $refStr]); 
 	}
