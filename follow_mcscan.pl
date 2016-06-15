@@ -659,18 +659,24 @@ sub trim_block {
 	my %toAdd; 
 	my %toDelete; 
 	my %toTrim; 
+	my %processed; 
 	while ( &wantLineC($fh1) ) {
 		my @ta = &splitL("\t", $_); 
 		if ( $ta[2] eq '.Remove' ) {
 			$toDelete{$ta[0]}{$ta[1]} = 1; 
+			$processed{'toDel'}{"$ta[0]\t$ta[1]"} = 0; 
 		} elsif ( $ta[2] eq '.Add' ) {
 			my @tb = split(/ : /, $ta[1]); 
 			@tb == 2 or &stopErr("[Err] Bad input of field for .Add [$ta[1]]\n"); 
 			my @tc = split(/ ; /, $tb[1]); 
 			$tc[-1] =~ s/\s+$//; 
-			push( @{$toAdd{$ta[0]}{$tb[0]}}, join("\t", @tc) ); 
+			my $txt = join("\t", @tc); 
+			defined $processed{'toAdd'}{"$ta[0]\t$tb[0]\t$txt"} and do { &tsmsg("[Wrn] Skip repeated line : $_\n"); next; }; 
+			push( @{$toAdd{$ta[0]}{$tb[0]}}, $txt ); 
+			$processed{'toAdd'}{"$ta[0]\t$tb[0]\t$txt"} = 0; 
 		} else {
 			$toTrim{$ta[0]} = [ @ta[1,2] ]; 
+			$processed{'toTrim'}{"$ta[0]\t$ta[1]\t$ta[2]"} = 0; 
 		}
 	}
 	close($fh1); 
@@ -697,6 +703,7 @@ sub trim_block {
 						$i2 = sprintf("%${len2}d", $new_cnt); 
 						push(@new_ll, "${i1}-${i2}:\t$tl"); 
 						$new_cnt++; 
+						$processed{'toAdd'}{"$alnInfo->[$i]{'info'}[0]\t.Top\t$tl"} = 1; 
 					}
 				}
 				$i2 = sprintf("%${len2}d", $new_cnt); 
@@ -706,6 +713,7 @@ sub trim_block {
 						$new_cnt ++; 
 						$i2 = sprintf("%${len2}d", $new_cnt); 
 						push(@new_ll, "${i1}-${i2}:\t$tl"); 
+						$processed{'toAdd'}{"$alnInfo->[$i]{'info'}[0]\t$gid1\t$tl"} = 1; 
 					}
 				}
 			}
@@ -718,7 +726,10 @@ sub trim_block {
 			my $new_cnt = -1; 
 			for (my $j=1; $j<@ll; $j++) {
 				my $gid1 = $alnInfo->[$i]{'pair'}[$j-1][0]; 
-				defined $toDelete{ $alnInfo->[$i]{'info'}[0] }{$gid1} and next; 
+				if ( defined $toDelete{ $alnInfo->[$i]{'info'}[0] }{$gid1} ) {
+					$processed{'toDel'}{"$alnInfo->[$i]{'info'}[0]\t$gid1"} = 1; 
+					next; 
+				}
 				$new_cnt ++; 
 				$ll[$j] =~ m/\b${gid1}\b/ or &stopErr("[Err] geneID1 [$gid1] is not found in line : $ll[$j]\n"); 
 				$ll[$j] =~ m/^(\s*\d+)\-(\s*\d+):(\t\S+\t\S+\s*\S+.*)$/ or &stopErr("[Err] Unknown block body: $ll[$j]\n"); 
@@ -735,6 +746,7 @@ sub trim_block {
 		defined $toTrim{ $alnInfo->[$i]{'info'}[0] } or do { print {$outFh} $alnInfo->[$i]{'text'} ; next; }; 
 		my $blkID = $alnInfo->[$i]{'info'}[0]; 
 		my ( $sGID, $eGID ) = @{$toTrim{ $alnInfo->[$i]{'info'}[0] }}; 
+		$processed{'toTrim'}{"$alnInfo->[$i]{'info'}[0]\t$sGID\t$eGID"} = 1; 
 		my ($sj, $ej); 
 		my @ll = split(/\n/, $alnInfo->[$i]{'text'}); 
 		for (my $j=1; $j<@ll; $j++) {
@@ -758,6 +770,13 @@ sub trim_block {
 			$i2 = sprintf("%${len2}d", $i2-$sj+1); 
 			my $new_line = "${i1}-${i2}:$part3"; 
 			print {$outFh} "$new_line\n";
+		}
+	}
+
+	# Check if all processed. 
+	for my $k1 (sort keys %processed) {
+		for my $k2 (sort keys %{$processed{$k1}}) {
+			$processed{$k1}{$k2} == 0 and &tsmsg("[Wrn] Infor for [$k1][$k2] not processed.\n"); 
 		}
 	}
 
