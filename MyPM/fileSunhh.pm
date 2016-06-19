@@ -89,6 +89,37 @@ sub write2file {
 	return 0; 
 }# sub write2file ()
 
+=head1 load_tabFile ( $filename , $keep_annot<0> ) 
+
+Function   : Load in a tab delimited file into a array, whose element is a array reference of all files of the line. 
+             If $keep_annot is TRUE (1), those lines beginning with '#' or blank lines will also be loaded in. 
+
+Return     : ( [$line_1_array, $line_2_array, ...] )
+
+  $line_1_array = [ field_1, field_2, ... ]
+
+=cut
+sub load_tabFile {
+	my ($fn, $keep_annot) = @_; 
+	$keep_annot //= 0; 
+	my $fh = &openFH($fn, '<'); 
+	my @back; 
+	if ( $keep_annot ) {
+		while (<$fh>) {
+			$_ =~ s/[\r\n]+$//; 
+			push(@back, [ &splitL("\t", $_) ]); 
+		}
+	} else {
+		while (&wantLineC($fh)) {
+			push(@back, [ &splitL("\t", $_) ]); 
+		}
+	}
+	close($fh); 
+	return(@back); 
+}# load_tabFile ()
+
+
+
 =head1 load_agpFile( $filename )
 
 Required   : $filename
