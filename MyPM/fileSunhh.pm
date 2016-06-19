@@ -89,6 +89,46 @@ sub write2file {
 	return 0; 
 }# sub write2file ()
 
+=head1 load_bn6File ( $filename )
+
+Input      : .bn6 file ( blastn -outfmt 6 )
+
+Return     : (\@bn6Info)
+     [idx]{'arr'} = [split(/\t/, $_)]
+     [idx]{'k2v'}{$key} = $value; 
+       $key could be qw/qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen sstrand/
+=cut
+sub load_bn6File {
+	my ($fn) = @_; 
+	my $inFh = &openFH($fn, '<'); 
+	my @bn6Info; 
+	while (&wantLineC($inFh)) {
+		my @ta = &splitL("\t", $_); 
+		$ta[0] eq 'qseqid' and next; 
+		push(@bn6Info, {}); 
+		$bn6Info[-1]{'arr'} = \@ta; 
+		$bn6Info[-1]{'k2v'}{'qseqid'}    = $ta[0]; 
+		$bn6Info[-1]{'k2v'}{'sseqid'}    = $ta[1]; 
+		$bn6Info[-1]{'k2v'}{'pident'}    = $ta[2]; 
+		$bn6Info[-1]{'k2v'}{'length'}    = $ta[3]; 
+		$bn6Info[-1]{'k2v'}{'mismatch'}  = $ta[4]; 
+		$bn6Info[-1]{'k2v'}{'gapopen'}   = $ta[5]; 
+		$bn6Info[-1]{'k2v'}{'qstart'}    = $ta[6]; 
+		$bn6Info[-1]{'k2v'}{'qend'}      = $ta[7]; 
+		$bn6Info[-1]{'k2v'}{'sstart'}    = $ta[8]; 
+		$bn6Info[-1]{'k2v'}{'send'}      = $ta[9]; 
+		$bn6Info[-1]{'k2v'}{'evalue'}    = $ta[10]; 
+		$bn6Info[-1]{'k2v'}{'bitscore'}  = $ta[11]; 
+		$bn6Info[-1]{'k2v'}{'qlen'}      = $ta[12] // ''; 
+		$bn6Info[-1]{'k2v'}{'slen'}      = $ta[13] // ''; 
+		$bn6Info[-1]{'k2v'}{'sstrand'}   = $ta[14] // ''; 
+		$bn6Info[-1]{'k2v'}{'bitscore'} =~ s!^\s+|\s+$!!g; 
+	}
+	return (\@bn6Info); 
+}# load_bn6File() 
+
+
+
 =head1 load_tabFile ( $filename , $keep_annot<0> ) 
 
 Function   : Load in a tab delimited file into a array, whose element is a array reference of all files of the line. 
