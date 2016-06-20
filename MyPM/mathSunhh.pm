@@ -1471,6 +1471,7 @@ sub _decimal_to_hexa {
 } # _decimal_to_hexa () 
 
 =head1 _hexa_to_decimal ( $number_in_hexa )
+
 Return        : ( $number_in_decimal )
 =cut
 sub _hexa_to_decimal {
