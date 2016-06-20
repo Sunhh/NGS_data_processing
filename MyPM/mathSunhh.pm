@@ -1465,9 +1465,19 @@ Please don't provide decimal fraction!!!
 Return        : ( $number_in_hexadecimal )
 =cut
 sub _decimal_to_hexa {
-	my $add = ''; 
-	$_[0] < 0 and do { $add = '-'; $_[0] = abs($_[0]); }; 
-	return( $add . sprintf("%X", $_[0]) ); 
+	my @back; 
+	scalar(@_) == 0 and return; 
+	for my $t1 (@_) {
+		my $t = $t1; 
+		my $add = ''; 
+		$t < 0 and do { $add = '-'; $t = abs($t); }; 
+		push( @back, $add . sprintf("%X", $t) ); 
+	}
+	if (scalar(@_) > 1) {
+		return (@back); 
+	} else {
+		return ($back[0]); 
+	}
 } # _decimal_to_hexa () 
 
 =head1 _hexa_to_decimal ( $number_in_hexa )
@@ -1475,12 +1485,20 @@ sub _decimal_to_hexa {
 Return        : ( $number_in_decimal )
 =cut
 sub _hexa_to_decimal {
-	my $add = ''; 
-	if ( $_[0] =~ s!^\-!! ) {
-		$add = '-'; 
+	my @back; 
+	scalar(@_) == 0 and return; 
+	for my $t1 (@_) {
+		my $t = $t1; 
+		my $add = ''; 
+		$t =~ s!^\-!! and $add = '-'; 
+		$t =~ /\A(?:0?[xX])?(?:_?[0-9a-fA-F])*\z/ or &stopErr("[Err] Input [$t] is not a valid hex digit string.\n"); 
+		push(@back, $add . hex($t)); 
 	}
-	$_[0] =~ /\A(?:0?[xX])?(?:_?[0-9a-fA-F])*\z/ or &stopErr("[Err] Input [$_[0]] is not a valid hex digit string.\n"); 
-	return( $add . hex($_[0]) ); 
+	if (scalar(@_) > 1) {
+		return (@back); 
+	} else {
+		return ($back[0]); 
+	}
 } # _hexa_to_decimal () 
 
 =head1 _Encode_deciN ( $Number, $max_position_len'Default:11' )
