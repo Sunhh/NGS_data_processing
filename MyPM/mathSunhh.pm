@@ -1463,6 +1463,10 @@ sub log10 {
 Please don't provide decimal fraction!!! 
 
 Return        : ( $number_in_hexadecimal )
+
+  _decimal_to_hexa( -100 ) returns ( '-64' )
+	_decimal_to_hexa( 200, -100 ) returns ( 'C8', '-64' )
+
 =cut
 sub _decimal_to_hexa {
 	my @back; 
@@ -1483,6 +1487,10 @@ sub _decimal_to_hexa {
 =head1 _hexa_to_decimal ( $number_in_hexa )
 
 Return        : ( $number_in_decimal )
+
+  _hexa_to_decimal( -64 ) returns ( -100 )
+	_hexa_to_decimal( -64, 'C8') returns ( -100, 200 )
+
 =cut
 sub _hexa_to_decimal {
 	my @back; 
