@@ -584,7 +584,32 @@ sub switch_position {
 #  Sub-routines. 
 ############################################################
 
+
+=head1 get_xy_byScale( 'start_xy'=>[$sX,$sY], 'end_xy'=>[$eX,$eY], 'se_position'=>[$sPos,$ePos], 'need_position'=>[$p1,$p2,...] )
+
+Return : ( [$needP_1_x, $needP_1_y], [$needP_2_x, $needP_2_y], ... )
+
+=cut
+sub get_xy_byScale {
+	my %parm = &_setHashFromArr(@_); 
+	my @back; 
+	
+	$parm{'se_position'}[1] == $parm{'se_position'}[0] and do { @back = ([@{$parm{'start_xy'}}]); return(@back); }; 
+	
+	my $scale_x = ($parm{'end_xy'}[0]-$parm{'start_xy'}[0])/($parm{'se_position'}[1]-$parm{'se_position'}[0]); 
+	my $scale_y = ($parm{'end_xy'}[1]-$parm{'start_xy'}[1])/($parm{'se_position'}[1]-$parm{'se_position'}[0]); 
+	for my $curP (@{$parm{'need_position'}}) {
+		my $curP_x = $parm{'start_xy'}[0] + $scale_x * ($curP-$parm{'se_position'}[0]) ; 
+		my $curP_y = $parm{'start_xy'}[1] + $scale_y * ($curP-$parm{'se_position'}[0]) ; 
+		push(@back, [$curP_x, $curP_y]); 
+	}
+	
+	return(@back); 
+}# get_xy_byScale()
+
 =head1 cnvt_to_rgb ( $min, $max, $val, $col ) 
+
+Function : Get a series of color for heat map. 
 
 Return : ( "rgb(R,G,B)" )
 
@@ -1433,6 +1458,30 @@ sub log10 {
 ############################################################
 #  Sub-routines for number and loci indexing. 
 ############################################################
+=head1 _decimal_to_hexa ( $number_in_decimal )
+
+Please don't provide decimal fraction!!! 
+
+Return        : ( $number_in_hexadecimal )
+=cut
+sub _decimal_to_hexa {
+	my $add = ''; 
+	$_[0] < 0 and do { $add = '-'; $_[0] = abs($_[0]); }; 
+	return( $add . sprintf("%X", $_[0]) ); 
+} # _decimal_to_hexa () 
+
+=head1 _hexa_to_decimal ( $number_in_hexa )
+Return        : ( $number_in_decimal )
+=cut
+sub _hexa_to_decimal {
+	my $add = ''; 
+	if ( $_[0] =~ s!^\-!! ) {
+		$add = '-'; 
+	}
+	$_[0] =~ /\A(?:0?[xX])?(?:_?[0-9a-fA-F])*\z/ or &stopErr("[Err] Input [$_[0]] is not a valid hex digit string.\n"); 
+	return( $add . hex($_[0]) ); 
+} # _hexa_to_decimal () 
+
 =head1 _Encode_deciN ( $Number, $max_position_len'Default:11' )
 
 Return        : ( \@num_in_each_position )
