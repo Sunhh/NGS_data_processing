@@ -89,5 +89,5 @@ legend=c(
 )
 # abline( v= mean.ins, col='red' )
 dev.off()
-message( paste0("Title=", title, " Mean=", mean.ins, "Median=", median.ins, "SD=", sd.ins, sep="") )
+message( paste0("Title=", title, " Mean=", mean.ins, " Median=", median.ins, " SD=", sd.ins, " Pairs=", length(l.ins), sep="") )
 
