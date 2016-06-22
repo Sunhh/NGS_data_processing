@@ -65,12 +65,12 @@ cnt.ins <- l.ins >= q.ins[3] & l.ins <= q.ins[9]
 ( xmax <- maxIns )
 t.l.ins <- l.ins
 if ( skipSmall ) {
-	t.l.ins <- l.ins[ l.ins >= xmin ]
+	t.l.ins <- t.l.ins[ t.l.ins >= xmin ]
 } else {
 	t.l.ins[t.l.ins < xmin] <- xmin
 }
 if ( skipBig ) {
-	t.l.ins <- l.ins[ l.ins <= xmax ]
+	t.l.ins <- t.l.ins[ t.l.ins <= xmax ]
 } else {
 	t.l.ins[t.l.ins > xmax] <- xmax
 }
@@ -89,4 +89,5 @@ legend=c(
 )
 # abline( v= mean.ins, col='red' )
 dev.off()
+message( paste0("Title=", title, " Mean=", mean.ins, " Median=", median.ins, " SD=", sd.ins, " Pairs=", length(l.ins), sep="") )
 
