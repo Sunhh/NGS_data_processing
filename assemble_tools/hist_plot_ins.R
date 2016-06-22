@@ -65,12 +65,12 @@ cnt.ins <- l.ins >= q.ins[3] & l.ins <= q.ins[9]
 ( xmax <- maxIns )
 t.l.ins <- l.ins
 if ( skipSmall ) {
-	t.l.ins <- l.ins[ l.ins >= xmin ]
+	t.l.ins <- t.l.ins[ t.l.ins >= xmin ]
 } else {
 	t.l.ins[t.l.ins < xmin] <- xmin
 }
 if ( skipBig ) {
-	t.l.ins <- l.ins[ l.ins <= xmax ]
+	t.l.ins <- t.l.ins[ t.l.ins <= xmax ]
 } else {
 	t.l.ins[t.l.ins > xmax] <- xmax
 }
