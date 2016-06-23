@@ -54,7 +54,7 @@ $default_string{'blk_setopt'} = [
 $default_string{'frame_setopt'} = [
 	'title_FontSize=40;title_FontFam=ArialNarrow;title_FontWeight=bold;title_HoriAln=middle;title_VertAln=text-after-edge;', 
 	
-	'scaleBar_height=10;scaleBar_width=80;scaleBar_x0=5;scaleBar_y0=5;scaleBar_dvdN=100', 
+	'scaleBar_height=10;scaleBar_width=80;scaleBar_x0=20;scaleBar_y0=10;scaleBar_dvdN=100', 
 	
 	'xAxis_TickStep=10000000;xAxis_TickUnit=M;xAxis_TickLwd=1;xAxis_TickLen=3;xAxis_TickCol=blue;xAxis_TickFontSize=0;xAxis_FontWeight=lighter;xAxis_FontFam=ArialNarrow;xAxis_TxtHoriAln=middle;xAxis_TxtVertAln=text-before-edge;', 
 	# Axis_TickLwd   <= 0 means there is no ticks to plot. 
@@ -303,7 +303,7 @@ if (@{$blk_opt{'lks_col_rgb'}} > 1 and $blk_opt{'lks_col_min'} < $blk_opt{'lks_c
 		); 
 	}
 	$svg->text(
-		'x' => $frame_opt{'scaleBar_x0'}-1, 
+		'x' => $frame_opt{'scaleBar_x0'}-$frame_opt{'scaleBar_height'}, 
 		'y' => $frame_opt{'scaleBar_y0'}, 
 		-cdata      => "$blk_opt{'lks_col_min'}", 
 		'font-size' => $frame_opt{'scaleBar_height'} * 0.8, 
@@ -313,7 +313,7 @@ if (@{$blk_opt{'lks_col_rgb'}} > 1 and $blk_opt{'lks_col_min'} < $blk_opt{'lks_c
 		'text-anchor'        => 'end', 
 	); 
 	$svg->text(
-		'x' => $frame_opt{'scaleBar_x0'} + $frame_opt{'scaleBar_width'}+1, 
+		'x' => $frame_opt{'scaleBar_x0'} + $frame_opt{'scaleBar_width'}+$frame_opt{'scaleBar_height'}, 
 		'y' => $frame_opt{'scaleBar_y0'}, 
 		-cdata      => "$blk_opt{'lks_col_max'}", 
 		'font-size' => $frame_opt{'scaleBar_height'} * 0.8, 
