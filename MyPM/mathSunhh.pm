@@ -623,6 +623,8 @@ Reference: http://stackoverflow.com/questions/20792445/calculate-rgb-value-for-a
 =cut
 sub cnvt_to_rgb {
 	my ( $min, $max, $val, $col ) = @_; 
+	$val < $min and $val = $min ; 
+	$val > $max and $val = $max ; 
 	my $col_i = $#$col;
 	my $v = ($val-$min)/($max-$min) * $col_i;
 	my $i1 = &min( int($v), $col_i );
