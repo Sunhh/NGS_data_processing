@@ -52,7 +52,7 @@ $default_string{'blk_setopt'} = [
 	'pks_col_min=0;pks_col_max=3;pks_col_rgb=blue:cyan:green:yellow:red;', # gene pairs' Ks     : ''
 ]; 
 $default_string{'frame_setopt'} = [
-	'title_FontSize=40;title_FontFam=ArialNarrow;title_FontWeight=bold;title_HoriAln=middle;title_VerAln=text-after-edge;', 
+	'title_FontSize=40;title_FontFam=ArialNarrow;title_FontWeight=bold;title_HoriAln=middle;title_VertAln=text-after-edge;', 
 	
 	'scaleBar_height=10;scaleBar_width=80;scaleBar_x0=5;scaleBar_y0=5;scaleBar_dvdN=100', 
 	
@@ -189,7 +189,7 @@ $grps{'title_txt'} = $svg->group(
 	'font-weight'       => $frame_opt{'title_FontWeight'}, 
 	'font-size'         => $frame_opt{'title_FontSize'}, 
 	'font-family'       => $frame_opt{'title_FontFam'}, 
-	'alignment-baseline'=> $frame_opt{'title_VerAln'}, 
+	'alignment-baseline'=> $frame_opt{'title_VertAln'}, 
 ); 
 if ( $frame_opt{'xAxis_TickLwd'} > 0 ) {
 	$grps{'xAxis_Tick'} = $svg->group(
@@ -625,7 +625,7 @@ for ( my $xi = 0; $xi < @{$chrLisX{'arr'}} ; $xi ++ ) {
 }# for my $chrX_ar
 
 ##############################
-# s03 - Plot X-Y axes labels. 
+# s03 - Plot X-Y axes labels , as well as the TITLE. 
 ##############################
 if ( $img_opt{'xAxisLabel'} ne '' ) {
 	$grps{'xAxis_Label'}->text(
@@ -644,6 +644,14 @@ if ( $img_opt{'yAxisLabel'} ne '' ) {
 		'alignment-baseline'=> $frame_opt{'yAxis_TxtVertAln'}, 
 	); 
 }# Label
+if ( $img_opt{'title'} ne '' ) {
+	$grps{'title_txt'}->text(
+		'x' => ($frame_lx+$frame_rx)/2, 
+		'y' => $frame_ty - $frame_opt{'title_FontSize'} * 0.5, 
+		-cdata => $frame_opt{'title'}, 
+		'alignment-baseline' => $frame_opt{'title_VertAln'}, 
+	); 
+}
 
 
 
