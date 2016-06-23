@@ -648,7 +648,7 @@ if ( $img_opt{'title'} ne '' ) {
 	$grps{'title_txt'}->text(
 		'x' => ($frame_lx+$frame_rx)/2, 
 		'y' => $frame_ty - $frame_opt{'title_FontSize'} * 0.5, 
-		-cdata => $frame_opt{'title'}, 
+		-cdata => $img_opt{'title'}, 
 		'alignment-baseline' => $frame_opt{'title_VertAln'}, 
 	); 
 }
