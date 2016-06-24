@@ -592,6 +592,8 @@ sub cvt_ctg2scf_byAGP {
 	# %ctg2scf = ( $ctgID => [ [ctgS, ctgE, scfID, scfS, scfE, scfStr(+/-/?)], [], ... ] ) # This is sorted. 
 	my ($alnInfo) = &_readInAln( $parm{'in_aln'} ); 
 
+	my %unknown_ctg; 
+
 	defined $alnInfo->[0]{'text'} and print {$outFh} $alnInfo->[0]{'text'}; 
 	for ( my $i=1; $i<@{$alnInfo}; $i++ ) {
 		my ( $alnID, $n_pairs, $ctg1, $ctg2, $strand ) = @{$alnInfo->[$i]{'info'}}[0, 3, 4,5,6]; 
@@ -601,11 +603,11 @@ sub cvt_ctg2scf_byAGP {
 		my ($scf1_aR) = $ms_obj->switch_position( 'qry2ref' => \%ctg2scf, 'qryID' => $ctg1, 'qryPos' => 1, 'strand' => '+' ); 
 		my ($scf2_aR) = $ms_obj->switch_position( 'qry2ref' => \%ctg2scf, 'qryID' => $ctg2, 'qryPos' => 1, 'strand' => $strand ); 
 		unless ( defined $scf1_aR->[0] ) {
-			&tsmsg("[Wrn] No contig information found for [$ctg1] in AGP file.\n"); 
+			defined $unknown_ctg{$ctg1} or do { &tsmsg("[Wrn] No contig information found for [$ctg1] in AGP file.\n"); $unknown_ctg{$ctg1} = 1; }; 
 			$scf1_aR = [ $ctg1, 1, '+' ]; 
 		}
 		unless ( defined $scf2_aR->[0] ) {
-			&tsmsg("[Wrn] No contig information found for [$ctg2] in AGP file.\n"); 
+			defined $unknown_ctg{$ctg2} or do { &tsmsg("[Wrn] No contig information found for [$ctg2] in AGP file.\n"); $unknown_ctg{$ctg2} = 1; }; 
 			$scf2_aR = [ $ctg2, 1, '+' ]; 
 		}
 
