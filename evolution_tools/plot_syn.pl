@@ -55,7 +55,7 @@ $default_string{'blk_setopt'} = [
 $default_string{'frame_setopt'} = [
 	'title_FontSize=40;title_FontFam=ArialNarrow;title_FontWeight=bold;title_HoriAln=middle;', 
 	
-	'scaleBar_height=10;scaleBar_width=80;scaleBar_x0=20;scaleBar_y0=10;scaleBar_dvdN=100', 
+	'scaleBar_height=10;scaleBar_width=80;scaleBar_x0=20;scaleBar_y0=10;scaleBar_dvdN=100;scaleBar_tickStep=0.5;', 
 	
 	'xAxis_TickStep=10000000;xAxis_TickUnit=M;xAxis_TickLwd=1;xAxis_TickLen=3;xAxis_TickCol=blue;xAxis_TickFontSize=0;xAxis_FontWeight=lighter;xAxis_FontFam=ArialNarrow;xAxis_TxtHoriAln=middle;', 
 	# Axis_TickLwd   <= 0 means there is no ticks to plot. 
@@ -285,6 +285,19 @@ $svg->rectangle(
 
 if (@{$blk_opt{'lks_col_rgb'}} > 1 and $blk_opt{'lks_col_min'} < $blk_opt{'lks_col_max'}) {
 	my $stepX = $frame_opt{'scaleBar_width'} / $frame_opt{'scaleBar_dvdN'}; 
+	for (my $i=$frame_opt{'scaleBar_tickStep'}; $i <= $blk_opt{'lks_col_max'} - $blk_opt{'lks_col_min'}; $i+=$frame_opt{'scaleBar_tickStep'}) {
+		my $pX = $frame_opt{'scaleBar_x0'} + $frame_opt{'scaleBar_width'} * $i / ( $blk_opt{'lks_col_max'} - $blk_opt{'lks_col_min'} ) ; 
+		my $pY = $frame_opt{'scaleBar_y0'} - $frame_opt{'scaleBar_height'}/3; 
+		my $pCol = plotSunhh::cnvt_to_rgb( $blk_opt{'lks_col_min'} , $blk_opt{'lks_col_max'} , $i+$blk_opt{'lks_col_min'} , $blk_opt{'lks_col_rgb'} ); 
+		$svg->rectangle(
+			'x' => $pX, 'y' => $pY, 
+			'width'  => $stepX , 
+			'height' => $frame_opt{'scaleBar_height'} / 3 , 
+			'stroke' => 'none' , 
+			'stroke-width' => 0.1 , 
+			'fill'   => $pCol , 
+		); 
+	}
 	for (my $i=0; $i<=$frame_opt{'scaleBar_dvdN'}; $i++) {
 		my $pX = $frame_opt{'scaleBar_x0'} + $frame_opt{'scaleBar_width'} * $i / $frame_opt{'scaleBar_dvdN'} ; 
 		my $pY = $frame_opt{'scaleBar_y0'}; 
@@ -468,7 +481,7 @@ for ( my $xi = 0; $xi < @{$chrLisX{'arr'}} ; $xi ++ ) {
 					my ( $rel_pPx, $rel_pPy ) = ( ($gx_loc[1]+$gx_loc[2])/2 / $frame_opt{'xAxis_BpPoint'} , -1 * ($gy_loc[1]+$gy_loc[2])/2 / $frame_opt{'yAxis_BpPoint'} ); 
 					$ksLis->[$j] =~ m/^(NA|NAN)$/i and $ksLis->[$j] = $blk_opt{'pks_col_max'}; 
 					my $point_col = &plotSunhh::cnvt_to_rgb( $blk_opt{'pks_col_min'} , $blk_opt{'pks_col_max'} , $ksLis->[$j], $blk_opt{'pks_col_rgb'} ); 
-					$grps{'blk_point'}->circle(
+					$blk_opt{'p_radius'} > 0 and $grps{'blk_point'}->circle(
 						'id' => "blk_point:blkID_${blkID}:$xi:$yi:1to2:Gene_${j}" , 
 						'cx' => $rel_pPx, 'cy' => $rel_pPy, 
 						'r'  => $blk_opt{'p_radius'}, 
@@ -496,7 +509,7 @@ for ( my $xi = 0; $xi < @{$chrLisX{'arr'}} ; $xi ++ ) {
 					my ( $rel_pPx, $rel_pPy ) = ( ($gx_loc[1]+$gx_loc[2])/2 / $frame_opt{'xAxis_BpPoint'} , -1 * ($gy_loc[1]+$gy_loc[2])/2 / $frame_opt{'yAxis_BpPoint'} ); 
 					$ksLis->[$j] =~ m/^(NA|NAN)$/i and $ksLis->[$j] = $blk_opt{'pks_col_max'}; 
 					my $point_col = &plotSunhh::cnvt_to_rgb( $blk_opt{'pks_col_min'} , $blk_opt{'pks_col_max'} , $ksLis->[$j], $blk_opt{'pks_col_rgb'} ); 
-					$grps{'blk_point'}->circle(
+					$blk_opt{'p_radius'} > 0 and $grps{'blk_point'}->circle(
 						'id' => "blk_point:blkID_${blkID}:$xi:$yi:2to1:Gene_${j}" , 
 						'cx' => $rel_pPx, 'cy' => $rel_pPy, 
 						'r'  => $blk_opt{'p_radius'}, 
