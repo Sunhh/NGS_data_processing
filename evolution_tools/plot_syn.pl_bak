@@ -1,5 +1,4 @@
 #!/usr/bin/perl
-# 2016-06-23 It seems that the softwares which convert SVG to PNG cannot deal with 'alignment-baseline' correctly, so I want to ignore using it. 
 use strict; 
 use warnings; 
 use SVG; 
@@ -53,21 +52,21 @@ $default_string{'blk_setopt'} = [
 	'pks_col_min=0;pks_col_max=3;pks_col_rgb=blue:cyan:green:yellow:red;', # gene pairs' Ks     : ''
 ]; 
 $default_string{'frame_setopt'} = [
-	'title_FontSize=40;title_FontFam=ArialNarrow;title_FontWeight=bold;title_HoriAln=middle;', 
+	'title_FontSize=40;title_FontFam=ArialNarrow;title_FontWeight=bold;title_HoriAln=middle;title_VertAln=text-after-edge;', 
 	
 	'scaleBar_height=10;scaleBar_width=80;scaleBar_x0=20;scaleBar_y0=10;scaleBar_dvdN=100', 
 	
-	'xAxis_TickStep=10000000;xAxis_TickUnit=M;xAxis_TickLwd=1;xAxis_TickLen=3;xAxis_TickCol=blue;xAxis_TickFontSize=0;xAxis_FontWeight=lighter;xAxis_FontFam=ArialNarrow;xAxis_TxtHoriAln=middle;', 
+	'xAxis_TickStep=10000000;xAxis_TickUnit=M;xAxis_TickLwd=1;xAxis_TickLen=3;xAxis_TickCol=blue;xAxis_TickFontSize=0;xAxis_FontWeight=lighter;xAxis_FontFam=ArialNarrow;xAxis_TxtHoriAln=middle;xAxis_TxtVertAln=text-before-edge;', 
 	# Axis_TickLwd   <= 0 means there is no ticks to plot. 
 	# Axis_TickUnit could be 'bp/K/M/none'. 'bp/K/M' is for bp/Kb/Mb, and 'none' ignores the plot of ticks' names. 
 	'xAxis_BpPoint=300000;xAxis_BorderLwd=1;xAxis_BorderCol=black;xAxis_SepBorder=0;', 
-	'xAxis_LabFontSize=20;xAxis_LabFontFam=ArialNarrow;xAxis_LabFontWeight=bold;xAxis_LabHoriAln=middle;', 
+	'xAxis_LabFontSize=20;xAxis_LabFontFam=ArialNarrow;xAxis_LabFontWeight=bold;xAxis_LabHoriAln=middle;xAxis_LabVertAln=text-before-edge;', 
 	'xAxis_ChrIDFontSize=5', 
 	# Axis_BorderLwd <= 0 means there is no border to plot. 
 	# If Axis_SepBorder > 0, there will be an Axis_SepBorder length interval between two adjacent chromosomes' borders. 
-	'yAxis_TickStep=10000000;yAxis_TickUnit=M;yAxis_TickLwd=1;yAxis_TickLen=3;yAxis_TickCol=blue;yAxis_TickFontSize=0;yAxis_FontWeight=lighter;yAxis_FontFam=ArialNarrow;yAxis_TxtHoriAln=middle;', 
+	'yAxis_TickStep=10000000;yAxis_TickUnit=M;yAxis_TickLwd=1;yAxis_TickLen=3;yAxis_TickCol=blue;yAxis_TickFontSize=0;yAxis_FontWeight=lighter;yAxis_FontFam=ArialNarrow;yAxis_TxtHoriAln=middle;yAxis_TxtVertAln=text-before-edge;', 
 	'yAxis_BpPoint=300000;yAxis_BorderLwd=1;yAxis_BorderCol=black;yAxis_SepBorder=0;', 
-	'yAxis_LabFontSize=20;yAxis_LabFontFam=ArialNarrow;yAxis_LabFontWeight=bold;yAxis_LabHoriAln=middle;', 
+	'yAxis_LabFontSize=20;yAxis_LabFontFam=ArialNarrow;yAxis_LabFontWeight=bold;yAxis_LabHoriAln=middle;yAxis_LabVertAln=text-before-edge;', 
 	'yAxis_ChrIDFontSize=5', 
 ]; 
 $default_string{'other_setopt'} = [
@@ -190,6 +189,7 @@ $grps{'title_txt'} = $svg->group(
 	'font-weight'       => $frame_opt{'title_FontWeight'}, 
 	'font-size'         => $frame_opt{'title_FontSize'}, 
 	'font-family'       => $frame_opt{'title_FontFam'}, 
+	'alignment-baseline'=> $frame_opt{'title_VertAln'}, 
 ); 
 if ( $frame_opt{'xAxis_TickLwd'} > 0 ) {
 	$grps{'xAxis_Tick'} = $svg->group(
@@ -201,6 +201,7 @@ if ( $frame_opt{'xAxis_TickLwd'} > 0 ) {
 		'font-weight'       => $frame_opt{'xAxis_FontWeight'}, 
 		'font-size'         => $frame_opt{'xAxis_TickFontSize'}, 
 		'font-family'       => $frame_opt{'xAxis_FontFam'}, 
+		'alignment-baseline'=> $frame_opt{'xAxis_TxtVertAln'}, 
 	); 
 }
 if ( $frame_opt{'yAxis_TickLwd'} > 0 ) {
@@ -213,6 +214,7 @@ if ( $frame_opt{'yAxis_TickLwd'} > 0 ) {
 		'font-weight'       => $frame_opt{'yAxis_FontWeight'}, 
 		'font-size'         => $frame_opt{'yAxis_TickFontSize'}, 
 		'font-family'       => $frame_opt{'yAxis_FontFam'}, 
+		'alignment-baseline'=> $frame_opt{'yAxis_TxtVertAln'}, 
 	); 
 }
 $grps{'xAxis_Label'} = $svg->group(
@@ -224,6 +226,7 @@ $grps{'xAxis_Label'} = $svg->group(
 	'font-weight'       => $frame_opt{'xAxis_LabFontWeight'}, 
 	'font-size'         => $frame_opt{'xAxis_LabFontSize'}, 
 	'font-family'       => $frame_opt{'xAxis_LabFontFam'}, 
+	'alignment-baseline'=> $frame_opt{'xAxis_LabVertAln'}, 
 ); 
 $grps{'yAxis_Label'} = $svg->group(
 	'id'                => "yAxis_Label", 
@@ -234,6 +237,7 @@ $grps{'yAxis_Label'} = $svg->group(
 	'font-weight'       => $frame_opt{'yAxis_LabFontWeight'}, 
 	'font-size'         => $frame_opt{'yAxis_LabFontSize'}, 
 	'font-family'       => $frame_opt{'yAxis_LabFontFam'}, 
+	'alignment-baseline'=> $frame_opt{'yAxis_LabVertAln'}, 
 ); 
 if ( $frame_opt{'xAxis_BorderLwd'} > 0 ) {
 	$grps{'xAxis_Border'} = $svg->group(
@@ -299,21 +303,23 @@ if (@{$blk_opt{'lks_col_rgb'}} > 1 and $blk_opt{'lks_col_min'} < $blk_opt{'lks_c
 		); 
 	}
 	$svg->text(
-		'x' => $frame_opt{'scaleBar_x0'} - $frame_opt{'scaleBar_height'}, 
-		'y' => $frame_opt{'scaleBar_y0'} + $frame_opt{'scaleBar_height'} * 0.8 , 
+		'x' => $frame_opt{'scaleBar_x0'}-$frame_opt{'scaleBar_height'}, 
+		'y' => $frame_opt{'scaleBar_y0'}, 
 		-cdata      => "$blk_opt{'lks_col_min'}", 
 		'font-size' => $frame_opt{'scaleBar_height'} * 0.8, 
 		'stroke'    => 'none', 
 		'fill'      => join( '', "rgb(", join(',', @{$blk_opt{'lks_col_rgb'}[0]}),")" ) ,
+		'alignment-baseline' => 'text-before-edge', 
 		'text-anchor'        => 'end', 
 	); 
 	$svg->text(
 		'x' => $frame_opt{'scaleBar_x0'} + $frame_opt{'scaleBar_width'}+$frame_opt{'scaleBar_height'}, 
-		'y' => $frame_opt{'scaleBar_y0'} + $frame_opt{'scaleBar_height'} * 0.8, 
+		'y' => $frame_opt{'scaleBar_y0'}, 
 		-cdata      => "$blk_opt{'lks_col_max'}", 
 		'font-size' => $frame_opt{'scaleBar_height'} * 0.8, 
 		'stroke'    => 'none', 
 		'fill'      => join( '', "rgb(", join(',', @{$blk_opt{'lks_col_rgb'}[-1]}),")" ) ,
+		'alignment-baseline' => 'text-before-edge', 
 		'text-anchor'        => 'start', 
 	); 
 }
@@ -390,13 +396,12 @@ for ( my $xi = 0; $xi < @{$chrLisX{'arr'}} ; $xi ++ ) {
 					'x2' => $i / $frame_opt{'xAxis_BpPoint'}, 'y2' => $frame_opt{'xAxis_TickLen'}, 
 					'transform' => join('', "translate($sP_x $sP_y)"), 
 				); 
-				my $tmp_xV = $i / $frame_opt{'xAxis_BpPoint'}; 
-				my $tmp_yV = $frame_opt{'xAxis_TickLen'} ;
 				$grps{'xAxis_Tick'}->text(
 					'id' => "xAxis_tickTxt:$chrX_ID:$chrX_rI:$i", 
-					'x'  => $tmp_xV, 'y'  => $tmp_yV + $frame_opt{'xAxis_TickFontSize'}, 
+					'x'  => $i / $frame_opt{'xAxis_BpPoint'}, 'y'  => $frame_opt{'xAxis_TickLen'}, 
 					-cdata => $show_v, 
 					'transform' => join('', "translate($sP_x $sP_y)"), 
+					'alignment-baseline'=> $frame_opt{'xAxis_TxtVertAln'}, 
 					'stroke' => 'none', 
 				); # 'alignment-baseline' doesn't work in groups. 
 			}
@@ -412,24 +417,24 @@ for ( my $xi = 0; $xi < @{$chrLisX{'arr'}} ; $xi ++ ) {
 					'transform' => join('', "translate($sP_x $sP_y)"), 
 				); 
 				my $txt_xV = -$frame_opt{'yAxis_TickLen'}; 
-				my $txt_yV = -1 * $i / $frame_opt{'yAxis_BpPoint'} ; 
+				my $txt_yV = -1 * $i / $frame_opt{'yAxis_BpPoint'}; 
 				$grps{'yAxis_Tick'}->text(
 					'id' => "yAxis_tickTxt:$chrY_ID:$chrY_rI:$i", 
-					'x'  => $txt_xV , 'y' => $txt_yV + $frame_opt{'yAxis_TickFontSize'} , 
+					'x'  => $txt_xV , 'y' => $txt_yV , 
 					-cdata => $show_v, 
 					'transform' => join('', "translate($sP_x $sP_y) rotate(90 $txt_xV $txt_yV)"), 
+					'alignment-baseline'=> $frame_opt{'yAxis_TxtVertAln'}, 
 					'stroke' => 'none', 
 				); # 'alignment-baseline' doesn't work in groups. 
 			}
 		}
 		#### s02.03 - Plot chromosome ID text 
 		if ( $yi == 0 and $frame_opt{'xAxis_ChrIDFontSize'} > 0 ) {
-			my $tmp_xV = ($sP_x + $eP_x)/2 ; 
-			my $tmp_yV = $frame_by + $frame_opt{'xAxis_TickLen'} + $frame_opt{'xAxis_TickFontSize'} + $frame_opt{'xAxis_ChrIDFontSize'} * 0.3 ; 
 			$grps{'xAxis_Label'}->text(
-				'x'    => $tmp_xV , 
-				'y'    => $tmp_yV + $frame_opt{'xAxis_ChrIDFontSize'} , 
+				'x'    => ($sP_x + $eP_x)/2 , 
+				'y'    => $frame_by + $frame_opt{'xAxis_TickLen'} + $frame_opt{'xAxis_TickFontSize'} + $frame_opt{'xAxis_ChrIDFontSize'} * 0.3 , 
 				-cdata => "$chrX_ID" , 
+				'alignment-baseline'=> $frame_opt{'xAxis_TxtVertAln'}, 
 				'font-size' => $frame_opt{'xAxis_ChrIDFontSize'} , 
 			); 
 		}
@@ -437,9 +442,10 @@ for ( my $xi = 0; $xi < @{$chrLisX{'arr'}} ; $xi ++ ) {
 			my $chrID_xV = $frame_lx - $frame_opt{'yAxis_TickLen'} - $frame_opt{'yAxis_TickFontSize'} - $frame_opt{'yAxis_ChrIDFontSize'} * 0.3; 
 			my $chrID_yV = ($sP_y+$eP_y)/2 ; 
 			$grps{'yAxis_Label'}->text(
-				'x' => $chrID_xV, 'y' => $chrID_yV + $frame_opt{'yAxis_ChrIDFontSize'} , 
+				'x' => $chrID_xV, 'y' => $chrID_yV, 
 				-cdata=>"$chrY_ID", 
 				'transform' => join('', "rotate(90 $chrID_xV $chrID_yV)"), 
+				'alignment-baseline'=> $frame_opt{'yAxis_TxtVertAln'}, 
 				'font-size' => $frame_opt{'yAxis_ChrIDFontSize'} , 
 			); # For chromosome ID text 
 		}
@@ -525,12 +531,13 @@ for ( my $xi = 0; $xi < @{$chrLisX{'arr'}} ; $xi ++ ) {
 				); 
 				if ( $xi == $#{$chrLisX{'arr'}} ) {
 					$svg->text(
-						'x' => $eP_x + 3 + $shad_height * 0.8 , 'y' => $shad_yV + $shad_height , 
+						'x' => $eP_x + 3 + $shad_height * 0.8 , 'y' => $shad_yV , 
 						-cdata => "$shad_ID" , 
 						'fill'               => $shad_col, 
 						'stroke'             => 'none' , 
 						'font-size'          => $shad_height * 0.8, 
 						'text-anchor'        => 'start', 
+						'alignment-baseline' => 'text-before-edge', 
 					); 
 				}
 				defined $shad_locHR->{$chrX_ID} or next; 
@@ -568,12 +575,13 @@ for ( my $xi = 0; $xi < @{$chrLisX{'arr'}} ; $xi ++ ) {
 				if ( $yi == 0 ) {
 					my $tmp_yV = $sP_y + 3 + $shad_height * 0.8 ; 
 					$svg->text(
-						'x' => $shad_xV , 'y' => $tmp_yV + $shad_height , 
+						'x' => $shad_xV , 'y' => $tmp_yV , 
 						-cdata => "$shad_ID" , 
 						'fill'               => $shad_col, 
 						'stroke'             => 'none' , 
 						'font-size'          => $shad_height * 0.8, 
 						'text-anchor'        => 'start', 
+						'alignment-baseline' => 'text-before-edge', 
 						'transform'          => "rotate(90 $shad_xV $tmp_yV)", 
 					); 
 				}
@@ -620,27 +628,28 @@ for ( my $xi = 0; $xi < @{$chrLisX{'arr'}} ; $xi ++ ) {
 # s03 - Plot X-Y axes labels , as well as the TITLE. 
 ##############################
 if ( $img_opt{'xAxisLabel'} ne '' ) {
-	my $tmp_xV = ($frame_lx + $frame_rx) / 2; 
-	my $tmp_yV = $frame_by + $frame_opt{'xAxis_TickLen'} + $frame_opt{'xAxis_TickFontSize'} + $frame_opt{'xAxis_ChrIDFontSize'}*2 ; 
 	$grps{'xAxis_Label'}->text(
-		'x' => $tmp_xV , 'y' => $tmp_yV + $frame_opt{'xAxis_LabFontSize'} , 
+		'x' => ($frame_lx + $frame_rx) / 2, 'y' => $frame_by + $frame_opt{'xAxis_TickLen'} + $frame_opt{'xAxis_TickFontSize'} + $frame_opt{'xAxis_ChrIDFontSize'}*2 , 
 		-cdata => $img_opt{'xAxisLabel'}, 
+		'alignment-baseline'=> $frame_opt{'xAxis_TxtVertAln'}, 
 	); 
 }# Label
 if ( $img_opt{'yAxisLabel'} ne '' ) {
 	my $xV = $frame_lx - $frame_opt{'yAxis_TickLen'} - $frame_opt{'yAxis_TickFontSize'} - $frame_opt{'yAxis_ChrIDFontSize'}*2 ; 
 	my $yV = ($frame_by + $frame_ty) / 2; 
 	$grps{'yAxis_Label'}->text(
-		'x' => $xV, 'y' => $yV + $frame_opt{'yAxis_LabFontSize'} , 
+		'x' => $xV, 'y' => $yV, 
 		-cdata => $img_opt{'yAxisLabel'}, 
 		'transform' => join('', "rotate(90 $xV $yV)"), 
+		'alignment-baseline'=> $frame_opt{'yAxis_TxtVertAln'}, 
 	); 
 }# Label
 if ( $img_opt{'title'} ne '' ) {
 	$grps{'title_txt'}->text(
 		'x' => ($frame_lx+$frame_rx)/2, 
-		'y' => $frame_ty - $frame_opt{'title_FontSize'} * 0.5 , 
+		'y' => $frame_ty - $frame_opt{'title_FontSize'} * 0.5, 
 		-cdata => $img_opt{'title'}, 
+		'alignment-baseline' => $frame_opt{'title_VertAln'}, 
 	); 
 }
 
