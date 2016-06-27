@@ -48,9 +48,9 @@ my %default_string;
 $default_string{'img_setopt'} = ['title=;horizMargin=50;vertMargin=50;xAxisLabel=Genome 1;yAxisLabel=Genome 2']; 
 $default_string{'blk_setopt'} = [
 	'l_lwd=1;l_col=black;',                                                # lines linking points within block 
-	'lks_col_min=0;lks_col_max=3;lks_col_rgb=blue:cyan:green:yellow:red;', # block's average Ks : ''
+	'lks_col_min=0;lks_col_max=3;lks_col_rgb=blue:cyan:green:yellow:red;lks_colN=16', # block's average Ks : ''
 	'p_radius=1;p_lwd=0;p_col=black',                                      # points standing for gene pairs : ''
-	'pks_col_min=0;pks_col_max=3;pks_col_rgb=blue:cyan:green:yellow:red;', # gene pairs' Ks     : ''
+	'pks_col_min=0;pks_col_max=3;pks_col_rgb=blue:cyan:green:yellow:red;pks_colN=14', # gene pairs' Ks     : ''
 ]; 
 $default_string{'frame_setopt'} = [
 	'title_FontSize=40;title_FontFam=ArialNarrow;title_FontWeight=bold;title_HoriAln=middle;', 
@@ -148,6 +148,14 @@ my (%addLineX, %addLineY);
 defined $opts{'add_lineX'} and %addLineX = %{ &_readInAddLine( $opts{'add_lineX'} ) }; 
 defined $opts{'add_lineY'} and %addLineY = %{ &_readInAddLine( $opts{'add_lineY'} ) }; 
 
+my $lks_col_i = $blk_opt{'lks_colN'}; 
+if ( $blk_opt{'lks_colN'} >= 16 ) {
+	$lks_col_i -= 16; 
+} else {
+	&stopErr("[Err] Bad lks_colN\n"); 
+}
+my $pks_col_i = $blk_opt{'pks_colN'}; 
+$blk_opt{'pks_colN'} == 14 or &stopErr("[Err] pks_colN should be 14\n"); 
 
 ################################################################################
 #    Plot frame part 
@@ -466,8 +474,8 @@ for ( my $xi = 0; $xi < @{$chrLisX{'arr'}} ; $xi ++ ) {
 			if ( $chrX_ID eq $loc1_ID and $chrY_ID eq $loc2_ID ) { 
 				my ( $rel_sPx, $rel_ePx ) = ( $loc1_S / $frame_opt{'xAxis_BpPoint'}, $loc1_E / $frame_opt{'xAxis_BpPoint'} ); 
 				my ( $rel_sPy, $rel_ePy ) = ( -1 * $loc2_S / $frame_opt{'yAxis_BpPoint'}, -1 * $loc2_E / $frame_opt{'yAxis_BpPoint'} ); 
-				$rest[0] =~ m/^(NA|NAN)$/i and $rest[0] = $blk_opt{'lks_col_max'}; 
-				my $link_col = &plotSunhh::cnvt_to_rgb( $blk_opt{'lks_col_min'} , $blk_opt{'lks_col_max'} , $rest[0] , $blk_opt{'lks_col_rgb'} ); 
+				$rest[$lks_col_i] =~ m/^(NA|NAN)$/i and $rest[$lks_col_i] = $blk_opt{'lks_col_max'}; 
+				my $link_col = &plotSunhh::cnvt_to_rgb( $blk_opt{'lks_col_min'} , $blk_opt{'lks_col_max'} , $rest[$lks_col_i] , $blk_opt{'lks_col_rgb'} ); 
 				$grps{'blk_line'}->line(
 					'id' => "blk_line:blkID_${blkID}:$xi:$yi:1to2", 
 					'x1' => $rel_sPx , 'y1' => $rel_sPy , 
@@ -494,8 +502,8 @@ for ( my $xi = 0; $xi < @{$chrLisX{'arr'}} ; $xi ++ ) {
 			if ( $chrX_ID eq $loc2_ID and $chrY_ID eq $loc1_ID ) {
 				my ( $rel_sPx, $rel_ePx ) = ( $loc2_S / $frame_opt{'xAxis_BpPoint'}, $loc2_E / $frame_opt{'xAxis_BpPoint'} ); 
 				my ( $rel_sPy, $rel_ePy ) = ( -1 * $loc1_S / $frame_opt{'yAxis_BpPoint'}, -1 * $loc1_E / $frame_opt{'yAxis_BpPoint'} ); 
-				$rest[0] =~ m/^(NA|NAN)$/i and $rest[0] = $blk_opt{'lks_col_max'}; 
-				my $link_col = &plotSunhh::cnvt_to_rgb( $blk_opt{'lks_col_min'} , $blk_opt{'lks_col_max'} , $rest[0] , $blk_opt{'lks_col_rgb'} ); 
+				$rest[$lks_col_i] =~ m/^(NA|NAN)$/i and $rest[$lks_col_i] = $blk_opt{'lks_col_max'}; 
+				my $link_col = &plotSunhh::cnvt_to_rgb( $blk_opt{'lks_col_min'} , $blk_opt{'lks_col_max'} , $rest[$lks_col_i] , $blk_opt{'lks_col_rgb'} ); 
 				$grps{'blk_line'}->line(
 					'id' => "blk_line:blkID_${blkID}:$xi:$yi:2to1", 
 					'x1' => $rel_sPx , 'y1' => $rel_sPy , 
