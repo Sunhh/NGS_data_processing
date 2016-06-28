@@ -27,6 +27,7 @@ GetOptions(\%opts,
  "add_KaKs!", "in_pair_list:s", "fas_cds:s", "fas_prot:s", "out_pref:s","alnMethod:s", "ncpu:i", "kaks_tab:s", 
  "cvt_ctg2scf!", "scf_agp:s", 
  "trim_block!", "trim_blkSE:s", 
+ "filter_blk!", "min_blkPair:i", 
  "help!", 
 ); 
 
@@ -136,6 +137,9 @@ sub usage {
 #                     The order of modification is '.Add' => '.Remove' => trimming. 
 #   -useYN        [Boolean] By default, Nei-Gojobori (NG) will be chose in block Ks calculation. But
 #                   I will switch to use Yang-Nielson (YN) results if given this parameter. 
+#
+# -filter_blk   [Boolean] 
+#   -min_blkPair  [Number] Default 2. At least this number of pairs in this block. 
 ####################################################################################################
 HH
 	exit 1; 
@@ -150,6 +154,7 @@ $opts{'help'} and &usage();
 my $outFh = \*STDOUT; 
 defined $opts{'out'} and $outFh = &openFH($opts{'out'}, '>'); 
 $opts{'srt_by'} //= 'min'; 
+$opts{'useYN'}  //= 0; 
 
 
 ####################################################################################################
@@ -232,6 +237,11 @@ if ( $opts{'aln2list'} ) {
 	 'in_aln'  => $opts{'in_aln'},
 	 'trim_blkSE' => $opts{'trim_blkSE'}, 
 	);  
+} elsif ( $opts{'filter_blk'} ) {
+	&filter_block(
+	 'in_aln'  => $opts{'in_aln'}, 
+	 'min_blkPair' => $opts{'min_blkPair'}, 
+	); 
 } else {
 	&usage(); 
 }
@@ -298,7 +308,7 @@ sub mcs_addKaKs {
 			&_lis2ks(%parm); 
 		}
 	} elsif ( $parm{'in_aln'} ) {
-		my ($alnInfo) = &_readInAln( $parm{'in_aln'} ); 
+		my ($alnInfo) = &_readInAln( $parm{'in_aln'}, $opts{'useYN'} ); 
 		$parm{'in_pair_list'} = "$parm{'out_pref'}_pair.lis"; 
 		my $lisFh = &openFH($parm{'in_pair_list'}, '>'); 
 		for my $ar1 (@$alnInfo) {
@@ -324,7 +334,7 @@ sub mcs_addKaKs {
 
 sub attach_KaKs {
 	my ($alnF, $kaksF, $outF, $header, $pair2ks) = @_; 
-	my ($alnInfo) = &_readInAln( $alnF );
+	my ($alnInfo) = &_readInAln( $alnF, $opts{'useYN'} );
 	if (!defined $header or !defined $pair2ks) {
 		($header, $pair2ks) = &_readInKsTab( $kaksF );
 	}
@@ -451,7 +461,7 @@ sub mcs_classDup {
 	my ($chr2gen, $gen2loc) = &_readInGff($parm{'in_gff'}); 
 	my %gidx = %{ &_index_glist($chr2gen) }; 
 	
-	my ($alnInfo) = &_readInAln( $parm{'in_aln'} ); 
+	my ($alnInfo) = &_readInAln( $parm{'in_aln'}, $opts{'useYN'} ); 
 	my ($bn6Info) = &_readInBn6( $parm{'in_blast'} ); 
 	$bn6Info = &_filter_eval( $bn6Info, $parm{'max_eval'} ) if ($parm{'max_eval'} >= 0); 
 	$bn6Info = &_filter_cscore( $bn6Info, $parm{'min_cscore'}, $gen2loc ) if ($parm{'min_cscore'} > 0) ; 
@@ -590,7 +600,7 @@ sub cvt_ctg2scf_byAGP {
 	
 	my %ctg2scf = %{ &fileSunhh::load_agpFile( $parm{'scf_agp'} ) }; 
 	# %ctg2scf = ( $ctgID => [ [ctgS, ctgE, scfID, scfS, scfE, scfStr(+/-/?)], [], ... ] ) # This is sorted. 
-	my ($alnInfo) = &_readInAln( $parm{'in_aln'} ); 
+	my ($alnInfo) = &_readInAln( $parm{'in_aln'} , $opts{'useYN'} ); 
 
 	my %unknown_ctg; 
 
@@ -683,7 +693,7 @@ sub trim_block {
 	}
 	close($fh1); 
 
-	my ($alnInfo) = &_readInAln( $parm{'in_aln'} ); 
+	my ($alnInfo) = &_readInAln( $parm{'in_aln'}, $opts{'useYN'} ); 
 
 	defined $alnInfo->[0]{'text'} and print {$outFh} $alnInfo->[0]{'text'}; 
 
@@ -828,7 +838,7 @@ sub _update_alnInfo_byText {
 sub mcs_blkByList {
 	my %parm = $ms_obj->_setHashFromArr(@_); 
 	
-	my ($alnInfo) = &_readInAln($parm{'in_aln'}); 
+	my ($alnInfo) = &_readInAln($parm{'in_aln'}, $opts{'useYN'}); 
 	my $inFh = &openFH($parm{'slct_list'}, '<'); 
 	$parm{'slct_colN'} //= 0; 
 	$parm{'slct_type'} //= 'blkID'; 
@@ -891,11 +901,32 @@ sub msc_glist2pairs {
 	}
 }# msc_glist2pairs() 
 
+sub filter_block {
+	my %parm = $ms_obj->_setHashFromArr(@_); 
+	$parm{'min_blkPair'} //= 2; 
+	
+	my ($alnInfo) = &_readInAln($parm{'in_aln'}, $opts{'useYN'}); 
+
+	my @good_idx; 
+	for (my $i=0; $i<@$alnInfo; $i++) {
+		if ($i == 0 and !(defined $alnInfo->[$i]{'info'})) {
+			push(@good_idx, $i); 
+			print {$outFh} $alnInfo->[$i]{'text'}; 
+			next; 
+		}
+		$alnInfo->[$i]{'info'}[3] >= $parm{'min_blkPair'} or next; 
+		push(@good_idx, $i); 
+		print {$outFh} $alnInfo->[$i]{'text'}; 
+	}
+
+	return; 
+}# filter_block ()
+
 sub msc_aln2table {
 	my %parm = $ms_obj->_setHashFromArr(@_); 
 	
 	my ($chr2gen, $gen2loc)  = &_readInGff($parm{'in_gff'}); 
-	my ($alnInfo) = &_readInAln($parm{'in_aln'}); 
+	my ($alnInfo) = &_readInAln($parm{'in_aln'}, $opts{'useYN'}); 
 	defined $alnInfo->[0]{'info'} or shift(@{$alnInfo}); 
 	
 	print {$outFh} join("\t", qw/BlkID Chrom1 Start1 End1 Chrom2 Start2 End2 Strand AlnScore AlnEvalue AlnNumber Gene1 Gene2 Ka Ks KaKs AVG_Ks Med_Ks UsedKs AVG_Ka Med_Ka UsedKa AVG_KaKs Med_KaKs UsedKaKs INSavg_Ks INSmed_Ks INSused_Ks/)."\n"; 
@@ -939,7 +970,7 @@ sub msc_aln2list{
 		($chr2gen_tgt, $gen2loc_tgt) = &_readInGff($parm{'tgt_gff'}); 
 	}
 
-	my ($alnInfo) = &_readInAln($parm{'in_aln'}); 
+	my ($alnInfo) = &_readInAln($parm{'in_aln'}, $opts{'useYN'}); 
 	defined $alnInfo->[0]{'info'} or shift(@{$alnInfo}); 
 
 	print {$outFh} join("\t", qw/Chromosome IntraDep InterDep InterTax Pivot PivotStart Blocks/)."\n"; 
@@ -1082,12 +1113,17 @@ sub _readInGff {
 	close($inFh); 
 	return (\%chr2gen, \%gen2loc); 
 }# _readInGff() 
+
+sub _readInAln {
+	return( &mcsSunhh::_readInAln( @_ ) ); 
+}# _readInAln() 
+
 # Return : (\@alnInfo)
 #  @alnInfo : 
 #    [idx_num]{'info'} => [alnID, score, evalue, Num_pairs, chrID_1, chrID_2, strand(plus|minus)]
 #    [idx_num]{'pair'} => [ [genID_1, genID_2, pair_evalue, Ka, Ks, Ka/Ks], [], ... ]
 #    [idx_num]{'text'} => $text_of_current_block
-sub _readInAln{
+sub _readInAln_1{
 	my $inFh = &openFH(shift, '<'); 
 	my @alnInfo; 
 	my $aln_idx = 0; 
@@ -1143,7 +1179,7 @@ sub _readInAln{
 	}
 	close($inFh); 
 	return(\@alnInfo); 
-}# _readInAln
+}# _readInAln_1
 
 # Input  : .bn6 file (blastn -outfmt 6)
 # Return : (\@bn6Info)
