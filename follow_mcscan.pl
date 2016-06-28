@@ -1217,7 +1217,13 @@ sub _index_glist {
 	my %gidx; 
 	my $ii = 0; 
 	for my $chrID (sort keys %$chr2gen) {
-		for my $ar1 (sort { $a->[1] <=> $b->[1] || $a->[2] <=> $b->[2] } @{$chr2gen->{$chrID}}) {
+		my @tb; 
+		if ( $opts{'raw_order'} ) {
+			@tb = @{$chr2gen->{$chrID}}; 
+		} else {
+			@tb = sort { $a->[1] <=> $b->[1] || $a->[2] <=> $b->[2] } @{$chr2gen->{$chrID}}; 
+		}
+		for my $ar1 ( @tb ) {
 			defined $gidx{$ar1->[0]} and &stopErr("[Err] Repeat genID [$ar1->[0]]\n"); 
 			$gidx{$ar1->[0]} = $ii; 
 			$ii++; 
@@ -1248,8 +1254,11 @@ sub _tandemGrp {
 	unless ( defined $parm{'gindex'} and keys %{$parm{'gindex'}} > 0 ) {
 		my $i=0; 
 		for my $genID ( sort { $parm{'gen2loc'}->{$a}[0] cmp $parm{'gen2loc'}->{$b}[0] 
-		             || $parm{'gen2loc'}{$a}[1] <=> $parm{'gen2loc'}{$b}[1] 
-					 || $parm{'gen2loc'}{$a}[2] <=> $parm{'gen2loc'}{$b}[2] 
+		             || ( ( $opts{'raw_order'} ) ? -1 
+                                             : ($parm{'gen2loc'}{$a}[1] <=> $parm{'gen2loc'}{$b}[1]
+                                               || $parm{'gen2loc'}{$a}[2] <=> $parm{'gen2loc'}{$b}[2] 
+                                               ) 
+                    )
 		      } keys %{$parm{'gen2loc'}} 
 		) {
 			$parm{'gindex'}{$genID} = $i; 
