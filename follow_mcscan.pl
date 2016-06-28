@@ -5,6 +5,7 @@ use LogInforSunhh;
 use fileSunhh; 
 use mathSunhh; 
 my $ms_obj = mathSunhh->new(); 
+use mcsSunhh; 
 
 use Parallel::ForkManager;
 
@@ -22,7 +23,7 @@ GetOptions(\%opts,
  "glist2pairs!", "in_glist:s", "pivot_pat:s", "target_pat:s", 
  "slctBlk!", "slct_list:s", "slct_colN:i", "slct_type:s", 
  "glist2html!", "pivot_chrID:s", 
- "classDupGene!", "max_eval:f", "min_cscore:f", "max_proxN:i", "max_tandN:i", "tand_list:s", 
+ "classDupGene!", "max_eval:f", "min_cscore:f", "max_proxN:i", "max_tandN:i", "tand_list:s", "only_direct!", "prox_list:s", 
  "filterBlast!", "rm_repeat!", "repeat_eval:f", "rm_tandem!", 
  "add_KaKs!", "in_pair_list:s", "fas_cds:s", "fas_prot:s", "out_pref:s","alnMethod:s", "ncpu:i", "kaks_tab:s", 
  "cvt_ctg2scf!", "scf_agp:s", 
@@ -98,6 +99,8 @@ sub usage {
 #   -tand_list    [outFileName] If given, write a table to 'outFileName' with foramt: 
 #                   Grp0_gen1 \\t Grp0_gen2 \\t Grp0_gen3 ...
 #                   Grp1_gen1 \\t Grp1_gen2 \\t Grp1_gen3 ... 
+#   -prox_list    [outFileName] 
+#   -only_direct  [Boolean] Only count homologous relationship between directly aligned gene pairs in .blast file. 
 #
 # -filterBlast    [Boolean] Filter .blast file. 
 #                   Need -in_blast 
@@ -155,6 +158,7 @@ my $outFh = \*STDOUT;
 defined $opts{'out'} and $outFh = &openFH($opts{'out'}, '>'); 
 $opts{'srt_by'} //= 'min'; 
 $opts{'useYN'}  //= 0; 
+$opts{'only_direct'} //= 0; 
 
 
 ####################################################################################################
@@ -203,6 +207,8 @@ if ( $opts{'aln2list'} ) {
 	 'max_proxN'=>$opts{'max_proxN'}, 
 	 'max_tandN'=>$opts{'max_tandN'}, 
 	 'tand_list'=>$opts{'tand_list'}, 
+	 'prox_list'=>$opts{'prox_list'}, 
+	 'only_direct' => $opts{'only_direct'}, 
 	); 
 } elsif ( $opts{'filterBlast'} ) { 
 	&mcs_filterBlast(
@@ -457,6 +463,7 @@ sub mcs_classDup {
 	$parm{'min_cscore'} //= -1; 
 	$parm{'max_proxN'}  //= 20; 
 	$parm{'max_tandN'}  //= 2; 
+	$parm{'only_direct'} //= 0; 
 	
 	my ($chr2gen, $gen2loc) = &_readInGff($parm{'in_gff'}); 
 	my %gidx = %{ &_index_glist($chr2gen) }; 
@@ -465,24 +472,69 @@ sub mcs_classDup {
 	my ($bn6Info) = &_readInBn6( $parm{'in_blast'} ); 
 	$bn6Info = &_filter_eval( $bn6Info, $parm{'max_eval'} ) if ($parm{'max_eval'} >= 0); 
 	$bn6Info = &_filter_cscore( $bn6Info, $parm{'min_cscore'}, $gen2loc ) if ($parm{'min_cscore'} > 0) ; 
-	my ($id_grp) = &_group_id( $bn6Info ); 
-	# [[grp0_gen1, grp0_gen2, ...], [grp1_gen1, grp2_gen2, ...], ...]
-	my $prox_gene = &_tandemGrp(
-	 'id_grp'=>$id_grp, 
-	 'max_distN'=>$parm{'max_proxN'}, 
-	 'gen2loc'=>$gen2loc, 
-	 'gindex'=>\%gidx, 
-	); 
-	my $tand_gene = &_tandemGrp(
-	 'id_grp'=>$id_grp, 
-	 'max_distN'=>$parm{'max_tandN'}, 
-	 'gen2loc'=>$gen2loc, 
-	 'gindex'=>\%gidx, 
-	); 
-	
+
+	my ($prox_gene, $tand_gene); 
+
+
+	if ( $parm{'only_direct'} ) {
+		my %id2id; 
+		for my $ar1 (@$bn6Info) {
+			my $g1 = $ar1->{'k2v'}{'qseqid'}; 
+			my $g2 = $ar1->{'k2v'}{'sseqid'}; 
+			$id2id{$g1}{$g2} ++; 
+			$id2id{$g2}{$g1} ++; 
+		}
+
+		for my $chrID (sort keys %$chr2gen) {
+			my @gg = sort { $gidx{$a} <=> $gidx{$b} } map { $_->[0] } @{$chr2gen->{$chrID}}; 
+			for (my $i=0; $i<@gg; $i++) {
+				defined $id2id{$gg[$i]} or next; 
+				my @tp = ($i); # proximal
+				my @tt = ($i); # tandem
+				for (my $j=$i+1; $j<@gg; $j++) {
+					my $is_good = 0; 
+					if ( $j-$i <= $parm{'max_proxN'} ) {
+						defined $id2id{$gg[$i]}{$gg[$j]} and push(@tp, $j); 
+						$is_good = 1; 
+					}
+					if ( $j-$i <= $parm{'max_tandN'} ) {
+						defined $id2id{$gg[$i]}{$gg[$j]} and push(@tt, $j); 
+						$is_good = 1; 
+					}
+					$is_good == 1 or last; 
+				}
+				scalar(@tp) > 1 and push(@{$prox_gene}, [@gg[@tp]]); 
+				scalar(@tt) > 1 and push(@{$tand_gene}, [@gg[@tt]]); 
+			}
+		}
+	} else {
+		my ($id_grp) = &_group_id( $bn6Info ); 
+		# [[grp0_gen1, grp0_gen2, ...], [grp1_gen1, grp2_gen2, ...], ...]
+		$prox_gene = &_tandemGrp(
+		 'id_grp'=>$id_grp, 
+		 'max_distN'=>$parm{'max_proxN'}, 
+		 'gen2loc'=>$gen2loc, 
+		 'gindex'=>\%gidx, 
+		); 
+		$tand_gene = &_tandemGrp(
+		 'id_grp'=>$id_grp, 
+		 'max_distN'=>$parm{'max_tandN'}, 
+		 'gen2loc'=>$gen2loc, 
+		 'gindex'=>\%gidx, 
+		); 
+	}
+
+
 	if ( defined $parm{'tand_list'} ) {
 		my $otFh = &openFH($parm{'tand_list'}, '>'); 
 		for my $ar1 (sort { $gidx{$a->[0]} <=> $gidx{$b->[0]} } @$tand_gene) {
+			print {$otFh} join("\t", @$ar1)."\n"; 
+		}
+		close($otFh); 
+	}
+	if ( defined $parm{'prox_list'} ) {
+		my $otFh = &openFH($parm{'prox_list'}, '>'); 
+		for my $ar1 (sort { $gidx{$a->[0]} <=> $gidx{$b->[0]} } @$prox_gene) {
 			print {$otFh} join("\t", @$ar1)."\n"; 
 		}
 		close($otFh); 
