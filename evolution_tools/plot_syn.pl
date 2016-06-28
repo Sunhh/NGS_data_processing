@@ -309,7 +309,7 @@ if (@{$blk_opt{'lks_col_rgb'}} > 1 and $blk_opt{'lks_col_min'} < $blk_opt{'lks_c
 	for (my $i=0; $i<=$frame_opt{'scaleBar_dvdN'}; $i++) {
 		my $pX = $frame_opt{'scaleBar_x0'} + $frame_opt{'scaleBar_width'} * $i / $frame_opt{'scaleBar_dvdN'} ; 
 		my $pY = $frame_opt{'scaleBar_y0'}; 
-		my $pCol = &plotSunhh::cnvt_to_rgb( $blk_opt{'lks_col_min'} , $blk_opt{'lks_col_max'} , ( $blk_opt{'lks_col_max'}-$blk_opt{'lks_col_min'} ) * $i / $frame_opt{'scaleBar_dvdN'} , $blk_opt{'lks_col_rgb'} ); 
+		my $pCol = &plotSunhh::cnvt_to_rgb( $blk_opt{'lks_col_min'} , $blk_opt{'lks_col_max'} , $blk_opt{'lks_col_min'} + ( $blk_opt{'lks_col_max'}-$blk_opt{'lks_col_min'} ) * $i / $frame_opt{'scaleBar_dvdN'} , $blk_opt{'lks_col_rgb'} ); 
 		$svg->rectangle(
 			'x' => $pX, 'y' => $pY, 
 			'width'  => $stepX, 
