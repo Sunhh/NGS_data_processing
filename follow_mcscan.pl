@@ -20,6 +20,7 @@ GetOptions(\%opts,
  "aln2list!", "addChr!", "tgt_gff:s", "srt_by:s", "raw_order!", 
  "aln2table!",
    "useYN!", 
+ "aln2pairList!", 
  "glist2pairs!", "in_glist:s", "pivot_pat:s", "target_pat:s", 
  "slctBlk!", "slct_list:s", "slct_colN:i", "slct_type:s", 
  "glist2html!", "pivot_chrID:s", 
@@ -56,6 +57,9 @@ sub usage {
 #   -raw_order    [Boolean] Do not sort the input gff according to their locations. 
 #                   Sometimes the orders of genes are different in scaffold and chromosome if there is a gene included by another one. (Rarely happen)
 # 
+# -aln2pairList   [Boolean] get gene pair list from aligned blocks. 
+#                   Need -in_aln 
+#                   May use -useYN 
 # -aln2table      [Boolean] Reformat aligned blocks into one line. 
 #                   Need -in_gff , -in_aln 
 #                   Headers: BlkID / Chrom1 / Start1 / End1 / Chrom2 / Start2 / End2 / Strand / AlnScore / AlnEvalue / AlnNumber / Gene1 / Gene2 / 
@@ -247,6 +251,11 @@ if ( $opts{'aln2list'} ) {
 	&filter_block(
 	 'in_aln'  => $opts{'in_aln'}, 
 	 'min_blkPair' => $opts{'min_blkPair'}, 
+	); 
+} elsif ( $opts{'aln2pairList'} ) {
+	&mcs_aln2pair (
+	 'in_aln' => $opts{'in_aln'}, 
+	 'useYN' => $opts{'useYN'}, 
 	); 
 } else {
 	&usage(); 
@@ -973,6 +982,25 @@ sub filter_block {
 
 	return; 
 }# filter_block ()
+
+sub mcs_aln2pair {
+	my %parm = $ms_obj->_setHashFromArr(@_); 
+	$parm{'useYN'} //= 0; 
+
+	my ($alnInfo) = &_readInAln($parm{'in_aln'}, $parm{'useYN'}); 
+	defined $alnInfo->[0]{'info'} or shift(@{$alnInfo}); 
+
+	print join("\t", qw/BlkID orderID Gene1 Gene2 Ka Ks w/)."\n"; 
+	for (my $i=0; $i<@{$alnInfo}; $i++) {
+		my (@gen1, @gen2, @ka, @ks, @w); 
+		for (my $j=0; $j<@{$alnInfo->[$i]{'pair'}}; $j++) {
+			my $ar1 = $alnInfo->[$i]{'pair'}[$j]; 
+			print join("\t", $alnInfo->[$i]{'info'}[0], $j, $ar1->[0], $ar1->[1], $ar1->[3], $ar1->[4], $ar1->[5])."\n"; 
+		}
+	}
+
+	return; 
+} # mcs_aln2pair
 
 sub msc_aln2table {
 	my %parm = $ms_obj->_setHashFromArr(@_); 
