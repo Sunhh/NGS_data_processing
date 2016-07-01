@@ -53,6 +53,57 @@ while (<>) {
 	}
 }
 
+for my $cid (sort keys %wInfo) {
+	for my $wi ( sort { $wInfo{$cid}{$a}[2] <=> $wInfo{$cid}{$b}[2] } keys %{$wInfo{$cid}} ) {
+		if ( @{$wInfo{$cid}{$wi}[1]} < 1 ) {
+			# There is no reads mapping here. 
+			print STDOUT "$wInfo{$cid}{$wi}[0]\t0\t0\t0\n"; 
+			next; 
+		}
+		my %cc = %{ &mathSunhh::ins_calc( $wInfo{$cid}{$wi}[1], 1 ) }; 
+		my $avg1 = ( $wInfo{$cid}{$wi}[3] > 0 ) ? ($cc{'SUM'} / $wInfo{$cid}{$wi}[3]) : 0 ;
+		$avg1 = sprintf("%0.4f", $avg1 ); 
+		my $avg2 = sprintf("%0.4f", $cc{'interval_mean'} ); # Instead of averaged by all good sites, I use covered sites here. 
+		print STDOUT "$wInfo{$cid}{$wi}[0]\t$avg1\t$avg2\t$cc{'SUM'}\n"; 
+	}
+}
+
+sub load_chop_info {
+	my ($fn) = @_; 
+	# key             WI      WS      WE      GC      AG      Wkey            len
+	# 136463376       1       1       100     0.28    0.74    136463376_1     100
+	# 136463378       1       1       100     0.34    0.75    136463378_1     100
+	# 136463380       1       1       100     0.19    0.99    136463380_1     100
+	# 136463382       1       1       100     0.3     0.64    136463382_1     100
+	# key             WI      WS      WE      GC      AG      Wkey            len             N       wN
+	# Cma_Chr01       1       1       10000   0.4181  0.4787  Cma_Chr01_1     13080099        149064  852
+	# Cma_Chr01       2       5001    15000   0.3981  0.4738  Cma_Chr01_2     13080099        149064  852
+	# Cma_Chr01       3       10001   20000   0.3881  0.4715  Cma_Chr01_3     13080099        149064  0
+	#
+	my %back; 
+	my $fh = &openFH($fn,'<'); 
+	my %cnt; 
+	{
+		my $hd = <$fh>; 
+		chomp($hd); 
+		print STDOUT "$hd\tAvgDep\tAdjAvgCovDep\tSumDep\n"; # 
+	}
+	while (<$fh>) {
+		$cnt{'line'} ++; 
+		$cnt{'line'} % 1e6 == 1 and &tsmsg("[Msg] $cnt{'line'} in $fn\n"); 
+		chomp; 
+		my @ta = split(/\t/, $_); 
+		my ($key, $wi) = @ta[0,1]; 
+		my $wlen = $ta[3]-$ta[2]+1; 
+		if ( defined $ta[9] ) {
+			$wlen = $wlen - $ta[9]; 
+		}
+		$back{$key}{$wi} = [$_, [], $cnt{'line'}, $wlen]; 
+	}
+	close($fh); 
+	return(\%back); 
+}
+
 sub idx_by_WL_WStep {
 	my ($p, $len, $step, $start) = @_; 
 	$start //= 1; 
@@ -70,44 +121,4 @@ sub idx_by_WL_WStep {
 
 	return(\@back); 
 } # sub idx_by_WL_WStep() 
-
-for my $cid (sort keys %wInfo) {
-	for my $wi ( sort { $a <=> $b } keys %{$wInfo{$cid}} ) {
-		if ( @{$wInfo{$cid}{$wi}[1]} < 50 ) {
-			print STDOUT "$wInfo{$cid}{$wi}[0]\t0\t0\n"; 
-			next; 
-		}
-		my %cc = %{ &mathSunhh::ins_calc( $wInfo{$cid}{$wi}[1], 1 ) }; 
-		my $avg1 = sprintf("%0.4f", $cc{'SUM'} / 100 ); 
-		my $avg2 = sprintf("%0.4f", $cc{'interval_mean'} * $cc{'COUNT'} / 100 ); 
-		print STDOUT "$wInfo{$cid}{$wi}[0]\t$avg1\t$avg2\n"; 
-	}
-}
-
-sub load_chop_info {
-	my ($fn) = @_; 
-	# key             WI      WS      WE      GC      AG      Wkey            len
-	# 136463376       1       1       100     0.28    0.74    136463376_1     100
-	# 136463378       1       1       100     0.34    0.75    136463378_1     100
-	# 136463380       1       1       100     0.19    0.99    136463380_1     100
-	# 136463382       1       1       100     0.3     0.64    136463382_1     100
-	my %back; 
-	my $fh = &openFH($fn,'<'); 
-	my %cnt; 
-	{
-		my $hd = <$fh>; 
-		chomp($hd); 
-		print STDOUT "$hd\tAvgDep1\tAvgDep2\n"; # 
-	}
-	while (<$fh>) {
-		$cnt{'line'} ++; 
-		$cnt{'line'} % 1e6 == 1 and &tsmsg("[Msg] $cnt{'line'} in $fn\n"); 
-		chomp; 
-		my @ta = split(/\t/, $_); 
-		my ($key, $wi) = @ta[0,1]; 
-		$back{$key}{$wi} = [$_, [], $cnt{'line'}]; 
-	}
-	close($fh); 
-	return(\%back); 
-}
 
