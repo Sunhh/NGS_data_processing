@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# 2016-07-08 Add function to extract CDS sequence according to gff file. 
 use strict; 
 use warnings; 
 use LogInforSunhh; 
@@ -16,6 +17,7 @@ GetOptions(\%opts,
 	"out:s", 
 	"sortGffBy:s", # Could be 'raw/lineNum/str_posi/position'
 	"silent!", 
+	"outFas:s",    # Output fasta file if defined. 
 	
 	# Actions 
 	"seqret!", # Not added. 
@@ -69,6 +71,7 @@ sub usage {
 #                     lineNum  : Output offspring gff lines within each topID in the input order. 
 #                     str_posi : Sort offspring lines by 'scfID' and 'strand' and 'position'. 
 #                     position : Sort offspring lines by 'scfID' and 'position' only. 
+# -outFas           [] Not output by default. Not fully supported yet. 
 # 
 # Action options: 
 #----------------------------------------------------------------------------------------------------
@@ -179,6 +182,8 @@ if ( defined $opts{'inGff'} ) {
 
 my $oFh = \*STDOUT; 
 defined $opts{'out'} and $oFh = &openFH($opts{'out'}, '>'); 
+my $oFasFh = undef(); 
+defined $opts{'outFas'} and $oFasFh = &openFH($opts{'outFas'}, '>'); 
 
 if ( $opts{'getJnLoc'} ) {
 	&action_getJnLoc(); 
@@ -584,6 +589,7 @@ sub action_listTopID {
 
 sub action_getLoc {
 	my @chkTypes = map { lc($_) } split(/,/, $opts{'getLoc'}); 
+	my %oseq_ID; 
 	if ( $opts{'joinLoc'} ) {
 		# featParent_ID\\tchr_ID\\tfeat_Start_min\\tfeat_End_max\\tStrand(+/-)\tfeat_Start_1,feat_End_1;feat_Start2,feat_End_2;...
 		print {$oFh} join("\t", qw/LenInFeat ParentID SeqID Start End Strand Blocks/)."\n"; 
@@ -609,6 +615,25 @@ sub action_getLoc {
 						push(@ta, "$tr->[0],$tr->[1]"); 
 					}
 					print {$oFh} join("\t", $typeLocLis{'featLen'}, $parentID, @typeLocLis{qw/scfID min max strand/}, join(";", @ta))."\n"; 
+
+					if ( defined $oFasFh and defined $in_seq{$typeLocLis{'scfID'}} ) {
+						my $tseq = ''; 
+						for my $tr (@{$typeLocLis{'locLis'}}) {
+							my $tseq_1 = substr( $in_seq{ $typeLocLis{'scfID'} }, $tr->[0]-1, $tr->[1]-$tr->[0]+1 ); 
+							if ( $typeLocLis{'strand'} eq '+' ) {
+								; 
+							} elsif ( $typeLocLis{'strand'} eq '-' ) {
+								&fastaSunhh::rcSeq( \$tseq_1, 'rc' ); 
+							} else {
+								&stopErr("[Err] Unknown strand [$typeLocLis{'strand'}] which should be '+'/'-'\n"); 
+							}
+							$tseq .= $tseq_1; 
+						}
+						my $tk = $parentID; 
+						while (defined $oseq_ID{$tk}) { $tk .= "::rep"; }
+						$tseq =~ s!(.{50})!$1\n!g; chomp($tseq); 
+						print {$oFasFh} ">$tk\n$tseq\n"; 
+					}
 				} else {
 					# &tsmsg("[Wrn] No information found for parentID [$parentID]\n"); 
 				}
@@ -636,8 +661,26 @@ sub action_getLoc {
 			for my $parentID ( @parentIDs ) {
 				for my $tr ( @{$typeLocLis{'locLis'}} ) {
 					print {$oFh} join( "\t", $rawFeatID, $parentID, $typeLocLis{'scfID'}, $tr->[0], $tr->[1], $tr->[2])."\n"; 
-				}
-			}
+					# Edit here. 
+					if ( defined $oFasFh and defined $in_seq{$typeLocLis{'scfID'}} ) {
+						my $tseq = ''; 
+						my $tseq_1 = substr( $in_seq{ $typeLocLis{'scfID'} }, $tr->[0]-1, $tr->[1]-$tr->[0]+1 ); 
+						# Strand could be stored in $typeLocLis{'strand'} and in $tr->[2] ; 
+						if ( $tr->[2] eq '+' ) {
+							; 
+						} elsif ( $tr->[2] eq '-' ) {
+							&fastaSunhh::rcSeq( \$tseq_1, 'rc' ); 
+						} else {
+							&stopErr( "[Err] Unknown strand [$tr->[2]] which should be '+'/'-'\n" ); 
+						} 
+						$tseq = $tseq_1; 
+						my $tk = $rawFeatID; 
+						while ( defined $oseq_ID{$tk} ) { $tk .= "::rep"; }
+						$tseq =~ s!(.{50})!$1\n!g; chomp($tseq); 
+						print {$oFasFh} ">$tk\n$tseq\n"; 
+					}# End if ( defined $oFasFh ... 
+				}# End for my $tr ( @{$typeLocLis{'locLis'}} ) 
+			}# End for my $parentID ( @parentIDs ) 
 		}
 	}# End if ( $opts{'joinLoc'} ) else 
 }# action_getLoc() 
