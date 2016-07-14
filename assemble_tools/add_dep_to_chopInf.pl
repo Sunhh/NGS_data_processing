@@ -4,6 +4,7 @@ use warnings;
 use LogInforSunhh; 
 use fileSunhh; 
 use mathSunhh; 
+my $ms_obj = mathSunhh->new(); 
 use Getopt::Long; 
 my %opts; 
 GetOptions(\%opts, 
@@ -36,6 +37,9 @@ $opts{'wind_step'} //= $opts{'wind_len'};
 
 !@ARGV and &LogInforSunhh::usage($help_txt); 
 $opts{'help'} and &LogInforSunhh::usage($help_txt); 
+
+my %chr_windows; 
+
 my %slct_chr; 
 my $has_slct_chr = 0; 
 if ( defined $opts{'slct_chr'} and scalar(@{$opts{'slct_chr'}}) > 0 ) {
@@ -73,7 +77,7 @@ for my $cid (keys %wInfo) {
 # 6954706 11      1
 # 6954706 12      1
 # 6954706 13      1
-my %tc = ( 'cntN_base'=>0 , 'cntN_step'=>1e4 ); 
+my %tc = ( 'cntN_base'=>0 , 'cntN_step'=>5e6 ); 
 while (<>) {
 	&fileSunhh::log_section( $., \%tc ) and &tsmsg("[Msg] $. in .dep file\n"); 
 	chomp; 
@@ -147,10 +151,37 @@ sub load_chop_info {
 			$is_in == 1 or next; 
 		}
 
+		unless ( defined $chr_windows{$key} ) {
+			($chr_windows{$key}) = $ms_obj->setup_windows(
+			  'ttl_start' => 1, 
+			  'ttl_end'   => $ta[7], # Chr length 
+			  'wind_size' => $opts{'wind_len'}, 
+			  'wind_step' => $opts{'wind_step'}, 
+			); 
+		}
+
+		if ( defined $chr_windows{$key}{'info'}{'windSloci'}[$wi-1] ) {
+			my $si = $chr_windows{$key}{'info'}{'windSloci'}[$wi-1]; 
+			my $ei = $chr_windows{$key}{'loci'}{$si}[1]; 
+			( $si == $ta[2] and $ei == $ta[3] ) or &stopErr("[Err] -wind_len $opts{'wind_len'} -wind_step $opts{'wind_step'} doesn't agree with data line : $_\n"); 
+		}
+
 		$back{$key}{$wi} = [$_, [], $cnt{'line'}, $wlen]; 
 	}
 	close($fh); 
 	return(\%back); 
+}
+
+sub idx_by_Pos {
+	my ($p, $wind_hr) = @_; 
+	my @back; 
+
+	my $si_ar = $ms_obj->map_windows( 'position' => $p, 'wind_hash' => $wind_hr ); 
+	for my $si (@$si_ar) {
+		push(@back, $wind_hr->{'info'}{'Sloc2wi'}{$si}); 
+	}
+
+	return(\@back); 
 }
 
 sub idx_by_WL_WStep {
@@ -158,7 +189,7 @@ sub idx_by_WL_WStep {
 	$start //= 1; 
 
 	my @back; 
-	my $med_idx = int( ($p-$start+1-1)/$len )+1; 
+	my $med_idx = int( ($p-$start+1-1)/$step )+1; 
 	for (my $i=$med_idx; $i>0; $i--) {
 		$start+($i-1)*$step+$len-1 < $p and last; 
 		$start+($i-1)*$step > $p and &stopErr("[Err] Something wrong! $start+($i-1)*$step > $p (\$p)\n"); 
