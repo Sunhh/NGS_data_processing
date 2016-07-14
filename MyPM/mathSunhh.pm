@@ -189,6 +189,7 @@ Return  : \%back_wind;
  'keys'  => values
  'info' => {'ttl_start/ttl_end/wind_size/wind_step/minRatio/windSloci' => values} 
    {'info'}{'windSloci'} = [ start_pos_0, start_pos_1, start_pos_2, ... ]
+   {'info'}{'Sloc2wi'}{$start_pos} => window_idx_in_windSloci 
  'loci'  => {
               'wind_start_position' => [start_pos, end_pos, interval_len]
             }
@@ -216,6 +217,7 @@ sub setup_windows {
 		my $cur_len = $ei-$si+1; 
 		$back_wind{'loci'}{$si} = [$si, $ei, $cur_len]; 
 		push(@{$back_wind{'info'}{'windSloci'}}, $si); 
+		$back_wind{'info'}{'Sloc2wi'}{$si} = $#{$back_wind{'info'}{'windSloci'}}; 
 	}
 	return \%back_wind; 
 }# sub setup_windows
