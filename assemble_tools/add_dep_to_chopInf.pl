@@ -73,7 +73,7 @@ for my $cid (keys %wInfo) {
 # 6954706 11      1
 # 6954706 12      1
 # 6954706 13      1
-my %tc = ( 'cntN_base'=>0 , 'cntN_step'=>1e6 ); 
+my %tc = ( 'cntN_base'=>0 , 'cntN_step'=>1e4 ); 
 while (<>) {
 	&fileSunhh::log_section( $., \%tc ) and &tsmsg("[Msg] $. in .dep file\n"); 
 	chomp; 
