@@ -188,6 +188,7 @@ Function: return a list of windows in hash reference according to given [window_
 Return  : \%back_wind; 
  'keys'  => values
  'info' => {'ttl_start/ttl_end/wind_size/wind_step/minRatio/windSloci' => values} 
+   {'info'}{'windSloci'} = [ start_pos_0, start_pos_1, start_pos_2, ... ]
  'loci'  => {
               'wind_start_position' => [start_pos, end_pos, interval_len]
             }
