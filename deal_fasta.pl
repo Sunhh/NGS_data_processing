@@ -1235,7 +1235,7 @@ sub upper_lower{
 #	-attribute<item>    head:seq:key:len:GC:mask:model, output atrribution of sequences
 ####################################################
 sub get_attribute{
-	my %ok_key = ( 'key'=>1, 'head'=>1, 'seq'=>1, 'len'=>1, 'GC'=>1, 'GCnum'=>1, 'AG'=>1, 'AGnum'=>1, 'mask'=>1, 'masknum'=>1);  # 暂时去掉model功能, 这个功能很不完善; , 'model'=>1 ); 
+	my %ok_key = ( 'key'=>1, 'head'=>1, 'seq'=>1, 'len'=>1, 'GC'=>1, 'GCnum'=>1, 'AG'=>1, 'AGnum'=>1, 'mask'=>1, 'masknum'=>1, 'GC3'=>1);  # 暂时去掉model功能, 这个功能很不完善; , 'model'=>1 ); 
 	
 	# define out_code(s); 
 	my $recVar = sub { my $v = shift; return '$relHR->{'.$v.'}'; }; # record Var. 统一形式; 
@@ -1249,6 +1249,8 @@ sub get_attribute{
 	# calc code, and define some out_code on the same time; 
 	my %has; # if has calc the var; 
 	my %calc_code; 
+
+	$calc_code{'header'} = sub { $has{'header'} and return ''; $has{'header'} = 1; return "use strict; \nuse warnings; \n";  }; 
 	
 	$calc_code{line} = sub { $has{line} and return ''; $has{line} = 1; return join('', $out_code{seq},' =~ s/\s+//g; ',"\n"); }; 
 	
@@ -1283,6 +1285,34 @@ sub get_attribute{
 	}; 
 	$calc_code{GCnum} = $calc_code{GC}; 
 	
+	$calc_code{'GC3'} = sub {
+		# I cann't count for de-generated bases now. 
+		$has{'GC3'} and return ''; $has{'GC3'} = 1; 
+		$out_code{'GC3seq'} = '$gc3seq'; 
+		$out_code{'GC3total'} = '$gc3_total'; 
+		$out_code{'GC3numGC'} = '$gc3_gcN'; 
+		$out_code{'GC3'} = '$gc3_cont'; 
+		my $code = $calc_code{'line'}->(); 
+		$code .= $calc_code{'len'}->(); 
+		$code .= <<"XX"; 
+my $out_code{'GC3seq'} = '' ; 
+while ( $out_code{'seq'} =~ m!\\S\\S(\\S)!g ) {
+	$out_code{'GC3seq'} .= \$1; 
+}
+my $out_code{'GC3total'} = ( $out_code{'GC3seq'} =~ tr/nN/nN/ ) ; 
+$out_code{'GC3total'} = length( $out_code{'GC3seq'} ) - $out_code{'GC3total'} ; 
+
+my $out_code{'GC3numGC'} = ( $out_code{'GC3seq'} =~ tr/gcGC/gcGC/ ) ; 
+
+my $out_code{'GC3'} = 'Null'; 
+if ( $out_code{'GC3total'} > 0 ) {
+	$out_code{'GC3'} = $out_code{'GC3numGC'} / $out_code{'GC3total'} ; 
+}
+
+XX
+		return $code; 
+	}; 
+
 	$calc_code{AG} = sub {
 		$has{AG} and return ''; $has{AG} = 1; 
 		$out_code{AG} = '$ag_cont'; 
@@ -1322,7 +1352,8 @@ sub get_attribute{
 	# begin to make codes for executing; 
 	 # title: for and while, uncompleted. 
 	my $ori = $"; local $" = "','"; 
-	my $exe_code = <<"TITLE"; 
+	my $exe_code = $calc_code{'header'}->(); 
+	$exe_code .= <<"TITLE"; 
 print STDOUT join("\\t",\'@request\')."\\n"; # for head line 
 TITLE
 
