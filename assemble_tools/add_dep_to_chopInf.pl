@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# 2016-07-18 Add min/max depth to be counted, and record sites within window counted. 
 use strict; 
 use warnings; 
 use LogInforSunhh; 
@@ -12,6 +13,8 @@ GetOptions(\%opts,
 	"wind_len:i", # default 100
 	"wind_step:i", # Default -wind_len 
 	"slct_chr:s@", # Default [], Format: chrID:start-end; 
+	"minDep:i", # 0
+	"maxDep:i", # 0
 ); 
 
 my $help_txt = <<HH; 
@@ -32,8 +35,10 @@ perl $0 pen_R01.ctg.fa.chop_info in.bam.dep > pen_R01.ctg.fa.chop_info_aD
 
 HH
 
-$opts{'wind_len'} //= 100; 
+$opts{'wind_len'}  //= 100; 
 $opts{'wind_step'} //= $opts{'wind_len'}; 
+$opts{'minDep'}    //= 0; 
+$opts{'maxDep'}    //= 0; 
 
 !@ARGV and &LogInforSunhh::usage($help_txt); 
 $opts{'help'} and &LogInforSunhh::usage($help_txt); 
@@ -83,8 +88,12 @@ while (<>) {
 	chomp; 
 	my @ta = split(/\t/, $_); 
 	defined $wInfo{$ta[0]} or next; 
+	$ta[2] < $opts{'minDep'} and next; 
+	$opts{'maxDep'} > 0 and $ta[2] > $opts{'maxDep'} and next; 
+
 	( $ta[1] >= $wMM{$ta[0]}{'min'} and $ta[1] <= $wMM{$ta[0]}{'max'} ) or next; 
 	my ( $idx_aref ) = &idx_by_WL_WStep( $ta[1], $opts{'wind_len'}, $opts{'wind_step'} ); 
+
 	for my $idx ( @$idx_aref ) {
 		defined $wInfo{$ta[0]}{$idx} or next; 
 		push(@{$wInfo{$ta[0]}{$idx}[1]}, $ta[2]); 
@@ -95,7 +104,7 @@ for my $cid (sort keys %wInfo) {
 	for my $wi ( sort { $wInfo{$cid}{$a}[2] <=> $wInfo{$cid}{$b}[2] } keys %{$wInfo{$cid}} ) {
 		if ( @{$wInfo{$cid}{$wi}[1]} < 1 ) {
 			# There is no reads mapping here. 
-			print STDOUT "$wInfo{$cid}{$wi}[0]\t0\t0\t0\t0\n"; 
+			print STDOUT "$wInfo{$cid}{$wi}[0]\t0\t0\t0\t0\t0\n"; 
 			next; 
 		}
 		my %cc = %{ &mathSunhh::ins_calc( $wInfo{$cid}{$wi}[1], 1 ) }; 
@@ -103,7 +112,8 @@ for my $cid (sort keys %wInfo) {
 		$avg1 = sprintf("%0.4f", $avg1 ); 
 		my $avg2 = sprintf("%0.4f", $cc{'interval_mean'} ); # Instead of averaged by all good sites, I use covered sites here. 
 		my $avg3 = sprintf("%0.4f", $cc{'MEAN'}); 
-		print STDOUT "$wInfo{$cid}{$wi}[0]\t$avg1\t$avg2\t$cc{'SUM'}\t$avg3\n"; 
+		my $siteN = $cc{'COUNT'}; 
+		print STDOUT "$wInfo{$cid}{$wi}[0]\t$avg1\t$avg2\t$cc{'SUM'}\t$avg3\t$siteN\n"; 
 	}
 }
 
@@ -125,7 +135,7 @@ sub load_chop_info {
 	{
 		my $hd = <$fh>; 
 		chomp($hd); 
-		print STDOUT "$hd\tAvgDep\tAdjAvgCovDep\tSumDep\tAvgCovDep\n"; # 
+		print STDOUT "$hd\tAvgDep\tAdjAvgCovDep\tSumDep\tAvgCovDep\tSiteWiDep\n"; # 
 	}
 	my %tc = ( 'cntN_base'=>0 , 'cntN_step'=>1e6 ); 
 	while (<$fh>) {
