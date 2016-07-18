@@ -32,6 +32,9 @@ perl $0 pen_R01.ctg.fa.chop_info in.bam.dep > pen_R01.ctg.fa.chop_info_aD
 
 -slct_chr       [] chrID:start-end ....
 
+-minDep         [0] Minimum depth counted. 0 means all sites including 0. 
+-maxDep         [0] Maximum depth counted. 0 means all sites. 
+
 
 HH
 
