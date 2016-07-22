@@ -20,6 +20,7 @@ perl $0 pop1_onP1_mapI_f.csv.LGs.scf2LG pop1_onP1_mapI_f.csv.LGs.scf2LG.chr0 > p
 HH
 !@ARGV and &LogInforSunhh::usage($help_txt); 
 
+&tsmsg("[Rec] Begin script : $0 @ARGV\n"); 
 
 my %str2char; 
 %str2char = qw(
@@ -30,7 +31,9 @@ U    ?
 
 my @infor_scf2LG; 
 for my $fn (@ARGV) {
+	&tsmsg("[Msg] Loading $fn\n"); 
 	push( @infor_scf2LG, @{ &load_scf2LG_tbl($fn) } ); 
+	&tsmsg("[Msg] Loaded $fn\n"); 
 }
 
 # [Sunhh@whale super_scaffold]$ head -3 SP_Nov_11_13_30_8_90_3_superscaffold_merged.agp
@@ -39,8 +42,11 @@ for my $fn (@ARGV) {
 # Super_scaffold_248      341380  600696  2       N       259317  scaffold        yes     map
 
 my %outLG; 
+my %cnt = ( 'cntN_base'=>0 , 'cntN_step'=>1e5, 'cntN_curr' => 0 ); 
 for my $ar1 ( @infor_scf2LG ) {
+	$cnt{'cntN_curr'} ++; 
 	my ($lgID, $scfID, $scfLen, $scfStr, $otherInfo) = @$ar1; 
+	&fileSunhh::log_section( $cnt{'cntN_curr'}, \%cnt ) and &tsmsg("[Msg]  Processing $cnt{'cntN_curr'} th scfID [$scfID]\n"); 
 	$outLG{'cnt'} ++; 
 	my $scfStr_c = $str2char{$scfStr}; 
 	defined $scfStr_c or &stopErr("[Err] Bad scfStr [$scfStr]\n"); 
@@ -59,6 +65,8 @@ for my $lgID (sort { $outLG{'LG'}{$a}[0][0] <=> $outLG{'LG'}{$b}[0][0] } keys %{
 		print STDOUT join("\t", @{$tl}[ 1 .. $#$tl ])."\n"; 
 	}
 }
+
+&tsmsg("[Rec] Done script $0\n"); 
 
 sub load_scf2LG_tbl {
 	my ($fn) = @_; 
