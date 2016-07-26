@@ -98,7 +98,8 @@ while (&wantLineC($fh_snp)) {
 	$geno{"N"}            = '9 9'; 
 
 	my $chrN = $ta[0]; 
-	$chrN =~ s!^chr!!i; 
+	$chrN =~ s!^(chr|WM97_Chr)!!i; 
+	$chrN =~ s!^0+!!; 
 	$chrN =~ m!^\d+$! or &stopErr("[Err] Bad chrID [$chrN] from [$ta[0]]\n"); 
 
 	my $gmP = $ta[$gmCn]; 
