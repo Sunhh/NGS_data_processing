@@ -70,7 +70,8 @@ while (<$inRatioFh>) {
 		next; 
 	}
 	push(@{$windInfor{$ta[0]}{'line'}}, [@ta]); 
-	$opts{'bpCnt_colN'} >= 0 and $ta[ $opts{'bpCnt_colN'} ] > 0 and push(@{$windInfor{$ta[0]}{'ratio_array'}}, $ta[ $opts{'slct_colN'} ]); 
+	$opts{'bpCnt_colN'} >= 0 and do { $ta[ $opts{'bpCnt_colN'} ] > 0 or next; }; 
+	push(@{$windInfor{$ta[0]}{'ratio_array'}}, $ta[ $opts{'slct_colN'} ]); 
 }
 
 # Select basic good windows. 
@@ -85,7 +86,7 @@ if ( $opts{'qtFromLow'} ) {
 	for my $chrID ( sort keys %windInfor ) {
 		for (my $i=0; $i<@{ $windInfor{$chrID}{'line'} }; $i++) {
 			$opts{'bpCnt_colN'} >= 0 and do { $windInfor{$chrID}{'line'}[$i][ $opts{'bpCnt_colN'} ] > 0 or next }; 
-			$windInfor{$chrID}{'line'}[$i][ $opts{'bpCnt_colN'} ] <= $perc_tile and push(@{$windInfor{$chrID}{'goodIdx'}}, $i); 
+			$windInfor{$chrID}{'line'}[$i][ $opts{'slct_colN'} ] <= $perc_tile and push(@{$windInfor{$chrID}{'goodIdx'}}, $i); 
 		}
 	}
 } else {
@@ -94,8 +95,8 @@ if ( $opts{'qtFromLow'} ) {
 	for my $chrID ( sort keys %windInfor ) {
 		for (my $i=0; $i<@{ $windInfor{$chrID}{'line'} }; $i++) {
 			$opts{'bpCnt_colN'} >= 0 and do { $windInfor{$chrID}{'line'}[$i][ $opts{'bpCnt_colN'} ] > 0 or next; }; 
-			$windInfor{$chrID}{'line'}[$i][ $opts{'bpCnt_colN'} ] =~ m/^[\d.]+$/i or next; 
-			$windInfor{$chrID}{'line'}[$i][ $opts{'bpCnt_colN'} ] >= $perc_tile and push(@{$windInfor{$chrID}{'goodIdx'}}, $i); 
+			$windInfor{$chrID}{'line'}[$i][ $opts{'slct_colN'} ] =~ m/^[\d.]+$/i or next; 
+			$windInfor{$chrID}{'line'}[$i][ $opts{'slct_colN'} ] >= $perc_tile and push(@{$windInfor{$chrID}{'goodIdx'}}, $i); 
 		}
 	}
 }
@@ -119,6 +120,7 @@ sub output_winds {
 	$wind_hr->{'grp_se'} //= []; 
 	my @out_se_i = @{$wind_hr->{'grp_se'}}; 
 	$wind_hr->{'goodIdx'} //= []; 
+	my $has_header = 0; 
 	for (my $i=0; $i<@{$wind_hr->{'goodIdx'}}; $i++) {
 		defined $wind_hr->{'inGrp'}{ $wind_hr->{'goodIdx'}[$i] } and next; 
 		push(@out_se_i, [$wind_hr->{'goodIdx'}[$i], $wind_hr->{'goodIdx'}[$i]]); 
@@ -134,6 +136,7 @@ sub output_winds {
 				$sum_bpCnt += ( $wind_hr->{'line'}[ $idx ][2] - $wind_hr->{'line'}[ $idx ][1] + 1 ); 
 			}
 		}
+		$has_header or do { $has_header=1; print STDOUT join("\t", qw/chrID chrS chrE chrLen bpCnt/)."\n"; }; 
 		print STDOUT join("\t", $loc1[0], $loc1[1], $loc2[2], $loc2[2]-$loc1[1]+1, $sum_bpCnt)."\n"; 
 	}
 
