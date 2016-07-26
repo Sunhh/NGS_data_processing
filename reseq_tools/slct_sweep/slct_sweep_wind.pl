@@ -26,12 +26,16 @@ GetOptions(\%opts,
 	"grpLen:i", # 5, number of windows in a group checked. 
 	"grpGood:i", # 3, number of good (selected) windows in a group checked. 
 	"grpExtend:i", # 0, number of windows to extend group. 
+	"slct_colN:i", # 5 
+	"bpCnt_colN:i", # 4
 ); 
 
-$opts{'grpLen'} //= 5; 
-$opts{'grpGood'} //= 3; 
-$opts{'qtCutoff'} //= 0.03; 
-$opts{'grpExtend'} //= 0; 
+$opts{'grpLen'}     //= 5; 
+$opts{'grpGood'}    //= 3; 
+$opts{'qtCutoff'}   //= 0.03; 
+$opts{'grpExtend'}  //= 0; 
+$opts{'slct_colN'}  //= 5; 
+$opts{'bpCnt_colN'} //= 4; 
 
 $opts{'help'} and usage(); 
 defined $opts{'inRatioFile'} or usage(); 
@@ -47,6 +51,9 @@ sub usage {
 # -grpLen          [5] number of windows in a group checked
 # -grpGood         [3] number of good (selected) windows in a group checked. 
 # -grpExtend       [0] number of windows to extend group
+#
+# -slct_colN       [5] 
+# -bpCnt_colN      [4]
 ################################################################################
 HH
 	exit 1; 
@@ -63,7 +70,7 @@ while (<$inRatioFh>) {
 		next; 
 	}
 	push(@{$windInfor{$ta[0]}{'line'}}, [@ta]); 
-	$ta[4] > 0 and push(@{$windInfor{$ta[0]}{'ratio_array'}}, $ta[5]); 
+	$opts{'bpCnt_colN'} >= 0 and $ta[ $opts{'bpCnt_colN'} ] > 0 and push(@{$windInfor{$ta[0]}{'ratio_array'}}, $ta[ $opts{'slct_colN'} ]); 
 }
 
 # Select basic good windows. 
@@ -77,22 +84,21 @@ if ( $opts{'qtFromLow'} ) {
 	&tsmsg("[Rec] Percentile for $opts{'qtCutoff'} (from lower) is $perc_tile\n"); 
 	for my $chrID ( sort keys %windInfor ) {
 		for (my $i=0; $i<@{ $windInfor{$chrID}{'line'} }; $i++) {
-			$windInfor{$chrID}{'line'}[$i][4] > 0 or next; 
-			$windInfor{$chrID}{'line'}[$i][5] <= $perc_tile and push(@{$windInfor{$chrID}{'goodIdx'}}, $i); 
+			$opts{'bpCnt_colN'} >= 0 and do { $windInfor{$chrID}{'line'}[$i][ $opts{'bpCnt_colN'} ] > 0 or next }; 
+			$windInfor{$chrID}{'line'}[$i][ $opts{'bpCnt_colN'} ] <= $perc_tile and push(@{$windInfor{$chrID}{'goodIdx'}}, $i); 
 		}
 	}
 } else {
 	my $perc_tile = $stat->percentile( 100 - 100 * $opts{'qtCutoff'} ); 
-	&tsmsg("[Rec] Percentile for $opts{'qtCutoff'} is $perc_tile\n"); 
+	&tsmsg("[Rec] Percentile for $opts{'qtCutoff'} (from higher) is $perc_tile\n"); 
 	for my $chrID ( sort keys %windInfor ) {
 		for (my $i=0; $i<@{ $windInfor{$chrID}{'line'} }; $i++) {
-			$windInfor{$chrID}{'line'}[$i][4] > 0 or next; 
-			$windInfor{$chrID}{'line'}[$i][5] =~ m/^[\d.]+$/i or next; 
-			$windInfor{$chrID}{'line'}[$i][5] >= $perc_tile and push(@{$windInfor{$chrID}{'goodIdx'}}, $i); 
+			$opts{'bpCnt_colN'} >= 0 and do { $windInfor{$chrID}{'line'}[$i][ $opts{'bpCnt_colN'} ] > 0 or next; }; 
+			$windInfor{$chrID}{'line'}[$i][ $opts{'bpCnt_colN'} ] =~ m/^[\d.]+$/i or next; 
+			$windInfor{$chrID}{'line'}[$i][ $opts{'bpCnt_colN'} ] >= $perc_tile and push(@{$windInfor{$chrID}{'goodIdx'}}, $i); 
 		}
 	}
 }
-my $perc_tile = $stat->percentile( 100 * $opts{'qtCutoff'} ); 
 
 # Search for good groups. 
 for my $chrID (sort keys %windInfor) {
@@ -122,7 +128,11 @@ sub output_winds {
 		my @loc2 = @{$wind_hr->{'line'}[$ar->[1]]} ; 
 		my $sum_bpCnt = 0; 
 		for my $idx ( $ar->[0] .. $ar->[1] ) {
-			$sum_bpCnt += $wind_hr->{'line'}[ $idx ][ 4 ]; 
+			if ( $opts{'bpCnt_colN'} >= 0 ) {
+				$sum_bpCnt += $wind_hr->{'line'}[ $idx ][ $opts{'bpCnt_colN'} ]; 
+			} else {
+				$sum_bpCnt += ( $wind_hr->{'line'}[ $idx ][2] - $wind_hr->{'line'}[ $idx ][1] + 1 ); 
+			}
 		}
 		print STDOUT join("\t", $loc1[0], $loc1[1], $loc2[2], $loc2[2]-$loc1[1]+1, $sum_bpCnt)."\n"; 
 	}
