@@ -119,6 +119,7 @@ while (&wantLineC($fh_snp)) {
 		$glob{'err_chrID'}{$chrID} = 1; 
 		next; 
 	}
+	defined $rc_anchors{$chrID} or next; 
 	my $gmP; 
 	for my $t1 ( @{$rc_anchors{$chrID}} ) {
 		$chrP < $t1->[0] and next; 
