@@ -28,6 +28,7 @@ GetOptions(\%opts,
 	"grpExtend:i", # 0, number of windows to extend group. 
 	"slct_colN:i", # 5 
 	"bpCnt_colN:i", # 4
+	"joinNeighbor!", # Join (Group) neighboring selected windows regardless of the input parameter. 
 ); 
 
 $opts{'grpLen'}     //= 5; 
@@ -36,6 +37,9 @@ $opts{'qtCutoff'}   //= 0.03;
 $opts{'grpExtend'}  //= 0; 
 $opts{'slct_colN'}  //= 5; 
 $opts{'bpCnt_colN'} //= 4; 
+
+my %glob; 
+$glob{'has_outHeader'} = 0; 
 
 $opts{'help'} and usage(); 
 defined $opts{'inRatioFile'} or usage(); 
@@ -51,6 +55,7 @@ sub usage {
 # -grpLen          [5] number of windows in a group checked
 # -grpGood         [3] number of good (selected) windows in a group checked. 
 # -grpExtend       [0] number of windows to extend group
+# -joinNeighbor    [Boolean] 
 #
 # -slct_colN       [5] 
 # -bpCnt_colN      [4]
@@ -58,6 +63,7 @@ sub usage {
 HH
 	exit 1; 
 }
+
 
 my $inRatioFh = &fileSunhh::openFH( $opts{'inRatioFile'}, '<' ); 
 # ChrID   WindS   WindE   WindL   BpCnt C9_to_C6_min0.01
@@ -69,14 +75,18 @@ while (<$inRatioFh>) {
 	if ($. == 1 and $ta[0] =~ m!^(ChrID|ChromID)$!i) {
 		next; 
 	}
-	push(@{$windInfor{$ta[0]}{'line'}}, [@ta]); 
 	$opts{'bpCnt_colN'} >= 0 and do { $ta[ $opts{'bpCnt_colN'} ] > 0 or next; }; 
-	push(@{$windInfor{$ta[0]}{'ratio_array'}}, $ta[ $opts{'slct_colN'} ]); 
+	$ta[ $opts{'slct_colN'} ] =~ m/^NA$/i and next; 
+	$ta[ $opts{'slct_colN'} ] =~ m/^[\d.e\-]+$/i or die "Unknown value [$ta[ $opts{'slct_colN'} ]] in line: $_\n"; 
+	push(@{$windInfor{$ta[0]}{'line'}}, [@ta]); 
+	# push(@{$windInfor{$ta[0]}{'ratio_array'}}, $ta[ $opts{'slct_colN'} ]); 
 }
 
 # Select basic good windows. 
 my $stat = Statistics::Descriptive::Full->new();
 for my $chrID (sort keys %windInfor) {
+	@{$windInfor{$chrID}{'line'}} = sort { $a->[1] <=> $b->[1] || $a->[2] <=> $b->[2] } @{$windInfor{$chrID}{'line'}}; 
+	for my $ar ( @{$windInfor{$chrID}{'line'}} ) { push(@{$windInfor{$chrID}{'ratio_array'}}, $ar->[ $opts{'slct_colN'} ]); defined $ar->[ $opts{'slct_colN'} ] or die "@$ar\n"; }
 	$stat->add_data( @{$windInfor{$chrID}{'ratio_array'}} ); 
 	# &tsmsg("[Msg] @{$windInfor{$chrID}{'ratio_array'}}[0,1,2,3]\n"); 
 }
@@ -120,7 +130,7 @@ sub output_winds {
 	$wind_hr->{'grp_se'} //= []; 
 	my @out_se_i = @{$wind_hr->{'grp_se'}}; 
 	$wind_hr->{'goodIdx'} //= []; 
-	my $has_header = 0; 
+	# Add goodIdx out of groups to '@out_se_i'; 
 	for (my $i=0; $i<@{$wind_hr->{'goodIdx'}}; $i++) {
 		defined $wind_hr->{'inGrp'}{ $wind_hr->{'goodIdx'}[$i] } and next; 
 		push(@out_se_i, [$wind_hr->{'goodIdx'}[$i], $wind_hr->{'goodIdx'}[$i]]); 
@@ -129,15 +139,18 @@ sub output_winds {
 		my @loc1 = @{$wind_hr->{'line'}[$ar->[0]]} ; 
 		my @loc2 = @{$wind_hr->{'line'}[$ar->[1]]} ; 
 		my $sum_bpCnt = 0; 
+		my $max_slct_colV; 
 		for my $idx ( $ar->[0] .. $ar->[1] ) {
 			if ( $opts{'bpCnt_colN'} >= 0 ) {
 				$sum_bpCnt += $wind_hr->{'line'}[ $idx ][ $opts{'bpCnt_colN'} ]; 
 			} else {
 				$sum_bpCnt += ( $wind_hr->{'line'}[ $idx ][2] - $wind_hr->{'line'}[ $idx ][1] + 1 ); 
 			}
+			$max_slct_colV //= $wind_hr->{'line'}[ $idx ][ $opts{'slct_colN'} ]; 
+			$max_slct_colV < $wind_hr->{'line'}[ $idx ][ $opts{'slct_colN'} ] and $max_slct_colV = $wind_hr->{'line'}[ $idx ][ $opts{'slct_colN'} ]; 
 		}
-		$has_header or do { $has_header=1; print STDOUT join("\t", qw/chrID chrS chrE chrLen bpCnt/)."\n"; }; 
-		print STDOUT join("\t", $loc1[0], $loc1[1], $loc2[2], $loc2[2]-$loc1[1]+1, $sum_bpCnt)."\n"; 
+		$glob{'has_outHeader'} or do { $glob{'has_outHeader'}=1; print STDOUT join("\t", qw/chrID chrS chrE chrLen bpCnt MaxV/)."\n"; }; 
+		print STDOUT join("\t", $loc1[0], $loc1[1], $loc2[2], $loc2[2]-$loc1[1]+1, $sum_bpCnt, $max_slct_colV)."\n"; 
 	}
 
 	return ; 
@@ -150,6 +163,7 @@ sub group_good_winds {
 	$sideEnlarge //= 0; 
 	my %h = %$hr; 
 	my @ti = @{$h{'goodIdx'}}; 
+	my %is_good_ti = map { $_ => 1 } @ti; 
 	my @grp; 
 	for (my $i=0; $i<@ti; $i++) {
 		my $good_in_grp = 1; 
@@ -158,9 +172,24 @@ sub group_good_winds {
 		for (my $j=$i+1; $j<@ti and $ti[$j] <= $endIdx; $j++) {
 			$good_in_grp ++; 
 		}
+		if ( $opts{'joinNeighbor'} ) {
+			if ( defined $is_good_ti{ $endIdx } ) {
+				for (my $new_end = $endIdx+1; defined $is_good_ti{$new_end}; $new_end++) {
+					$endIdx = $new_end; 
+				}
+			}
+		}
 		if ( $good_in_grp >= $goodN ) {
 			# This is a good group. 
 			&extend_grp(\@grp, $startIdx, $endIdx); 
+		} elsif ( $opts{'joinNeighbor'} ) {
+			$endIdx = $startIdx + 1; 
+			if ( defined $is_good_ti{ $startIdx } and defined $is_good_ti{ $endIdx } ) {
+				for (my $new_end = $endIdx+1; defined $is_good_ti{$new_end}; $new_end++) {
+					$endIdx = $new_end; 
+				}
+				&extend_grp(\@grp, $startIdx, $endIdx); 
+			}
 		}
 	}
 	&chop_grp(\@grp, \@ti); # Chop groups to limit edge. 
