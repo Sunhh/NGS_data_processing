@@ -55,6 +55,7 @@ sub chrID_to_number {
 	my ($id, $p) = @_; 
 	$p //= 'WM97_Chr'; 
 	$id =~ s!^$p!!; 
+	$id =~ s!^(chr|chrom|chromosome|LG)_?!!i; 
 	$id =~ s!^0*(.+?)$!$1!; 
 	return $id; 
 }
