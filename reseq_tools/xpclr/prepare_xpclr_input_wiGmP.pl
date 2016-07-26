@@ -11,6 +11,7 @@ my $fn_snp = shift;
 my $fn_lis1 = shift; 
 my $fn_lis2 = shift;
 
+my %glob; 
 my $gmCn = 2; 
 
 my %fho; 
@@ -63,7 +64,12 @@ while (&wantLineC($fh_snp)) {
 			$is_bad = 1; 
 			last; 
 		} else { 
-			&stopErr("[Err]bad[$ta[$i]]\ni=$i\n"); 
+			if (!(defined $glob{'bad_geno'}{$ta_1[$i]})) {
+				$glob{'bad_geno'}{$ta_1[$i]} = 1; 
+				&tsmsg("[Wrn] Skip site with bad genotype [$ta_1[$i]]\n"); 
+			}
+			$is_bad = 1; 
+			last; 
 		}
 	}
 	delete $al_1{'N'}; 
@@ -80,7 +86,12 @@ while (&wantLineC($fh_snp)) {
 			$is_bad = 1; 
 			last; 
 		} else { 
-			&stopErr("[Err]bad[$ta[$i]]\ni=$i\n"); 
+			if ( !(defined $glob{'bad_geno'}{$ta_2[$i]}) ) {
+				$glob{'bad_geno'}{$ta_2[$i]} = 1; 
+				&tsmsg("[Wrn] Skip site with bad genotype [$ta_2[$i]]\n"); 
+			}
+			$is_bad = 1; 
+			last; 
 		}
 	}
 	delete $al_2{'N'}; 
