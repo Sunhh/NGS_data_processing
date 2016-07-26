@@ -10,6 +10,8 @@ use mathSunhh;
 my $fn_gm  = shift; 
 my $fn_snp = shift; 
 
+my %glob; 
+
 my $fh_gm  = &openFH($fn_gm, '<'); 
 my %gm_anchors; 
 my %rc_anchors; 
@@ -112,7 +114,11 @@ while (&wantLineC($fh_snp)) {
 	$chrID eq 'chr' and next; 
 	$chrID eq 'plast' and next; 
 	$chrID eq 'mito' and next; 
-	defined $rc_anchors{$chrID} or die "No data for [$chrID]\n"; 
+	if ( !(defined $rc_anchors{$chrID}) and !(defined $glob{'err_chrID'}{$chrID}) ) {
+		&tsmsg("[Wrn] No data for chrID [$chrID]\n"); 
+		$glob{'err_chrID'}{$chrID} = 1; 
+		next; 
+	}
 	my $gmP; 
 	for my $t1 ( @{$rc_anchors{$chrID}} ) {
 		$chrP < $t1->[0] and next; 
