@@ -1,4 +1,7 @@
 #!/usr/bin/perl 
+# 20160728 Add more description. 
+#   Only keep Orthologous Groups (OGs) with 1-to-1 protein relationships. 
+#   Only consider taxon defined in taxa_list. 
 use strict; 
 use warnings; 
 use LogInforSunhh; 
@@ -9,7 +12,17 @@ GetOptions(\%opts,
 	"taxa_list:s", 
 ); 
 
-!@ARGV and -t and die "perl $0 all_orthomcl.out > all_orthomcl.out.out\n -taxa_list in_taxa.list. Format: tax1.fa \\t tax2.fa \\t ...\n"; 
+my $help_txt = <<HH; 
+
+perl $0 all_orthomcl.out > all_orthomcl.out.1to1_OGs
+
+-taxa_list in_taxa.list. Format: tax1.fa \\n tax2.fa \\n ...
+
+-help
+
+HH
+
+-t and !@ARGV and &LogInforSunhh::usage($help_txt); 
 
 my %need_taxa = %{&load_taxa_lis( $opts{'taxa_list'} )}; 
 my @need_taxa_arr = sort { $need_taxa{$a} <=> $need_taxa{$b} } keys %need_taxa; 
@@ -27,6 +40,7 @@ while (<>) {
 		$tc =~ m/^\s*$/ and next; 
 		$tc =~ m/^(\S+)\((\S+)\)$/ or die "tc=[$tc]\n"; 
 		my ($gid, $taxID) = ($1, $2); 
+		defined $need_taxa{ $taxID } or next; 
 		push(@gIDs, $gid); 
 		defined $cnt{$taxID} and do { $is_bad = 1; last; }; 
 		push(@{$cnt{$taxID}}, $gid); 
@@ -42,6 +56,7 @@ while (<>) {
 
 
 sub load_taxa_lis {
+	# Input format : taxID_1 \\n taxID_2 \\n ....
 	my %lis; 
 	open F,'<',"$_[0]" or die "$!\n"; 
 	while (<F>) {
