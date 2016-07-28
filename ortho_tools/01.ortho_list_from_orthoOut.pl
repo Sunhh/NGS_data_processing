@@ -9,6 +9,7 @@ GetOptions(\%opts,
 	"taxa_list:s", 
 ); 
 
+!@ARGV and -t and die "perl $0 all_orthomcl.out > all_orthomcl.out.out\n -taxa_list in_taxa.list. Format: tax1.fa \\t tax2.fa \\t ...\n"; 
 
 my %need_taxa = %{&load_taxa_lis( $opts{'taxa_list'} )}; 
 my @need_taxa_arr = sort { $need_taxa{$a} <=> $need_taxa{$b} } keys %need_taxa; 
