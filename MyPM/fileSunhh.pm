@@ -134,7 +134,7 @@ sub load_bn6File {
 Function   : Load in a tab delimited file into a array, whose element is a array reference of all files of the line. 
              If $keep_annot is TRUE (1), those lines beginning with '#' or blank lines will also be loaded in. 
 
-Return     : ( [$line_1_array, $line_2_array, ...] )
+Return     : ( $line_1_array, $line_2_array, ... )
 
   $line_1_array = [ field_1, field_2, ... ]
 
