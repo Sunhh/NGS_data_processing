@@ -506,6 +506,12 @@ Invoke File::Copy::copy()
 sub _copy {
 	return File::Copy::copy(@_); 
 }#sub _copy()
+=head1 _move()
+Invoke File::Copy::move()
+=cut
+sub _move {
+	return File::Copy::move(@_); 
+}#sub _move()
 
 =head1 _rmtree()
 =cut
