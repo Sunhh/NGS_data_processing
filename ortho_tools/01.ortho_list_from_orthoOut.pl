@@ -11,6 +11,7 @@ GetOptions(\%opts,
 	"help!", 
 	"taxa_list:s", 
 	"allow_miss!", 
+	"allow_mGene!", 
 ); 
 
 my $help_txt = <<HH; 
@@ -22,6 +23,7 @@ my $help_txt = <<HH;
 #
 # -taxa_list   [in_taxa.list] Format: tax1.fa \\n tax2.fa \\n ...
 # -allow_miss  [Boolean] Allow missing of taxa if given. 
+# -allow_mGene [Boolean] Allow multiple genes within each OG. 
 # 
 # -help
 # 
@@ -48,13 +50,16 @@ while (<>) {
 		my ($gid, $taxID) = ($1, $2); 
 		defined $need_taxa{ $taxID } or next; 
 		push(@gIDs, $gid); 
-		defined $cnt{$taxID} and do { $is_bad = 1; last; }; 
+		unless ( $opts{'allow_mGene'} ) {
+			defined $cnt{$taxID} and do { $is_bad = 1; last; }; 
+		}
 		push(@{$cnt{$taxID}}, $gid); 
 	}
 	$is_bad == 1 and next; 
 	$opts{'allow_miss'} or scalar(keys %cnt) == $tax_num or next; 
 	print STDOUT "$ta[0]"; 
 	for my $tk ( @need_taxa_arr ) {
+		$cnt{$tk} //= ['NA']; 
 		print STDOUT "\t" . join(" ;; ", @{$cnt{$tk}}); 
 	}
 	print STDOUT "\n"; 
