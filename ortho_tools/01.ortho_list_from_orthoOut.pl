@@ -10,16 +10,22 @@ my %opts;
 GetOptions(\%opts, 
 	"help!", 
 	"taxa_list:s", 
+	"allow_miss!", 
 ); 
 
 my $help_txt = <<HH; 
-
-perl $0 all_orthomcl.out > all_orthomcl.out.1to1_OGs
-
--taxa_list in_taxa.list. Format: tax1.fa \\n tax2.fa \\n ...
-
--help
-
+####################################################################################################
+# perl $0 all_orthomcl.out > all_orthomcl.out.1to1_OGs
+# 
+#   Only OGs with at most one gene for each taxon will be kept. 
+#   By default, I require all taxa existing in an OG. 
+#
+# -taxa_list   [in_taxa.list] Format: tax1.fa \\n tax2.fa \\n ...
+# -allow_miss  [Boolean] Allow missing of taxa if given. 
+# 
+# -help
+# 
+####################################################################################################
 HH
 
 -t and !@ARGV and &LogInforSunhh::usage($help_txt); 
@@ -46,7 +52,7 @@ while (<>) {
 		push(@{$cnt{$taxID}}, $gid); 
 	}
 	$is_bad == 1 and next; 
-	scalar(keys %cnt) == $tax_num or next; 
+	$opts{'allow_miss'} or scalar(keys %cnt) == $tax_num or next; 
 	print STDOUT "$ta[0]"; 
 	for my $tk ( @need_taxa_arr ) {
 		print STDOUT "\t" . join(" ;; ", @{$cnt{$tk}}); 
