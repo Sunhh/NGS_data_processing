@@ -65,9 +65,12 @@ my $wrk_dir = &fileSunhh::new_tmp_dir();
 mkdir($wrk_dir) or &stopErr("[Err] Failed to create dir [$wrk_dir]\n"); 
 
 
-$glob{'curr_order'} = 0; 
-for ( my $i=0; $i<@cog_tab; $i++ ) {
-	$glob{'curr_order'} = $i+1; 
+for (my $i=0; $i<@cog_tab; $i++) {
+	push(@{$glob{'cog_idx2geneN'}}, [$i, $#{$cog_tab[$i]}+1]); 
+}
+for my $tr ( sort { $a->[1] <=> $b->[1] || $a->[0] <=> $b->[0] } @{$glob{'cog_idx2geneN'}} ) {
+	my $i = $tr->[0]; 
+	$glob{'curr_order'} = $i + 1; 
 	my $curr_geneN = scalar( @{$cog_tab[$i]} ); 
 	$curr_geneN > 0 or do { &tsmsg("[Wrn] Skip $glob{'curr_order'} -th COG because no gene found.\n"); next; }; 
 	$curr_geneN > $opts{'max_geneN'} and do { &tsmsg("[Wrn] Skip $glob{'curr_order'} -th COG because of too many genes [$curr_geneN]\n"); next; }; 
@@ -87,6 +90,7 @@ for my $sep ( @{$glob{'sepPref'}} ) {
 
 	my %tGlob = %$sep; 
 	my $pref = $tGlob{'curr_pref'}; 
+	&tsmsg(join("","[Msg] Files [", join(" ", @{$tGlob{'curr_toRM'}}),"] will be removed after pref [$pref] processed\n")); 
 	&exeCmd_1cmd("$opts{'ete3_cmd'} -a ${pref}.prot.fa -o ${pref}_ete3O/", 0) and &stopErr("[Err] Failed to run ete3 for $tGlob{'curr_order'} -th COG\n"); 
 	opendir DD, "${pref}_ete3O/" or &stopErr("[Err] Failed to opendir [${pref}_ete3O/]\n"); 
 	for my $ff (readdir(DD)) {
@@ -136,15 +140,13 @@ sub prepare_ete3 {
 		delete($glob{$tk}); 
 	}
 	$glob{'curr_pref'} = "$wrk_dir/$glob{'curr_order'}"; 
-	&tsmsg("[Msg]   Prepared data for [$glob{'curr_pref'}]\n"); 
+	&tsmsg(join('', "[Msg]   Prepared data for [$glob{'curr_pref'}] with [", scalar( map { @$_ } @{$glob{'curr_tab'}}),"] genes\n")); 
 	$glob{'curr_fh_oProt'} = &openFH("$glob{'curr_pref'}.prot.fa", '>'); 
 	my %h; 
-	for my $ar ( @{$glob{'curr_tab'}} ) {
-		for my $id (@$ar) {
-			defined $h{$id} and next; 
-			defined $prot_fas{$id} or &stopErr("[Err] No prot-seq found for ID [$id]\n"); 
-			print {$glob{'curr_fh_oProt'}} ">$prot_fas{$id}{'key'}\n$prot_fas{$id}{'seq'}\n"; 
-		}
+	for my $id ( map { @$_ } @{$glob{'curr_tab'}} ) {
+		defined $h{$id} and next; 
+		defined $prot_fas{$id} or &stopErr("[Err] No prot-seq found for ID [$id]\n"); 
+		print {$glob{'curr_fh_oProt'}} ">$prot_fas{$id}{'key'}\n$prot_fas{$id}{'seq'}\n"; 
 	}
 	delete($glob{'curr_tab'}); 
 	close( $glob{'curr_fh_oProt'} ); delete( $glob{'curr_fh_oProt'} ); 
