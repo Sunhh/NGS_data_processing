@@ -1162,5 +1162,165 @@ sub AA2array {
 	return($1,$2); 
 }# sub AA2array ()
 
+=head1 tab_allele( $allele_in_vcfTab )
+
+Input    : Must be diploid, and no degenerated characters allowed. Examples : 
+    './.'   -   missing
+    'A/A'   -   homozygous A. Equivalent to 'A/a'; 
+    'A/T'   -   heterozygous A/T. Equivalent to 'T/A'; 
+    'A/.'   -   wrong format. 
+
+Output   : ( [allele_1_char, allele_1_cnt] , [allele_2_char, allele_2_cnt] )
+      All output alleles are in upper case. 
+    Input ['./.'] => Output ( ['.', 2] ); 
+    Input ['A/a'] => Output ( ['A', 2] ); 
+    Input ['T/A'] => Output ( ['A', 1], ['T', 1] ); 
+    Input ['A/.'] => Output ( die ); 
+=cut
+sub tab_allele {
+	my $t1 = shift;
+	if ( $t1 eq './.' ) {
+		return( ['.', 2] );
+	} elsif ( $t1 =~ m!^([ATGC\*]+)/([ATGC\*]+)$!i ) {
+		my ($a1, $a2) = sort ( uc($1), uc($2) );
+		if ( $a1 eq $a2 ) {
+			return( [$a1, 2] );
+		} else {
+			return( [$a1, 1], [$a2, 1] );
+		}
+	} else {
+		&stopErr("[Err] Failed to parse allele [$t1]\n");
+	}
+	&stopErr("[Err] Why here?\n");
+	return();
+}# tab_allele ()
+
+=head1 tab_class_PP_al( \@P1_allele , @P2_allele )
+
+Input     : @P1_allele is output of &tab_allele( $P1_allele ); 
+
+Return    : ( \%al_class )
+
+  $al_class{ $allele } = { 'from' => 'P1|P2|PP|UU' , 'cnt' => $num_of_ParentAl, 'type' => '(homo|hete|diff|miss)P1_(homo|hete|diff|miss)P2' }; 
+  'from' : Where does $allele come from. 
+    'P1' - exists only in P1 parent. 
+    'PP' - exists/from both parents; 
+    'UU' - at least one of the parent is missing ('./.'); 
+  'cnt'  - how many alleles exist in parents. Should be from 1 to 4 . 
+  'type' - allele status in parent (P1/P2). 
+           'diff' - parent genotyped but not including this allele. 
+           'miss' - parent not genotyped (missing). 
+           'homo' - parent is genotyped with homozygous this allele. 
+           'hete' - parent is heterozygous with this allele. 
+
+=cut
+sub tab_class_PP_al {
+	my ($p1_alA, $p2_alA) = @_; 
+	my %back; # '$allele' 
+
+	my (%ee); 
+	for my $ar1 ( @$p1_alA ) {
+		$ee{$ar1->[0]} = ['P1', ( $ar1->[1] == 2 ) ? 'homo' : 'hete', 'diff', $ar1->[1]]; 
+	}
+	for my $ar2 ( @$p2_alA ) {
+		if ( defined $ee{$ar2->[0]} ) {
+			$ee{$ar2->[0]}[0] = 'PP'; 
+			$ee{$ar2->[0]}[2] = ($ar2->[1] == 2) ? 'homo' : 'hete'; 
+			$ee{$ar2->[0]}[3] += $ar2->[1]; 
+		} else {
+			$ee{$ar2->[0]} = ['P2', 'diff', ($ar2->[1] == 2) ? 'homo' : 'hete', $ar2->[1] ]; 
+		}
+	}
+	# One of the parent is missing. 
+	if ( defined $ee{'.'} ) {
+		delete $ee{'.'}; 
+		for my $c ( keys %ee ) {
+			$ee{$c}[1] eq 'diff' and $ee{$c}[1] = 'miss'; 
+			$ee{$c}[2] eq 'diff' and $ee{$c}[2] = 'miss'; 
+			$ee{$c}[1] eq 'miss' or $ee{$c}[2] eq 'miss' or &tsmsg("[Wrn] Something is wrong for char [$c]\n"); 
+
+			$back{$c}{'from'} = 'UU'; 
+			$back{$c}{'cnt'}  = $ee{$c}[3]; 
+			$back{$c}{'type'} = "$ee{$c}[1]P1_$ee{$c}[2]P2" ; 
+		}
+		return(\%back); 
+	} 
+
+	# Both parents are genotyped well. 
+	for my $c ( keys %ee ) {
+		$back{$c}{'from'} = $ee{$c}[0]; 
+		$back{$c}{'cnt'}  = $ee{$c}[3]; 
+		$back{$c}{'type'} = "$ee{$c}[1]P1_$ee{$c}[2]P2"; 
+	}
+	return(\%back); 
+}# tab_class_PP_al() 
+
+=head1 tab_class_off_al( \%parent_al_class, \@offspring_al )
+
+Return : '(homo|hete)_(non|bad|any|P1|P2|both)_parent' | 'miss' 
+
+  miss                : offspring's genotype is missing. 
+  homo_(P1|P2)_parent : homo in offspring, and allele exists in one parent only. 
+  hete_(P1|P2)_parent : hete in offspring, and both alleles exist in one parent only. 
+  hete_both_parent    : hete in offspring, and one allele comes from one parent, the other one from another parent. 
+  ????_non_parent     : Offspring has an allele not existing in any parent. 
+  ????_bad_parent     : One of the parent's genotype is missing. 
+  ????_any_parent     : At least one allele in offspring is shared by both parents. 
+
+=cut
+sub tab_class_off_al {
+	my ($pp_alH, $off_alA) = @_; 
+	$off_alA->[0][0] eq '.' and return('miss'); 
+	my $is_bad_parent = 0; 
+	scalar( keys %$pp_alH ) > 0 or $is_bad_parent = 1; 
+	for my $t_al (keys %$pp_alH) {
+		$pp_alH->{$t_al}{'from'} eq 'UU' and do { $is_bad_parent = 1; last;  }; 
+	}
+	my $is_homo = -1; 
+	if ( $#{$off_alA} == 0 and $off_alA->[0][1] == 2 ) {
+		$is_homo = 'homo'; 
+		$is_bad_parent == 0 and !(defined $pp_alH->{$off_alA->[0][0]}) and return('homo_non_parent'); 
+	} elsif ( $#{$off_alA} == 1 and $off_alA->[0][1] == 1 and $off_alA->[1][1] == 1 ) {
+		$is_homo = 'hete'; 
+		$is_bad_parent == 0 and !( defined $pp_alH->{$off_alA->[0][0]} and defined $pp_alH->{$off_alA->[1][0]} ) and return('hete_non_parent'); 
+	} else {
+		&stopErr( join('', "[Err] Strange allele : ", join(":", map { @$_ } @$off_alA))."\n" ); 
+	}
+	$is_bad_parent == 1 and return("${is_homo}_bad_parent"); 
+
+	my $p1 = $pp_alH->{ $off_alA->[0][0] }{'from'}; 
+
+	if ( $is_homo eq 'homo' ) {
+		if ( $p1 eq 'PP' ) {
+			return('homo_any_parent'); 
+		} elsif ( $p1 eq 'P1' ) {
+			return('homo_P1_parent'); 
+		} elsif ( $p1 eq 'P2' ) {
+			return('homo_P2_parent'); 
+		} else {
+			&stopErr("[Err] Unknown allele [$off_alA->[0][0]] with $p1\n"); 
+		}
+	} elsif ( $is_homo eq 'hete' ) {
+		my $p2 = $pp_alH->{ $off_alA->[1][0] }{'from'}; 
+		if ( $p1 eq $p2 ) {
+			$p1 eq 'P1' and return('hete_P1_parent'); 
+			$p1 eq 'P2' and return('hete_P2_parent'); 
+			$p1 eq 'PP' and return('hete_any_parent'); 
+			$p1 eq 'UU' and return('hete_bad_parent'); 
+		} elsif ( ( $p1 eq 'P1' and $p2 eq 'P2') or ($p1 eq 'P2' and $p2 eq 'P1') ) {
+			return('hete_both_parent'); 
+		} elsif ( $p1 eq 'PP' or $p2 eq 'PP' ) {
+			return('hete_any_parent'); 
+		} else {
+			&stopErr(join('', "[Err] Strange allele : ", join(":", map { @$_ } @$off_alA))."\n"); 
+		}
+	} else {
+		&stopErr("[Err] Why here\n"); 
+	}
+
+	return; 
+}# tab_class_off_al() 
+
+
 
 1; # Terminate the package with the required 1; 
