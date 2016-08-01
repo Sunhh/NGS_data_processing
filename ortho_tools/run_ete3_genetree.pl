@@ -110,7 +110,7 @@ for my $sep ( @{$glob{'sepPref'}} ) {
 				}
 			}
 			closedir(D2); 
-			for my $fn (@{$tGlob{'file_toRM'}}) {
+			for my $fn (@{$tGlob{'curr_toRM'}}) {
 				unlink($fn); 
 			}
 		} else {
@@ -125,12 +125,16 @@ for my $sep ( @{$glob{'sepPref'}} ) {
 }#End for my $pref () 
 $glob{'pm'}->wait_all_children; 
 
-# &fileSunhh::_rmtree($wrk_dir); 
+&fileSunhh::_rmtree($wrk_dir); 
 
 &tsmsg("[Rec] All done [$0]\n"); 
 
 sub prepare_ete3 {
 	# A proper $glob{'curr_order'} is required. 
+	### To be used : curr_order , curr_tab 
+	for my $tk (qw/curr_pref curr_fh_oProt curr_toRM/) {
+		delete($glob{$tk}); 
+	}
 	$glob{'curr_pref'} = "$wrk_dir/$glob{'curr_order'}"; 
 	&tsmsg("[Msg]   Prepared data for [$glob{'curr_pref'}]\n"); 
 	$glob{'curr_fh_oProt'} = &openFH("$glob{'curr_pref'}.prot.fa", '>'); 
@@ -144,8 +148,10 @@ sub prepare_ete3 {
 	}
 	delete($glob{'curr_tab'}); 
 	close( $glob{'curr_fh_oProt'} ); delete( $glob{'curr_fh_oProt'} ); 
-	push(@{$glob{'file_toRM'}}, "$glob{'curr_pref'}.prot.fa"); 
+	push(@{$glob{'curr_toRM'}}, "$glob{'curr_pref'}.prot.fa"); 
+	push(@{$glob{'file_toRM'}}, @{$glob{'curr_toRM'}}); 
 	my %t_glob = %glob; 
+	delete($t_glob{'file_toRM'}); 
 	delete($t_glob{'sepPref'}); 
 	push( @{$glob{'sepPref'}}, \%t_glob ); 
 }#sub prepare_ete3()
