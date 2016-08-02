@@ -32,6 +32,7 @@ my $o_header = <<OH;
 ###ALT=<ID=NON_REF,Description="Represents any possible alternative allele at this location">
 OH
 
+print "$o_header"; 
 my $fh = &openFH( $opts{'in_tab'}, '<' ); 
 my $has_header = 0; 
 while (<$fh>) {
