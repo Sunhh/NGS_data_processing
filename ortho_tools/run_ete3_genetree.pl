@@ -15,11 +15,11 @@ GetOptions(\%opts,
 	"in_prot:s", # all_orthomcl.ete3.prot.fa
 	"max_geneN:i", # 9999 
 	"out_dir:s", # ete3_out/
-	"ete3_cmd:s", # 'ete3 build --cpu 25 -w phylomedb4 '
+	"ete3_cmd:s", # 'ete3 build --cpu 25 -w phylomedb4 --clearall '
 	"cpuN:i", # 1
 ); 
 
-$opts{'ete3_cmd'}  //= 'ete3 build --cpu 25 -w phylomedb4 '; 
+$opts{'ete3_cmd'}  //= 'ete3 build --cpu 2 -w phylomedb4 --clearall '; 
 $opts{'max_geneN'} //= 200; 
 $opts{'cpuN'}      //= 1; 
 
