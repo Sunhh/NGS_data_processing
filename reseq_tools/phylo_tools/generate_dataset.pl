@@ -74,7 +74,7 @@ my $oDir = "${dirID}_rand_${setID}_${wNum}in" . int($wLen/1000) . "k";
 if ( defined $opts{'replaceID'} ) {
 	&exeCmd_1cmd( "$opts{'pl_dealFas'} -replaceID -replaceIDlist $opts{'tax_list'} -replaceIDcol $opts{'replaceID'} $oDir/${opref}_set${setID}.use.snp.ori.fa > $oDir/${opref}_set${setID}.use.snp.fa" ) and &stopErr("[Err]\n"); 
 } else {
-	&fileSunhh::_move( "$oDir/${opref}_set${setID}.use.snp.ori.fa $oDir/${opref}_set${setID}.use.snp.fa" ); 
+	&fileSunhh::_move( "$oDir/${opref}_set${setID}.use.snp.ori.fa", "$oDir/${opref}_set${setID}.use.snp.fa" ); 
 }
 
 &tsmsg("[Rec] All done [$0]\n"); 
