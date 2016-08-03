@@ -11,7 +11,7 @@ my $file = shift;
 my %s2h = %{ $fs_obj->save_seq_to_hash( 'faFile'=>$file, 'has_head'=>1 ) }; 
 print STDOUT <<HEADER; 
 #mega
-!Title tbl2meg;
+!Title $file;
 
 HEADER
 
