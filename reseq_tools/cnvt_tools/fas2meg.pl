@@ -17,7 +17,7 @@ HEADER
 
 for my $tk (sort { $s2h{$a}{'Order'} <=> $s2h{$b}{'Order'} } keys %s2h) {
 	$s2h{$tk}{'seq'} =~ s/\s//gs; 
-	$s2h{$tk}{'seq'} =~ s/(.{60})/$1\n/g; chomp( $s2h{$tk}{'seq'} ); 
+	$s2h{$tk}{'seq'} =~ s/(.{100})/$1\n/g; chomp( $s2h{$tk}{'seq'} ); 
 	print STDOUT "#$s2h{$tk}{'key'}\n$s2h{$tk}{'seq'}\n"; 
 }
 
