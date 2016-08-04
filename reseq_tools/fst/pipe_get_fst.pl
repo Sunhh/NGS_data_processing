@@ -15,7 +15,7 @@ GetOptions(\%opts,
 	"wind_length:i", "wind_step:i", 
 	"pl_snpTbl_sepByWind:s", 
 	"pl_cnvt_tbl2fstat:s", 
-	"pl_run_hierfstat:s", "maxNmissR:f", "rmNegNeiFst!", "rmNegWcFst!", 
+	"pl_run_hierfstat:s", "maxNmissR:f", "minGrp1N:i", "minGrp2N:i", "rmNegNeiFst!", "rmNegWcFst!", 
 	"pl_join_fst_siteChrPos:s", 
 	"exe_Rscript:s", 
 ); 
@@ -28,7 +28,7 @@ my %para;
 
 &run_pipe(); 
 
-&tsmsg("[Rec] All doen for $0\n"); 
+&tsmsg("[Rec] All done for $0\n"); 
 
 sub run_pipe {
 	&exeCmd_1cmd("perl $opts{'pl_snpTbl_sepByWind'} -snp_tbl $opts{'snp_tbl'} -skipSort -ncpu $opts{'ncpu'} -out $opts{'o_pref'}.wind_list -wind_start 1 -wind_end_useMax -wind_length $opts{'wind_length'} -wind_step $opts{'wind_step'} -chr_colN 0 -pos_colN 1 -skipHN 1"); 
@@ -46,7 +46,7 @@ sub run_pipe {
 			&exeCmd_1cmd("mv $ta[0].fmt $ta[0]"); 
 		}
 		close F; 
-		&exeCmd_1cmd("perl $opts{'pl_run_hierfstat'} $para{'maxNmissR'} $para{'rmNegNeiFst'} $para{'rmNegWcFst'} -fst_in $fn -inList -exe_Rscript $opts{'exe_Rscript'} "); 
+		&exeCmd_1cmd("perl $opts{'pl_run_hierfstat'} $para{'maxNmissR'} $para{'minGrp1N'} $para{'minGrp2N'} $para{'rmNegNeiFst'} $para{'rmNegWcFst'} -fst_in $fn -inList -exe_Rscript $opts{'exe_Rscript'} ") and &stopErr("[Err] Failed to execute $opts{'pl_run_hierfstat'}\n"); 
 		$pm->finish; 
 	}
 	$pm->wait_all_children; 
@@ -174,6 +174,8 @@ sub set_opts {
 	$opts{'wind_step'} //= $opts{'wind_length'}; 
 
 	$para{'maxNmissR'}   = ( defined $opts{'maxNmissR'} ) ? " -maxNmissR $opts{'maxNmissR'} " : "" ; 
+	$para{'minGrp1N'}    = ( defined $opts{'minGrp1N'} )  ? " -minGrp1N $opts{'minGrp1N'} "   : "" ; 
+	$para{'minGrp2N'}    = ( defined $opts{'minGrp2N'} )  ? " -minGrp2N $opts{'minGrp2N'} "   : "" ; 
 	$para{'rmNegNeiFst'} = ( $opts{'rmNegNeiFst'} ) ? " -rmNegNeiFst " : ""; 
 	$para{'rmNegWcFst'}  = ( $opts{'rmNegWcFst'}  ) ? " -rmNegWcFst  " : ""; 
 

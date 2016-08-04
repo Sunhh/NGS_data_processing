@@ -2,6 +2,22 @@
 use strict; 
 use warnings; 
 use LogInforSunhh; 
+use Getopt::Long; 
+my %opts; 
+GetOptions(\%opts, 
+	"help!", 
+	
+); 
+
+my $help_txt = <<HH; 
+
+perl $0 in_assemblies_list 
+
+
+HH
+
+-t and !@ARGV and &LogInforSunhh::usage($help_txt); 
+defined $opts{'help'} and &LogInforSunhh::usage($help_txt); 
 
 my @list; 
 while (<>) {

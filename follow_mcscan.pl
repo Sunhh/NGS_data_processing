@@ -5,6 +5,7 @@ use LogInforSunhh;
 use fileSunhh; 
 use mathSunhh; 
 my $ms_obj = mathSunhh->new(); 
+use mcsSunhh; 
 
 use Parallel::ForkManager;
 
@@ -16,14 +17,19 @@ GetOptions(\%opts,
  "in_aln:s", # This is the output ".collinearity" file of mcscanX, which should be similar to .align of mcscan or previous mcscanX version. 
  "in_blast:s", # This is the input ".blast" file of mcscanX, 
  "out:s", # output filename 
- "aln2list!", "addChr!", "tgt_gff:s", "srt_by:s", 
+ "aln2list!", "addChr!", "tgt_gff:s", "srt_by:s", "raw_order!", 
  "aln2table!",
+   "useYN!", 
+ "aln2pairList!", 
  "glist2pairs!", "in_glist:s", "pivot_pat:s", "target_pat:s", 
  "slctBlk!", "slct_list:s", "slct_colN:i", "slct_type:s", 
  "glist2html!", "pivot_chrID:s", 
- "classDupGene!", "max_eval:f", "min_cscore:f", "max_proxN:i", "max_tandN:i", "tand_list:s", 
+ "classDupGene!", "max_eval:f", "min_cscore:f", "max_proxN:i", "max_tandN:i", "tand_list:s", "only_direct!", "prox_list:s", 
  "filterBlast!", "rm_repeat!", "repeat_eval:f", "rm_tandem!", 
  "add_KaKs!", "in_pair_list:s", "fas_cds:s", "fas_prot:s", "out_pref:s","alnMethod:s", "ncpu:i", "kaks_tab:s", 
+ "cvt_ctg2scf!", "scf_agp:s", 
+ "trim_block!", "trim_blkSE:s", 
+ "filter_blk!", "min_blkPair:i", 
  "help!", 
 ); 
 
@@ -46,13 +52,20 @@ sub usage {
 #                   Need -in_gff , -in_aln 
 #                   This list can be viewed in excel, and each column contain an aligned block. 
 #   -addChr       [Boolean] Tell if add chromID to block genes. 
-#   -tgt_gff      [target.gff] Provide source of blocks. 
+#   -tgt_gff      [target.gff] Provide source of blocks. Only blocks with genes from this gff aligned to the backbone genes are kept. 
 #   -srt_by       ['min'] Sort the gene blocks by 'min|Q1|Q3|interval_mean|COUNT'
+#   -raw_order    [Boolean] Do not sort the input gff according to their locations. 
+#                   Sometimes the orders of genes are different in scaffold and chromosome if there is a gene included by another one. (Rarely happen)
 # 
+# -aln2pairList   [Boolean] get gene pair list from aligned blocks. 
+#                   Need -in_aln 
+#                   May use -useYN 
 # -aln2table      [Boolean] Reformat aligned blocks into one line. 
 #                   Need -in_gff , -in_aln 
 #                   Headers: BlkID / Chrom1 / Start1 / End1 / Chrom2 / Start2 / End2 / Strand / AlnScore / AlnEvalue / AlnNumber / Gene1 / Gene2 / 
 #                            Ka / Ks / KaKs / AVG_Ks / Med_Ks / UsedKs / AVG_Ka / Med_Ka / UsedKa / AVG_KaKs / Med_KaKs / UsedKaKs
+#   -useYN        [Boolean] By default, Nei-Gojobori (NG) will be chose in block Ks calculation. But
+#                   I will switch to use Yang-Nielson (YN) results if given this parameter. 
 # 
 # -glist2pairs    [Boolean] Extract non-redundant gene pairs in gene list. 
 #                   Here the gene list is the output of -aln2list. 
@@ -90,6 +103,8 @@ sub usage {
 #   -tand_list    [outFileName] If given, write a table to 'outFileName' with foramt: 
 #                   Grp0_gen1 \\t Grp0_gen2 \\t Grp0_gen3 ...
 #                   Grp1_gen1 \\t Grp1_gen2 \\t Grp1_gen3 ... 
+#   -prox_list    [outFileName] 
+#   -only_direct  [Boolean] Only count homologous relationship between directly aligned gene pairs in .blast file. 
 #
 # -filterBlast    [Boolean] Filter .blast file. 
 #                   Need -in_blast 
@@ -109,6 +124,29 @@ sub usage {
 #   -alnMethod    ['muscle'] Could also be 'clustalw'
 #   -ncpu         [1] Use multiple-CPUs to compute KaKs, because it is too slow. 
 #   -kaks_tab     [NULL] Do not calculate KaKs again if given. 
+#
+# -cvt_ctg2scf    [Boolean] Convert contig IDs into scaffold IDs according to AGP file. 
+#                   Need -in_aln ; 
+#                   Please note that a contig should be related to only ONE scaffold here!!! 
+#   -scf_agp      [filename] AGP file from contigs to scaffolds. 
+#
+# -trim_block     [Boolean] Trim the blocks according to given blocks' start-end (SE) reference genes. 
+#                   Need -in_aln ; 
+#                   Please note that the e_value will not be changed. 
+#   -trim_blkSE   [filename] A file telling the new start and end genes in a block. 
+#                   Format : 'Block_ID \\t Start_Gene \\t End_Gene'
+#                   Blocks not mentioned will be output intactly. 
+#                   If the format is : 'Block_ID \\t "Gene1_prev : Gene1 ; Gene2 ; Evalue ..." \\t .Add'
+#                   I will add the 'Gene1-Gene2' pair to Block_ID directly after Gene1_prev. 
+#                   If the Gene1_prev == '.Top', these pairs will be added to the top of the block. 
+#                   If the format is : 'Block_ID \\t Start_Gene \\t .Remove'
+#                   I will remove the 'Start_Gene' in related block. 
+#                     The order of modification is '.Add' => '.Remove' => trimming. 
+#   -useYN        [Boolean] By default, Nei-Gojobori (NG) will be chose in block Ks calculation. But
+#                   I will switch to use Yang-Nielson (YN) results if given this parameter. 
+#
+# -filter_blk   [Boolean] 
+#   -min_blkPair  [Number] Default 2. At least this number of pairs in this block. 
 ####################################################################################################
 HH
 	exit 1; 
@@ -123,6 +161,8 @@ $opts{'help'} and &usage();
 my $outFh = \*STDOUT; 
 defined $opts{'out'} and $outFh = &openFH($opts{'out'}, '>'); 
 $opts{'srt_by'} //= 'min'; 
+$opts{'useYN'}  //= 0; 
+$opts{'only_direct'} //= 0; 
 
 
 ####################################################################################################
@@ -135,7 +175,8 @@ if ( $opts{'aln2list'} ) {
 	 'in_aln'=>$opts{'in_aln'}, 
 	 'addChr'=>$opts{'addChr'}, 
 	 'tgt_gff'=>$opts{'tgt_gff'}, 
-	 'srt_by'=>$opts{'srt_by'}
+	 'srt_by'=>$opts{'srt_by'}, 
+	 'raw_order'=>$opts{'raw_order'}, 
 	); 
 } elsif ( $opts{'aln2table'} ) {
 	&msc_aln2table(
@@ -170,6 +211,8 @@ if ( $opts{'aln2list'} ) {
 	 'max_proxN'=>$opts{'max_proxN'}, 
 	 'max_tandN'=>$opts{'max_tandN'}, 
 	 'tand_list'=>$opts{'tand_list'}, 
+	 'prox_list'=>$opts{'prox_list'}, 
+	 'only_direct' => $opts{'only_direct'}, 
 	); 
 } elsif ( $opts{'filterBlast'} ) { 
 	&mcs_filterBlast(
@@ -193,6 +236,26 @@ if ( $opts{'aln2list'} ) {
 	 'alnMethod'=>$opts{'alnMethod'}, 
 	 'ncpu' => $opts{'ncpu'}, 
 	 'kaks_tab' => $opts{'kaks_tab'}, 
+	); 
+} elsif ( $opts{'cvt_ctg2scf'} ) {
+	&cvt_ctg2scf_byAGP(
+	 'in_aln'  => $opts{'in_aln'}, 
+	 'scf_agp' => $opts{'scf_agp'}, 
+	); 
+} elsif ( $opts{'trim_block'} ) {
+	&trim_block(
+	 'in_aln'  => $opts{'in_aln'},
+	 'trim_blkSE' => $opts{'trim_blkSE'}, 
+	);  
+} elsif ( $opts{'filter_blk'} ) {
+	&filter_block(
+	 'in_aln'  => $opts{'in_aln'}, 
+	 'min_blkPair' => $opts{'min_blkPair'}, 
+	); 
+} elsif ( $opts{'aln2pairList'} ) {
+	&mcs_aln2pair (
+	 'in_aln' => $opts{'in_aln'}, 
+	 'useYN' => $opts{'useYN'}, 
 	); 
 } else {
 	&usage(); 
@@ -260,7 +323,7 @@ sub mcs_addKaKs {
 			&_lis2ks(%parm); 
 		}
 	} elsif ( $parm{'in_aln'} ) {
-		my ($alnInfo) = &_readInAln( $parm{'in_aln'} ); 
+		my ($alnInfo) = &_readInAln( $parm{'in_aln'}, $opts{'useYN'} ); 
 		$parm{'in_pair_list'} = "$parm{'out_pref'}_pair.lis"; 
 		my $lisFh = &openFH($parm{'in_pair_list'}, '>'); 
 		for my $ar1 (@$alnInfo) {
@@ -286,7 +349,7 @@ sub mcs_addKaKs {
 
 sub attach_KaKs {
 	my ($alnF, $kaksF, $outF, $header, $pair2ks) = @_; 
-	my ($alnInfo) = &_readInAln( $alnF );
+	my ($alnInfo) = &_readInAln( $alnF, $opts{'useYN'} );
 	if (!defined $header or !defined $pair2ks) {
 		($header, $pair2ks) = &_readInKsTab( $kaksF );
 	}
@@ -409,32 +472,78 @@ sub mcs_classDup {
 	$parm{'min_cscore'} //= -1; 
 	$parm{'max_proxN'}  //= 20; 
 	$parm{'max_tandN'}  //= 2; 
+	$parm{'only_direct'} //= 0; 
 	
 	my ($chr2gen, $gen2loc) = &_readInGff($parm{'in_gff'}); 
 	my %gidx = %{ &_index_glist($chr2gen) }; 
 	
-	my ($alnInfo) = &_readInAln( $parm{'in_aln'} ); 
+	my ($alnInfo) = &_readInAln( $parm{'in_aln'}, $opts{'useYN'} ); 
 	my ($bn6Info) = &_readInBn6( $parm{'in_blast'} ); 
 	$bn6Info = &_filter_eval( $bn6Info, $parm{'max_eval'} ) if ($parm{'max_eval'} >= 0); 
 	$bn6Info = &_filter_cscore( $bn6Info, $parm{'min_cscore'}, $gen2loc ) if ($parm{'min_cscore'} > 0) ; 
-	my ($id_grp) = &_group_id( $bn6Info ); 
-	# [[grp0_gen1, grp0_gen2, ...], [grp1_gen1, grp2_gen2, ...], ...]
-	my $prox_gene = &_tandemGrp(
-	 'id_grp'=>$id_grp, 
-	 'max_distN'=>$parm{'max_proxN'}, 
-	 'gen2loc'=>$gen2loc, 
-	 'gindex'=>\%gidx, 
-	); 
-	my $tand_gene = &_tandemGrp(
-	 'id_grp'=>$id_grp, 
-	 'max_distN'=>$parm{'max_tandN'}, 
-	 'gen2loc'=>$gen2loc, 
-	 'gindex'=>\%gidx, 
-	); 
-	
+
+	my ($prox_gene, $tand_gene); 
+
+
+	if ( $parm{'only_direct'} ) {
+		my %id2id; 
+		for my $ar1 (@$bn6Info) {
+			my $g1 = $ar1->{'k2v'}{'qseqid'}; 
+			my $g2 = $ar1->{'k2v'}{'sseqid'}; 
+			$id2id{$g1}{$g2} ++; 
+			$id2id{$g2}{$g1} ++; 
+		}
+
+		for my $chrID (sort keys %$chr2gen) {
+			my @gg = sort { $gidx{$a} <=> $gidx{$b} } map { $_->[0] } @{$chr2gen->{$chrID}}; 
+			for (my $i=0; $i<@gg; $i++) {
+				defined $id2id{$gg[$i]} or next; 
+				my @tp = ($i); # proximal
+				my @tt = ($i); # tandem
+				for (my $j=$i+1; $j<@gg; $j++) {
+					my $is_good = 0; 
+					if ( $j-$i <= $parm{'max_proxN'} ) {
+						defined $id2id{$gg[$i]}{$gg[$j]} and push(@tp, $j); 
+						$is_good = 1; 
+					}
+					if ( $j-$i <= $parm{'max_tandN'} ) {
+						defined $id2id{$gg[$i]}{$gg[$j]} and push(@tt, $j); 
+						$is_good = 1; 
+					}
+					$is_good == 1 or last; 
+				}
+				scalar(@tp) > 1 and push(@{$prox_gene}, [@gg[@tp]]); 
+				scalar(@tt) > 1 and push(@{$tand_gene}, [@gg[@tt]]); 
+			}
+		}
+	} else {
+		my ($id_grp) = &_group_id( $bn6Info ); 
+		# [[grp0_gen1, grp0_gen2, ...], [grp1_gen1, grp2_gen2, ...], ...]
+		$prox_gene = &_tandemGrp(
+		 'id_grp'=>$id_grp, 
+		 'max_distN'=>$parm{'max_proxN'}, 
+		 'gen2loc'=>$gen2loc, 
+		 'gindex'=>\%gidx, 
+		); 
+		$tand_gene = &_tandemGrp(
+		 'id_grp'=>$id_grp, 
+		 'max_distN'=>$parm{'max_tandN'}, 
+		 'gen2loc'=>$gen2loc, 
+		 'gindex'=>\%gidx, 
+		); 
+	}
+
+
 	if ( defined $parm{'tand_list'} ) {
 		my $otFh = &openFH($parm{'tand_list'}, '>'); 
 		for my $ar1 (sort { $gidx{$a->[0]} <=> $gidx{$b->[0]} } @$tand_gene) {
+			print {$otFh} join("\t", @$ar1)."\n"; 
+		}
+		close($otFh); 
+	}
+	if ( defined $parm{'prox_list'} ) {
+		my $otFh = &openFH($parm{'prox_list'}, '>'); 
+		for my $ar1 (sort { $gidx{$a->[0]} <=> $gidx{$b->[0]} } @$prox_gene) {
 			print {$otFh} join("\t", @$ar1)."\n"; 
 		}
 		close($otFh); 
@@ -546,10 +655,251 @@ HEAD
 	}
 }# mcs_glist2html() 
 
+
+sub cvt_ctg2scf_byAGP {
+	my %parm = $ms_obj->_setHashFromArr(@_); 
+	
+	my %ctg2scf = %{ &fileSunhh::load_agpFile( $parm{'scf_agp'} ) }; 
+	# %ctg2scf = ( $ctgID => [ [ctgS, ctgE, scfID, scfS, scfE, scfStr(+/-/?)], [], ... ] ) # This is sorted. 
+	my ($alnInfo) = &_readInAln( $parm{'in_aln'} , $opts{'useYN'} ); 
+
+	my %unknown_ctg; 
+
+	defined $alnInfo->[0]{'text'} and print {$outFh} $alnInfo->[0]{'text'}; 
+	for ( my $i=1; $i<@{$alnInfo}; $i++ ) {
+		my ( $alnID, $n_pairs, $ctg1, $ctg2, $strand ) = @{$alnInfo->[$i]{'info'}}[0, 3, 4,5,6]; 
+		$strand =~ m/^plus$/i and $strand = '+'; 
+		$strand =~ m/^minus$/i and $strand = '-'; 
+		$strand =~ m/^(\+|\-)$/i or &stopErr("[Err] Unknown strand [$strand]\n"); 
+		my ($scf1_aR) = $ms_obj->switch_position( 'qry2ref' => \%ctg2scf, 'qryID' => $ctg1, 'qryPos' => 1, 'strand' => '+' ); 
+		my ($scf2_aR) = $ms_obj->switch_position( 'qry2ref' => \%ctg2scf, 'qryID' => $ctg2, 'qryPos' => 1, 'strand' => $strand ); 
+		unless ( defined $scf1_aR->[0] ) {
+			defined $unknown_ctg{$ctg1} or do { &tsmsg("[Wrn] No contig information found for [$ctg1] in AGP file.\n"); $unknown_ctg{$ctg1} = 1; }; 
+			$scf1_aR = [ $ctg1, 1, '+' ]; 
+		}
+		unless ( defined $scf2_aR->[0] ) {
+			defined $unknown_ctg{$ctg2} or do { &tsmsg("[Wrn] No contig information found for [$ctg2] in AGP file.\n"); $unknown_ctg{$ctg2} = 1; }; 
+			$scf2_aR = [ $ctg2, 1, '+' ]; 
+		}
+
+		$scf1_aR->[2] eq $scf2_aR->[2] or $strand =~ tr/+-/-+/; 
+		my $rev = ( $scf1_aR->[2] eq '-' ) ? 1 : 0 ; 
+		&out_blk( $alnInfo->[$i]{'text'}, $scf1_aR->[0], $scf2_aR->[0], $strand, $rev ); 
+
+	}
+
+}# cvt_ctg2scf_byAGP() 
+
+sub out_blk {
+	my ($blk_text, $new_ctg1, $new_ctg2, $strand, $reverse) = @_; 
+	$strand eq '+' and $strand = 'plus'; 
+	$strand eq '-' and $strand = 'minus'; 
+	my @lines = split(/\n/, $blk_text); 
+	my $n ; 
+
+	if ($lines[0] =~ m!^(## Alignment \d+: score=\S+ e_value=\S+ )N=(\d+) ([^\&\s]+)\&([^\&\s]+) (plus|minus|X+)\s*$!) {
+		my ( $part1, $n_pairs, $chr1, $chr2, $str ) 
+		=  ( $1,     $2,       $3,    $4,    $5 ); 
+		$n = $n_pairs; 
+		my $new_line = "${part1}N=${n_pairs} $new_ctg1\&${new_ctg2} $strand"; 
+		print {$outFh} "$new_line\n"; 
+	} else {
+		&stopErr("[Err] Unknown block title: $lines[0]\n"); 
+	}
+
+	unless ( $reverse ) {
+		print {$outFh} join("\n", @lines[1 .. $#lines])."\n"; 
+		return; 
+	}
+
+	for my $tline ( reverse(@lines[1 .. $#lines]) ) {
+		$tline =~ m!^(\s*\d+)\-(\s*\d+):(\t\S+\t\S+\s*\S+.*)$! or &stopErr("[Err] Unknown block body: $tline\n"); 
+		my ($i1, $i2, $part3) = ($1, $2, $3); 
+		my $len2 = length($i2); 
+		$i2 =~ s/\s//g; 
+		$i2 = sprintf("%${len2}d", $n-$i2-1); 
+		my $new_line = "${i1}-${i2}:$part3"; 
+		print {$outFh} "$new_line\n"; 
+	}
+	
+	return; 
+}# out_blk() 
+
+sub trim_block {
+	my %parm = $ms_obj->_setHashFromArr(@_); 
+
+	my $fh1 = &openFH( $parm{'trim_blkSE'}, '<' ); 
+	my %toAdd; 
+	my %toDelete; 
+	my %toTrim; 
+	my %processed; 
+	while ( &wantLineC($fh1) ) {
+		my @ta = &splitL("\t", $_); 
+		if ( $ta[2] eq '.Remove' ) {
+			$toDelete{$ta[0]}{$ta[1]} = 1; 
+			$processed{'toDel'}{"$ta[0]\t$ta[1]"} = 0; 
+		} elsif ( $ta[2] eq '.Add' ) {
+			my @tb = split(/ : /, $ta[1]); 
+			@tb == 2 or &stopErr("[Err] Bad input of field for .Add [$ta[1]]\n"); 
+			my @tc = split(/ ; /, $tb[1]); 
+			$tc[-1] =~ s/\s+$//; 
+			my $txt = join("\t", @tc); 
+			defined $processed{'toAdd'}{"$ta[0]\t$tb[0]\t$txt"} and do { &tsmsg("[Wrn] Skip repeated line : $_\n"); next; }; 
+			push( @{$toAdd{$ta[0]}{$tb[0]}}, $txt ); 
+			$processed{'toAdd'}{"$ta[0]\t$tb[0]\t$txt"} = 0; 
+		} else {
+			$toTrim{$ta[0]} = [ @ta[1,2] ]; 
+			$processed{'toTrim'}{"$ta[0]\t$ta[1]\t$ta[2]"} = 0; 
+		}
+	}
+	close($fh1); 
+
+	my ($alnInfo) = &_readInAln( $parm{'in_aln'}, $opts{'useYN'} ); 
+
+	defined $alnInfo->[0]{'text'} and print {$outFh} $alnInfo->[0]{'text'}; 
+
+	for ( my $i=1; $i<@{$alnInfo}; $i++ ) {
+		if (defined $toAdd{ $alnInfo->[$i]{'info'}[0] }) {
+			my @ll = split(/\n/, $alnInfo->[$i]{'text'}); 
+			my @new_ll = ($ll[0]); 
+			my $new_cnt = -1; 
+
+			for (my $j=1; $j<@ll; $j++) {
+				$new_cnt ++; 
+				my $gid1 = $alnInfo->[$i]{'pair'}[$j-1][0]; 
+				$ll[$j] =~ m/\b${gid1}\b/ or &stopErr("[Err] geneID1 [$gid1] is not found in line : $ll[$j]\n"); 
+				$ll[$j] =~ m/^(\s*\d+)\-(\s*\d+):(\t\S+\t\S+\s*\S+.*)$/ or &stopErr("[Err] Unknown block body: $ll[$j]\n"); 
+				my ($i1, $i2, $part3) = ($1, $2, $3); 
+				my $len2 = length($i2); 
+				if ( $j == 1 and defined $toAdd{ $alnInfo->[$i]{'info'}[0] }{'.Top'} ) {
+					for my $tl ( @{ $toAdd{ $alnInfo->[$i]{'info'}[0] }{'.Top'} } ) {
+						$i2 = sprintf("%${len2}d", $new_cnt); 
+						push(@new_ll, "${i1}-${i2}:\t$tl"); 
+						$new_cnt++; 
+						$processed{'toAdd'}{"$alnInfo->[$i]{'info'}[0]\t.Top\t$tl"} = 1; 
+					}
+				}
+				$i2 = sprintf("%${len2}d", $new_cnt); 
+				push(@new_ll, "${i1}-${i2}:$part3"); 
+				if ( defined $toAdd{ $alnInfo->[$i]{'info'}[0] }{$gid1} ) {
+					for my $tl ( @{ $toAdd{ $alnInfo->[$i]{'info'}[0] }{$gid1} } ) {
+						$new_cnt ++; 
+						$i2 = sprintf("%${len2}d", $new_cnt); 
+						push(@new_ll, "${i1}-${i2}:\t$tl"); 
+						$processed{'toAdd'}{"$alnInfo->[$i]{'info'}[0]\t$gid1\t$tl"} = 1; 
+					}
+				}
+			}
+			$alnInfo->[$i]{'text'} = join("\n", @new_ll)."\n"; 
+			&_update_alnInfo_byText( $alnInfo->[$i] ); 
+		}
+		if (defined $toDelete{ $alnInfo->[$i]{'info'}[0] }) {
+			my @ll = split(/\n/, $alnInfo->[$i]{'text'}); 
+			my @new_ll = ($ll[0]); 
+			my $new_cnt = -1; 
+			for (my $j=1; $j<@ll; $j++) {
+				my $gid1 = $alnInfo->[$i]{'pair'}[$j-1][0]; 
+				if ( defined $toDelete{ $alnInfo->[$i]{'info'}[0] }{$gid1} ) {
+					$processed{'toDel'}{"$alnInfo->[$i]{'info'}[0]\t$gid1"} = 1; 
+					next; 
+				}
+				$new_cnt ++; 
+				$ll[$j] =~ m/\b${gid1}\b/ or &stopErr("[Err] geneID1 [$gid1] is not found in line : $ll[$j]\n"); 
+				$ll[$j] =~ m/^(\s*\d+)\-(\s*\d+):(\t\S+\t\S+\s*\S+.*)$/ or &stopErr("[Err] Unknown block body: $ll[$j]\n"); 
+				my ($i1, $i2, $part3) = ($1, $2, $3); 
+				my $len2 = length($i2); 
+				$i2 = sprintf("%${len2}d", $new_cnt); 
+				push(@new_ll, "${i1}-${i2}:$part3"); 
+			}
+			$alnInfo->[$i]{'text'} = join("\n", @new_ll)."\n"; 
+			&_update_alnInfo_byText( $alnInfo->[$i] ); 
+		}
+
+
+		defined $toTrim{ $alnInfo->[$i]{'info'}[0] } or do { print {$outFh} $alnInfo->[$i]{'text'} ; next; }; 
+		my $blkID = $alnInfo->[$i]{'info'}[0]; 
+		my ( $sGID, $eGID ) = @{$toTrim{ $alnInfo->[$i]{'info'}[0] }}; 
+		$processed{'toTrim'}{"$alnInfo->[$i]{'info'}[0]\t$sGID\t$eGID"} = 1; 
+		my ($sj, $ej); 
+		my @ll = split(/\n/, $alnInfo->[$i]{'text'}); 
+		for (my $j=1; $j<@ll; $j++) {
+			my $gid1 = $alnInfo->[$i]{'pair'}[$j-1][0]; 
+			my $gid2 = $alnInfo->[$i]{'pair'}[$j-1][1]; 
+			$ll[$j] =~ m/\b${gid1}\b/ or &stopErr("[Err] geneID1 [$gid1] is not found in line : $ll[$j]\n"); 
+			$gid1 eq $sGID and $sj = $j; 
+			$gid1 eq $eGID and $ej = $j; 
+		}
+		defined $sj or do { &tsmsg("[Wrn] geneID1 [$sGID] is not found in block [$blkID]\n"); $sj = 1; }; 
+		defined $ej or do { &tsmsg("[Wrn] geneID1 [$eGID] is not found in block [$blkID]\n"); $ej = $#ll; }; 
+		$sj > $ej and ($sj, $ej) = ($ej, $sj); 
+		my $newN = $ej-$sj+1; 
+		$ll[0] =~ m!^(## Alignment \d+: score=\S+ e_value=\S+ )N=(\d+) ([^\&\s]+\&[^\&\s]+ (?i:plus|minus|X+))\s*$! or &stopErr("[Err] Unknown block line : $ll[0]\n"); 
+		print {$outFh} "$1N=${newN} $3\n"; 
+		for my $tline ( @ll[$sj .. $ej] ) {
+			$tline =~ m!^(\s*\d+)\-(\s*\d+):(\t\S+\t\S+\s*\S+.*)$! or &stopErr("[Err] Unknown block body: $tline\n"); 
+			my ($i1, $i2, $part3) = ($1, $2, $3);
+			my $len2 = length($i2);
+			$i2 =~ s/\s//g;
+			$i2 = sprintf("%${len2}d", $i2-$sj+1); 
+			my $new_line = "${i1}-${i2}:$part3"; 
+			print {$outFh} "$new_line\n";
+		}
+	}
+
+	# Check if all processed. 
+	for my $k1 (sort keys %processed) {
+		for my $k2 (sort keys %{$processed{$k1}}) {
+			$processed{$k1}{$k2} == 0 and &tsmsg("[Wrn] Infor for [$k1][$k2] not processed.\n"); 
+		}
+	}
+
+	return(); 
+}# trim_block() 
+
+sub _update_alnInfo_byText {
+	my ($hr) = @_; 
+	my @ll = split(/\n/, $hr->{'text'}); 
+	$hr->{'info'}[3] == $#ll or do { &tsmsg("[Msg] Update Num_pairs to $#ll in Block [@{$hr->{'info'}}]\n"); $hr->{'info'}[3] = $#ll; }; 
+	$ll[0] =~ m!^(## Alignment \d+: score=\S+ e_value=\S+ )N=(\d+) ([^\&\s]+\&[^\&\s]+ (?i:plus|minus|X+))\s*$! or &stopErr("[Err] Unknown block line : $ll[0]\n");
+	$ll[0] = "$1N=$#ll $3"; 
+	$hr->{'text'} = join("\n", @ll)."\n"; 
+	my @new_pair; 
+	for my $tline (@ll) {
+		if ( $tline =~  m!^\s*(\d+)\-\s*(\d+):\t(\S+)\t(\S+)\s*(\S+)(?:\t(\S+)\t(\S+)(?:\t(\S+))?)?$! ) {
+			# This is the normal format or the KaKs output of MCscanX. 
+			my ($alnID, $alnID_id, $gid1, $gid2, $eval, $tka, $tks, $tw) 
+			= 
+			(   $1,     $2,        $3,    $4,    $5,    $6,   $7,   $8);
+			$tka //= ''; $tks //= ''; $tw //= '';
+			push(@new_pair, [$gid1, $gid2, $eval, $tka, $tks, $tw]);
+		} elsif ( $tline =~ m!^\s*(\d+)\-\s*(\d+):\t(\S+)\t(\S+)\s*(\S+)(?:\t(\S+)\t(\S+)(?:\t(\S+)\t(\S+))?)?$! ) {
+			# This is the format of KsKa addition from my follow_msc perl script. 
+			# #  0-  0:  Cma_000007      Cma_000973        2e-57 0.5258  0.0154  0.5387  0.0148
+			my ($alnID, $alnID_id, $gid1, $gid2, $eval, $tks, $tka, $t_ngKs, $t_ngKa)
+			= 
+			(   $1,     $2,        $3,    $4,    $5,    $6,   $7,   $8,      $9);
+			my $tw;
+			if ( defined $t_ngKs and !$opts{'useYN'} ) {
+				$tks = $t_ngKs; 
+				$tka = $t_ngKa; 
+			}
+			$tks < 0 and $tks = 'nan'; 
+			if ( defined $tks and $tks ne 'nan') {
+				$tw = ( $tks > 0 ) ? $tka/$tks : 'nan';
+			}
+			$tks eq 'nan' and $tw = 'nan';
+			$tka //= ''; $tks //= ''; $tw //= '';
+			push(@new_pair, [$gid1, $gid2, $eval, $tka, $tks, $tw]);
+		}
+	}
+	$hr->{'pair'} = [@new_pair]; 
+	return; 
+}# _update_alnInfo_byText() 
+
 sub mcs_blkByList {
 	my %parm = $ms_obj->_setHashFromArr(@_); 
 	
-	my ($alnInfo) = &_readInAln($parm{'in_aln'}); 
+	my ($alnInfo) = &_readInAln($parm{'in_aln'}, $opts{'useYN'}); 
 	my $inFh = &openFH($parm{'slct_list'}, '<'); 
 	$parm{'slct_colN'} //= 0; 
 	$parm{'slct_type'} //= 'blkID'; 
@@ -612,14 +962,54 @@ sub msc_glist2pairs {
 	}
 }# msc_glist2pairs() 
 
+sub filter_block {
+	my %parm = $ms_obj->_setHashFromArr(@_); 
+	$parm{'min_blkPair'} //= 2; 
+	
+	my ($alnInfo) = &_readInAln($parm{'in_aln'}, $opts{'useYN'}); 
+
+	my @good_idx; 
+	for (my $i=0; $i<@$alnInfo; $i++) {
+		if ($i == 0 and !(defined $alnInfo->[$i]{'info'})) {
+			push(@good_idx, $i); 
+			print {$outFh} $alnInfo->[$i]{'text'}; 
+			next; 
+		}
+		$alnInfo->[$i]{'info'}[3] >= $parm{'min_blkPair'} or next; 
+		push(@good_idx, $i); 
+		print {$outFh} $alnInfo->[$i]{'text'}; 
+	}
+
+	return; 
+}# filter_block ()
+
+sub mcs_aln2pair {
+	my %parm = $ms_obj->_setHashFromArr(@_); 
+	$parm{'useYN'} //= 0; 
+
+	my ($alnInfo) = &_readInAln($parm{'in_aln'}, $parm{'useYN'}); 
+	defined $alnInfo->[0]{'info'} or shift(@{$alnInfo}); 
+
+	print join("\t", qw/BlkID orderID Gene1 Gene2 Ka Ks w/)."\n"; 
+	for (my $i=0; $i<@{$alnInfo}; $i++) {
+		my (@gen1, @gen2, @ka, @ks, @w); 
+		for (my $j=0; $j<@{$alnInfo->[$i]{'pair'}}; $j++) {
+			my $ar1 = $alnInfo->[$i]{'pair'}[$j]; 
+			print join("\t", $alnInfo->[$i]{'info'}[0], $j, $ar1->[0], $ar1->[1], $ar1->[3], $ar1->[4], $ar1->[5])."\n"; 
+		}
+	}
+
+	return; 
+} # mcs_aln2pair
+
 sub msc_aln2table {
 	my %parm = $ms_obj->_setHashFromArr(@_); 
 	
 	my ($chr2gen, $gen2loc)  = &_readInGff($parm{'in_gff'}); 
-	my ($alnInfo) = &_readInAln($parm{'in_aln'}); 
+	my ($alnInfo) = &_readInAln($parm{'in_aln'}, $opts{'useYN'}); 
 	defined $alnInfo->[0]{'info'} or shift(@{$alnInfo}); 
 	
-	print {$outFh} join("\t", qw/BlkID Chrom1 Start1 End1 Chrom2 Start2 End2 Strand AlnScore AlnEvalue AlnNumber Gene1 Gene2 Ka Ks KaKs AVG_Ks Med_Ks UsedKs AVG_Ka Med_Ka UsedKa AVG_KaKs Med_KaKs UsedKaKs/)."\n"; 
+	print {$outFh} join("\t", qw/BlkID Chrom1 Start1 End1 Chrom2 Start2 End2 Strand AlnScore AlnEvalue AlnNumber Gene1 Gene2 Ka Ks KaKs AVG_Ks Med_Ks UsedKs AVG_Ka Med_Ka UsedKa AVG_KaKs Med_KaKs UsedKaKs INSavg_Ks INSmed_Ks INSused_Ks/)."\n"; 
 	for (my $i=0; $i<@{$alnInfo}; $i++) {
 		my (@gen1, @gen2, @ka, @ks, @w); 
 		for my $ar1 (@{$alnInfo->[$i]{'pair'}}) {
@@ -643,7 +1033,7 @@ sub msc_aln2table {
 		 join(',', @ka), 
 		 join(',', @ks), 
 		 join(',', @w), 
-		 &_avg(@ks), &_avg(@ka), &_avg(@w) 
+		 &_avg(@ks), &_avg(@ka), &_avg(@w), &_avgINS(@ks) 
 		)."\n"; 
 	}
 }# msc_aln2table() 
@@ -652,19 +1042,26 @@ sub msc_aln2list{
 	my %parm = $ms_obj->_setHashFromArr(@_); 
 	$parm{'addChr'} //= 0; 
 	$parm{'srt_by'} //= 'min'; 
+	$parm{'raw_order'} //= 0; 
 	
 	my ($chr2gen, $gen2loc) = &_readInGff($parm{'in_gff'}); 
 	my ($chr2gen_tgt, $gen2loc_tgt) = ($chr2gen, $gen2loc); 
 	if (defined $parm{'tgt_gff'} and $parm{'tgt_gff'} ne '') {
 		($chr2gen_tgt, $gen2loc_tgt) = &_readInGff($parm{'tgt_gff'}); 
 	}
-	my ($alnInfo) = &_readInAln($parm{'in_aln'}); 
+
+	my ($alnInfo) = &_readInAln($parm{'in_aln'}, $opts{'useYN'}); 
 	defined $alnInfo->[0]{'info'} or shift(@{$alnInfo}); 
-	
+
 	print {$outFh} join("\t", qw/Chromosome IntraDep InterDep InterTax Pivot PivotStart Blocks/)."\n"; 
 	for my $chrID ( sort keys %$chr2gen ) {
 		# ([genID, chrS], [], ...)
-		my @glist = map { [ $_->[0], $_->[1] ] } sort { $a->[1] <=> $b->[1] || $a->[2] <=> $b->[2] } @{$chr2gen->{$chrID}}; 
+		my @glist; 
+		unless ( $parm{'raw_order'} ) {
+			@glist = map { [ $_->[0], $_->[1] ] } sort { $a->[1] <=> $b->[1] || $a->[2] <=> $b->[2] } @{$chr2gen->{$chrID}}; 
+		} else {
+			@glist = map { [ $_->[0], $_->[1] ] } @{$chr2gen->{$chrID}}; 
+		}
 		# {genID} => index_number
 		my %gidx; for ( my $i=0; $i<@glist; $i++ ) { $gidx{ $glist[$i][0] } = $i; } 
 		my @sub_alnInfo; 
@@ -685,6 +1082,7 @@ sub msc_aln2list{
 			}
 		}# for my $tr (@$alnInfo) 
 		@sub_alnInfo = sort { $a->{'idx'} <=> $b->{'idx'} } @sub_alnInfo; 
+
 		my ($glist_fed, $depth, $use_tax) = &_fill_glist_wiALN(
 		 'glist'=>\@glist, 
 		 'alnInfo'=>\@sub_alnInfo, 
@@ -751,7 +1149,12 @@ sub _fill_glist_wiALN {
 			}
 			for ( my ($j,$k)=($minIdx, 0); $j<=$maxIdx and $k<@gpair; $j++ ) {
 				$depth[$j]{$tax[$nb]} ++; 
-				defined $use_tax{$tax[$nb]} or $use_tax{$tax[$nb]} = 1; 
+				$use_tax{$tax[$nb]} //= 1; 
+
+defined $parm{'gindex'}{ $gpair[$k][$na] } or &stopErr("[Err] No gene location found for [$gpair[$k][$na]]\n"); 
+my $needIdx = $parm{'gindex'}{ $gpair[$k][$na] }; 
+$j > $needIdx and &stopErr("[Err] The location of gene [$gpair[$k][$na]] might be different from .aln file.\n"); 
+
 				$glist_wiALN[$j][0] ne $gpair[$k][$na] and do { $glist_wiALN[$j][$track] = '||'; next; }; 
 				$glist_wiALN[$j][$track] = $gpair[$k][$nb]; 
 				$k == 0       and $glist_wiALN[$j][$track] .= "-s"; 
@@ -790,12 +1193,17 @@ sub _readInGff {
 	close($inFh); 
 	return (\%chr2gen, \%gen2loc); 
 }# _readInGff() 
+
+sub _readInAln {
+	return( &mcsSunhh::_readInAln( @_ ) ); 
+}# _readInAln() 
+
 # Return : (\@alnInfo)
 #  @alnInfo : 
 #    [idx_num]{'info'} => [alnID, score, evalue, Num_pairs, chrID_1, chrID_2, strand(plus|minus)]
 #    [idx_num]{'pair'} => [ [genID_1, genID_2, pair_evalue, Ka, Ks, Ka/Ks], [], ... ]
 #    [idx_num]{'text'} => $text_of_current_block
-sub _readInAln{
+sub _readInAln_1{
 	my $inFh = &openFH(shift, '<'); 
 	my @alnInfo; 
 	my $aln_idx = 0; 
@@ -815,7 +1223,7 @@ sub _readInAln{
 			$alnInfo[$aln_idx]{'text'} .= "$_\n"; 
 		} elsif ( m!^\s*(\d+)\-\s*(\d+):\t(\S+)\t(\S+)\s*(\S+)(?:\t(\S+)\t(\S+)(?:\t(\S+))?)?$! ) { 
 			# #  0-  0:        Cma_000007      Cma_000973        2e-57
-			$aln_idx > -1 or &stopErr("Too early to line: $_\n"); 
+			$aln_idx > 0 or &stopErr("Too early to line: $_\n"); 
 			my ($alnID, $alnID_id, $gid1, $gid2, $eval, $tka, $tks, $tw) 
 			= 
 			   ($1,     $2,        $3,    $4,    $5,    $6,   $7,   $8); 
@@ -825,13 +1233,14 @@ sub _readInAln{
 			$alnInfo[$aln_idx]{'text'} .= "$_\n"; 
 		} elsif ( m!^\s*(\d+)\-\s*(\d+):\t(\S+)\t(\S+)\s*(\S+)(?:\t(\S+)\t(\S+)(?:\t(\S+)\t(\S+))?)?$! ) { 
 			# #  0-  0:  Cma_000007      Cma_000973        2e-57 0.5258  0.0154  0.5387  0.0148
+			#                                                    yn_Ks   yn_Ka   ng_Ks   ng_Ka
 			# This is to fit result from haibao tang's python ks calculation. 
-			$aln_idx > -1 or &stopErr("Too early to line: $_\n"); 
+			$aln_idx > 0 or &stopErr("Too early to line: $_\n"); 
 			my ($alnID, $alnID_id, $gid1, $gid2, $eval, $tks, $tka, $t_ngKs, $t_ngKa) 
 			= 
 			(   $1,     $2,        $3,    $4,    $5,    $6,   $7,   $8,      $9); 
 			my $tw; 
-			if ( defined $t_ngKs ) {
+			if ( !$opts{'useYN'} and defined $t_ngKs ) {
 				$tks = $t_ngKs; 
 				$tka = $t_ngKa; 
 			}
@@ -850,7 +1259,7 @@ sub _readInAln{
 	}
 	close($inFh); 
 	return(\@alnInfo); 
-}# _readInAln
+}# _readInAln_1
 
 # Input  : .bn6 file (blastn -outfmt 6)
 # Return : (\@bn6Info)
@@ -885,6 +1294,19 @@ sub _readInBn6 {
 	return \@bn6Info; 
 }# _readInBn6() 
 
+sub _avgINS {
+	my ($avg, $med) = ('nan', 'nan'); 
+	my @unn = grep { defined $_ and $_ !~ m!^(|\-?nan|\-?inf)$!i and $_ >= 0 } @_; 
+	my $validNum = scalar(@unn); 
+	if ( $validNum > 0 ) {
+		my $ic = $ms_obj->ins_calc(\@unn, 0); 
+		$avg = $ic->{'interval_mean'}; 
+		$med = $ic->{'interval_median'}; 
+		$validNum = $ic->{'interval_cnt'}; 
+	}
+	return ($avg, $med, $validNum); 
+}# _avgINS() 
+
 sub _avg {
 	my ($avg, $med) = ('nan', 'nan'); 
 	my @unn = grep { defined $_ and $_ !~ m!^(|\-?nan|\-?inf)$!i and $_ >= 0 } @_; 
@@ -911,7 +1333,13 @@ sub _index_glist {
 	my %gidx; 
 	my $ii = 0; 
 	for my $chrID (sort keys %$chr2gen) {
-		for my $ar1 (sort { $a->[1] <=> $b->[1] || $a->[2] <=> $b->[2] } @{$chr2gen->{$chrID}}) {
+		my @tb; 
+		if ( $opts{'raw_order'} ) {
+			@tb = @{$chr2gen->{$chrID}}; 
+		} else {
+			@tb = sort { $a->[1] <=> $b->[1] || $a->[2] <=> $b->[2] } @{$chr2gen->{$chrID}}; 
+		}
+		for my $ar1 ( @tb ) {
 			defined $gidx{$ar1->[0]} and &stopErr("[Err] Repeat genID [$ar1->[0]]\n"); 
 			$gidx{$ar1->[0]} = $ii; 
 			$ii++; 
@@ -942,8 +1370,11 @@ sub _tandemGrp {
 	unless ( defined $parm{'gindex'} and keys %{$parm{'gindex'}} > 0 ) {
 		my $i=0; 
 		for my $genID ( sort { $parm{'gen2loc'}->{$a}[0] cmp $parm{'gen2loc'}->{$b}[0] 
-		             || $parm{'gen2loc'}{$a}[1] <=> $parm{'gen2loc'}{$b}[1] 
-					 || $parm{'gen2loc'}{$a}[2] <=> $parm{'gen2loc'}{$b}[2] 
+		             || ( ( $opts{'raw_order'} ) ? -1 
+                                             : ($parm{'gen2loc'}{$a}[1] <=> $parm{'gen2loc'}{$b}[1]
+                                               || $parm{'gen2loc'}{$a}[2] <=> $parm{'gen2loc'}{$b}[2] 
+                                               ) 
+                    )
 		      } keys %{$parm{'gen2loc'}} 
 		) {
 			$parm{'gindex'}{$genID} = $i; 

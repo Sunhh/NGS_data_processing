@@ -10,6 +10,7 @@ use LogInforSunhh;
 use Exporter qw(import); 
 use mathSunhh; # For usage of mathSunhh->_setHashFromArr(); 
 my $ms=mathSunhh->new(); 
+use fileSunhh; 
 
 our @EXPORT = qw(olap_e2e_A2B); 
 our @EXPORT_OK; 
@@ -184,6 +185,50 @@ sub chk_index {
 	return 1; 
 }# sub chk_index() 
 
+=head2 version_samtools( 'exe_samtools'=>'samtools', 'chk_version'=>1, 'ver_samtools' => '0.1.19', 'ver_samtools_detail' => 'NA' )
+
+Description   : Get version of 'exe_samtools' to 'ver_samtools'; 
+
+Return        : (\%parm)
+
+ For 'samtools' (version: 0.1.19-44428cd) :
+   'ver_samtools'        => '0.1.19-44428cd'
+   'ver_samtools_detail' => '0.1.19-44428cd'
+ For 'samtools_1.3' (version: 1.3 (using htslib 1.3)) :
+   'ver_samtools'        => '1.3'
+   'ver_samtools_detail' => '1.3 (using htslib 1.3)'
+
+=cut
+sub version_samtools {
+	my $self = shift; 
+	my %parm = $ms->_setHashFromArr(@_); 
+	$parm{'chk_version'} //= 1; 
+	$parm{'exe_samtools'} //= 'samtools'; 
+	$parm{'ver_samtools'} //= '0'; 
+	$parm{'ver_samtools_detail'} //= 'NA'; 
+
+	$parm{'chk_version'} or return( \%parm ); 
+	
+	open E,'-|',"$parm{'exe_samtools'} 2>&1 1>/dev/null" or die; 
+	while (<E>) {
+		chomp; 
+		$_ =~ m!^Version!i or next; 
+		if ( $_ =~ m!^Version:\s*(\S+\s*(?:\([^()]+\))?)$!i ) {
+			$parm{'ver_samtools_detail'} = $1; 
+			$parm{'ver_samtools'} = $parm{'ver_samtools_detail'}; 
+			$parm{'ver_samtools'} =~ m!^(\d+(?:\.\d+)*\S*)! or &stopErr("[Err] Failed to parse samtools version [$parm{'ver_samtools_detail'}]\n"); 
+			$parm{'ver_samtools'} = $1; 
+			$parm{'chk_version'} = '0'; 
+			last; 
+		}
+		&stopErr( "[Err] Failed at line: $_\n" ); 
+	}
+	close E; 
+
+	$parm{'chk_version'} eq '0' or &stopErr("[Err] No version line found for samtools [$parm{'exe_samtools'}].\n"); 
+
+	return(\%parm); 
+}# version_samtools ()
 
 =head2 bwaAln( inFq1=>$inFq1, aln_type=>'PE', %parameters_for_bwaPE_or_bwaSE_function )
 
@@ -239,6 +284,8 @@ sub bwaPE {
 	$parm{'oBamPre'} //= 'bwaPEOutPre'; 
 	$parm{'printCmd'} //= 0; 
 
+	%parm = %{ $self->version_samtools( %parm ) }; 
+
 	# Setting file names. 
 	my $inFq1 = $parm{'inFq1'}; 
 	my $inFq2 = $parm{'inFq2'}; 
@@ -265,7 +312,15 @@ sub bwaPE {
 			} elsif ( $c_step eq 'sam2bam' ) {
 				&exeCmd_1cmd("$parm{'exe_samtools'} view $parm{'para_sam2bam'} -bSh -o $oBamPre.bam $oBamPre.sam", $parm{'printCmd'}); 
 			} elsif ( $c_step eq 'bam_sort' ) {
-				&exeCmd_1cmd("$parm{'exe_samtools'} sort $parm{'para_bamSort'} $oBamPre.bam $oBamPre.srt", $parm{'printCmd'}); 
+				# %parm = %{ $self->version_samtools( %parm ) }; 
+				if ( $parm{'ver_samtools'} =~ m!^0\.!i ) {
+					&exeCmd_1cmd("$parm{'exe_samtools'} sort $parm{'para_bamSort'} $oBamPre.bam $oBamPre.srt", $parm{'printCmd'}); 
+				} elsif ( $parm{'ver_samtools'} =~ m!^1\.!i ) {
+					&exeCmd_1cmd("$parm{'exe_samtools'} sort $parm{'para_bamSort'} -o $oBamPre.srt.bam $oBamPre.bam", $parm{'printCmd'}); 
+				} else {
+					&tsmsg("[Wrn] Unknown samtools version [$parm{'ver_samtools'}], and treated as V1.3\n"); 
+					&exeCmd_1cmd("$parm{'exe_samtools'} sort $parm{'para_bamSort'} -o $oBamPre.srt.bam $oBamPre.bam", $parm{'printCmd'}); 
+				}
 			} elsif ( $c_step eq 'bam_index' ) {
 				&exeCmd_1cmd("$parm{'exe_samtools'} index $oBamPre.srt.bam", $parm{'printCmd'}); 
 			} elsif ( $c_step eq 'rm_sai' ) {
@@ -328,6 +383,8 @@ sub bwaSE {
 	$parm{'oBamPre'} //= 'bwaSEOutPre'; 
 	$parm{'printCmd'} //= 0; 
 
+	%parm = %{ $self->version_samtools( %parm ) }; 
+
 	# Setting file names. 
 	my $inFq1 = $parm{'inFq1'}; 
 	my $oBamPre = $parm{'oBamPre'}; 
@@ -350,7 +407,15 @@ sub bwaSE {
 			} elsif ( $c_step eq 'sam2bam' ) {
 				&exeCmd_1cmd("$parm{'exe_samtools'} view $parm{'para_sam2bam'} -bSh -o $oBamPre.bam $oBamPre.sam", $parm{'printCmd'}); 
 			} elsif ( $c_step eq 'bam_sort' ) {
-				&exeCmd_1cmd("$parm{'exe_samtools'} sort $parm{'para_bamSort'} $oBamPre.bam $oBamPre.srt", $parm{'printCmd'}); 
+				# %parm = %{ $self->version_samtools( %parm ) }; 
+				if ( $parm{'ver_samtools'} =~ m!^0\.!i ) {
+					&exeCmd_1cmd("$parm{'exe_samtools'} sort $parm{'para_bamSort'} $oBamPre.bam $oBamPre.srt", $parm{'printCmd'}); 
+				} elsif ( $parm{'ver_samtools'} =~ m!^1\.!i ) {
+					&exeCmd_1cmd("$parm{'exe_samtools'} sort $parm{'para_bamSort'} -o $oBamPre.srt.bam $oBamPre.bam", $parm{'printCmd'});
+				} else {
+					&tsmsg("[Wrn] Unknown samtools version [$parm{'ver_samtools'}], and treated as V1.3\n");
+					&exeCmd_1cmd("$parm{'exe_samtools'} sort $parm{'para_bamSort'} -o $oBamPre.srt.bam $oBamPre.bam", $parm{'printCmd'});
+				}
 			} elsif ( $c_step eq 'bam_index' ) {
 				&exeCmd_1cmd("$parm{'exe_samtools'} index $oBamPre.srt.bam", $parm{'printCmd'}); 
 			} elsif ( $c_step eq 'rm_sai' ) {
@@ -386,6 +451,40 @@ sub bwaSE {
 ############################################################
 #  Sub-routines. 
 ############################################################
+
+=head1 openSam ( $sam_filename, $sam_fmt, { 'wiH' => '0|1', 'exe_samtools' => 'samtools', 'verbose'=>0 } )
+
+Return   : ($file_handle)
+
+Description : 
+              $sam_fmt could be 'sam' or 'bam'. 
+              If $sam_fmt is undefined, I will try to infer from $sam_filename's .ext. If I failed to infer, I use 'sam'. 
+
+=cut
+sub openSam {
+	my ($fn, $fmt, $pH) = @_; 
+	$pH->{'wiH'} //= 0; 
+	$pH->{'exe_samtools'} //= 'samtools'; 
+	$pH->{'verbose'} //= 0; 
+
+	$fn =~ m/\.(bam|sam)$/i and $fmt //= lc($1); 
+	$fmt //= 'sam'; 
+
+	$pH->{'verbose'} and &tsmsg("[Msg] Reading sam file [$fn]\n"); 
+
+	my $back_fh; 
+	if ( $fmt eq 'sam' ) {
+		$back_fh = &openFH( $fn, '<' ); 
+	} elsif ( $fmt eq 'bam' ) {
+		my $tagH = ( $pH->{'wiH'} ) ? ' -h ' : ''; 
+		open ($back_fh, '-|', "$pH->{'exe_samtools'} view $tagH $fn") or &stopErr("[Err] Failed to run CMD: '$pH->{'exe_samtools'} view $tagH $fn' : $!\n");
+	} else {
+		&stopErr("[Err] Unknown type [$fmt], which should be sam/bam\n"); 
+	}
+
+	return ($back_fh);
+}# openSam () 
+
 
 =head1 not_uniqBest( \@sam_line_array )
 
@@ -754,6 +853,49 @@ sub parseCigar {
 	return \%back;
 
 }# sub parseCigar() 
+
+=head1 cnt_sam_mismatch (\@sam_line_array, 'set_rna|set_dna')
+
+Return      : ($mismatch_number, \%cigar_hash)
+
+Description : 
+   For 'set_rna' :(default). For hisat2. 'S|H|I|D' in cigar and 'XM:i:(\d+)' are added together. Here I don't use 'Xlen' because 'XM:i:(\d+)' covers it in hisat2. 
+   For 'set_dna' : 'S|H' in cigar and 'NM:i:(\d+)' are added together. 'X|I|D' are all covered by 'NM:i:'. 
+   This function is only used when I don't want to use line2hash() function. 
+
+=cut
+sub cnt_sam_mismatch {
+	my ($ar, $type) = @_; 
+	$type //= 'set_rna'; 
+	$type =~ m/^(set_rna|set_dna)$/ or &stopErr("[Err] Bad type [$type] for cnt_sam_mismatch()\n"); 
+	my %cigar_h = %{ &parseCigar( $ar->[5] ) }; 
+
+	my $cnt = 0; 
+	if ($type eq 'set_rna') {
+		for my $tk (qw/Slen Hlen Ilen Dlen/) {
+			defined $cigar_h{$tk} and $cnt += $cigar_h{$tk}; 
+		}
+		for my $tb (@{$ar}[ 11 .. $#$ar]) {
+			$tb =~ m/^XM:i:(\d+)$/ or next; 
+			$cnt += $1; 
+			last; 
+		}
+	} elsif ($type eq 'set_dna') {
+		for my $tk (qw/Slen Hlen/) {
+			defined $cigar_h{$tk} and $cnt += $cigar_h{$tk}; 
+		}
+		for my $tb (@{$ar}[ 11 .. $#$ar]) {
+			$tb =~ m/^NM:i:(\d+)$/ or next; 
+			$cnt += $1; 
+			last; 
+		}
+	} else {
+		&stopErr("[Err] why here.\n"); 
+	}
+	
+	
+	return($cnt, \%cigar_h); 
+}# cnt_sam_mismatch ()
 
 =head1 sam_line2hash(\@sam_line_array, [@required_infor], $is_ignore_TAGs)
 
@@ -1171,6 +1313,260 @@ sub olap_e2e_A2B {
 	$back{seqC_aln} = $seqC_aln; 
 	return \%back; 
 }#End sub olap_e2e_A2B
+
+
+=head1 rbh_byBp6( \%hash1, \%to_replace_hash1, \%to_replace_cscore_para )
+
+return       : ( \%hash1 )
+  %in_hash input requires: 
+    {'in_bp6'}           => [$in_blastn_fmt6_file, $in_blastn_fmt6_file_2, ...]
+    {'min_similarity'}   => 0 in [0-100], 0 means no filter for blastp similarity
+    {'max_lenDiffR'}     => 0 or > 1,     0 means no filter (=== 1), if > 1, length_max/length_min should be <= 'max_lenDiffR'
+    {'log_lines'}        => 0, 
+    {'gene1_need'}       => [ id1, id2, ... ], # The gene IDs considered in the query column of blast result. All genes accepted if empty. 
+    {'gene2_need'}       => [ id1, id2, ... ], # The gene IDs considered in the subject column of blast result. All genes accepted if empty. 
+    {'combine_gene12'}   => 0 or 1; 1 means gene1_need and gene2_need are both used in query and subject filtration. 0 means they are used separately. 
+    {'paired_need'}      => 0 or 1; 1 means gene1_need and gene2_need are paired, and only alignments between paired genes in a right order are accepted. 
+                                      When 'paired_need' and 'combine_gene12' are both 1, alignments between paired genes are all accepted regardless of order. 
+
+  %in_hash : 
+    {'in_bp6'}  => [$in_blastn_fmt6_file, $in_blastn_fmt6_file_2, ...] 
+    {'cscore'}  => &cscore() 
+    {'rbh'}{$geneA}{$geneB} = 1 
+    {'rbh'}{$geneB}{$geneA} = 1 
+
+=cut
+sub rbh_byBp6 {
+	my ( $pH, $pH1, $pH2 ) = @_; 
+	$pH->{'min_similarity'} //= 0; 
+	$pH->{'max_lenDiffR'} //= 0; 
+	$pH->{'log_lines'} //= 0; 
+	$pH->{'gene1_need'} //= []; 
+	$pH->{'gene2_need'} //= []; 
+	$pH->{'combine_gene12'} //= 0; 
+	$pH->{'paired_need'}  //= 0; 
+	if ( defined $pH1 ) {
+		for my $tk (keys %$pH1) {
+			$pH->{$tk} = $pH1->{$tk}; 
+		}
+	}
+	$pH->{'paired_need'} and @{$pH->{'gene1_need'}} != @{$pH->{'gene2_need'}} and &stopErr("[Err] rbh_byBp6() unequal length of two gene list when paired_need=>$pH->{'paired_need'}\n"); 
+	my %th; 
+	if ( $pH->{'combine_gene12'} ) {
+		my @t1 = @{$pH->{'gene1_need'}}; 
+		push(@{$pH->{'gene1_need'}}, @{$pH->{'gene2_need'}}); 
+		push(@{$pH->{'gene2_need'}}, @t1); 
+	}
+	$th{'paired_need'} = $pH->{'paired_need'}; 
+	if ( $pH->{'paired_need'} ) {
+		@{$pH->{'gene1_need'}} > 0 or do { $th{'paired_need'} = 0; &tsmsg("[Wrn] geneX_need list is empty, so 'paired_need' is ignored.\n"); }; 
+		for ( my $i=0; $i<@{$pH->{'gene1_need'}}; $i++ ) {
+			$th{'pair'}{ $pH->{'gene1_need'}[$i] }{ $pH->{'gene2_need'}[$i] } = 1; 
+		}
+	}
+	for my $t1 (qw/gene1 gene2/) {
+		$th{"${t1}_need"} = 0; 
+		if (@{$pH->{"${t1}_need"}} > 0) {
+			&tsmsg("[Msg] [${t1}_need] filtration required.\n"); 
+			$th{"${t1}_need"} = 1; 
+			for my $tk ( @{$pH->{"${t1}_need"}} ) {
+				$th{${t1}}{$tk} = 1; 
+			}
+		}
+	}
+	
+	my %h_cs; 
+	if ( defined $pH2 ) {
+		for my $tk (keys %$pH2) {
+			$h_cs{$tk} = $pH2->{$tk}; 
+		}
+	}
+	$h_cs{'want'} = 'addBestScore'; 
+	for my $fn ( @{$pH->{'in_bp6'}} ) {
+		my $fh = &openFH( $fn, '<' ); 
+		&tsmsg("[Msg] Processing bp6 file [$fn]\n"); 
+		my %cnt; 
+		$cnt{'cntN_step'} = $pH->{'log_lines'}; 
+		LINE: 
+		while (&wantLineC($fh)) {
+			$pH->{'log_lines'} > 0 and &fileSunhh::log_section( $. , \%cnt ) and &tsmsg("[Msg] Processing $. line.\n"); 
+			my @ta = &splitL("\t", $_); 
+			$th{'gene1_need'} and !(defined $th{'gene1'}{$ta[0]}) and next LINE; 
+			$th{'gene2_need'} and !(defined $th{'gene2'}{$ta[1]}) and next LINE; 
+			$th{'paired_need'} and !(defined $th{'pair'}{$ta[0]}{$ta[1]}) and next LINE; 
+			$pH->{'min_similarity'} > 0 and $ta[2] < $pH->{'min_similarity'} and next LINE; 
+			if ( $pH->{'max_lenDiffR'} > 0 ) {
+				if ( $ta[12] < $ta[13] ) {
+					$ta[13]/$ta[12] > $pH->{'max_lenDiffR'} and next LINE; 
+				} else {
+					$ta[12]/$ta[13] > $pH->{'max_lenDiffR'} and next LINE; 
+				}
+			}
+			$ta[11] =~ s/\s//g; 
+			&cscore( \%h_cs, { 'aln_score' => [ @ta[0,1,11] ] } ); 
+		}
+		close($fh); 
+	}
+	&tsmsg("[Msg] Looking for RBH\n"); 
+	$pH->{'rbh'} = &cscore( \%h_cs, { 'want'=>'getRBH' } ); 
+	&tsmsg("[Msg] RBH found.\n"); 
+
+	$pH->{'cscore'} = \%h_cs; 
+	return($pH); 
+}# rbh_byBp6 ()
+
+
+
+=head1 cscore( { 'want' => 'getCscore|addBestScore|getBestScoreA|getBestScoreB|chkRBH|getScoreAB|getRBH', 'geneA'=>$geneA, 'geneB'=>$geneB, 'ignore_self'=>'1|0', 'both_sides'=>'1|0', 'aln_score'=>[$genA, $genB, $scoreAB], 'bsdata'=>\%bs_stored } )
+
+Return       : ( \%input_hash or something)
+
+Description: 
+  When 'want' => 'getCscore'     : returns ($cscore)     : Using - 'geneA', 'geneB', and 'bsdata'
+  When 'want' => 'addBestScore'  : returns ($input_href) : Using - 'ignore_self', 'both_sides', 'aln_score', and 'bsdata'
+  When 'want' => 'getBestScoreA' : returns ([ $bestScoreA, [$geneB1, $geneB2, ...] ]) : Using - 'geneA', and 'bsdata'
+  When 'want' => 'getBestScoreB' : returns ([ $bestScoreB, [$geneA1, $geneA2, ...] ]) : Using - 'geneB', and 'bsdata' 
+                                   $bestScore == -1 means there is no alignments found. 
+  When 'want' => 'chkRBH'        : returns (1|0)         : Using - 'geneA', 'geneB', and 'bsdata'
+  When 'want' => 'getScoreAB'    : returns ($scoreAB)    : Using - 'geneA', 'geneB', and 'bsdata'
+  When 'want' => 'getRBH'        : returns (\%rbh_hash)  : Using - 'bsdata'
+                                   In %rbh_hash, {$rbh_geneA}{$rbh_geneB} = 1 and {$rbh_geneB}{$rbh_geneA} = 1; 
+
+  If   'ignore_self' => 1        : An alignment (geneA, geneA, scoreAA) will be ignored. 
+  If   'both_sides'  => 1        : An alignemnt (geneA, geneB, scoreAB) will also be used as (geneB, geneA, scoreBA); 
+  
+  Fmt  'aln_score'   => [ $geneA, $geneB, $scoreAB ]; 
+  Fmt  'geneA|geneB' => $gene_ID used in 'aln_score'; 
+  Fmt 'bsdata' : %bs_stored , 
+    {'best_scoreA'}{$geneA} => [ $bestBscore, [ $geneB1, $geneB2, ... ] ]
+    {'best_scoreB'}{$geneB} => [ $bestBscore, [ $geneA1, $geneA2, ... ] ]
+    {'A2B'}{$geneA}{$geneB} => $bestAscore
+    {'B2A'}{$geneB}{$geneA} => $bestBscore
+
+
+References : 
+  https://github.com/tanghaibao/quota-alignment
+  in the supplementary of sea anemone paper : Putnam, Nicholas H., et al. "Sea anemone genome reveals ancestral eumetazoan gene repertoire and genomic organization." science 317.5834 (2007): 86-94.
+Words      : 
+  Specifically we define the "best C-value", for each Nematostella gene, to be the ratio of the BLAST score of its best hit to the human genome to the highest BLAST score of the best-hitting human gene to any Nematostella gene.
+
+=cut
+sub cscore {
+	my ( $pH ) = @_; 
+	if ( defined $_[1] ) {
+		# Replace values in $pH by $_[1]; 
+		for my $tk (sort keys %{$_[1]}) {
+			$pH->{$tk} = $_[1]->{$tk}; 
+		}
+	}
+
+
+	defined $pH or return( {} ); 
+	$pH->{'want'} //= 'getCscore'; 
+	if ( $pH->{'want'} =~ m/^chkRBH$/i ) {
+		# In fact, I can only check if &cscore( $pH, { 'want' => 'cscore' } ) == 1, but in the following should be faster. 
+		my $sAB = &cscore( $pH, { 'want' => 'getScoreAB' } ); 
+		$sAB > 0 or return 0; 
+		my $bA = &cscore( $pH, { 'want' => 'getBestScoreA' } ); 
+		$sAB == $bA->[0] or return 0; 
+		# $bA->[0] > 0 or return(0); 
+		my $bB = &cscore( $pH, { 'want' => 'getBestScoreB' } ); 
+		$sAB == $bB->[0] or return 0; 
+		# $bB->[0] > 0 or return(0); 
+		return 1; 
+	} elsif ( $pH->{'want'} =~ m/^getScoreAB$/i ) {
+		$pH->{'bsdata'}{'A2B'}{ $pH->{'geneA'} }{ $pH->{'geneB'} } //= 0; 
+		return( $pH->{'bsdata'}{'A2B'}{ $pH->{'geneA'} }{ $pH->{'geneB'} } ); 
+	} elsif ( $pH->{'want'} =~ m/^getCscore$/i ) {
+		my $bA = &cscore( $pH, { 'want' => 'getBestScoreA' } ); 
+		my $bB = &cscore( $pH, { 'want' => 'getBestScoreB' } ); 
+		my $t = ( $bA->[0] > $bB->[0] ) ? $bA->[0] : $bB->[0] ; 
+		my $sAB = &cscore( $pH, { 'want' => 'getScoreAB' } ); 
+		return( $sAB/$t ); 
+	} elsif ( $pH->{'want'} =~ m/^addBestScore$/i ) {
+		$pH->{'ignore_self'} //= 1; 
+		$pH->{'ignore_self'} and $pH->{'aln_score'}->[0] eq $pH->{'aln_score'}->[1] and return($pH); 
+		$pH->{'both_sides'}  //= 1; 
+
+		# Record raw data 
+		my ($gA, $gB, $sAB) = @{ $pH->{'aln_score'} }; 
+		my @aK = (qw/want geneA geneB/); 
+		my %hA; 
+		for my $tk (@aK) {
+			defined $pH->{$tk} and $hA{$tk} = $pH->{$tk}; 
+		}
+
+		# Setting 'A'
+		my $bA = &cscore( $pH, { 'want'=>'getBestScoreA', 'geneA'=>$gA } ); 
+		if ( $bA->[0] > $sAB ) {
+			; # Nothing to do 
+		} elsif ( $bA->[0] == $sAB ) {
+			if ( !(defined $pH->{'bsdata'}{'A2B'}{$gA}{$gB}) or $pH->{'bsdata'}{'A2B'}{$gA}{$gB} < $sAB ) {
+				$pH->{'bsdata'}{'A2B'}{$gA}{$gB} = $sAB; 
+				push(@{ $bA->[1] }, $gB); 
+			}
+		} else {
+			@$bA = ( $sAB, [$gB] ); 
+			$pH->{'bsdata'}{'A2B'}{$gA}{$gB} = $sAB; 
+		}
+
+		# Setting 'B'
+		my $bB = &cscore( $pH , { 'want'=>'getBestScoreB', 'geneB'=>$gB }); 
+		if ( $bB->[0] > $sAB ) {
+			; # Nothing to do 
+		} elsif ( $bB->[0] == $sAB ) {
+			if ( !(defined $pH->{'bsdata'}{'B2A'}{$gB}{$gA}) or $pH->{'bsdata'}{'B2A'}{$gB}{$gA} < $sAB ) {
+				$pH->{'bsdata'}{'B2A'}{$gB}{$gA} = $sAB; 
+				push(@{ $bB->[1] }, $gA); 
+			}
+		} else {
+			@$bB = ( $sAB, [$gB] ); 
+			$pH->{'bsdata'}{'B2A'}{$gB}{$gA} = $sAB; 
+		}
+
+		# Restore raw data
+		for my $tk (@aK) {
+			undef($pH->{$tk}); 
+			defined $hA{$tk} and $pH->{$tk} = $hA{$tk}; 
+		}
+
+		if ( $pH->{'both_sides'} ) {
+			my $t = $pH->{'both_sides'}; 
+			@{ $pH->{'aln_score'} }[0,1] = @{ $pH->{'aln_score'} }[1,0]; 
+			&cscore($pH, { 'both_sides'=>0 } ); 
+			$pH->{'both_sides'} = $t; 
+			@{ $pH->{'aln_score'} }[0,1] = @{ $pH->{'aln_score'} }[1,0]; 
+		}
+		return( $pH ); 
+	} elsif ( $pH->{'want'} =~ m/^getBestScoreA$/i ) {
+		$pH->{'bsdata'}{'best_scoreA'}{ $pH->{'geneA'} } //= [-1, []]; 
+		return( $pH->{'bsdata'}{'best_scoreA'}{ $pH->{'geneA'} } ); 
+	} elsif ( $pH->{'want'} =~ m/^getBestScoreB$/i ) {
+		$pH->{'bsdata'}{'best_scoreB'}{ $pH->{'geneB'} } //= [-1, []]; 
+		return( $pH->{'bsdata'}{'best_scoreB'}{ $pH->{'geneB'} } ); 
+	} elsif ( $pH->{'want'} =~ m/^getRBH$/i ) {
+		my %back_hash; 
+#my %cnt; 
+#$cnt{'cntN_step'} = 1000; 
+#$cnt{'cnt'} = 0; 
+		for my $gA ( keys %{ $pH->{'bsdata'}{'best_scoreA'} } ) {
+#$cnt{'cnt'} ++; 
+#&fileSunhh::log_section( $cnt{'cnt'}, \%cnt ) and &tsmsg("[Msg] Processing $cnt{'cnt'} [$gA]\n"); 
+			my $bA = $pH->{'bsdata'}{'best_scoreA'}{$gA}; 
+			$bA->[0] > 0 or next; 
+			for my $gB (@{$bA->[1]}) {
+				&cscore( $pH, { 'want'=>'chkRBH', 'geneA'=>$gA, 'geneB'=>$gB } ) or next; 
+				$back_hash{$gA}{$gB} = 1; 
+				$back_hash{$gB}{$gA} = 1; 
+			}
+		}
+		return( \%back_hash ); 
+	} else {
+		&stopErr("[Err] Bad 'want' type [$pH->{'want'}] in cscore()\n"); 
+	}
+	return($pH); 
+}# cscore ()
+
 
 1; # It is important to include this line. 
 

@@ -12,6 +12,7 @@ GetOptions(\%opts,
 	"task:s", # convert 
 	  "dbXml2GOlist!", "xpath2go:s", 
 	  "xml5_to_raw4!", 
+	  "join_xml5!", 
 	  "dbV5_to_dbV4!", 
 	   "dirV5:s", "dirV4old:s", "dirV4new:s", 
 	   "hmmconvert:s", "doIndex!", 
@@ -69,6 +70,8 @@ sub usage {
 #
 #              -xml5_to_raw4 : [Boolean] Convert interproV5.xml file to interproV4.raw file. 
 #
+#              -join_xml5    : [Boolean]
+#
 #              -showV4convert: [Boolean] Show the command to convert ipsV4_result from .raw to others. 
 #               -dirV4new    : [/home/Sunhh/iprscan/iprscanV4_wiV5/] This is the new dir of iprV4 for converting files. 
 #
@@ -121,8 +124,10 @@ sub usage {
 #              go : 
 #               -go_obo      : [gene_ontology_edit_20150309.obo] The GO .obo file being used. 
 #               -goIDColN    : [0] The column number of GO ID. 
-#               -addInfor    : ['name'] Feature names being attached in lines. 
-#               -go2ahrd     : [out_ahrd_pref] Create out_ahrd_pref.GOname and out_ahrd_pref.annot files for AHRD Terms: 
+#               
+#              -addInfor    : ['name'] Feature names being attached in lines. 
+#
+#              -go2ahrd     : [out_ahrd_pref] Create out_ahrd_pref.GOname and out_ahrd_pref.annot files for AHRD Terms: 
 #                                                gene_ontology_result and blast2go 
 # -out        [out_file_name] 
 ################################################################################
@@ -203,14 +208,41 @@ $goType{'CELLULAR_COMPONENT'} = 'Cellular Component';
 # Invoke sub-functions
 &dbXml2GOlist() if ( $opts{'task'} eq 'convert' and $opts{'dbXml2GOlist'} ); 
 &xml5_to_raw4() if ( $opts{'task'} eq 'convert' and $opts{'xml5_to_raw4'} ); 
+&join_xml5() if ( $opts{'task'} eq 'convert' and $opts{'join_xml5'} ) ; 
 &dbV5_to_dbV4() if ( $opts{'task'} eq 'convert' and $opts{'dbV5_to_dbV4'} ); 
 &splitXmlByID() if ( $opts{'task'} eq 'convert' and defined $opts{'splitXmlByID'} ); 
 &showV4convert() if ( $opts{'task'} eq 'convert' and $opts{'showV4convert'} ); 
 &jnTSV_iprID() if ( $opts{'task'} eq 'convert' and defined $opts{'jnTSV_iprID'} ); 
-&addInfor() if ( defined $opts{'addInfor'} ); 
-&go2ahrd() if ( defined $opts{'go2ahrd'} ); 
+&addInfor() if ( $opts{'task'} eq 'go' and defined $opts{'addInfor'} ); 
+&go2ahrd() if ( $opts{'task'} eq 'go' and defined $opts{'go2ahrd'} ); 
 
 # Sub-functions
+sub join_xml5 {
+	my $header_out = 0; 
+	my $tail_txt = ''; 
+	for my $fh ( @InFp ) {
+		while (<$fh>) {
+			if ( m!^\<\?xml version=! ) {
+				my $to = $_; 
+				my $tl = <$fh>; 
+				$to .= $tl; 
+				$tl =~ m!^\<protein\-matches! or &stopErr("[Err] Unknown format: $to"); 
+				$header_out == 0 and print {$outFh} $to; 
+				$header_out = 1; 
+				next; 
+			}
+			if ( m!^\s*\</protein\-matches!o ) {
+				$tail_txt = $_; 
+				$tail_txt =~ m!^\</protein\-matches\>! or &stopErr("[Err] Unknown format: $tail_txt"); 
+				next; 
+			}
+			print {$outFh} $_; 
+		}
+	}
+	print {$outFh} $tail_txt; 
+	close($outFh); 
+	return; 
+}# sub join_xml5 
 sub jnTSV_iprID {
 # Format of TSV : 
 # https://github.com/ebi-pf-team/interproscan/wiki/OutputFormats
@@ -334,16 +366,21 @@ sub go2ahrd {
 	my $oanno_Fh = &openFH("$opts{'go2ahrd'}.annot", '>'); 
 	my %annotGO; 
 	for my $fh ( @InFp ) {
-		while (<$fh>) {
-			chomp; m/^\s*(#|$)/ and next; 
-			my @ta = split(/\t/, $_); 
-			$ta[1] =~ m/^GO:/ or next; 
-			if ( defined $ta[2] ) {
-				if ( defined $annotGO{$ta[1]} ) {
+		while ( &wantLineC($fh) ) {
+			my @ta = &splitL("\t", $_); 
+			$ta[1] =~ m/^EC:[\d.\-]+$/ and next; 
+			$ta[1] =~ m/^GO:/ or do { &tsmsg("[Wrn] Skip bad line: $_\n"); next; }; 
+			if ( defined $ta[2] and $ta[2] ne '' ) {
+				if ( defined $annotGO{$ta[0]} ) {
 					&tsmsg("[Wrn] Skip repeated annotation description of [$ta[1]]\n"); 
 				} else {
 					print {$oanno_Fh} join("\t", @ta[0,1,2])."\n"; 
+					$annotGO{$ta[0]} = $ta[2]; 
 				}
+			} elsif ( defined $annotGO{$ta[0]} ) {
+				print {$oanno_Fh} join("\t", @ta[0,1], $annotGO{$ta[0]})."\n"; 
+			} else {
+				&stopErr("[Err] I need a annotation description for the first line of [$ta[0]]\n"); 
 			}
 			my $tr1 = &infor_by_goID($ta[1], \%go_obo); 
 			if ( defined $tr1 ) {

@@ -936,6 +936,7 @@ sub colStat{
 ######################################################################
 ##     Inner sub-routines. 
 ######################################################################
+<<<<<<< HEAD
 sub openFH1 ($$) {
 	my $f = shift;
 	my $type = shift;
@@ -975,6 +976,8 @@ sub openFH1 ($$) {
 }#End sub openFH
 
 
+=======
+>>>>>>> 87d13169ddfa86fbe01d10d1ac7d75317110e8a7
 sub parseCol {
 	my @cols = &splitL(',', $_[0]); 
 	my @ncols; 

@@ -89,6 +89,77 @@ sub write2file {
 	return 0; 
 }# sub write2file ()
 
+=head1 load_bn6File ( $filename )
+
+Input      : .bn6 file ( blastn -outfmt 6 )
+
+Return     : (\@bn6Info)
+     [idx]{'arr'} = [split(/\t/, $_)]
+     [idx]{'k2v'}{$key} = $value; 
+       $key could be qw/qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen sstrand/
+=cut
+sub load_bn6File {
+	my ($fn) = @_; 
+	my $inFh = &openFH($fn, '<'); 
+	my @bn6Info; 
+	while (&wantLineC($inFh)) {
+		my @ta = &splitL("\t", $_); 
+		$ta[0] eq 'qseqid' and next; 
+		push(@bn6Info, {}); 
+		$bn6Info[-1]{'arr'} = \@ta; 
+		$bn6Info[-1]{'k2v'}{'qseqid'}    = $ta[0]; 
+		$bn6Info[-1]{'k2v'}{'sseqid'}    = $ta[1]; 
+		$bn6Info[-1]{'k2v'}{'pident'}    = $ta[2]; 
+		$bn6Info[-1]{'k2v'}{'length'}    = $ta[3]; 
+		$bn6Info[-1]{'k2v'}{'mismatch'}  = $ta[4]; 
+		$bn6Info[-1]{'k2v'}{'gapopen'}   = $ta[5]; 
+		$bn6Info[-1]{'k2v'}{'qstart'}    = $ta[6]; 
+		$bn6Info[-1]{'k2v'}{'qend'}      = $ta[7]; 
+		$bn6Info[-1]{'k2v'}{'sstart'}    = $ta[8]; 
+		$bn6Info[-1]{'k2v'}{'send'}      = $ta[9]; 
+		$bn6Info[-1]{'k2v'}{'evalue'}    = $ta[10]; 
+		$bn6Info[-1]{'k2v'}{'bitscore'}  = $ta[11]; 
+		$bn6Info[-1]{'k2v'}{'qlen'}      = $ta[12] // ''; 
+		$bn6Info[-1]{'k2v'}{'slen'}      = $ta[13] // ''; 
+		$bn6Info[-1]{'k2v'}{'sstrand'}   = $ta[14] // ''; 
+		$bn6Info[-1]{'k2v'}{'bitscore'} =~ s!^\s+|\s+$!!g; 
+	}
+	return (\@bn6Info); 
+}# load_bn6File() 
+
+
+
+=head1 load_tabFile ( $filename , $keep_annot<0> ) 
+
+Function   : Load in a tab delimited file into a array, whose element is a array reference of all files of the line. 
+             If $keep_annot is TRUE (1), those lines beginning with '#' or blank lines will also be loaded in. 
+
+Return     : ( $line_1_array, $line_2_array, ... )
+
+  $line_1_array = [ field_1, field_2, ... ]
+
+=cut
+sub load_tabFile {
+	my ($fn, $keep_annot) = @_; 
+	$keep_annot //= 0; 
+	my $fh = &openFH($fn, '<'); 
+	my @back; 
+	if ( $keep_annot ) {
+		while (<$fh>) {
+			$_ =~ s/[\r\n]+$//; 
+			push(@back, [ &splitL("\t", $_) ]); 
+		}
+	} else {
+		while (&wantLineC($fh)) {
+			push(@back, [ &splitL("\t", $_) ]); 
+		}
+	}
+	close($fh); 
+	return(@back); 
+}# load_tabFile ()
+
+
+
 =head1 load_agpFile( $filename )
 
 Required   : $filename
@@ -219,6 +290,29 @@ sub wantLineC {
 	return( $_ ); 
 }# wantLineC() 
 
+
+=head1 log_section( $cntN_to_chk, \%tmp_cnt )
+
+Return         : (1|0) # 1 - get to a new section divided by 'cntN_step|base' ; 0 - Not yet. 
+
+Function       : %tmp_cnt = ( 'cntN_base'=>0 , 'cntN_step'=>5e6 ); 
+                 Edit %tmp_cnt if needed when revoked. 
+                 This function is used for recording usage. 
+                 When 'cntN_step' <= 0, always return 0. 
+                 When $cntN_to_chk > $tmp_cnt{'cntN_base'} , return 1 and increase 'cntN_base'; 
+=cut
+sub log_section {
+	my ($v, $hr) = @_; 
+	$hr->{'cntN_step'} //= 5e6 ; 
+	$hr->{'cntN_base'} //= 0 ; 
+	$hr->{'cntN_step'} > 0 or return 0; 
+	# $hr->{'cntN_step'} > 0 or &stopErr("[Err] 'cntN_step' for log_section() should > 0!\n"); 
+	$v > $hr->{'cntN_base'} or return 0; 
+	while ($v > $hr->{'cntN_base'} ) {
+		$hr->{'cntN_base'} += $hr->{'cntN_step'}; 
+	}
+	return 1; 
+}# log_section() 
 
 
 =head1 isSkipLine( $line )
@@ -412,6 +506,12 @@ Invoke File::Copy::copy()
 sub _copy {
 	return File::Copy::copy(@_); 
 }#sub _copy()
+=head1 _move()
+Invoke File::Copy::move()
+=cut
+sub _move {
+	return File::Copy::move(@_); 
+}#sub _move()
 
 =head1 _rmtree()
 =cut

@@ -36,6 +36,14 @@ HH
 !@ARGV and &LogInforSunhh::usage($help_txt); 
 $opts{'help'} and &LogInforSunhh::usage($help_txt); 
 
+my %missing = qw(
+N      1
+n      1
+NA     2
+na     2
+./.    3
+); 
+
 my @hh; 
 my %cnt; 
 while (<>) {
@@ -115,8 +123,12 @@ sub fmt_base {
 sub sep_allele {
 	# Only two alleles allowed. 
 	my %h; 
+	defined $missing{$_[0]} and return \%h; 
 	if ($_[0] =~ m/\*|\+/) {
 		$h{$_[0]} = 1; 
+	} elsif ( $_[0] =~ m!^([ATGC])/([ATGC])$! ) {
+		$h{$1} = 1; 
+		$h{$2} = 1; 
 	} else {
 		my $t1 = $st_obj->SingleChar( $_[0], 'maxAlleleN'=>2 ); 
 		$t1 eq 'N' and return \%h; 

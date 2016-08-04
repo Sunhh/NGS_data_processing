@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# 2016-07-08 Add function to extract CDS sequence according to gff file. 
 use strict; 
 use warnings; 
 use LogInforSunhh; 
@@ -16,6 +17,7 @@ GetOptions(\%opts,
 	"out:s", 
 	"sortGffBy:s", # Could be 'raw/lineNum/str_posi/position'
 	"silent!", 
+	"outFas:s",    # Output fasta file if defined. 
 	
 	# Actions 
 	"seqret!", # Not added. 
@@ -33,6 +35,7 @@ GetOptions(\%opts,
 	"gffInRegion:s", "bothStr!", "onlyFull!", # 
 	"listTopID!", # Finished. 
 	"getLoc:s", "joinLoc!", # Doing. Could be mRNA/CDS/gene/intron, others may work but not guaranteed. 
+	"getJnLoc!", # Doing. 
 	
 	"addFaToGff!", # Finished. 
 	
@@ -68,6 +71,7 @@ sub usage {
 #                     lineNum  : Output offspring gff lines within each topID in the input order. 
 #                     str_posi : Sort offspring lines by 'scfID' and 'strand' and 'position'. 
 #                     position : Sort offspring lines by 'scfID' and 'position' only. 
+# -outFas           [] Not output by default. Not fully supported yet. 
 # 
 # Action options: 
 #----------------------------------------------------------------------------------------------------
@@ -106,6 +110,8 @@ sub usage {
 #                     If no featParent_ID exists, set featParent_ID=featID
 #   -joinLoc        [Boolean] Output joined table by featParent_ID, the format is like : 
 #                     LengthInFeat\\tfeatParent_ID\\tchrID\\tfeat_Start_min\\tfeat_End_max\\tStrand(+/-)\tfeat_Start_1,feat_End_1;feat_Start2,feat_End_2;...
+#----------------------------------------------------------------------------------------------------
+# -getJnLoc         [Boolean]
 #----------------------------------------------------------------------------------------------------
 # -list_intron      [Boolean] Provide intron table according to '-intron_byFeat'. 
 #   -intron_byFeat  [CDS] Could be a feature of CDS/exon ; 
@@ -163,6 +169,7 @@ my $gff_obj = gffSunhh->new();
 my $fas_obj = fastaSunhh->new(); 
 my $mat_obj = mathSunhh->new(); 
 my $iFh; 
+
 if ( defined $opts{'inGff'} ) {
 	$iFh = &openFH($opts{'inGff'}, '<'); 
 } elsif ( @ARGV > 0 ) {
@@ -172,8 +179,19 @@ if ( defined $opts{'inGff'} ) {
 } else {
 	&usage(); 
 }
+
 my $oFh = \*STDOUT; 
 defined $opts{'out'} and $oFh = &openFH($opts{'out'}, '>'); 
+my $oFasFh = undef(); 
+defined $opts{'outFas'} and $oFasFh = &openFH($opts{'outFas'}, '>'); 
+
+if ( $opts{'getJnLoc'} ) {
+	&action_getJnLoc(); 
+	exit(); 
+}
+
+
+
 $opts{'seqInGff'} = ( $opts{'seqInGff'} ) ? 1 : 0; 
 if (defined $opts{'gff_top_hier'}) {
 	my @ta = grep { $_ ne '' } map { s!^\s+|\s+$!!g; lc($_); } split(/,/, $opts{'gff_top_hier'}); 
@@ -240,21 +258,56 @@ if ( $opts{'addFaToGff'} ) {
 ################################################################################
 ############### StepX. action sub-routines here. 
 ################################################################################
+sub action_getJnLoc {
+	my $wrk_dir = &fileSunhh::new_tmp_dir(); 
+	mkdir($wrk_dir); 
+	open O,'>',"$wrk_dir/in.gff" or die; 
+	while (<$iFh>) {
+		print O $_; 
+	}
+	close O; 
+	open I1,'-|',"perl $0 -getLoc mRNA -inGff $wrk_dir/in.gff" or die; 
+	open O1,'>',"$wrk_dir/in.gff.loc_mrna" or die; 
+	while (&wantLineC( \*I1 )) {
+		if ($. == 1) {
+			my @ta = &splitL("\t", $_); 
+			$ta[0] eq 'FeatID' and $ta[0] = 'mrnaID'; 
+			$ta[1] eq 'ParentID' and $ta[1] = 'geneID'; 
+			@ta[3,4,5] = qw/mrnaStart mrnaEnd mrnaStrand/; 
+			print O1 join("\t", @ta)."\n"; 
+			next; 
+		}
+		print O1 "$_\n"; 
+	}
+	close O1; 
+	close I1; 
+	open I2,'-|',"perl $0 -getLoc CDS -joinLoc -inGff $wrk_dir/in.gff" or die; 
+	open O2,'>',"$wrk_dir/in.gff.loc_cds" or die; 
+	while ( &wantLineC( \*I2 ) ) {
+		if ($. == 1) {
+			my @ta = &splitL("\t", $_); 
+			@ta = qw/LenInCDS       mrnaID  SeqID   CDSStart     CDSEnd    CDSStrand       CDSBlocks/; 
+			print O2 join("\t", @ta)."\n"; 
+			next; 
+		}
+		print O2 "$_\n"; 
+	}
+	close I2; 
+	close O2; 
+	open I3,'-|', "ColLink.pl $wrk_dir/in.gff.loc_cds -f1 $wrk_dir/in.gff.loc_mrna -keyC1 0 -keyC2 1 -add -COl1 1,3,4,5 | deal_table.pl -column 1,7,2,8,9,10,3,4,0,6" or die; 
+	while (<I3>) {
+		print {$oFh} $_; 
+	}
+	close I3; 
+
+	&fileSunhh::_rmtree($wrk_dir); 
+
+	return; 
+
+}# action_getJnLoc() 
 sub action_ch_locByAGP {
-	my $fh = &openFH( $opts{'ch_locByAGP'}, '<' ); 
 	my %info_ctg2scf; # {ctgID}=>[ [ctgS, ctgE, scfID, scfS, scfE, scfStr(+/-/?)], [], ... ]
-	while (<$fh>) {
-		m/^\s*(#|$)/ and next; 
-		chomp; s![^\s\t]+$!!g; 
-		my @ta = &splitL("\t", $_); 
-		$ta[4] eq 'W' or next; 
-		$ta[8] eq '?' and $ta[8] = '+'; 
-		push(@{$info_ctg2scf{$ta[5]}}, [$ta[6], $ta[7], $ta[0], $ta[1], $ta[2], $ta[8]]); 
-	}
-	close($fh); 
-	for my $tk (keys %info_ctg2scf) {
-		@{$info_ctg2scf{$tk}} = sort { $a->[0] <=> $b->[0] || $a->[1] <=> $b->[1] } @{$info_ctg2scf{$tk}}; 
-	}
+	%info_ctg2scf = %{ &fileSunhh::load_agpFile( $opts{'ch_locByAGP'} ) }; 
 	
 	for my $lineN (sort {$a <=> $b} keys %{$in_gff{'lineN2line'}}) {
 		defined $in_gff{'lineN2hash'}{$lineN} or next; 
@@ -382,6 +435,8 @@ sub action_ch_makerID {
 					my $ps = $aa[0]; 
 					my $pv = $o2n_g{$ps}; $pv //= $ps; 
 					$ta[8] =~ s!(Parent=)$ps!$1$pv!ig; 
+				} elsif ( @aa == 0 ) {
+					&tsmsg("[Wrn] There is no parent for mrnaID [$s] found: $line_txt\n"); 
 				} else {
 					for (my $i=0; $i<$#aa; $i++) {
 						my $ps = $aa[$i]; 
@@ -534,6 +589,7 @@ sub action_listTopID {
 
 sub action_getLoc {
 	my @chkTypes = map { lc($_) } split(/,/, $opts{'getLoc'}); 
+	my %oseq_ID; 
 	if ( $opts{'joinLoc'} ) {
 		# featParent_ID\\tchr_ID\\tfeat_Start_min\\tfeat_End_max\\tStrand(+/-)\tfeat_Start_1,feat_End_1;feat_Start2,feat_End_2;...
 		print {$oFh} join("\t", qw/LenInFeat ParentID SeqID Start End Strand Blocks/)."\n"; 
@@ -559,6 +615,25 @@ sub action_getLoc {
 						push(@ta, "$tr->[0],$tr->[1]"); 
 					}
 					print {$oFh} join("\t", $typeLocLis{'featLen'}, $parentID, @typeLocLis{qw/scfID min max strand/}, join(";", @ta))."\n"; 
+
+					if ( defined $oFasFh and defined $in_seq{$typeLocLis{'scfID'}} ) {
+						my $tseq = ''; 
+						for my $tr (@{$typeLocLis{'locLis'}}) {
+							my $tseq_1 = substr( $in_seq{ $typeLocLis{'scfID'} }, $tr->[0]-1, $tr->[1]-$tr->[0]+1 ); 
+							if ( $typeLocLis{'strand'} eq '+' ) {
+								; 
+							} elsif ( $typeLocLis{'strand'} eq '-' ) {
+								&fastaSunhh::rcSeq( \$tseq_1, 'rc' ); 
+							} else {
+								&stopErr("[Err] Unknown strand [$typeLocLis{'strand'}] which should be '+'/'-'\n"); 
+							}
+							$tseq .= $tseq_1; 
+						}
+						my $tk = $parentID; 
+						while (defined $oseq_ID{$tk}) { $tk .= "::rep"; }
+						$tseq =~ s!(.{50})!$1\n!g; chomp($tseq); 
+						print {$oFasFh} ">$tk\n$tseq\n"; 
+					}
 				} else {
 					# &tsmsg("[Wrn] No information found for parentID [$parentID]\n"); 
 				}
@@ -586,8 +661,26 @@ sub action_getLoc {
 			for my $parentID ( @parentIDs ) {
 				for my $tr ( @{$typeLocLis{'locLis'}} ) {
 					print {$oFh} join( "\t", $rawFeatID, $parentID, $typeLocLis{'scfID'}, $tr->[0], $tr->[1], $tr->[2])."\n"; 
-				}
-			}
+					# Edit here. 
+					if ( defined $oFasFh and defined $in_seq{$typeLocLis{'scfID'}} ) {
+						my $tseq = ''; 
+						my $tseq_1 = substr( $in_seq{ $typeLocLis{'scfID'} }, $tr->[0]-1, $tr->[1]-$tr->[0]+1 ); 
+						# Strand could be stored in $typeLocLis{'strand'} and in $tr->[2] ; 
+						if ( $tr->[2] eq '+' ) {
+							; 
+						} elsif ( $tr->[2] eq '-' ) {
+							&fastaSunhh::rcSeq( \$tseq_1, 'rc' ); 
+						} else {
+							&stopErr( "[Err] Unknown strand [$tr->[2]] which should be '+'/'-'\n" ); 
+						} 
+						$tseq = $tseq_1; 
+						my $tk = $rawFeatID; 
+						while ( defined $oseq_ID{$tk} ) { $tk .= "::rep"; }
+						$tseq =~ s!(.{50})!$1\n!g; chomp($tseq); 
+						print {$oFasFh} ">$tk\n$tseq\n"; 
+					}# End if ( defined $oFasFh ... 
+				}# End for my $tr ( @{$typeLocLis{'locLis'}} ) 
+			}# End for my $parentID ( @parentIDs ) 
 		}
 	}# End if ( $opts{'joinLoc'} ) else 
 }# action_getLoc() 

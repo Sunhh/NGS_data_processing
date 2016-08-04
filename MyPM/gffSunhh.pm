@@ -698,6 +698,7 @@ sub _getAttrHash {
 		$#tv_pairs % 2 == 0 and $parm{'debug'} and &tsmsg("[Wrn] Attributes parsed wrong in [$backH{'attribText'}]\n"); 
 		for (my $i=0; $i<@tv_pairs; $i+=2) {
 			my ($tag, $val) = @tv_pairs[$i, $i+1]; 
+			$val =~ s/^\s+|\s+$//g; 
 			$tag = lc($tag); 
 			if ( $tag eq 'id') {
 				$backH{'featID'} = $val; 

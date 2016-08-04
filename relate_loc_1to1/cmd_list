@@ -1,0 +1,27 @@
+# For P1 to P3 
+#/home/Sunhh/bin/last-737/bin/lastdb -cR11 -uNEAR P3Genom_V1p2_scf_lastdb P3Genom_V1p2.scf.fa
+#/home/Sunhh/bin/last-737/bin/lastal -m100 -E0.05 -e120 -P 30 P3Genom_V1p2_scf_lastdb P1Genom_V1p2.scf.fa > P1toP3_s1.maf
+/home/Sunhh/bin/last-737/bin/last-split -m1 P1toP3_s1.maf > P1toP3_s2.maf
+
+# For P3 to P1 
+#/home/Sunhh/bin/last-737/bin/lastdb -cR11 -uNEAR P1Genom_V1p2_scf_lastdb P1Genom_V1p2.scf.fa
+#/home/Sunhh/bin/last-737/bin/lastal -m100 -E0.05 -e120 -P 30 P1Genom_V1p2_scf_lastdb P3Genom_V1p2.scf.fa > P3toP1_s1.maf
+/home/Sunhh/bin/last-737/bin/last-split -m1 P3toP1_s1.maf > P3toP1_s2.maf
+
+# Get loci relationship 
+perl relate_pos.pl P1toP3_s2.maf 1> P1toP3_s2.maf.rel_loc 2>P1toP3_s2.maf.rel_loc.err 
+perl relate_pos.pl P3toP1_s2.maf 1> P3toP1_s2.maf.rel_loc 2>P3toP1_s2.maf.rel_loc.err
+
+perl scfP_to_chrP.pl P1toP3_s2.maf.rel_loc P3_V1p2.scf2LG.chr.agp P1_V1p2.scf2LG.chr.agp > P1toP3_s2.maf.rel_loc.chr
+perl scfP_to_chrP.pl P3toP1_s2.maf.rel_loc P1_V1p2.scf2LG.chr.agp P3_V1p2.scf2LG.chr.agp > P3toP1_s2.maf.rel_loc.chr
+
+perl sumP_in_bed_wiCDS.pl -addCDS P1toP3_s2.maf.rel_loc.chr P1Genom_V1p2.prot_chr.gff3.bed_fit_YZ_wiCDS > P1Genom_V1p2.prot_chr.gff3.bed_fit_YZ_wiCDS.fromP1
+perl sumP_in_bed_wiCDS.pl -addCDS P3toP1_s2.maf.rel_loc.chr P3Genom_V1p2.prot_chr.gff3.bed_fit_YZ_wiCDS > P3Genom_V1p2.prot_chr.gff3.bed_fit_YZ_wiCDS.fromP3
+
+perl sumP_in_bed_wiCDS.pl -addCDS -locCols 0,1 P1toP3_s2.maf.rel_loc.chr P3Genom_V1p2.prot_chr.gff3.bed_fit_YZ_wiCDS > P3Genom_V1p2.prot_chr.gff3.bed_fit_YZ_wiCDS.fromP1
+perl sumP_in_bed_wiCDS.pl -addCDS -locCols 0,1 P3toP1_s2.maf.rel_loc.chr P1Genom_V1p2.prot_chr.gff3.bed_fit_YZ_wiCDS > P1Genom_V1p2.prot_chr.gff3.bed_fit_YZ_wiCDS.fromP3
+
+deal_table.pl P1toP3_s2.maf.rel_loc.chr -column 2,3,0,1,4 > P1toP3_s2.maf.rel_loc.chr_newP3
+deal_table.pl P3toP1_s2.maf.rel_loc.chr -column 2,3,0,1,4 > P3toP1_s2.maf.rel_loc.chr_newP1
+
+
