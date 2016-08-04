@@ -936,7 +936,7 @@ sub colStat{
 ######################################################################
 ##     Inner sub-routines. 
 ######################################################################
-sub openFH ($$) {
+sub openFH1 ($$) {
 	my $f = shift;
 	my $type = shift;
 	my %goodFileType = qw(
