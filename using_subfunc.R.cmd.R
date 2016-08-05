@@ -1,3 +1,5 @@
+### Change trimmomatic directory for different server !!! 
+
 #### For PE clean from .ndupB 
 source( '/home/Sunhh/tools/clean_reads/using_subfunc.R' ); 
 pattern_lis <- read.table( 'pattern_lis.01', header=T, stringsAsFactors=F ); 
@@ -19,6 +21,12 @@ for ( i in 1:nrow(pattern_lis) ) {
 #### For MP clean from .ndupB ####
 source("./using_subfunc.R")
 pattern_lis <- read.table("MP_junc_pattern", header=T, stringsAsFactors=F)
+# MP_junc_pattern example : 
+#   If processing PE together, should add columns [ 'R1pattern' , 'R2pattern' ] for PE. 
+# Prefix                  JuncPattern
+# P3_cre5k_CAGGCG_time1   CGTATAACTTCGTATAATGTATGCTATACGAAGTTATACA
+# P3_cre5k_CAGGCG_time2   CGTATAACTTCGTATAATGTATGCTATACGAAGTTATACA
+
 for ( i in 1:nrow(pattern_lis) ) {
 	gc(); 
 	inFq1 <- paste0(pattern_lis$Prefix[i], "_R1.ndupB", sep="")
