@@ -42,6 +42,8 @@ perl $0 -snp_tbl Acc131_mask.snp   -opref Acc131_mask   -tax_list GrpList/grp52_
 -tax_list     [filename] First column is the header of snp table. 
 -replaceID    [col_old,col_new] If given, the name in fasta file will be changed according to tax_list. 
 
+-wantMega     [Boolean] Get mega file
+
 -windN        [$opts{'windN'}]
 -windL        [$opts{'windL'}]
 
