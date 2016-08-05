@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# 20160805 Output lines with raw order. 
 use strict; 
 use warnings; 
 use fileSunhh; 
@@ -42,7 +43,7 @@ while (readline($fh_snpTbl)) {
 	m!^(\S+)\t(\d+)(?:\t|$)! or die "$_\n"; 
 	my ($cID, $cPos) = ($1, $2); 
 	my $pIdx = int( $cPos / $opts{'wind_len'} ); 
-	push(@{$stored{$cID}[$pIdx]}, $_); 
+	push(@{$stored{$cID}[$pIdx]}, [$_, $.]); 
 	$cID_order{$cID} //= $.; 
 }
 close($fh_snpTbl); 
@@ -53,13 +54,17 @@ for my $cID ( sort { $cID_order{$a} <=> $cID_order{$b} } keys %stored ) {
 	for (my $i=0; $i<@{$stored{$cID}}; $i++) {
 		( defined $stored{$cID}[$i] and @{ $stored{$cID}[$i] } > 0 ) or next; 
 		my @tb = @{ $stored{$cID}[$i] }; 
+		my @slct; 
 		my $t_cnt = 0; 
 		while ( @tb > 0 ) {
 			my $j = int( rand($#tb+1) ); 
-			my $slct = splice( @tb, $j, 1 ); 
-			print STDOUT "$slct\n"; 
+			push(@slct, splice( @tb, $j, 1 )); 
 			$t_cnt ++; 
 			$t_cnt >= $opts{'wind_num'} and last; 
+		}
+		@slct > 0 or &stopErr("[Err] No sites selected for window [$cID - $i]\n"); 
+		for my $tr ( sort { $a->[1] <=> $b->[1] } @slct ) {
+			print STDOUT "$tr->[0]\n"; 
 		}
 	}
 }
