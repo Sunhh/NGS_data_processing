@@ -15,7 +15,8 @@ GetOptions(\%opts,
 	"in_prot:s", # all_orthomcl.ete3.prot.fa
 	"max_geneN:i", # 9999 
 	"out_dir:s", # ete3_out/
-	"ete3_cmd:s", # 'ete3 build --cpu 25 -w phylomedb4 --clearall '
+	"ete3_cmd:s", # 'ete3 build --cpu 2 -w phylomedb4 --clearall '
+	"redo_list:s", # 
 	"cpuN:i", # 1
 ); 
 
@@ -39,6 +40,8 @@ my $help_txt = <<HH;
 # -max_geneN     [$opts{'max_geneN'}] Maximal number of genes within a OG. 
 # -ete3_cmd      ['$opts{'ete3_cmd'}']
 #
+# -redo_list     [filename] A list of group IDs which need to be done. 
+#
 # -cpuN          [$opts{'cpuN'}] Multi-threading. 
 #
 # -help 
@@ -52,6 +55,14 @@ defined $opts{'out_dir'} or &LogInforSunhh::usage($help_txt);
 $opts{'out_dir'} =~ s!/+$!!; 
 
 my %glob; 
+if (defined $opts{'redo_list'}) {
+	my $fh = &openFH($opts{'redo_list'}, '<'); 
+	while (&wantLineC($fh)) {
+		my @ta=&splitL("\t", $_); 
+		$glob{'redo_ID'}{$ta[0]} //= $.; 
+	}
+	close($fh); 
+}
 
 &tsmsg("[Rec] Loading protein sequence [$opts{'in_prot'}]\n"); 
 my %prot_fas = %{ $fas_obj->save_seq_to_hash( 'faFile' => $opts{'in_prot'} ) }; 
@@ -71,6 +82,11 @@ for (my $i=0; $i<@cog_tab; $i++) {
 for my $tr ( sort { $a->[1] <=> $b->[1] || $a->[0] <=> $b->[0] } @{$glob{'cog_idx2geneN'}} ) {
 	my $i = $tr->[0]; 
 	$glob{'curr_order'} = $i + 1; 
+
+	if (defined $glob{'redo_ID'} and (keys %{$glob{'redo_ID'}})>0) {
+		defined $glob{'redo_ID'}{ $glob{'curr_order'} } or next; 
+	}
+
 	my $curr_geneN = scalar( @{$cog_tab[$i]} ); 
 	$curr_geneN > 0 or do { &tsmsg("[Wrn] Skip $glob{'curr_order'} -th COG because no gene found.\n"); next; }; 
 	$curr_geneN > $opts{'max_geneN'} and do { &tsmsg("[Wrn] Skip $glob{'curr_order'} -th COG because of too many genes [$curr_geneN]\n"); next; }; 
