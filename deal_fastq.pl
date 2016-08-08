@@ -17,6 +17,7 @@ use List::Util qw(first max maxstr min minstr reduce shuffle sum);
 use Getopt::Long; 
 use LogInforSunhh; 
 use fileSunhh; 
+use mathSunhh; 
 my %opts; 
 
 sub usage {
@@ -69,7 +70,9 @@ perl $0 in.fastq
 
 -rdKey        [Boolean] Keep only the first non-blank characters for read key if given. 
 
--randSlct     [1.0] Random select reads/pairs to a subset of ratio from (0-1]. 
+-randSlct     [Number] Random select reads/pairs for each dataset. 
+                (0-1) : Possibility of each read to be selected. 
+                [1-..): Number of reads finally selected. 
 
 -reorder      [orderList] Format : rdID_01 \\n rdID_02 \\n rdID_03 \\n ...
 
@@ -160,30 +163,108 @@ my %good_str = qw(
 # -randSlct     [1]
 # -paired       
 sub randSlct {
-	$opts{'randSlct'} >= 1 and &stopErr("[Err] No need to select.\n"); 
+	# $opts{'randSlct'} >= 1 and &stopErr("[Err] No need to select.\n"); 
 	$opts{'randSlct'} <= 0 and &stopErr("[Err] Bad setting [$opts{'randSlct'}]\n"); 
-	if ( $opts{'paired'} ) {
-		for (my $i=0; $i<@InFp; $i+=2) {
-			my $fh1 = $InFp[$i];
-			my $fh2 = $InFp[$i+1];
-			RD: 
-			while ( !eof($fh1) and !eof($fh2) ) {
-				my $rdRec1 = &get_fq_record($fh1);
-				my $rdRec2 = &get_fq_record($fh2);
-				rand(1) <= $opts{'randSlct'} or next; 
-				print STDOUT "\@$rdRec1->{id}$rdRec1->{seq}+\n$rdRec1->{qual}\n"; 
-				print STDOUT "\@$rdRec2->{id}$rdRec2->{seq}+\n$rdRec2->{qual}\n"; 
-			}#End while() RD:
+	if ( $opts{'randSlct'} > 0 and $opts{'randSlct'} < 1 ) {
+		if ( $opts{'paired'} ) {
+			for (my $i=0; $i<@InFp; $i+=2) {
+				my $fh1 = $InFp[$i];
+				my $fh2 = $InFp[$i+1];
+				RD: 
+				while ( !eof($fh1) and !eof($fh2) ) {
+					my $rdRec1 = &get_fq_record($fh1);
+					my $rdRec2 = &get_fq_record($fh2);
+					rand(1) <= $opts{'randSlct'} or next; 
+					print STDOUT "\@$rdRec1->{'ID'}$rdRec1->{'seq'}+\n$rdRec1->{'qual'}\n"; 
+					print STDOUT "\@$rdRec2->{'ID'}$rdRec2->{'seq'}+\n$rdRec2->{'qual'}\n"; 
+				}#End while() RD:
+			}
+		} else {
+			for (my $i=0; $i<@InFp; $i++) {
+				my $fh1 = $InFp[$i]; 
+				RD: 
+				while ( !eof($fh1) ) {
+					my $rdRec1 = &get_fq_record($fh1);
+					rand(1) <= $opts{'randSlct'} or next; 
+					print STDOUT "\@$rdRec1->{'ID'}$rdRec1->{'seq'}+\n$rdRec1->{'qual'}\n"; 
+				}#End while() RD:
+			}
 		}
-	} else {
-		for (my $i=0; $i<@InFp; $i++) {
-			my $fh1 = $InFp[$i]; 
-			RD: 
-			while ( !eof($fh1) ) {
-				my $rdRec1 = &get_fq_record($fh1);
-				rand(1) <= $opts{'randSlct'} or next; 
-				print STDOUT "\@$rdRec1->{id}$rdRec1->{seq}+\n$rdRec1->{qual}\n"; 
-			}#End while() RD:
+	} elsif ( $opts{'randSlct'} >= 1 ) {
+		int($opts{'randSlct'}) >= 1 or &stopErr("[Err] Illegal -randSlct $opts{'randSlct'}\n"); 
+		$opts{'randSlct'} = int($opts{'randSlct'}); 
+		!@ARGV and &stopErr("[Err] The input must be files instead of stream.\n"); 
+		if ( $opts{'paired'} ) {
+			for (my $i=0; $i<@InFp; $i+=2) {
+				my $fh2 = $InFp[$i+1]; 
+
+				my $fh1 = $InFp[$i]; 
+				my $rdN_ttl = 0; 
+				while ( !eof($fh1) ) {
+					my $rdRec1 = &get_fq_record($fh1); 
+					$rdN_ttl ++; 
+				}
+				close($fh1); 
+				my $rdN_step = int( $rdN_ttl / $opts{'randSlct'} ); 
+				$rdN_step > 0 or $rdN_step = 1; 
+				my %want_idx; 
+				if ( $rdN_step == 1 ) {
+					my @tI_slct = @{ &mathSunhh::randSlct_num( $rdN_ttl , $opts{'randSlct'} ) }; 
+					for my $tI (@tI_slct) { $want_idx{$tI} = 1; }
+				} else {
+					my $tc = 0; 
+					for (my $i=0; $i<$rdN_ttl; $i+=$rdN_step) {
+						$want_idx{ $i } = 1; 
+						$tc ++; 
+						$tc >= $opts{'randSlct'} and last; 
+					}
+				}
+
+				$fh1 = &openFH($ARGV[$i], '<'); 
+				my %cnt = ( 'cur_ln' => -1, 'cntN_step' => 5e6 ); 
+				while ( !eof($fh1) and !eof($fh2) ) {
+					my $rdRec1 = &get_fq_record($fh1); 
+					my $rdRec2 = &get_fq_record($fh2); 
+					$cnt{'cur_ln'} ++; 
+					defined $want_idx{ $cnt{'cur_ln'} } or next; 
+					print STDOUT "\@$rdRec1->{'ID'}$rdRec1->{'seq'}+\n$rdRec1->{'qual'}\n"; 
+					print STDOUT "\@$rdRec2->{'ID'}$rdRec2->{'seq'}+\n$rdRec2->{'qual'}\n"; 
+				}
+			}
+		} else {
+			for (my $i=0; $i<@InFp; $i++) {
+				defined $ARGV[$i] or &stopErr("[Err] Failed to find file for [$i] input.\n"); 
+				my $fh1 = $InFp[$i]; 
+				my $rdN_ttl = 0; 
+				while ( !eof($fh1) ) {
+					my $rdRec1 = &get_fq_record($fh1); 
+					$rdN_ttl ++; 
+				}
+				close($fh1); 
+				my $rdN_step = int( $rdN_ttl / $opts{'randSlct'} ); 
+				$rdN_step > 0 or $rdN_step = 1; 
+				my %want_idx; 
+				if ( $rdN_step == 1 ) {
+					my @tI_slct = @{ &mathSunhh::randSlct_num( $rdN_ttl , $opts{'randSlct'} ) }; 
+					for my $tI (@tI_slct) { $want_idx{$tI} = 1; }
+				} else {
+					my $tc = 0; 
+					for (my $i=0; $i<$rdN_ttl; $i+=$rdN_step) {
+						$want_idx{ $i } = 1; 
+						$tc ++; 
+						$tc >= $opts{'randSlct'} and last; 
+					}
+				}
+
+				$fh1 = &openFH($ARGV[$i], '<'); 
+				my %cnt = ( 'cur_ln' => -1, 'cntN_step' => 5e6 ); 
+				while ( !eof($fh1) ) {
+					my $rdRec1 = &get_fq_record($fh1); 
+					$cnt{'cur_ln'} ++; 
+					defined $want_idx{ $cnt{'cur_ln'} } or next; 
+					print STDOUT "\@$rdRec1->{'ID'}$rdRec1->{'seq'}+\n$rdRec1->{'qual'}\n"; 
+				}
+			}
 		}
 	}
 }#End randSlct() 
