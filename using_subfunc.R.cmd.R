@@ -52,8 +52,8 @@ for ( i in 1:nrow(pattern_lis) ) {
 	for ( j in c("a", "b") ) {
 		inFq1_j <- paste0( oFq1, ".p1", j, sep="" ); 
 		inFq2_j <- paste0( oFq1, ".p2", j, sep="" ); 
-		oFq1_j  <- paste0( oFq1, "_Q20_R1", sep="" ); 
-		oFq2_j  <- paste0( oFq1, "_Q20_R2", sep="" ); 
+		oFq1_j  <- paste0( oFq1, "_", j, "_Q20_R1", sep="" ); 
+		oFq2_j  <- paste0( oFq1, "_", j, "_Q20_R2", sep="" ); 
 		
 		clean.pe.fq.file( inFqName1=inFq1_j, outFqName1=oFq1_j, adaptor1=adp1, inFqName2=inFq2_j, outFqName2=oFq2_j, adaptor2=adp2, RdPerYield=10e6, max.chunks=10 )
 	}

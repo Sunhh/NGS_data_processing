@@ -71,6 +71,8 @@ perl $0 in.fastq
 
 -randSlct     [1.0] Random select reads/pairs to a subset of ratio from (0-1]. 
 
+-reorder      [orderList] Format : rdID_01 \\n rdID_02 \\n rdID_03 \\n ...
+
 #******* Instruction of this program *********#
 HELP
 	exit(1); 
@@ -91,6 +93,7 @@ GetOptions(\%opts,
 	"search:s", "srch_strand:s", "srch_back:s", "srch_drop!", "srch_max!", 
 	"randSlct:f", 
 	"get_key!", 
+	"reorder:s", 
 	"help!", 
 ); 
 
@@ -148,6 +151,7 @@ my %good_str = qw(
 &rd_LenHist() if ( $opts{rd_LenHist} ); 
 &randSlct() if ( defined $opts{'randSlct'} ); 
 &get_key() if ( $opts{'get_key'} ); 
+&reorder() if ( defined $opts{'reorder'} ); 
 
 #****************************************************************#
 #--------------Subprogram------------Start-----------------------#
@@ -401,6 +405,37 @@ sub fq2fa {
 	}# End for my $fh
 	&tsmsg("[Rec] Finish $rdNum reads.\n"); 
 }#sub fq2fa
+
+sub reorder {
+	my %rd_rec; 
+	my %cnt = ( 'cur_ln' => 0 , 'cntN_step' => 5e6 ); 
+	for my $fh ( @InFp ) {
+		while ( my $rdRec = &get_fq_record($fh) ) {
+			$cnt{'cur_ln'} ++; 
+			&fileSunhh::log_section( $cnt{'cur_ln'}, \%cnt ) and &tsmsg("[Msg] Dealing with $cnt{'cur_ln'} reads.\n"); 
+			chomp( $rdRec->{'id'} ); 
+			$rd_rec{ $rdRec->{'id'} } //= "\@$rdRec->{'ID'}$rdRec->{'seq'}+\n$rdRec->{'qual'}\n"; 
+		}
+	}
+
+	my $fh_order = &openFH( $opts{'reorder'}, '<' ); 
+	%cnt = ( 'cur_ln' => 0, 'cntN_step' => 5e6 ); 
+	$cnt{'errCnt'} = 0; 
+	while (<$fh_order>) {
+		&fileSunhh::log_section( $. , \%cnt ) and &tsmsg("[Msg] Dealing with $cnt{'cur_ln'} line.\n"); 
+		chomp; 
+		my @ta=split(/\t/, $_); 
+		unless ( defined $rd_rec{ $ta[0] } ) {
+			$cnt{'errCnt'} ++; 
+			$cnt{'errCnt'} > 50 or &tsmsg("[Wrn] Skip missing record [$ta[0]]\n"); 
+			next; 
+		}
+		print STDOUT $rd_rec{ $ta[0] }; 
+	}
+	close($fh_order); 
+	
+	return; 
+}# sub reorder () 
 
 sub get_key {
 	my %cnt; 
@@ -681,6 +716,7 @@ sub get_fq_record {
 	eof($fh) and return( undef() ); 
 	$back{id} = readline($fh); 
 	$back{id} =~ s/^\@// or &stopErr("[Err] The read id line seems wrong:\t$back{id}\n"); 
+	$back{'ID'} = $back{'id'}; 
 	$opts{rdKey} and $back{id} =~ s/^(\S+)\s.*$/$1/; 
 	$back{seq} = readline($fh); 
 	readline($fh); 
