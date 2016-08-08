@@ -198,6 +198,7 @@ sub randSlct {
 			for (my $i=0; $i<@InFp; $i+=2) {
 				my $fh2 = $InFp[$i+1]; 
 
+				&tsmsg("[Msg]   Counting read number needed.\n"); 
 				my $fh1 = $InFp[$i]; 
 				my $rdN_ttl = 0; 
 				while ( !eof($fh1) ) {
@@ -219,6 +220,7 @@ sub randSlct {
 						$tc >= $opts{'randSlct'} and last; 
 					}
 				}
+				&tsmsg("[Msg]   Total [$rdN_ttl] reads pairs, step= $rdN_step\n"); 
 
 				$fh1 = &openFH($ARGV[$i], '<'); 
 				my %cnt = ( 'cur_ln' => -1, 'cntN_step' => 5e6 ); 
@@ -234,6 +236,7 @@ sub randSlct {
 		} else {
 			for (my $i=0; $i<@InFp; $i++) {
 				defined $ARGV[$i] or &stopErr("[Err] Failed to find file for [$i] input.\n"); 
+				&tsmsg("[Msg]   Counting read number needed.\n"); 
 				my $fh1 = $InFp[$i]; 
 				my $rdN_ttl = 0; 
 				while ( !eof($fh1) ) {
@@ -255,6 +258,7 @@ sub randSlct {
 						$tc >= $opts{'randSlct'} and last; 
 					}
 				}
+				&tsmsg("[Msg]   Total [$rdN_ttl] reads, step= $rdN_step\n"); 
 
 				$fh1 = &openFH($ARGV[$i], '<'); 
 				my %cnt = ( 'cur_ln' => -1, 'cntN_step' => 5e6 ); 
