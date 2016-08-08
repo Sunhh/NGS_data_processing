@@ -1746,6 +1746,7 @@ sub randSlct_num {
 	$n = int($n); 
 	$n > 0 or return(\@back); 
 	my @idx = ( 0 .. ($total_num-1) ); 
+	$total_num <= $n and return(\@idx); 
 	while ( @idx > 0 ) {
 		my $j = rand( $#idx + 1 ); 
 		push(@back, splice( @idx, $j, 1 )); 
