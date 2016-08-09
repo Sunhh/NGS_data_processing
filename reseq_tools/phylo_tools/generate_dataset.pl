@@ -14,8 +14,8 @@ GetOptions(\%opts,
 	"wantMega!", # 
 	"dirID:s",   # '01' 
 	"setID:s",   # '01'
-	"windN:i",   # 1
-	"windL:i",   # 10000
+	"windN:i@",   # 1
+	"windL:i@",   # 10000
 	"pl_randSlct:s", # 'perl /home/Sunhh/tools/github/NGS_data_processing/reseq_tools/rand_site_wiWind.pl'
 	"pl_dealTbl:s", 
 	"pl_tbl2fas:s",  # 'perl /home/Sunhh/tools/github/NGS_data_processing/reseq_tools/cnvt_tools/tbl2fas.pl'
@@ -23,8 +23,8 @@ GetOptions(\%opts,
 	"pl_fas2meg:s",  # 'perl /home/Sunhh/tools/github/NGS_data_processing/reseq_tools/cnvt_tools/fas2meg.pl' 
 ); 
 
-$opts{'windN'} //= 1; 
-$opts{'windL'} //= 10000; 
+$opts{'windN'} //= [1]; 
+$opts{'windL'} //= [10000];  
 $opts{'dirID'} //= '01'; 
 $opts{'setID'} //= '01'; 
 $opts{'pl_randSlct'} //= 'perl /home/Sunhh/tools/github/NGS_data_processing/reseq_tools/rand_site_wiWind.pl'; 
@@ -44,8 +44,8 @@ perl $0 -snp_tbl Acc131_mask.snp   -opref Acc131_mask   -tax_list GrpList/grp52_
 
 -wantMega     [Boolean] Get mega file
 
--windN        [$opts{'windN'}]
--windL        [$opts{'windL'}]
+-windN        [@{$opts{'windN'}}]
+-windL        [@{$opts{'windL'}}]
 
 -pl_randSlct  [$opts{'pl_randSlct'}]
 -pl_dealTbl   [$opts{'pl_dealTbl'}]
@@ -66,15 +66,17 @@ defined $opts{'tax_list'} or &LogInforSunhh::usage($help_txt);
 
 my $setID = $opts{'setID'}; 
 my $dirID = $opts{'dirID'}; 
-my $wNum  = $opts{'windN'}; 
-my $wLen  = $opts{'windL'}; 
 my $opref = $opts{'opref'}; 
 
-my $oDir = "${dirID}_rand_${setID}_${wNum}in" . int($wLen/1000) . "k"; 
+
+my $wNum  = join(" ", map { "-wind_num $_" } @{$opts{'windN'}}); 
+my $wLen  = join(" ", map { "-wind_len $_" } @{$opts{'windL'}}); 
+
+my $oDir = "${dirID}_rand_${setID}"; 
 
 &tsmsg("[Rec] Begin [$0]\n"); 
 -d $oDir or mkdir($oDir); 
-&exeCmd_1cmd( "$opts{'pl_randSlct'} -snp_tbl $opts{'snp_tbl'} -wind_len $wLen -wind_num $wNum > $oDir/${opref}_set${setID}.snp" ) and &stopErr("[Err]\n"); 
+&exeCmd_1cmd( "$opts{'pl_randSlct'} -snp_tbl $opts{'snp_tbl'} $wLen $wNum > $oDir/${opref}_set${setID}.snp" ) and &stopErr("[Err]\n"); 
 &exeCmd_1cmd( "$opts{'pl_dealTbl'} -colByTbl $opts{'tax_list'} -colByTbl_also 0,1 $oDir/${opref}_set${setID}.snp > $oDir/${opref}_set${setID}.use.snp" ) and &stopErr("[Err]\n"); 
 &exeCmd_1cmd( "$opts{'pl_tbl2fas'} -startColN 2   $oDir/${opref}_set${setID}.use.snp > $oDir/${opref}_set${setID}.use.snp.ori.fa -showTime 100000" ) and &stopErr("[Err]\n"); 
 if ( defined $opts{'replaceID'} ) {
