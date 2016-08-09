@@ -1735,6 +1735,28 @@ sub index_numbers {
 	return(\%back); 
 }# sub index_numbers() 
 
+=head1 randSlct_num( $total_num, $slct_Num )
+
+Return      : ( \@slct_indice_sorted )
+
+=cut
+sub randSlct_num {
+	my ($total_num, $n) = @_; 
+	my @back; 
+	$n = int($n); 
+	$n > 0 or return(\@back); 
+	my @idx = ( 0 .. ($total_num-1) ); 
+	$total_num <= $n and return(\@idx); 
+	while ( @idx > 0 ) {
+		my $j = rand( $#idx + 1 ); 
+		push(@back, splice( @idx, $j, 1 )); 
+		$#back+1 >= $n and last; 
+	}
+	@back = sort { $a <=> $b } @back; 
+	return(\@back); 
+}# sub randSlct_num () 
+
+
 =head1 _sideClose_pathInStruct( \@struct, \@path, 'both|left|right' )
 
 Return      : ( \@path_of_closest )
