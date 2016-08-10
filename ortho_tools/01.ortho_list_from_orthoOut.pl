@@ -36,7 +36,7 @@ my %need_taxa = %{&load_taxa_lis( $opts{'taxa_list'} )};
 my @need_taxa_arr = sort { $need_taxa{$a} <=> $need_taxa{$b} } keys %need_taxa; 
 my $tax_num = scalar(keys %need_taxa); 
 
-print STDOUT join("\t", qw/GrpInfor/, @need_taxa_arr)."\n"; 
+print STDOUT join("\t", qw/GrpInfor GrpID/, @need_taxa_arr)."\n"; 
 while (<>) {
 	chomp; 
 	my @ta = split(/\t/, $_); 
@@ -57,7 +57,9 @@ while (<>) {
 	}
 	$is_bad == 1 and next; 
 	$opts{'allow_miss'} or scalar(keys %cnt) == $tax_num or next; 
-	print STDOUT "$ta[0]"; 
+	my $grpID = $ta[0]; 
+	$grpID =~ s!\s*\(.*\)\s*(:\s*)?$!!; 
+	print STDOUT "$ta[0]\t$grpID"; 
 	for my $tk ( @need_taxa_arr ) {
 		$cnt{$tk} //= ['NA']; 
 		print STDOUT "\t" . join(" ;; ", @{$cnt{$tk}}); 
