@@ -4,7 +4,7 @@ use fileSunhh;
 use LogInforSunhh; 
 use mathSunhh; 
 
-!@ARGV and die "perl $0   out_pref   apple.snp_addGmP   idv_list_1   idv_list_2\n"; 
+!@ARGV and die "perl $0   out_pref   apple.snp_addGmP   idv_list_1_objPop   idv_list_2_refPop\n"; 
 
 my $opref  = shift; 
 my $fn_snp = shift; 
