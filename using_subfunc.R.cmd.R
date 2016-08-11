@@ -14,6 +14,8 @@ for ( i in 1:nrow(pattern_lis) ) {
 	inFq2 <- paste0( pattern_lis$Prefix[i], "_R2.ndupB", sep="" ); 
 	oFq1  <- paste0( pattern_lis$Prefix[i], "_R1", sep="" ); 
 	oFq2  <- paste0( pattern_lis$Prefix[i], "_R2", sep="" ); 
+	adp1  <- pattern_lis$R1pattern[i]
+	adp2  <- pattern_lis$R2pattern[i]
 	clean.pe.fq.file( inFqName1=inFq1, outFqName1=oFq1, adaptor1=adp1, inFqName2=inFq2, outFqName2=oFq2, adaptor2=adp2, RdPerYield=10e6 ); 
 }
 
