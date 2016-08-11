@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# 2016-08-11 The order of groups in comparison list matters, and now I want to use 2nd group as object, and 1st group as reference. 
 use strict; 
 use warnings; 
 use LogInforSunhh; 
@@ -27,8 +28,9 @@ $glob{'med01_grpExt'}  = 0;
 
 
 my %lis = %{ &load_comp_list( $fn_list ) }; 
-&fileSunhh::write2file( "$wrk_dir/lis_A", join("\n", map { "$_\t$lis{'grpIDs'}[0]"; } @{$lis{'IDs'}{ $lis{'grpIDs'}[0] }})."\n" ); 
-&fileSunhh::write2file( "$wrk_dir/lis_B", join("\n", map { "$_\t$lis{'grpIDs'}[1]"; } @{$lis{'IDs'}{ $lis{'grpIDs'}[1] }})."\n" ); 
+# Here lis_A relates to genofile1 in XPCLR, which is used as object population. 
+&fileSunhh::write2file( "$wrk_dir/lis_A", join("\n", map { "$_\t$lis{'grpIDs'}[1]"; } @{$lis{'IDs'}{ $lis{'grpIDs'}[1] }})."\n" ); 
+&fileSunhh::write2file( "$wrk_dir/lis_B", join("\n", map { "$_\t$lis{'grpIDs'}[0]"; } @{$lis{'IDs'}{ $lis{'grpIDs'}[0] }})."\n" ); 
 
 mkdir("$wrk_dir/input/"); 
 &exeCmd_1cmd("perl prepare_xpclr_input_wiGmP.pl $wrk_dir/input/input $fn_snp_wiGmP $wrk_dir/lis_A $wrk_dir/lis_B") and &stopErr("[Err] here.\n"); 
