@@ -90,24 +90,7 @@ $opts{'chk_scripts'} and do { &set_scripts(); exit(1); };
 $opts{'help'} and &LogInforSunhh::usage($help_txt); 
 
 ### Look for perl scripts; 
-sub set_scripts {
-	$glob{'bin_dir'}       //= &fileSunhh::_dirname( &fileSunhh::_abs_path($0) ); 
-	&tsmsg("[Msg] bin_dir=[$glob{'bin_dir'}]\n"); 
-	for my $pl (qw/ColLink.pl slct_sweep_wind.pl prepare_xpclr_input_wiGmP.pl sep_run_xpclr.pl cluster_xpclrscore.pl ret_annot_by_loc.pl /) {
-		defined $glob{$pl} and next; 
-		if ( -e "$glob{'bin_dir'}/$pl" ) {
-			$glob{$pl} = "perl $glob{'bin_dir'}/$pl"; 
-		} elsif ( my $ta = File::Which::which($pl) ) {
-			$glob{$pl} = $ta; 
-		} elsif ( -e "$glob{'bin_dir'}/../slct_sweep/$pl" ) {
-			$glob{$pl} = "perl $glob{'bin_dir'}/../slct_sweep/$pl"; 
-		} else {
-			&stopErr("[Err] Failed to find script [$pl]\n"); 
-		}
-		&tsmsg("[Msg] Setting script [$pl] as [$glob{$pl}]\n"); 
-	}
-	return; 
-}# set_scripts () 
+&set_scripts(); 
 
 my $fn_list = shift; 
 my $wrk_dir = shift; 
@@ -180,5 +163,24 @@ sub load_comp_list {
 	$back{'grpIDs'} = [ sort { $back{'order'}{$a} <=> $back{'order'}{$b} } keys %{$back{'IDs'}} ]; 
 	return(\%back); 
 }
+
+sub set_scripts {
+	$glob{'bin_dir'}       //= &fileSunhh::_dirname( &fileSunhh::_abs_path($0) ); 
+	&tsmsg("[Msg] bin_dir=[$glob{'bin_dir'}]\n"); 
+	for my $pl (qw/ColLink.pl slct_sweep_wind.pl prepare_xpclr_input_wiGmP.pl sep_run_xpclr.pl cluster_xpclrscore.pl ret_annot_by_loc.pl /) {
+		defined $glob{$pl} and next; 
+		if ( -e "$glob{'bin_dir'}/$pl" ) {
+			$glob{$pl} = "perl $glob{'bin_dir'}/$pl"; 
+		} elsif ( my $ta = File::Which::which($pl) ) {
+			$glob{$pl} = $ta; 
+		} elsif ( -e "$glob{'bin_dir'}/../slct_sweep/$pl" ) {
+			$glob{$pl} = "perl $glob{'bin_dir'}/../slct_sweep/$pl"; 
+		} else {
+			&stopErr("[Err] Failed to find script [$pl]\n"); 
+		}
+		&tsmsg("[Msg] Setting script [$pl] as [$glob{$pl}]\n"); 
+	}
+	return; 
+}# set_scripts () 
 
 
