@@ -118,7 +118,7 @@ for my $d (readdir(DD)) {
 	my $chrN = &wm97Sunhh::chrID_to_number( $chrID , 'WM97_Chr'); 
 	$chrN =~ m!^\d+$! or &stopErr("[Err] Failed to convert chrID [$chrID] to number [$chrN]\n"); 
 	my $i_pref = "$wrk_dir/input/input"; 
-	&exeCmd_1cmd("$glob{'sep_run_xpclr.pl'} ${i_pref}.${chrID} ' $glob{'xpclr_w1'} $chrN $glob{'xpclr_p0'} '   300000   ${i_pref}.${chrID}.snp.out.xpclr.txt | grep -v process") and &stopErr("[Err] Stop sep_run_xpclr.pl\n"); 
+	&exeCmd_1cmd("$glob{'sep_run_xpclr.pl'} ${i_pref}.${chrID} ' $glob{'xpclr_w'} $chrN $glob{'xpclr_p'} '   300000   ${i_pref}.${chrID}.snp.out.xpclr.txt | grep -v process") and &stopErr("[Err] Stop sep_run_xpclr.pl\n"); 
 	&exeCmd_1cmd("$glob{'cluster_xpclrscore.pl'} ${i_pref}.${chrID}.snp.out.xpclr.txt -wind_size $glob{'wind_size'} -wind_step $glob{'wind_step'} -wind_start 1 > ${i_pref}.${chrID}.snp.out.xpclr.txt.$glob{'windTag'}") and &stopErr("[Err] Stop cluster_xpclrscore.pl\n"); 
 	my $fh = &openFH("${i_pref}.${chrID}.snp.out.xpclr.txt.$glob{'windTag'}", '<'); 
 	while (&wantLineC($fh)) {
