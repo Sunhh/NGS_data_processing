@@ -524,4 +524,9 @@ sub _rmtree {
 sub _basename {
 	return File::Basename::basename(@_); 
 }
+=head1 _dirname()
+=cut
+sub _dirname {
+	return File::Basename::dirname(@_); 
+}
 1; 
