@@ -109,8 +109,8 @@ my $fn_annot     = $opts{'in_annot'};
 my %lis = %{ &load_comp_list( $fn_list ) }; 
 # Here lis_A relates to genofile1 in XPCLR, which is used as object population. 
 if ( $opts{'firstAsObjPop'} ) {
-	&fileSunhh::write2file( "$wrk_dir/lis_A", join("\n", map { "$_\t$lis{'grpIDs'}[0]"; } @{$lis{'IDs'}{ $lis{'grpIDs'}[1] }})."\n" ); 
-	&fileSunhh::write2file( "$wrk_dir/lis_B", join("\n", map { "$_\t$lis{'grpIDs'}[1]"; } @{$lis{'IDs'}{ $lis{'grpIDs'}[0] }})."\n" ); 
+	&fileSunhh::write2file( "$wrk_dir/lis_A", join("\n", map { "$_\t$lis{'grpIDs'}[0]"; } @{$lis{'IDs'}{ $lis{'grpIDs'}[0] }})."\n" ); 
+	&fileSunhh::write2file( "$wrk_dir/lis_B", join("\n", map { "$_\t$lis{'grpIDs'}[1]"; } @{$lis{'IDs'}{ $lis{'grpIDs'}[1] }})."\n" ); 
 } else {
 	&fileSunhh::write2file( "$wrk_dir/lis_A", join("\n", map { "$_\t$lis{'grpIDs'}[1]"; } @{$lis{'IDs'}{ $lis{'grpIDs'}[1] }})."\n" ); 
 	&fileSunhh::write2file( "$wrk_dir/lis_B", join("\n", map { "$_\t$lis{'grpIDs'}[0]"; } @{$lis{'IDs'}{ $lis{'grpIDs'}[0] }})."\n" ); 
