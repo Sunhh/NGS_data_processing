@@ -64,6 +64,9 @@ my $help_txt = <<HH;
 #
 # -help
 #
+# -firstAsObjPop   [Boolean] If given,   the 1st pop will be object population. 
+#                            By default, the 2nd pop will be used as object pop. 
+#
 # -chk_scripts     [Boolean]  Only check if the scripts are available. 
 #
 # -in_snpTbl       [filename] Similar to file 'Acc131_mask.snp_addGmP', 
