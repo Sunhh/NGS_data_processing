@@ -13,6 +13,7 @@ GetOptions(\%opts,
 	"in_wind:s",   # WM97_w10ks10k.wind 
 	"in_annot:s",  # WM97_v6.annot.definition.annot
 	"set_para:s@",  # 'med01_qtCut=0.03;med01_grpLen=5;med01_grpGood=3;med01_grpExt=0;'
+	"firstAsObjPop!", 
 	"chk_scripts!", 
 ); 
 
@@ -104,8 +105,13 @@ my $fn_annot     = $opts{'in_annot'};
 
 my %lis = %{ &load_comp_list( $fn_list ) }; 
 # Here lis_A relates to genofile1 in XPCLR, which is used as object population. 
-&fileSunhh::write2file( "$wrk_dir/lis_A", join("\n", map { "$_\t$lis{'grpIDs'}[1]"; } @{$lis{'IDs'}{ $lis{'grpIDs'}[1] }})."\n" ); 
-&fileSunhh::write2file( "$wrk_dir/lis_B", join("\n", map { "$_\t$lis{'grpIDs'}[0]"; } @{$lis{'IDs'}{ $lis{'grpIDs'}[0] }})."\n" ); 
+if ( $opts{'firstAsObjPop'} ) {
+	&fileSunhh::write2file( "$wrk_dir/lis_A", join("\n", map { "$_\t$lis{'grpIDs'}[0]"; } @{$lis{'IDs'}{ $lis{'grpIDs'}[1] }})."\n" ); 
+	&fileSunhh::write2file( "$wrk_dir/lis_B", join("\n", map { "$_\t$lis{'grpIDs'}[1]"; } @{$lis{'IDs'}{ $lis{'grpIDs'}[0] }})."\n" ); 
+} else {
+	&fileSunhh::write2file( "$wrk_dir/lis_A", join("\n", map { "$_\t$lis{'grpIDs'}[1]"; } @{$lis{'IDs'}{ $lis{'grpIDs'}[1] }})."\n" ); 
+	&fileSunhh::write2file( "$wrk_dir/lis_B", join("\n", map { "$_\t$lis{'grpIDs'}[0]"; } @{$lis{'IDs'}{ $lis{'grpIDs'}[0] }})."\n" ); 
+}
 
 mkdir("$wrk_dir/input/"); 
 &exeCmd_1cmd("$glob{'prepare_xpclr_input_wiGmP.pl'} $wrk_dir/input/input $fn_snp_wiGmP $wrk_dir/lis_A $wrk_dir/lis_B") and &stopErr("[Err] here.\n"); 
