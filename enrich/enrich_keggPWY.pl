@@ -3,8 +3,24 @@ use strict;
 use warnings; 
 use LogInforSunhh; 
 use fileSunhh; 
+use Getopt::Long; 
+my %opts; 
+GetOptions(\%opts, 
+	"help!", 
+	"colN:i", # 0 
+); 
+$opts{'colN'} //= 0; 
 
-!@ARGV and die "perl $0 background_pwy subset_geneList [padj_cutoff_0.05]\n"; 
+my $help_txt = <<HH; 
+################################################################################
+# perl $0 background_pwy subset_geneList [padj_cutoff_0.05]
+#
+# -colN      [colNum_for_geneID] default 0. 
+################################################################################
+HH
+
+!@ARGV and &LogInforSunhh::usage($help_txt); 
+$opts{'help'} and &LogInforSunhh::usage($help_txt); 
 
 my $fn_bg = shift; 
 my $fn_sub = shift; 
@@ -19,10 +35,10 @@ my $fh_sub = &openFH($fn_sub);
 while (&wantLineC($fh_sub)) {
 	my @ta = &splitL("\t", $_); 
 	$sublis{'geneNum'} ++; 
-	defined $bg{'gene2pwy'}{$ta[0]} or next; 
-	for my $pwy (keys %{$bg{'gene2pwy'}{$ta[0]}}) {
+	defined $bg{'gene2pwy'}{$ta[$opts{'colN'}]} or next; 
+	for my $pwy (keys %{$bg{'gene2pwy'}{$ta[$opts{'colN'}]}}) {
 		$sublis{'chk_pwy'}{$pwy} = $.; 
-		$sublis{'pwy2gene'}{$pwy}{$ta[0]} = $.; 
+		$sublis{'pwy2gene'}{$pwy}{$ta[$opts{'colN'}]} = $.; 
 	}
 }
 close ($fh_sub); 
