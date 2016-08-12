@@ -61,3 +61,30 @@ for ( i in 1:nrow(pattern_lis) ) {
 	}
 }
 
+### Change trimmomatic directory for different server !!! 
+
+#### For polyA/polyT clean from Q20
+source( './using_subfunc.R' ); 
+pattern_lis <- read.table( 'pattern_lis.01', header=T, stringsAsFactors=F ); 
+# pattern_lis <- read.table( 'pattern_lis.02', header=T, stringsAsFactors=F ); 
+# pattern_lis example : 
+# Prefix
+# P3_200
+# P3_500a
+# P3_500b
+for ( i in 1:nrow(pattern_lis) ) {
+	gc(); 
+	inFq1 <- paste0( pattern_lis$Prefix[i], "_R1.fq", sep="" ); 
+	inFq2 <- paste0( pattern_lis$Prefix[i], "_R2.fq", sep="" ); 
+	oFq1  <- paste0( pattern_lis$Prefix[i], "_R1", sep="" ); 
+	oFq2  <- paste0( pattern_lis$Prefix[i], "_R2", sep="" ); 
+	myseq <- "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+	myseq_comp <- chartr("ATGC", "TACG", myseq)
+	x <- strsplit(myseq_comp, "")
+	x <- lapply(x, rev)
+	myseq_revcomp <- sapply(x, paste, collapse="")
+	polyAT <- c( myseq, myseq_comp)
+	
+	clean.pe.fq.file( inFqName1=inFq1, outFqName1=oFq1, adaptor1=polyAT, inFqName2=inFq2, outFqName2=oFq2, adaptor2=polyAT, RdPerYield=10e6, qual.opts=list(min.qual=0), align.opts=list(thres.width.up=200, thres.mismatch.ratio=0.2) ); 
+}
+
