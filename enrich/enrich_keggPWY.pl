@@ -64,7 +64,13 @@ close($fh_r);
 system("Rscript $wrk_dir/c.r"); 
 
 my $fh_o = &openFH("$wrk_dir/output", '<'); 
+my $has_header = 0; 
 while (<$fh_o>) {
+	m!^\s*$! and next; 
+	unless ($has_header) {
+		$has_header = 1; 
+		print STDOUT join("\t", qw/FDR rawPval mapID_desc bg_totalN bg_pwyN sub_totalN sub_pwyN sub_pwyGenes/)."\n"; 
+	}
 	print STDOUT $_; 
 }
 close($fh_o); 
