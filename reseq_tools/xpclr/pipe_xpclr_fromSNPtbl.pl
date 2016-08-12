@@ -115,8 +115,16 @@ for my $d (readdir(DD)) {
 	$d =~ m/^\./ and next; 
 	$d =~ m!^input\.(\S+)\.snp! or next; 
 	my $chrID = $1; 
-	my $chrN = &wm97Sunhh::chrID_to_number( $chrID , 'WM97_Chr'); 
-	$chrN =~ m!^\d+$! or &stopErr("[Err] Failed to convert chrID [$chrID] to number [$chrN]\n"); 
+	my $chrN; 
+	if ( defined $glob{'chr_id2num'}{$chrID} ) {
+		$chrN = $glob{'chr_id2num'}{$chrID}; 
+	} else {
+		$chrN = &wm97Sunhh::chrID_to_number( $chrID , 'WM97_Chr'); 
+		$chrN =~ m!^\d+$! or &stopErr("[Err] Failed to convert chrID [$chrID] to number [$chrN]\n"); 
+		defined $glob{'chr_num2id'}{$chrN} and &stopErr("[Err] Repeat chrN [$chrN] for differnt chrID [$glob{'chr_num2id'}{$chrN} $chrID]\n"); 
+		$glob{'chr_id2num'}{$chrID} = $chrN; 
+		$glob{'chr_num2id'}{$chrN}  = $chrID; 
+	}
 	my $i_pref = "$wrk_dir/input/input"; 
 	&exeCmd_1cmd("$glob{'sep_run_xpclr.pl'} ${i_pref}.${chrID} ' $glob{'xpclr_w'} $chrN $glob{'xpclr_p'} '   300000   ${i_pref}.${chrID}.snp.out.xpclr.txt | grep -v process") and &stopErr("[Err] Stop sep_run_xpclr.pl\n"); 
 	&exeCmd_1cmd("$glob{'cluster_xpclrscore.pl'} ${i_pref}.${chrID}.snp.out.xpclr.txt -wind_size $glob{'wind_size'} -wind_step $glob{'wind_step'} -wind_start 1 > ${i_pref}.${chrID}.snp.out.xpclr.txt.$glob{'windTag'}") and &stopErr("[Err] Stop cluster_xpclrscore.pl\n"); 
@@ -126,7 +134,7 @@ for my $d (readdir(DD)) {
 		my $tk = "$ta[0]\t$ta[1]\t$ta[2]"; 
 		defined $glob{'uniq_wind'}{$tk} and next; 
 		$glob{'uniq_wind'}{$tk} = 1; 
-		$ta[0] =~ m!^chrID$!i or $ta[0] = &wm97Sunhh::number_to_chrID( $ta[0] ); 
+		$ta[0] =~ m!^chrID$!i or do { defined $glob{'chr_num2id'}{$ta[0]} or &stopErr("[Err] Unknown chrN [$ta[0]]\n"); $ta[0] = $glob{'chr_num2id'}{$ta[0]}; }; 
 		print { $glob{'fh_o_wXPCLR'} } join("\t", @ta)."\n"; 
 	}
 	close($fh); 
