@@ -36,7 +36,7 @@ plot_sepChr_slct <- function ( sep_all=sep_all , sep_slct=sep_slct, chrID='chr1'
 data_jn     <- read.table( fn_jn,     header=T, stringsAsFactors=F )
 data_cumChr <- read.table( fn_cumChr, header=T, stringsAsFactors=F )
 
-pdf( file=paste0(fn_jn, '.jnChr.pdf') , height=7, width=21 )
+pdf( file=paste0(fn_jn, '.mht_plot.pdf') , height=7, width=21 )
 plot_jnChr( jn= data_jn, chrlen= data_cumChr, cv='Avg' )
 dev.off()
 
