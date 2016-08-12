@@ -2,6 +2,7 @@
 use strict; 
 use warnings; 
 use fileSunhh; 
+use LogInforSunhh; 
 use Getopt::Long; 
 my %opts; 
 GetOptions(\%opts, 
@@ -12,7 +13,19 @@ GetOptions(\%opts,
 
 $opts{'delt_len'} //= 0; 
 
-!@ARGV and die "perl $0 apple_chrLen whole_grp_2ato1/apple_whole.chr1.snp.out.xpclr.txt.w10ks10k\n"; 
+my $help_txt = <<HH; 
+################################################################################
+# perl $0 chrLen xpclr_w10ks10k > xpclr_w10ks10k.jnChr
+#
+# -help
+#
+# -delt_len       [0] Distance between two adjacent chromosomes. 
+# -out_cumLen     [filename] Output a chrLen_cum file for plotting. 
+################################################################################
+HH
+
+$opts{'help'} and &LogInforSunhh::usage($help_txt); 
+!@ARGV and &LogInforSunhh::usage($help_txt); 
 
 my %glob; 
 defined $opts{'out_cumLen'} and $glob{'fh_oCumLen'} = &openFH( $opts{'out_cumLen'}, '>' ); 
