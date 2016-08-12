@@ -1,13 +1,17 @@
 #!/home/Sunhh/bin/Rscript
 
+.tsmsg <- function(...) {
+	message("[", date(), "]: ", ...)
+}# End .tsmsg
+
 argvs <- commandArgs( trailingOnly=TRUE ) ;
 
-fn_jn <- as.character( argvs[1] )
+fn_jn     <- as.character( argvs[1] )
+fn_cumChr <- as.character( argvs[2] )
 if ( length(argvs) == 0 ) {
+	.tsmsg("Rscript plot_xpclr_cum.R xpclr_w10ks10k chrLen_cum\n"); 
 	q()
 }
-
-fn_cumChr <- 'chrLen_cum'
 
 plot_jnChr <- function ( jn=jn , chrlen=chrlen , cv='Avg', cols=NULL, ... ) {
 	if ( is.null(cols) ) { cols <- rainbow(length(chrlen$chrID)) }
