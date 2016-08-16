@@ -160,7 +160,7 @@ sub load_tabFile {
 
 
 
-=head1 load_agpFile( $filename )
+=head1 load_agpFile( $filename , $if_save_unknown_str [0|1])
 
 Required   : $filename
 
@@ -169,10 +169,12 @@ Function   : load in an agp file into a hash, which can be input into $mathSunhh
 Return     : ( \%ctg2scf )
 
   %ctg2scf = ( $ctgID => [ [ctgS, ctgE, scfID, scfS, scfE, scfStr(+/-/?)], [], ... ] ) # This is sorted. 
+  If the input $if_save_unknown_str is 0, the scfStr will be either + or -. 
 
 =cut
 sub load_agpFile {
-	my ( $fn ) = @_; 
+	my ( $fn , $save_str ) = @_; 
+	$save_str //= 0; 
 	my $fh = &openFH( $fn, '<' ); 
 	my %ctg2scf; 
 	while (<$fh>) {
@@ -180,7 +182,7 @@ sub load_agpFile {
 		chomp; s/[^\S\t]+$//; 
 		my @ta = &splitL("\t", $_); 
 		$ta[4] eq 'W' or next; 
-		$ta[8] eq '?' and $ta[8] = '+'; 
+		$save_str or ( $ta[8] eq '?' and $ta[8] = '+' ); 
 		push( @{$ctg2scf{$ta[5]}}, [@ta[ 6,7,0,1,2,8 ]] ); 
 	}
 	close($fh); 
