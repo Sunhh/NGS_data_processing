@@ -181,7 +181,7 @@ sub load_agpFile {
 		m/^\s*(#|$)/ and next; 
 		chomp; s/[^\S\t]+$//; 
 		my @ta = &splitL("\t", $_); 
-		$ta[4] eq 'W' or next; 
+		$ta[4] =~ m!^(W|F)$! or next; 
 		$save_str or ( $ta[8] eq '?' and $ta[8] = '+' ); 
 		push( @{$ctg2scf{$ta[5]}}, [@ta[ 6,7,0,1,2,8 ]] ); 
 	}
