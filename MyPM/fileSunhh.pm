@@ -182,7 +182,11 @@ sub load_agpFile {
 		chomp; s/[^\S\t]+$//; 
 		my @ta = &splitL("\t", $_); 
 		$ta[4] =~ m!^(W|F)$! or next; 
-		$save_str or ( $ta[8] eq '?' and $ta[8] = '+' ); 
+		unless ( $save_str ) {
+			$ta[8] eq '?' and $ta[8] = '+'; 
+			$ta[8] eq '0' and $ta[8] = '+'; 
+			( $ta[8] eq '+' or $ta[8] eq '-' ) or &stopErr("[Err] Bad strand [$ta[8]]\n"); 
+		}
 		push( @{$ctg2scf{$ta[5]}}, [@ta[ 6,7,0,1,2,8 ]] ); 
 	}
 	close($fh); 
@@ -192,6 +196,25 @@ sub load_agpFile {
 	
 	return(\%ctg2scf); 
 }# load_agpFile ()
+
+=head1 reverse_agpHash ( \%ctg2scf )
+
+Return      : (\%scf2ctg)
+
+=cut
+sub reverse_agpHash {
+	my ($h1) = @_; 
+	my %back; 
+	for my $cID ( keys %$h1 ) {
+		for my $a1 (@{$h1->{$cID}}) {
+			push(@{$back{$a1->[0]}}, [ @{$a1}[3,4], $cID, @{$a1}[0,1,5] ]); 
+		}
+	}
+	for my $sID ( keys %back ) {
+		@{$back{$sID}} = sort { $a->[0] <=> $b->[0] || $a->[1] <=> $b->[1] || $a->[2] cmp $b->[2] || $a->[3] <=> $b->[3] || $a->[4] <=> $b->[4] } @{$back{$sID}}; 
+	}
+	return(\%back); 
+}# reverse_agpHash () 
 
 
 =head1 openFH( $filename, $open_type )

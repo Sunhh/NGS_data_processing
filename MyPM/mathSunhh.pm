@@ -583,6 +583,33 @@ sub switch_position {
 	return (@back); 
 }# sub switch_position () 
 
+=head2 transfer_position( 'from_ref2qry'=>\%agp_scf2ctg, 'to_qry2ref'=>\%agp_ctg2scf, 'fromLoc'=>[$from_scfID, $from_scfPos, $from_scfStrand] )
+
+Input       : 
+  %agp_scf2ctg : Normally it is reversed output of &fileSunhh::load_agpFile(); 
+  %agp_ctg2scf : It is directly output of &fileSunhh::load_agpFile();
+  Only one-to-one relationship is allowed. 
+
+Return      : return( $to_scfID, $to_scfPos, $to_scfStrand ); 
+
+=cut
+sub transfer_position {
+	my $self = shift; 
+	my %parm = $self->_setHashFromArr(@_); 
+	for (qw/from_ref2qry to_qry2ref fromLoc/) {
+		defined $parm{$_} or &stopErr("[Err] '$_' not defined in transfer_position().\n"); 
+	}
+	defined $parm{'fromLoc'}[0] or &stopErr("[Err] No from_scfID defined.\n"); 
+	$parm{'fromLoc'}[1] //= 1; 
+	$parm{'fromLoc'}[2] //= '+'; 
+
+	my @old_ctgInf = $self->switch_position( 'qry2ref' => $parm{'from_ref2qry'} , 'qryID' => $parm{'fromLoc'}[0] , 'qryPos' => $parm{'fromLoc'}[1] , 'qryStr' => $parm{'fromLoc'}[2] ); 
+	@old_ctgInf == 1 or &stopErr("[Err] Bad result for [@{$parm{'fromLoc'}}] [@old_ctgInf]\n"); 
+	my @new_scfInf = $self->switch_position( 'qry2ref' => $parm{'to_qry2ref'} , 'qryID' => $old_ctgInf[0][0] , 'qryPos' => $old_ctgInf[0][1] , 'qryStr' => $old_ctgInf[0][2] );
+	@new_scfInf == 1 or &stopErr("[Err] Bad result for ctg [@{$old_ctgInf[0]}] [@new_scfInf]\n"); 
+	return( @{$new_scfInf[0]} ); 
+}# transfer_position () 
+
 ############################################################
 #  Sub-routines. 
 ############################################################
