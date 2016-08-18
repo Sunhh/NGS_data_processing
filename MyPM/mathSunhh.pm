@@ -604,7 +604,7 @@ sub transfer_position {
 	$parm{'fromLoc'}[2] //= '+'; 
 
 	my @old_ctgInf = $self->switch_position( 'qry2ref' => $parm{'from_ref2qry'} , 'qryID' => $parm{'fromLoc'}[0] , 'qryPos' => $parm{'fromLoc'}[1] , 'qryStr' => $parm{'fromLoc'}[2] ); 
-	@old_ctgInf == 1 or &stopErr("[Err] Bad result for [@{$parm{'fromLoc'}}] [@old_ctgInf]\n"); 
+	(@old_ctgInf == 1 and defined $old_ctgInf[0][0]) or &stopErr("[Err] Bad result for [@{$parm{'fromLoc'}}] [@old_ctgInf]\n"); 
 	my @new_scfInf = $self->switch_position( 'qry2ref' => $parm{'to_qry2ref'} , 'qryID' => $old_ctgInf[0][0] , 'qryPos' => $old_ctgInf[0][1] , 'qryStr' => $old_ctgInf[0][2] );
 	@new_scfInf == 1 or &stopErr("[Err] Bad result for ctg [@{$old_ctgInf[0]}] [@new_scfInf]\n"); 
 	return( @{$new_scfInf[0]} ); 
