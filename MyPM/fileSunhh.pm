@@ -207,7 +207,7 @@ sub reverse_agpHash {
 	my %back; 
 	for my $cID ( keys %$h1 ) {
 		for my $a1 (@{$h1->{$cID}}) {
-			push(@{$back{$a1->[0]}}, [ @{$a1}[3,4], $cID, @{$a1}[0,1,5] ]); 
+			push(@{$back{$a1->[2]}}, [ @{$a1}[3,4], $cID, @{$a1}[0,1,5] ]); 
 		}
 	}
 	for my $sID ( keys %back ) {
