@@ -12,6 +12,7 @@ GetOptions(\%opts,
 	"c1_required_taxaLis:s@", "c1_required_taxaNum:i@", 
 	"c2_min_taxaN:i", # At least 
 	"c3_chk_taxaLis:s", "c3_min_taxaN:i", 
+	"c3_bad_taxaLis:s", "c3_max_taxaN:i", 
 	"c4_gg_list:s", # all_12_taxa.gg 
 	"c5_inner_taxaLis:s", "c5_outer_taxaLis:s", 
 	"c6_inner_taxaLis:s", "c6_outer_taxaLis:s", 
@@ -33,6 +34,8 @@ my $help_txt = <<HH;
 # category_03 : 
 #  -c3_chk_taxaLis        [taxaList] Subset of taxa to check 
 #  -c3_min_taxaN          [taxaNum] Number of taxa needed in subset. 
+#  -c3_bad_taxaLis        [taxaList] Subset of taxa to keep out
+#  -c3_max_taxaN          [taxaNum] Number of taxa allowed in subset. 
 #
 # category_04 : 
 #  -c4_gg_list            [all_12_taxa.gg] Format from OrthoMCL; 
@@ -55,7 +58,7 @@ my $help_txt = <<HH;
 ################################################################################
 # category_01 : At least \$c1_required_taxaNum in \%c1_required_taxaLis; 
 # category_02 : Not in previous categories, at least \$c2_min_taxaN 
-# category_03 : Not in previous categories, at least \$c3_min_taxaN taxa within \%c3_chk_taxaLis ; 
+# category_03 : Not in previous categories, at least \$c3_min_taxaN taxa within \%c3_chk_taxaLis , and at most \$c3_max_taxaN within \%c3_bad_taxaLis; 
 # category_04 : Not in previous categories, without any homolog in other species; 
 # category_05 : Not in previous categories, have all in \%c5_inner_taxaLis and non in \%c5_outer_taxaLis; 
 # category_06 : Not in previous categories, have all in \%c6_inner_taxaLis and non in \%c6_outer_taxaLis; 
@@ -161,22 +164,31 @@ category_03 : Not in previous categories, at least $c3_min_taxaN taxa within %c3
 =cut
 sub cnt_c3 {
 	$glob{'c3_chk_taxaLis'} //= {}; 
-	$glob{'c3_min_taxaN'} //= 0; 
+	$glob{'c3_min_taxaN'}   //= 0; 
+	$glob{'c3_bad_taxaLis'} //= {}; 
+	$glob{'c3_max_taxaN'}   //= 0; 
 	if ( defined $opts{'c3_chk_taxaLis'} ) {
 		( $glob{'c3_chk_taxaLis'} ) = &load_taxaLis( $opts{'c3_chk_taxaLis'} ); 
 		$glob{'c3_chk_taxaAll'} = scalar( keys %{$glob{'c3_chk_taxaLis'}} ); 
 		$opts{'c3_min_taxaN'} //= $glob{'c3_chk_taxaAll'}; 
 		$glob{'c3_min_taxaN'} = $opts{'c3_min_taxaN'}; 
 	}
+	if ( defined $opts{'c3_bad_taxaLis'} ) {
+		( $glob{'c3_bad_taxaLis'} ) = &load_taxaLis( $opts{'c3_bad_taxaLis'} ); 
+		# $glob{'c3_bad_taxaAll'} = scalar( keys %{$glob{'c3_bad_taxaLis'}} ); 
+		$glob{'c3_max_taxaN'} = $opts{'c3_max_taxaN'}; 
+	}
 
 	for my $r1 (@ortho_grps) {
 		&chk_prev_has( 'grpID', ['1', '2'], $r1->{'grpID'} ) and next; 
 		my @taxa_ids = keys %{ $r1->{'tax2gene'} }; 
 		my $is_good = 1; 
-		my %cnt = ( 'curr_requiredN' => 0 ); 
+		my %cnt = ( 'curr_requiredN' => 0 , 'curr_badN' => 0 ); 
 		for my $t1 (@taxa_ids) {
 			defined $glob{'c3_chk_taxaLis'}{$t1} and $cnt{'curr_requiredN'}++; 
+			defined $glob{'c3_bad_taxaLis'}{$t1} and $cnt{'curr_badN'}++; 
 		}
+		$cnt{'curr_badN'} <= $glob{'c3_max_taxaN'} or $is_good = 0; 
 		$cnt{'curr_requiredN'} >= $glob{'c3_min_taxaN'} or $is_good = 0; 
 		$is_good == 1 or next; 
 		&fill_has( '3', $r1 ); 
