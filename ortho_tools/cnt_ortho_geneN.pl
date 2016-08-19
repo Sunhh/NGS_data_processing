@@ -25,7 +25,9 @@ my $help_txt = <<HH;
 ################################################################################
 # perl $0 -in_file all_orthomcl.out -odir out_new_dir
 #
-# -in_fmt                 ['orthomcl'] Could be : orthomcl , orthofinder ; 
+# -in_fmt                 ['orthomcl'] Could be : 
+#                           orthomcl - for all_orthomcl.out
+#                           orthofinder - for OrthologousGroups.csv_shrtTaxID
 # 
 # category_01 : All lists must be satisfied. 
 #  -c1_required_taxaLis   [taxaList\@] One taxID per line. 
