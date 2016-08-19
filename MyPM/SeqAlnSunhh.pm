@@ -539,8 +539,8 @@ Return    : \%good_flag_list
 
 %good_flag_list == ( $flag_to_keep1 => 1 , $flag_to_keep2 => 1, ... )
 
-Example: 
- -anyEnd_pair    'keep'=>'0=1' , 'drop'=>'2=1,3=1' ; 
+ Example: 
+ -anyEnd_pair    'keep'=>'0=1' , 'drop'=>'2=1,3=1' ;
  -anyEnd_info    'keep'=>''    , 'drop'=>'2=1,3=1' ; 
  -bothEnd_pair   'keep'=>'0=1,2=0,3=0' , 'drop'=>'' ; 
  -h2diff_pair    'keep'=>'0=1,2=0,3=0,4=0,5=1;0=1,2=0,3=0,4=1,5=0' , 'drop'=>'' ; 
@@ -902,6 +902,7 @@ sub cnt_sam_mismatch {
 Required    : \@sam_line_array 
 
 Function    : Retrieve information from sam line as many as possible. 
+
               [@required_infor] check all of 'could be' in Return. 
               read_str mate_str : could be +/-/u , 'u' means not aligned. 
               ins_s ins_e ins_len : will be computed together, but returned separately. These are same to bwa definition. 
@@ -915,6 +916,7 @@ Function    : Retrieve information from sam line as many as possible.
 
 
 Return      : (\%infor_hash)
+
  In this %infor_hash, there are keys as 
   qw/qname flag rname pos mapq cigar rnext pnext temlen seq qual/ ; 
   could be [qw/read_len nm_ratio read_str mate_str ins_s ins_e ins_len cigar_href/] ; 
