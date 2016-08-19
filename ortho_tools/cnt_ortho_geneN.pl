@@ -9,6 +9,7 @@ my %opts;
 GetOptions(\%opts, 
 	"help!", 
 	"in_file:s", # all_orthomcl.out
+	"in_fmt:s", # Default orthomcl
 	"c1_required_taxaLis:s@", "c1_required_taxaNum:i@", 
 	"c2_min_taxaN:i", # At least 
 	"c3_chk_taxaLis:s", "c3_min_taxaN:i", 
@@ -23,6 +24,8 @@ GetOptions(\%opts,
 my $help_txt = <<HH; 
 ################################################################################
 # perl $0 -in_file all_orthomcl.out -odir out_new_dir
+#
+# -in_fmt                 ['orthomcl'] Could be : orthomcl , orthofinder ; 
 # 
 # category_01 : All lists must be satisfied. 
 #  -c1_required_taxaLis   [taxaList\@] One taxID per line. 
@@ -77,7 +80,7 @@ my %glob;
 
 my ( @ortho_grps , %taxGen2grpID); 
 {
-	my ($r1, $r2) = &load_grps( $opts{'in_file'} ); 
+	my ($r1, $r2) = &load_grps( $opts{'in_file'} , $glob{'in_fmt'} ); 
 	@ortho_grps = @$r1; 
 	%taxGen2grpID = %$r2; 
 }
@@ -409,6 +412,55 @@ Return : ( [ \%grp_1, \%grp_2, ... ], %gene2grpID )
 
 =cut
 sub load_grps {
+	my ($fn, $fmt) = @_; 
+	$fmt //= 'orthocml'; 
+	if ($fmt =~ m!^\s*orthomcl\s*$!i) {
+		return( &load_grps_fmt_orthocml($fn) ); 
+	} elsif ($fmt =~ m!^\s*orthofinder\s*$!i) {
+		return( &load_grps_fmt_orthofinder($fn) ); 
+	} else {
+		&stopErr("[Err] Unknown format of input Orthologous Group file.\n"); 
+	}
+	return; 
+}# load_grps() 
+
+sub load_grps_fmt_orthofinder {
+	my $fn = shift; 
+	my $fh = &openFH($fn, '<'); 
+	my (@back, %gene2grpID); 
+	# For OrthologousGroups.csv 
+	my @hh; 
+	while (&wantLineC($fh)) {
+		chomp; 
+		my @ta = &splitL("\t", $_); 
+		if ($. == 1) {
+			$ta[0] eq '' or &stopErr("[Err] Bad 1st line: $_\n"); 
+			@hh = @ta; 
+			next; 
+		}
+		my ($grpID, $geneN, $taxaN) = ($ta[0], 0, 0); 
+		push(@back, {}); 
+		$back[-1]{'grpID'} = $grpID; 
+		for (my $i=1; $i<@ta; $i++) {
+			$ta[$i] eq '' and next; 
+			$ta[$i] =~ m!^(\s*,*\s*)*$! and next; 
+			my $tax_name = $hh[$i]; 
+			$taxaN ++; 
+			for my $tax_gene (split(/, /, $ta[$i])) {
+				$geneN ++; 
+				$back[-1]{'tax2gene'}{$tax_name}{$tax_gene} = $geneN; 
+				defined $gene2grpID{$tax_name}{$tax_gene} and &stopErr("[Err] repeat ID {$tax_name}{$tax_gene}\n"); 
+				$gene2grpID{$tax_name}{$tax_gene} = $back[-1]{'grpID'}; 
+			}
+		}
+		$back[-1]{'geneN'} = $geneN; 
+		$back[-1]{'taxaN'} = $taxaN; 
+	}
+	close($fh); 
+	return(\@back, \%gene2grpID); 
+}# load_grps_fmt_orthofinder() 
+
+sub load_grps_fmt_orthocml {
 	my $fn = shift; 
 	my $fh = &openFH($fn, '<'); 
 	my @back; 
@@ -439,7 +491,7 @@ sub load_grps {
 	}
 	close($fh); 
 	return(\@back, \%gene2grpID); 
-}# load_grps () 
+}# load_grps_fmt_orthocml () 
 
 =head1 chk_prev_has( 'grpID|taxGene', [1,2,3,...], $grpID or [$taxID, $genID] )
 
@@ -559,6 +611,8 @@ sub prepare_glob {
 		-d $glob{'odir'} and &stopErr("[Err] -odir $glob{'odir'} exists.\n"); 
 		mkdir($glob{'odir'}) or &stopErr("[Err] Failed to create output_dir [$glob{'odir'}]"); 
 	}
+	$glob{'in_fmt'} = 'orthomcl'; 
+	defined $opts{'in_fmt'} and $glob{'in_fmt'} = $opts{'in_fmt'}; 
 }# prepare_glob
 
 =head1 out_cN_geneN ([qw/1 2 3 4 5 6 7 8 9/])
