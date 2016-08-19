@@ -201,6 +201,8 @@ sub load_agpFile {
 
 Return      : (\%scf2ctg)
 
+  The returned \%scf2ctg has been sorted by scfS/E , ctgID and ctgS/E; 
+
 =cut
 sub reverse_agpHash {
 	my ($h1) = @_; 
