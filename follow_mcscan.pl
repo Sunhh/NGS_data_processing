@@ -30,6 +30,7 @@ GetOptions(\%opts,
  "cvt_ctg2scf!", "scf_agp:s", 
  "trim_block!", "trim_blkSE:s", 
  "filter_blk!", "min_blkPair:i", 
+ "exe_python:s", # python
  "help!", 
 ); 
 
@@ -163,6 +164,7 @@ defined $opts{'out'} and $outFh = &openFH($opts{'out'}, '>');
 $opts{'srt_by'} //= 'min'; 
 $opts{'useYN'}  //= 0; 
 $opts{'only_direct'} //= 0; 
+$opts{'exe_python'} //= 'python'; 
 
 
 ####################################################################################################
@@ -420,9 +422,9 @@ sub _lis2ks {
 	defined $parm{'fas_cds'} or &stopErr("[Err] -fas_cds must be given.\n"); 
 	defined $parm{'in_pair_list'} or &stopErr("[Err] -in_pair_list is needed.\n"); 
 	
-	&exeCmd_1cmd("python -m jcvi.apps.ks prepare $parm{'in_pair_list'} $parm{'fas_cds'} $parm{'fas_prot'} -o $parm{'out_pref'}.cds.fasta") and &stopErr("[Err] Failed prepare\n"); 
+	&exeCmd_1cmd("$opts{'exe_python'} -m jcvi.apps.ks prepare $parm{'in_pair_list'} $parm{'fas_cds'} $parm{'fas_prot'} -o $parm{'out_pref'}.cds.fasta") and &stopErr("[Err] Failed prepare\n"); 
 	my $med_prot = ( $parm{'fas_prot'} eq '' ) ? "" : "$parm{'out_pref'}.cds.fasta.pep" ; 
-	&exeCmd_1cmd("python -m jcvi.apps.ks calc    --msa=$parm{'alnMethod'} $med_prot $parm{'out_pref'}.cds.fasta -o $parm{'out_pref'}.cds.fasta.ks"); 
+	&exeCmd_1cmd("$opts{'exe_python'} -m jcvi.apps.ks calc    --msa=$parm{'alnMethod'} $med_prot $parm{'out_pref'}.cds.fasta -o $parm{'out_pref'}.cds.fasta.ks"); 
 	my ( $header, $pair2ks ) = &_readInKsLis( "$parm{'out_pref'}.cds.fasta.ks" ); 
 	my $paFh = &openFH($parm{'in_pair_list'}, '<'); 
 	my $oksFh = &openFH("$parm{'out_pref'}.ks", '>'); 
