@@ -9,9 +9,11 @@ my %opts;
 GetOptions(\%opts, 
 	"help!", 
 	"in_file:s", # all_orthomcl.out
+	"in_fmt:s", # Default orthomcl
 	"c1_required_taxaLis:s@", "c1_required_taxaNum:i@", 
 	"c2_min_taxaN:i", # At least 
 	"c3_chk_taxaLis:s", "c3_min_taxaN:i", 
+	"c3_bad_taxaLis:s", "c3_max_taxaN:i", 
 	"c4_gg_list:s", # all_12_taxa.gg 
 	"c5_inner_taxaLis:s", "c5_outer_taxaLis:s", 
 	"c6_inner_taxaLis:s", "c6_outer_taxaLis:s", 
@@ -22,6 +24,10 @@ GetOptions(\%opts,
 my $help_txt = <<HH; 
 ################################################################################
 # perl $0 -in_file all_orthomcl.out -odir out_new_dir
+#
+# -in_fmt                 ['orthomcl'] Could be : 
+#                           orthomcl - for all_orthomcl.out
+#                           orthofinder - for OrthologousGroups.csv_shrtTaxID
 # 
 # category_01 : All lists must be satisfied. 
 #  -c1_required_taxaLis   [taxaList\@] One taxID per line. 
@@ -33,6 +39,8 @@ my $help_txt = <<HH;
 # category_03 : 
 #  -c3_chk_taxaLis        [taxaList] Subset of taxa to check 
 #  -c3_min_taxaN          [taxaNum] Number of taxa needed in subset. 
+#  -c3_bad_taxaLis        [taxaList] Subset of taxa to keep out
+#  -c3_max_taxaN          [taxaNum] Number of taxa allowed in subset. 
 #
 # category_04 : 
 #  -c4_gg_list            [all_12_taxa.gg] Format from OrthoMCL; 
@@ -55,7 +63,7 @@ my $help_txt = <<HH;
 ################################################################################
 # category_01 : At least \$c1_required_taxaNum in \%c1_required_taxaLis; 
 # category_02 : Not in previous categories, at least \$c2_min_taxaN 
-# category_03 : Not in previous categories, at least \$c3_min_taxaN taxa within \%c3_chk_taxaLis ; 
+# category_03 : Not in previous categories, at least \$c3_min_taxaN taxa within \%c3_chk_taxaLis , and at most \$c3_max_taxaN within \%c3_bad_taxaLis; 
 # category_04 : Not in previous categories, without any homolog in other species; 
 # category_05 : Not in previous categories, have all in \%c5_inner_taxaLis and non in \%c5_outer_taxaLis; 
 # category_06 : Not in previous categories, have all in \%c6_inner_taxaLis and non in \%c6_outer_taxaLis; 
@@ -74,7 +82,7 @@ my %glob;
 
 my ( @ortho_grps , %taxGen2grpID); 
 {
-	my ($r1, $r2) = &load_grps( $opts{'in_file'} ); 
+	my ($r1, $r2) = &load_grps( $opts{'in_file'} , $glob{'in_fmt'} ); 
 	@ortho_grps = @$r1; 
 	%taxGen2grpID = %$r2; 
 }
@@ -161,22 +169,31 @@ category_03 : Not in previous categories, at least $c3_min_taxaN taxa within %c3
 =cut
 sub cnt_c3 {
 	$glob{'c3_chk_taxaLis'} //= {}; 
-	$glob{'c3_min_taxaN'} //= 0; 
+	$glob{'c3_min_taxaN'}   //= 0; 
+	$glob{'c3_bad_taxaLis'} //= {}; 
+	$glob{'c3_max_taxaN'}   //= 0; 
 	if ( defined $opts{'c3_chk_taxaLis'} ) {
 		( $glob{'c3_chk_taxaLis'} ) = &load_taxaLis( $opts{'c3_chk_taxaLis'} ); 
 		$glob{'c3_chk_taxaAll'} = scalar( keys %{$glob{'c3_chk_taxaLis'}} ); 
 		$opts{'c3_min_taxaN'} //= $glob{'c3_chk_taxaAll'}; 
 		$glob{'c3_min_taxaN'} = $opts{'c3_min_taxaN'}; 
 	}
+	if ( defined $opts{'c3_bad_taxaLis'} ) {
+		( $glob{'c3_bad_taxaLis'} ) = &load_taxaLis( $opts{'c3_bad_taxaLis'} ); 
+		# $glob{'c3_bad_taxaAll'} = scalar( keys %{$glob{'c3_bad_taxaLis'}} ); 
+		$glob{'c3_max_taxaN'} = $opts{'c3_max_taxaN'}; 
+	}
 
 	for my $r1 (@ortho_grps) {
 		&chk_prev_has( 'grpID', ['1', '2'], $r1->{'grpID'} ) and next; 
 		my @taxa_ids = keys %{ $r1->{'tax2gene'} }; 
 		my $is_good = 1; 
-		my %cnt = ( 'curr_requiredN' => 0 ); 
+		my %cnt = ( 'curr_requiredN' => 0 , 'curr_badN' => 0 ); 
 		for my $t1 (@taxa_ids) {
 			defined $glob{'c3_chk_taxaLis'}{$t1} and $cnt{'curr_requiredN'}++; 
+			defined $glob{'c3_bad_taxaLis'}{$t1} and $cnt{'curr_badN'}++; 
 		}
+		$cnt{'curr_badN'} <= $glob{'c3_max_taxaN'} or $is_good = 0; 
 		$cnt{'curr_requiredN'} >= $glob{'c3_min_taxaN'} or $is_good = 0; 
 		$is_good == 1 or next; 
 		&fill_has( '3', $r1 ); 
@@ -397,6 +414,55 @@ Return : ( [ \%grp_1, \%grp_2, ... ], %gene2grpID )
 
 =cut
 sub load_grps {
+	my ($fn, $fmt) = @_; 
+	$fmt //= 'orthocml'; 
+	if ($fmt =~ m!^\s*orthomcl\s*$!i) {
+		return( &load_grps_fmt_orthocml($fn) ); 
+	} elsif ($fmt =~ m!^\s*orthofinder\s*$!i) {
+		return( &load_grps_fmt_orthofinder($fn) ); 
+	} else {
+		&stopErr("[Err] Unknown format of input Orthologous Group file.\n"); 
+	}
+	return; 
+}# load_grps() 
+
+sub load_grps_fmt_orthofinder {
+	my $fn = shift; 
+	my $fh = &openFH($fn, '<'); 
+	my (@back, %gene2grpID); 
+	# For OrthologousGroups.csv 
+	my @hh; 
+	while (&wantLineC($fh)) {
+		chomp; 
+		my @ta = &splitL("\t", $_); 
+		if ($. == 1) {
+			$ta[0] eq '' or &stopErr("[Err] Bad 1st line: $_\n"); 
+			@hh = @ta; 
+			next; 
+		}
+		my ($grpID, $geneN, $taxaN) = ($ta[0], 0, 0); 
+		push(@back, {}); 
+		$back[-1]{'grpID'} = $grpID; 
+		for (my $i=1; $i<@ta; $i++) {
+			$ta[$i] eq '' and next; 
+			$ta[$i] =~ m!^(\s*,*\s*)*$! and next; 
+			my $tax_name = $hh[$i]; 
+			$taxaN ++; 
+			for my $tax_gene (split(/, /, $ta[$i])) {
+				$geneN ++; 
+				$back[-1]{'tax2gene'}{$tax_name}{$tax_gene} = $geneN; 
+				defined $gene2grpID{$tax_name}{$tax_gene} and &stopErr("[Err] repeat ID {$tax_name}{$tax_gene}\n"); 
+				$gene2grpID{$tax_name}{$tax_gene} = $back[-1]{'grpID'}; 
+			}
+		}
+		$back[-1]{'geneN'} = $geneN; 
+		$back[-1]{'taxaN'} = $taxaN; 
+	}
+	close($fh); 
+	return(\@back, \%gene2grpID); 
+}# load_grps_fmt_orthofinder() 
+
+sub load_grps_fmt_orthocml {
 	my $fn = shift; 
 	my $fh = &openFH($fn, '<'); 
 	my @back; 
@@ -427,7 +493,7 @@ sub load_grps {
 	}
 	close($fh); 
 	return(\@back, \%gene2grpID); 
-}# load_grps () 
+}# load_grps_fmt_orthocml () 
 
 =head1 chk_prev_has( 'grpID|taxGene', [1,2,3,...], $grpID or [$taxID, $genID] )
 
@@ -547,6 +613,8 @@ sub prepare_glob {
 		-d $glob{'odir'} and &stopErr("[Err] -odir $glob{'odir'} exists.\n"); 
 		mkdir($glob{'odir'}) or &stopErr("[Err] Failed to create output_dir [$glob{'odir'}]"); 
 	}
+	$glob{'in_fmt'} = 'orthomcl'; 
+	defined $opts{'in_fmt'} and $glob{'in_fmt'} = $opts{'in_fmt'}; 
 }# prepare_glob
 
 =head1 out_cN_geneN ([qw/1 2 3 4 5 6 7 8 9/])
