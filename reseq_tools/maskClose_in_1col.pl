@@ -95,8 +95,11 @@ if ( ! $opts{'refChr_split'} ) {
 		$pm->wait_all_children; 
 	}
 	for (my $i=0; $i<@lis_fn_1col; $i++) {
+		my $pid = $pm->start and next; 
 		&cat_1col("$lis_fn_1col[$i].maskClose", $sep_fn_1col_msk[$i] ); 
+		$pm->finish; 
 	}
+	$pm->wait_all_children; 
 	&fileSunhh::_rmtree($tmp_dir); 
 }
 &tsmsg("[Rec] All done.\n"); 
