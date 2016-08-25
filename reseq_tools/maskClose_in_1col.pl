@@ -27,7 +27,9 @@ my $help_txt = <<HH;
 #
 #   Output .maskClose files. 
 #
-# -refChr_split    [Boolean]
+# -refChr_split    [Boolean] Reduce the usage of memory, for multi-threading. 
+#
+# -cpuN            [1] 
 ################################################################################
 HH
 
