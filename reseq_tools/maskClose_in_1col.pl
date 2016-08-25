@@ -108,6 +108,7 @@ if ( ! $opts{'refChr_split'} ) {
 
 sub cat_1col {
 	my ($out_fn, $in_fn_aref) = @_; 
+	&tsmsg("[Msg] Concatenating files to [$out_fn] from [@{$in_fn_aref}]\n"); 
 	my $o_fh = &openFH($out_fn, '>'); 
 	for (my $i=0; $i<@$in_fn_aref; $i++) {
 		my $in_fh = &openFH($in_fn_aref->[$i], '<'); 
@@ -117,6 +118,7 @@ sub cat_1col {
 			print {$o_fh} $_; 
 		}
 	}
+	&tsmsg("[Msg] Concatenating done.\n"); 
 	return; 
 }# cat_1col () 
 
