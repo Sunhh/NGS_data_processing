@@ -129,6 +129,7 @@ sub split_1col {
 		}
 		print {$fh_o} $_; 
 	}
+	defined $fh_o and close($fh_o); 
 	return; 
 }# split_1col 
 
@@ -157,7 +158,7 @@ sub split_refChr {
 		print {$fh_o} $_; 
 	}
 	close($fh); 
-	close($fh_o); 
+	defined $fh_o and close($fh_o); 
 	return(%back); 
 }
 
