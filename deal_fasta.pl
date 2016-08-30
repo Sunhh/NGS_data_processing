@@ -43,6 +43,8 @@
 ### 2015-06-26 Use -joinR12 to join to .fasta R1/R2 files. 
 ### 2016-01-21 Use '-sep_soapdenovo_ctg_name' to separate soapdenovo contig names. 
 ### 2016-05-02 Add '-scf2ctg out_prefix' to separate scaffolds into contigs. 
+### 2016-08-30 Add '-jn_byID' to join sequences from different files with the same IDs. 
+### 2016-08-30 Replace AA seq with corresponding Nucl sequences. 
 
 use strict;
 use warnings; 
@@ -165,6 +167,9 @@ Usage: $0  <fasta_file | STDIN>
 
   -sep_soapdenovo_ctg_name  [Boolean] Separate soapdenovo contig names. 
 
+  -jn_byID            [Boolean] for joining aln.fa 
+  -aa2cds             [filename_cds.fa] 
+
 #******* Instruction of this program *********#
 HELP
 	exit (1); 
@@ -198,7 +203,9 @@ GetOptions(\%opts,"help!",
 	"rmTailX_prot!", 
 	"scf2ctg:s", # out_prefix
 	"sep_soapdenovo_ctg_name!", 
-	);
+	"jn_byID!", 
+	"aa2cds:s", # filename_cds.fa
+);
 &usage if ($opts{"help"}); 
 !@ARGV and -t and &usage; 
 (keys %opts) == 0 and &usage; 
@@ -269,6 +276,8 @@ my %goodStr = qw(
 &rmTailX_prot() if ( $opts{'rmTailX_prot'} ); 
 &sep_ctg_name() if ( $opts{'sep_soapdenovo_ctg_name'} ); 
 &scf2ctg_fas() if ( defined $opts{'scf2ctg'} ); 
+&jn_byID() if ( $opts{'jn_byID'} ); 
+&aa2cds() if ( defined $opts{'aa2cds'} ); 
 
 for (@InFp) {
 	close ($_); 
@@ -283,6 +292,114 @@ for (@InFp) {
 #****************************************************************#
 #--------------Subprogram------------Start-----------------------#
 #****************************************************************#
+
+sub aa2cds {
+	my %stop_codon; 
+	for my $tc (qw/TAA TGA TAG/) {
+		$stop_codon{$tc} = 1; 
+	}
+	my %cds_seq; 
+	my $fh_cds = &openFH( $opts{'aa2cds'} , '<' ); 
+	while (<$fh_cds>) {
+		if ( m/^\s*\>\s*(\S+)/ ) {
+			$cds_seq{'tk'} = $1; 
+			$cds_seq{ 'seq' }{ $cds_seq{'tk'} } = ''; 
+		} else {
+			$cds_seq{ 'seq' }{ $cds_seq{'tk'} } .= $_; 
+		}
+	}
+	close($fh_cds); 
+	delete($cds_seq{'tk'}); 
+	for my $tk (keys %{$cds_seq{'seq'}}) {
+		$cds_seq{'seq'}{$tk} =~ s!\s!!g; 
+		$cds_seq{'seq'}{$tk} = uc($cds_seq{'seq'}{$tk}); 
+	}
+	my %prot_seq; 
+	$prot_seq{'nn'} = 0; 
+	for (my $i=0; $i<@InFp; $i++) {
+		my $fh1 = $InFp[$i]; 
+		while (<$fh1>) {
+			if ( m/^\s*\>\s*(\S+)/ ) {
+				$prot_seq{'tk'} = $1; 
+				$prot_seq{'seq'}{$prot_seq{'tk'}} = ''; 
+				$prot_seq{'nn'} ++; 
+				$prot_seq{'ord'}{ $prot_seq{'tk'} } = $prot_seq{'nn'}; 
+			} else {
+				$prot_seq{'seq'}{$prot_seq{'tk'}} .= $_; 
+			}
+		}
+		delete($prot_seq{'tk'}); 
+	}
+	delete($prot_seq{'nn'}); 
+	for my $tk (sort { $prot_seq{'ord'}{$a} <=> $prot_seq{'ord'}{$b} } keys %{$prot_seq{'seq'}}) {
+		unless ( defined $cds_seq{'seq'}{ $tk } ) {
+			&tsmsg("[Err] Skip prot_seq [$tk] because of lack of cds seq.\n"); 
+			next; 
+		}
+		$prot_seq{'seq'}{$tk} =~ s!\s!!g; 
+		$prot_seq{'seq'}{$tk} = uc($prot_seq{'seq'}{$tk}); 
+		my $aa_len = length( $prot_seq{'seq'}{$tk} ); 
+		my $aaGap_len = ( $prot_seq{'seq'}{$tk} =~ tr/-/-/ ); 
+		$aa_len -= $aaGap_len; 
+		my $cc_len = length( $cds_seq{'seq'}{$tk} ); 
+		$cc_len == 3 * $aa_len or ( $cc_len-3 == 3 * $aa_len and defined $stop_codon{ substr($cds_seq{'seq'}{$tk}, -3, 3) } ) or die("[Err] length of cds and prot diff for [$tk]\n"); 
+		my @aa = split(//, $prot_seq{'seq'}{$tk}); 
+		my $aa2cds_seq = ''; 
+		my $aa_pos = -1; 
+		for (my $j=0; $j<@aa; $j++) {
+			if ($aa[$j] eq '-') {
+				$aa2cds_seq .= "---"; 
+			} else {
+				$aa_pos ++; 
+				my $bbb = substr( $cds_seq{'seq'}{$tk}, $aa_pos*3, 3 ); 
+				$aa2cds_seq .= "$bbb"; 
+			}
+		}
+		$aa2cds_seq =~ s!(.{60})!$1\n!g; 
+		chomp($aa2cds_seq); 
+		print STDOUT ">$tk\n$aa2cds_seq\n"; 
+	}
+}# aa2cds() 
+
+# 2016-08-30
+sub jn_byID {
+	my %jn_seq; 
+	my $nn = 0; 
+	for (my $i=0; $i<@InFp; $i++) {
+		my $fh1 = $InFp[$i]; 
+		my ($k, %ks); 
+		RD: 
+		while ( !eof($fh1) ) {
+			$_ = readline($fh1); 
+			chomp; 
+			if (m/^\s*\>\s*(\S+)/) {
+				$k = $1; 
+				$ks{$k} = ''; 
+			} else {
+				$ks{$k} .= $_; 
+			}
+		}
+		# close($fh1); 
+		for my $tk (keys %ks) {
+			$ks{$tk} =~ s!\s!!g; 
+			unless (defined $jn_seq{'cnt'}{$tk}) {
+				$jn_seq{'ord'}{$tk} = $nn; 
+				$nn ++; 
+			}
+			$jn_seq{'seq'}{$tk} .= $ks{$tk}; 
+			$jn_seq{'cnt'}{$tk} ++; 
+		}
+	}
+	for my $tk (sort { $jn_seq{'ord'}{$a} <=> $jn_seq{'ord'}{$b} } keys %{$jn_seq{'cnt'}}) {
+		unless ( $jn_seq{'cnt'}{$tk} == $#InFp+1 ) {
+			&tsmsg("[Err] Skip not fully supported seq [$tk] [cnt=$jn_seq{'cnt'}{$tk}]\n"); 
+			next; 
+		}
+		$jn_seq{'seq'}{$tk} =~ s!(.{100})!$1\n!g; 
+		chomp( $jn_seq{'seq'}{$tk} ); 
+		print STDOUT ">$tk\n$jn_seq{'seq'}{$tk}\n"; 
+	}
+}# jn_byID () 
 
 # 2016-05-02
 sub scf2ctg_fas {
