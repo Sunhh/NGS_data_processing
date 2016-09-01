@@ -417,10 +417,13 @@ sub dvd_file {
 	my $inFn = shift; 
 	my $grpN = shift; 
 	my $inFh; 
+	my $toClose; 
 	if ( ref($inFn) eq '' ) {
 		$inFh = &openFH( $inFn, '<' ); 
+		$toClose = 1; 
 	} elsif ( ref($inFn) eq 'GLOB' ) {
 		$inFh = $inFn; 
+		$toClose = 0; 
 	} else {
 		&stopErr("[Err] The 1st input [$inFn] of dvd_file() should be a filename or file_handle.\n"); 
 	}
@@ -432,6 +435,7 @@ sub dvd_file {
 	$parm{'sub_pref'} //= 'sub_'; 
 	my $header = ''; 
 	my @in_data = <$inFh>; 
+	$toClose and close($inFh); 
 	$parm{'with_header'} and $header = shift(@in_data); 
 	my @sub_data = @{ &mathSunhh::dvd_array(\@in_data, $grpN, $parm{'keep_order'}) }; 
 	
@@ -441,6 +445,7 @@ sub dvd_file {
 		push(@sub_file_names, $subFn); 
 		&write2file( $subFn, join('',$header,@{$sub_data[$i]}), '>' ); 
 	}
+	undef(@sub_data); 
 
 	return @sub_file_names; 
 }# dvd_file() 
