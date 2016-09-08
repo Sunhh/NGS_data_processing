@@ -417,13 +417,12 @@ sub dvd_file {
 	my $inFn = shift; 
 	my $grpN = shift; 
 	my $inFh; 
-	my $toClose; 
+	my $is_inFh = 0; 
 	if ( ref($inFn) eq '' ) {
 		$inFh = &openFH( $inFn, '<' ); 
-		$toClose = 1; 
 	} elsif ( ref($inFn) eq 'GLOB' ) {
 		$inFh = $inFn; 
-		$toClose = 0; 
+		$is_inFh = 1; 
 	} else {
 		&stopErr("[Err] The 1st input [$inFn] of dvd_file() should be a filename or file_handle.\n"); 
 	}
@@ -434,16 +433,60 @@ sub dvd_file {
 	$parm{'with_header'} //= 0; 
 	$parm{'sub_pref'} //= 'sub_'; 
 	my $header = ''; 
-	my @in_data = <$inFh>; 
-	$toClose and close($inFh); 
+	my (@in_data); 
+	if ( $is_inFh ) {
+		@in_data = <$inFh>; 
+	} else {
+		my $file_lineN = 0; 
+		while (<$inFh>) {
+			$file_lineN++; 
+		}
+		close($inFh); 
+		$file_lineN > 0 or do { &tsmsg("[Wrn] No data in the input file [$inFn]\n"); return(); }; 
+		@in_data = ( 1 .. $file_lineN ); 
+	}
 	$parm{'with_header'} and $header = shift(@in_data); 
 	my @sub_data = @{ &mathSunhh::dvd_array(\@in_data, $grpN, $parm{'keep_order'}) }; 
+	undef(@in_data); 
 	
 	my @sub_file_names; 
-	for (my $i=0; $i<@sub_data; $i++) {
-		my $subFn = "$parm{'sub_pref'}$i"; 
-		push(@sub_file_names, $subFn); 
-		&write2file( $subFn, join('',$header,@{$sub_data[$i]}), '>' ); 
+	if ( $is_inFh ) {
+		for (my $i=0; $i<@sub_data; $i++) {
+			my $subFn = "$parm{'sub_pref'}$i"; 
+			push(@sub_file_names, $subFn); 
+			&write2file( $subFn, join('',$header,@{$sub_data[$i]}), '>' ); 
+		}
+	} else {
+		my %ln2fh; 
+		my @sub_fh; 
+		for (my $i=0; $i<@sub_data; $i++ ) {
+			my $subFn = "$parm{'sub_pref'}$i"; 
+			push(@sub_file_names, $subFn); 
+			my $tfh = &openFH($subFn, '>'); 
+			push(@sub_fh, $tfh); 
+			for my $ln ( @{$sub_data[$i]} ) {
+				$ln2fh{ $ln } = $tfh; 
+			}
+		}
+		my $fh = &openFH($inFn); 
+		while ( <$fh> ) {
+			if ( $. == 1 and $parm{'with_header'} ) {
+				for my $tfh ( @sub_fh ) {
+					print {$tfh} $_; 
+				}
+				next; 
+			}
+			print {$ln2fh{$.}} $_; 
+		}
+		close($fh); 
+		for my $tfh (@sub_fh) {
+			close($tfh); 
+		}
+		# Clear for memory
+		undef(%ln2fh); 
+	}
+	for my $ts (@sub_data) {
+		@$ts = (); 
 	}
 	undef(@sub_data); 
 

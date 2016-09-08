@@ -890,7 +890,10 @@ sub combinations {
 =head1 dvd_array( \@array_to_be_divided, $number_of_subgroups, $If_keep_order[default=0], $prev_grp_colN )
 
 Function : Divide @array_to_be_divided into $number_of_subgroups subgroups. 
-If $If_keep_order is TRUE, the elements in subgroups will be sequenctial same to the raw order. 
+
+ If $If_keep_order is TRUE, the elements in subgroups will be sequenctial same to the raw order. 
+ If $If_keep_order is TRUE and $prev_grp_colN is not N, $prev_grp_colN should be a colNumber and each sub-group has only one type of char in $array_to_be_divided[$prev_grp_colN];
+
 
 Return   : ( [ \@subgroup_1, \@subgroup_2, ... ] )
 
