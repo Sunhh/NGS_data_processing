@@ -226,6 +226,7 @@ sub setup_windows {
 		  'wind_size'   =>  $opts{'wind_length'}, 
 		  'wind_step'   =>  $opts{'wind_step'}, 
 		  'minRatio'    =>  0, 
+		  'max_end_wind_num' => 1, 
 		); 
 	}
 	return 0; 
@@ -252,7 +253,7 @@ sub dvd_snp_tbl {
 		$ln % 500e3 == 1 and &tsmsg("[Msg] Processed $ln line.\n"); 
 		my $cur_chr = $opts{'_inner'}{'tbl_lines'}[$ln]->[0]; 
 		my $cur_pos = $opts{'_inner'}{'tbl_lines'}[$ln]->[1]; 
-		my (@wind_i) = @{ $ms_obj->map_windows( 'posi'=>$cur_pos, 'wind_hash'=>$wind{$cur_chr} ) }; 
+		my (@wind_i) = @{ $ms_obj->map_windows( 'posi'=>$cur_pos, 'wind_hash'=>$wind{$cur_chr} , 'max_end_wind_num'=>1 ) }; 
 		for my $ti ( @wind_i ) {
 			my $file_idx; 
 			if ( defined $opts{'_inner'}{'chrIdx2fIdx'}{$cur_chr}{$ti} ) {

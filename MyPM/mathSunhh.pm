@@ -234,7 +234,8 @@ sub setup_windows {
 }# sub setup_windows
 
 =head2 map_windows ( 'posi/position'=>Integer, 'wind_hash'=>setup_windows->(), 
-  'ttl_start'=>1, 'ttl_end'=>99999999, 'wind_size'=>1000, 'wind_step'=>'wind_size', 'minRatio'=>0
+  'ttl_start'=>1, 'ttl_end'=>99999999, 'wind_size'=>1000, 'wind_step'=>'wind_size', 'minRatio'=>0, 
+  'max_end_wind_num' => 0 
 )
 
 Required: 
@@ -253,6 +254,7 @@ sub map_windows {
 	my $self = shift; 
 	my %parm = $self->_setHashFromArr(@_); 
 	my $posi = $parm{'posi'} // $parm{'position'} // &stopErr("[Err] No position assigned.\n"); 
+	$parm{'max_end_wind_num'}= $parm{'max_end_wind_num'} // 0; 
 	Scalar::Util::looks_like_number( $posi ) or &stopErr("[Err] input position [$posi] is not like a number.\n"); 
 	$posi = int($posi); 
 	if (defined $parm{'wind_hash'}) {
@@ -278,8 +280,16 @@ sub map_windows {
 		$si+$min_windSize-1 <= $parm{'ttl_end'} or next; 
 		push(@back_si, $si); 
 	}
-
+	my $end_num = 0; 
 	@back_si = reverse(@back_si); 
+	my @t1; 
+	for my $ti (@back_si) {
+		$ti+$parm{'wind_size'}-1 >= $parm{'ttl_end'} and $end_num ++; 
+		push(@t1, $ti); 
+		$parm{'max_end_wind_num'} > 0 and $end_num >= $parm{'max_end_wind_num'} and last; 
+	}
+	@back_si = @t1; 
+
 	
 	return \@back_si; 
 }# sub map_windows 
