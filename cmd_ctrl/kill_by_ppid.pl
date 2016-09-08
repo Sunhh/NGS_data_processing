@@ -31,7 +31,7 @@ AA
 !@ARGV and &LogInforSunhh::usage($help_txt); 
 $opts{'help'} and &LogInforSunhh::usage($help_txt); 
 my $ppid = shift; 
-$ppid == 1 and &LogInforSunhh::usage($help_1); 
+$ppid == 1 and !$opts{'doWith_1'} and &LogInforSunhh::usage($help_1); 
 
 
 my @txt = `ps --ppid $ppid`; 

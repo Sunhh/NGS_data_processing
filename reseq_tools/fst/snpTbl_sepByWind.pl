@@ -4,6 +4,8 @@
 #    1. Set windows according to [Win_Chr, Win_Start, Win_End, Win_Len, Win_Step]; 
 #    2. Divide the whole input table to small tables, each table stands for a window; 
 #   should setup a basic window list. 
+# 2016-09-08
+#   Add directory to store all window.snp instead of temporary dir. 
 use strict; 
 use warnings; 
 
@@ -77,6 +79,19 @@ sub usage {
 # -skipHN           [0] Skip header lines number. 
 # -skipHead         [Boolean] Will add lines in -skipHN if not given. 
 # -geno_col         [''] By default I will use the columns in the first reading line except chr_colN and pos_colN; 
+#
+# -tmp_dir          [''] Default is empty. If it is not empty, this directory is used to store all windows. 
+# -rm_oldDir        [Boolean]
+############################################################
+# Output : 
+#  -out   Format: 
+#    window1_file_name \\t wind1_chrID \\t wind1_Start \\t wind1_End \\t wind1_length
+#    window2_file_name \\t wind2_chrID \\t wind2_Start \\t wind2_End \\t wind2_length
+#    .... 
+#  Format of window1_file_name : (-skipHN is required)
+#    chr \\t pos \\t base \\t indv1 \\t indv2 ... 
+#
+#
 ############################################################
 HH
 	exit 1; 
@@ -95,6 +110,8 @@ sub set_opts {
 		"chr_colN:i", "pos_colN:i", 
 		"skipHN:i", "skipHead!", 
 		"geno_col:s", 
+		"tmp_dir:s", # ''
+		"rm_oldDir!", 
 	); 
 	$opts{'help'} and &usage(); 
 	-t and !(defined $opts{'snp_tbl'}) and &usage(); 
@@ -111,6 +128,7 @@ sub set_opts {
 	$opts{'chr_colN'}  //= 0; 
 	$opts{'pos_colN'}  //= 1; 
 	$opts{'geno_col'} //= ''; 
+	$opts{'tmp_dir'}  //= ''; 
 	$opts{'_inner'}{'geno_cols'} = [ &mathSunhh::_parseCol( $opts{'geno_col'} ) ]; 
 	# Usable keys: 
 	#  '_inner':'inFh'  => file_handle of input. 
@@ -208,6 +226,7 @@ sub setup_windows {
 		  'wind_size'   =>  $opts{'wind_length'}, 
 		  'wind_step'   =>  $opts{'wind_step'}, 
 		  'minRatio'    =>  0, 
+		  'max_end_wind_num' => 1, 
 		); 
 	}
 	return 0; 
@@ -219,16 +238,22 @@ sub setup_windows {
 #  $opts{'_inner'}{'chrIdx2fIdx'}   : {chrID}{wind_idx} => file_idx 
 sub dvd_snp_tbl {
 	&tsmsg("[Msg] Dividing windows.\n"); 
-	$opts{'_inner'}{'tmp_dir'} = &fileSunhh::new_tmp_dir(); 
-	defined $opts{'_inner'}{'tmp_dir'} or &stopErr("[Err] failed to find a temporary directory.\n"); 
-	my $tmpDir = $opts{'_inner'}{'tmp_dir'}; 
-	mkdir($tmpDir); 
+	my $tmpDir; 
+	if ( defined $opts{'tmp_dir'} and $opts{'tmp_dir'} ne '' ) {
+		$opts{'_inner'}{'tmp_dir'} = $opts{'tmp_dir'}; 
+	} else {
+		$opts{'_inner'}{'tmp_dir'} = &fileSunhh::new_tmp_dir(); 
+		defined $opts{'_inner'}{'tmp_dir'} or &stopErr("[Err] failed to find a temporary directory.\n"); 
+	}
+	$tmpDir = $opts{'_inner'}{'tmp_dir'}; 
+	$opts{'rm_oldDir'} and -d $tmpDir and &fileSunhh::_rmtree($tmpDir); 
+	-d $tmpDir or mkdir($tmpDir); 
 	my %used; 
 	for ( my $ln=0; $ln<@{$opts{'_inner'}{'tbl_lines'}}; $ln++ ) { 
 		$ln % 500e3 == 1 and &tsmsg("[Msg] Processed $ln line.\n"); 
 		my $cur_chr = $opts{'_inner'}{'tbl_lines'}[$ln]->[0]; 
 		my $cur_pos = $opts{'_inner'}{'tbl_lines'}[$ln]->[1]; 
-		my (@wind_i) = @{ $ms_obj->map_windows( 'posi'=>$cur_pos, 'wind_hash'=>$wind{$cur_chr} ) }; 
+		my (@wind_i) = @{ $ms_obj->map_windows( 'posi'=>$cur_pos, 'wind_hash'=>$wind{$cur_chr} , 'max_end_wind_num'=>1 ) }; 
 		for my $ti ( @wind_i ) {
 			my $file_idx; 
 			if ( defined $opts{'_inner'}{'chrIdx2fIdx'}{$cur_chr}{$ti} ) {
