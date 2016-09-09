@@ -2314,6 +2314,31 @@ sub _map_loc_to_rawIdx {
 }# _map_loc_to_rawIdx () 
 
 
+=head1 _addHash( 'toH'=>\%hash_ref_receptor, 'fromH'=>\%hash_ref_donor , 'replaceExist' => 0 )
+
+Function    : 
+
+ Add (key,value) pairs from %hash_ref_donor to %hash_ref_receptor ; 
+ If 'replaceExist' is 0 , existing key in %hash_ref_receptor won't be changed, or else it will be changed. 
+
+Return      : ( \%hash_ref_receptor )
+
+=cut
+sub _addHash {
+	my %parm = &_setHashFromArr(@_); 
+	$parm{'toH'}   //= {}; 
+	$parm{'fromH'} //= {}; 
+	$parm{'replaceExist'} //= 0; 
+	for my $k (keys %{$parm{'fromH'}}) {
+		if ( $parm{'replaceExist'} ) {
+			$parm{'toH'}{$k} = $parm{'fromH'}{$k}; 
+		} else {
+			$parm{'toH'}{$k} //= $parm{'fromH'}{$k}; 
+		}
+	}
+	return($parm{'toH'}); 
+}# _addHash () 
+
 =head1 _binRealLoc2BinLoc( \%db_loc )
 
 Return       : () 
