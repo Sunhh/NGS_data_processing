@@ -64,7 +64,7 @@ while (<$fh>) {
 		$cnt{'g2n_in'}{$ta[$i]} ++; 
 	}
 	$glob{'chk_gIn'} - $cnt{'cntN_in'} > 0 or next SNP; 
-	$cnt{'cntN_in'} >= $opts{'missR_gIn'} * $glob{'chk_gIn'} or next SNP; 
+	$cnt{'cntN_in'} <= $opts{'missR_gIn'} * $glob{'chk_gIn'} or next SNP; 
 	for my $geno1 (sort { $cnt{'g2n_in'}{$b} <=> $cnt{'g2n_in'}{$a} || $a cmp $b } keys %{$cnt{'g2n_in'}}) {
 		push(@{$cnt{'g2n_in_arr'}}, [ $geno1, $cnt{'g2n_in'}{$geno1} ]); 
 	}
@@ -78,7 +78,7 @@ while (<$fh>) {
 		$cnt{'g2n_out'}{$ta[$i]} ++; 
 	}
 	$glob{'chk_gOut'} - $cnt{'cntN_out'} > 0 or next SNP; 
-	$cnt{'cntN_out'} >= $opts{'missR_gOut'} * $glob{'chk_gOut'} or next SNP; 
+	$cnt{'cntN_out'} <= $opts{'missR_gOut'} * $glob{'chk_gOut'} or next SNP; 
 	if ( defined $cnt{'g2n_out'}{ $spec_geno } ) {
 		$cnt{'g2n_out'}{ $spec_geno } <= $opts{'max_ratio_gOut'} * ( $glob{'chk_gOut'} - $cnt{'cntN_out'} ) or next SNP; 
 	}
