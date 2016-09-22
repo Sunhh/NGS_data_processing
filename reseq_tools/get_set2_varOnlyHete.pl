@@ -48,6 +48,10 @@ while (<>) {
 		# $ta[$i] =~ m/^[ATGC]$|\*|\+/ or $ta[$i] = 'N'; 
 		$ta[$i] eq 'N' and next; 
 		$base eq 'N' and $base = $ta[$i]; 
+		if ( length($base) == 1 and $base !~ m/^[ATGC]$/i ) {
+			$base = 'N'; 
+		}
+		$base eq 'N' and next; 
 		$base ne $ta[$i] and do { $has_diff = 1; last; }; 
 	}
 	$has_diff == 0 and print "$_\n"; 

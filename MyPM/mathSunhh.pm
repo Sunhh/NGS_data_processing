@@ -177,13 +177,17 @@ sub offspringArray {
 }# _allChild()
 
 =head2 setup_windows( 'ttl_start'=>1, 'ttl_end'=>99999999, 'wind_size'=>1000, 'wind_step'=> // 'wind_size', 
-  'minRatio'=> 0
+  'minRatio'=> 0, 
+  'max_end_wind_num' => 0
 )
 
 Required: 
  
 
 Function: return a list of windows in hash reference according to given [window_size, window_step, total_start, total_end]
+
+  If 'max_end_wind_num' is 0, any window accepted by minRatio are kept. 
+  If 'max_end_wind_num' > 0, maximum 'max_end_wind_num' number of window reaching the end position are kept. 
 
 Return  : \%back_wind; 
  'keys'  => values
@@ -203,6 +207,10 @@ sub setup_windows {
 	$parm{'wind_size'} = $parm{'wind_size'} // 1000; 
 	$parm{'wind_step'} = $parm{'wind_step'} // $parm{'wind_size'}; 
 	$parm{'minRatio'}  = $parm{'minRatio'}  // 0; 
+
+	$parm{'max_end_wind_num'}= $parm{'max_end_wind_num'} // 0; 
+	my $end_num = 0; 
+
 	my %back_wind; 
 	for (qw/ttl_start ttl_end wind_size wind_step minRatio/) {
 		$back_wind{'info'}{$_} = $parm{$_}; 
@@ -214,16 +222,20 @@ sub setup_windows {
 	for (my $si=$parm{'ttl_start'}; $si+$min_windSize-1 <= $parm{'ttl_end'}; $si += $parm{'wind_step'}) {
 		my $ei = $si + $parm{'wind_size'}-1; 
 		$ei > $parm{'ttl_end'} and $ei = $parm{'ttl_end'}; 
+		$ei == $parm{'ttl_end'} and $end_num ++; 
 		my $cur_len = $ei-$si+1; 
 		$back_wind{'loci'}{$si} = [$si, $ei, $cur_len]; 
 		push(@{$back_wind{'info'}{'windSloci'}}, $si); 
 		$back_wind{'info'}{'Sloc2wi'}{$si} = $#{$back_wind{'info'}{'windSloci'}}; 
+
+		$parm{'max_end_wind_num'} > 0 and $end_num >= $parm{'max_end_wind_num'} and last; 
 	}
 	return \%back_wind; 
 }# sub setup_windows
 
 =head2 map_windows ( 'posi/position'=>Integer, 'wind_hash'=>setup_windows->(), 
-  'ttl_start'=>1, 'ttl_end'=>99999999, 'wind_size'=>1000, 'wind_step'=>'wind_size', 'minRatio'=>0
+  'ttl_start'=>1, 'ttl_end'=>99999999, 'wind_size'=>1000, 'wind_step'=>'wind_size', 'minRatio'=>0, 
+  'max_end_wind_num' => 0 
 )
 
 Required: 
@@ -242,6 +254,7 @@ sub map_windows {
 	my $self = shift; 
 	my %parm = $self->_setHashFromArr(@_); 
 	my $posi = $parm{'posi'} // $parm{'position'} // &stopErr("[Err] No position assigned.\n"); 
+	$parm{'max_end_wind_num'}= $parm{'max_end_wind_num'} // 0; 
 	Scalar::Util::looks_like_number( $posi ) or &stopErr("[Err] input position [$posi] is not like a number.\n"); 
 	$posi = int($posi); 
 	if (defined $parm{'wind_hash'}) {
@@ -267,8 +280,16 @@ sub map_windows {
 		$si+$min_windSize-1 <= $parm{'ttl_end'} or next; 
 		push(@back_si, $si); 
 	}
-
+	my $end_num = 0; 
 	@back_si = reverse(@back_si); 
+	my @t1; 
+	for my $ti (@back_si) {
+		$ti+$parm{'wind_size'}-1 >= $parm{'ttl_end'} and $end_num ++; 
+		push(@t1, $ti); 
+		$parm{'max_end_wind_num'} > 0 and $end_num >= $parm{'max_end_wind_num'} and last; 
+	}
+	@back_si = @t1; 
+
 	
 	return \@back_si; 
 }# sub map_windows 
@@ -890,7 +911,10 @@ sub combinations {
 =head1 dvd_array( \@array_to_be_divided, $number_of_subgroups, $If_keep_order[default=0], $prev_grp_colN )
 
 Function : Divide @array_to_be_divided into $number_of_subgroups subgroups. 
-If $If_keep_order is TRUE, the elements in subgroups will be sequenctial same to the raw order. 
+
+ If $If_keep_order is TRUE, the elements in subgroups will be sequenctial same to the raw order. 
+ If $If_keep_order is TRUE and $prev_grp_colN is not N, $prev_grp_colN should be a colNumber and each sub-group has only one type of char in $array_to_be_divided[$prev_grp_colN];
+
 
 Return   : ( [ \@subgroup_1, \@subgroup_2, ... ] )
 
@@ -2289,6 +2313,31 @@ sub _map_loc_to_rawIdx {
 	return(\@back); 
 }# _map_loc_to_rawIdx () 
 
+
+=head1 _addHash( 'toH'=>\%hash_ref_receptor, 'fromH'=>\%hash_ref_donor , 'replaceExist' => 0 )
+
+Function    : 
+
+ Add (key,value) pairs from %hash_ref_donor to %hash_ref_receptor ; 
+ If 'replaceExist' is 0 , existing key in %hash_ref_receptor won't be changed, or else it will be changed. 
+
+Return      : ( \%hash_ref_receptor )
+
+=cut
+sub _addHash {
+	my %parm = &_setHashFromArr(@_); 
+	$parm{'toH'}   //= {}; 
+	$parm{'fromH'} //= {}; 
+	$parm{'replaceExist'} //= 0; 
+	for my $k (keys %{$parm{'fromH'}}) {
+		if ( $parm{'replaceExist'} ) {
+			$parm{'toH'}{$k} = $parm{'fromH'}{$k}; 
+		} else {
+			$parm{'toH'}{$k} //= $parm{'fromH'}{$k}; 
+		}
+	}
+	return($parm{'toH'}); 
+}# _addHash () 
 
 =head1 _binRealLoc2BinLoc( \%db_loc )
 
