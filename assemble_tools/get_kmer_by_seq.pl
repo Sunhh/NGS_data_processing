@@ -9,6 +9,7 @@ GetOptions(\%opts,
 	"jf_klen:i", # Default 17
 	"jf_exe:s", # Default jellyfish
 	"step:i", # Default 1 
+	"onlyATGCN!", 
 ); 
 
 &_prepare_para(); 
@@ -26,6 +27,8 @@ perl $0   -jf_db  in.jf_database
 -jf_exe       [$opts{'jf_exe'}]
 -jf_klen      [$opts{'jf_klen'}]
 -step         [$opts{'step'}]
+
+-onlyATGCN
 
 HH
 
@@ -82,6 +85,7 @@ for (@IDs) {
 }
 for my $tk (@IDs) {
 print STDOUT ">$tk\n"; 
+	$opts{'onlyATGCN'} and $seqs{$tk} =~ s![^ATGCN]!!gi; 
 	my $len = length($seqs{$tk}); 
 	if ($len > 0) {
 		for (my $i=0; $i+$db_km<=$len; $i+=$step) {
