@@ -152,7 +152,7 @@ sub usage {
 #
 # 
 # Filter options: 
-# -extractFeat      [] Could be CDS. 
+# -extractFeat      [] Could be CDS. Not used yet. 
 # -gff_top_hier     [undef()] Will use gffSunhh default value if not given. 
 #                     Could be 'mrna,match,protein_match,expressed_sequence_match'
 #
