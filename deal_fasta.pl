@@ -168,7 +168,7 @@ Usage: $0  <fasta_file | STDIN>
   -sep_soapdenovo_ctg_name  [Boolean] Separate soapdenovo contig names. 
 
   -jn_byID            [Boolean] for joining aln.fa 
-  -aa2cds             [filename_cds.fa] 
+  -aa2cds             [filename_cds.fa] Get AA positioned CDS sequences. 
 
 #******* Instruction of this program *********#
 HELP
