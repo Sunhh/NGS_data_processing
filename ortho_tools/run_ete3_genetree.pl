@@ -13,14 +13,17 @@ GetOptions(\%opts,
 	"help!", 
 	"in_cog:s", # all_orthomcl.ete3.cog
 	"in_prot:s", # all_orthomcl.ete3.prot.fa
+	"in_cds:s", # all_orthomcl.ete3.cds.fa
+	"thres_nt_switch_para:s", # --nt-switch-threshold 0.9 
 	"max_geneN:i", # 9999 
 	"out_dir:s", # ete3_out/
-	"ete3_cmd:s", # 'ete3 build --cpu 2 -w phylomedb4 --clearall '
+	"ete3_cmd:s", # 'ete3 build --cpu 2 -w standard_fasttree --clearall '
 	"redo_list:s", # 
 	"cpuN:i", # 1
 ); 
 
-$opts{'ete3_cmd'}  //= 'ete3 build --cpu 2 -w phylomedb4 --clearall '; 
+# $opts{'ete3_cmd'}  //= 'ete3 build --cpu 2 -w phylomedb4 --clearall '; 
+$opts{'ete3_cmd'}  //= 'ete3 build --cpu 2 -w standard_fasttree --clearall '; 
 $opts{'max_geneN'} //= 200; 
 $opts{'cpuN'}      //= 1; 
 
@@ -43,6 +46,9 @@ my $help_txt = <<HH;
 # -redo_list     [filename] A list of group IDs which need to be done. 
 #
 # -cpuN          [$opts{'cpuN'}] Multi-threading. 
+#
+# -in_cds        [filename] fasta
+# -thres_nt_switch_para ['--nt-switch-threshold 0.9']
 #
 # -help 
 #
@@ -67,6 +73,13 @@ if (defined $opts{'redo_list'}) {
 &tsmsg("[Rec] Loading protein sequence [$opts{'in_prot'}]\n"); 
 my %prot_fas = %{ $fas_obj->save_seq_to_hash( 'faFile' => $opts{'in_prot'} ) }; 
 for (keys %prot_fas) { chomp($prot_fas{$_}{'seq'}); } 
+my %cds_fas; 
+if ( defined $opts{'in_cds'} ) {
+	&tsmsg("[Rec] Loading CDS sequence [$opts{'in_cds'}]\n"); 
+	%cds_fas = %{ $fas_obj->save_seq_to_hash( 'faFile' => $opts{'in_cds'} ) }; 
+	for (keys %cds_fas) { chomp($cds_fas{$_}{'seq'}); }
+	$opts{'thres_nt_switch_para'} //= "--nt-switch-threshold 0.9"; 
+}
 &tsmsg("[Rec] Loading OG clusters [$opts{'in_cog'}]\n"); 
 my @cog_tab = &fileSunhh::load_tabFile( $opts{'in_cog'} ) ; 
 -d "$opts{'out_dir'}" or mkdir($opts{'out_dir'}) or &stopErr("[Err] Failed to create out_dir [$opts{'out_dir'}]\n"); 
@@ -107,7 +120,11 @@ for my $sep ( @{$glob{'sepPref'}} ) {
 	my %tGlob = %$sep; 
 	my $pref = $tGlob{'curr_pref'}; 
 	&tsmsg(join("","[Msg] Files [", join(" ", @{$tGlob{'curr_toRM'}}),"] will be removed after pref [$pref] processed\n")); 
-	&exeCmd_1cmd("$opts{'ete3_cmd'} -a ${pref}.prot.fa -o ${pref}_ete3O/", 0) and &stopErr("[Err] Failed to run ete3 for $tGlob{'curr_order'} -th COG\n"); 
+	if ( defined $opts{'in_cds'} ) {
+		&exeCmd_1cmd("$opts{'ete3_cmd'} -a ${pref}.prot.fa -o ${pref}_ete3O/ -n ${pref}.cds.fa $opts{'thres_nt_switch_para'}", 0) and &stopErr("[Err] Failed to run ete3 for $tGlob{'curr_order'} -th COG\n"); 
+	} else {
+		&exeCmd_1cmd("$opts{'ete3_cmd'} -a ${pref}.prot.fa -o ${pref}_ete3O/", 0) and &stopErr("[Err] Failed to run ete3 for $tGlob{'curr_order'} -th COG\n"); 
+	}
 	opendir DD, "${pref}_ete3O/" or &stopErr("[Err] Failed to opendir [${pref}_ete3O/]\n"); 
 	for my $ff (readdir(DD)) {
 		$ff =~ m/(^\.|^db$|^tasks$)/i and next; 
@@ -152,20 +169,23 @@ $glob{'pm'}->wait_all_children;
 sub prepare_ete3 {
 	# A proper $glob{'curr_order'} is required. 
 	### To be used : curr_order , curr_tab 
-	for my $tk (qw/curr_pref curr_fh_oProt curr_toRM/) {
+	for my $tk (qw/curr_pref curr_fh_oProt curr_toRM curr_fh_oCds/) {
 		delete($glob{$tk}); 
 	}
 	$glob{'curr_pref'} = "$wrk_dir/$glob{'curr_order'}"; 
 	&tsmsg(join('', "[Msg]   Prepared data for [$glob{'curr_pref'}] with [", scalar( map { @$_ } @{$glob{'curr_tab'}}),"] genes\n")); 
 	$glob{'curr_fh_oProt'} = &openFH("$glob{'curr_pref'}.prot.fa", '>'); 
+	defined $opts{'in_cds'} and $glob{'curr_fh_oCds'}  = &openFH("$glob{'curr_pref'}.cds.fa" , '>'); 
 	my %h; 
 	for my $id ( map { @$_ } @{$glob{'curr_tab'}} ) {
 		defined $h{$id} and next; 
 		defined $prot_fas{$id} or &stopErr("[Err] No prot-seq found for ID [$id]\n"); 
 		print {$glob{'curr_fh_oProt'}} ">$prot_fas{$id}{'key'}\n$prot_fas{$id}{'seq'}\n"; 
+		defined $opts{'in_cds'} and defined $cds_fas{$id} and print {$glob{'curr_fh_oCds'}} ">$cds_fas{$id}{'key'}\n$cds_fas{$id}{'seq'}\n"; 
 	}
 	delete($glob{'curr_tab'}); 
 	close( $glob{'curr_fh_oProt'} ); delete( $glob{'curr_fh_oProt'} ); 
+	defined $opts{'in_cds'} and do { close( $glob{'curr_fh_oCds'} ); delete( $glob{'curr_fh_oCds'} ); }; 
 	push(@{$glob{'curr_toRM'}}, "$glob{'curr_pref'}.prot.fa"); 
 	push(@{$glob{'file_toRM'}}, @{$glob{'curr_toRM'}}); 
 	my %t_glob = %glob; 
