@@ -306,6 +306,7 @@ for (@InFp) {
 #****************************************************************#
 
 sub cds2aa {
+	my $frame = $opts{'frame'}; 
 	for (my $i=0; $i<@InFp; $i++) {
 		my $fh1 = $InFp[$i];
 		RD:
@@ -313,6 +314,14 @@ sub cds2aa {
 			for ( my ($relHR1, $get1) = &get_fasta_seq($fh1); defined $relHR1; ($relHR1, $get1) = &get_fasta_seq($fh1) ) {
 				$relHR1->{'seq'} =~ s/[\s\-]//g; 
 				my $t_seq = $relHR1->{'seq'}; 
+				if ( $frame > 0 and $frame <= 3 ) {
+					$t_seq = substr($t_seq, $frame - 1); 
+				} elsif ( $frame < 0 and $frame >= -3 ) {
+					&rcSeq(\$t_seq, 'rc'); 
+					$t_seq = substr($t_seq,-$frame - 1); 
+				} else {
+					&stopErr("[Err] Bad frame number [$frame]\n"); 
+				}
 				my $t_len = length($t_seq); 
 				if ( $t_len > 0 ) {
 					my $aa_seq = ''; 
@@ -325,11 +334,11 @@ sub cds2aa {
 						$aa_seq .= $aa; 
 					}
 					my $dispR = &Disp_seq(\$aa_seq, $opts{'frag_width'}); 
-					print STDOUT ">$relHR1->{'head'}\n$$dispR"; 
+					print STDOUT ">$relHR1->{'head'} [frame=$frame]\n$$dispR"; 
 					undef($dispR); 
 				} else {
 					&tsmsg("[Wrn] sequence [$relHR1->{'key'}] has zero length.\n"); 
-					print STDOUT ">$relHR1->{'head'}\n\n"; 
+					print STDOUT ">$relHR1->{'head'} [frame=$frame]\n\n"; 
 				}
 			}
                 }#End while() RD:
