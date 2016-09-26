@@ -28,6 +28,7 @@ GetOptions(\%opts,
 	"hwcutoff:f",    # 0.001; 
 	"memory:i",      # 10480 == 10G 
 	"keep_tmp!",     
+	"exe_java:s",    # java
 ); 
 
 my %glob;
@@ -44,6 +45,7 @@ $default_para{'maxdistance'} = 1000;
 $default_para{'hwcutoff'}    = 0.001; 
 $default_para{'memory'}      = 10480; # in Mb 
 $default_para{'tmp_dir'}     = ''; 
+$default_para{'exe_java'}    = 'java'; 
  
 &chk_para(); 
 &set_para(); 
@@ -298,7 +300,7 @@ sub run_pipe {
 			# a2. generate .ped and .info files. 
 			&cnvt_snpTbl_to_ped( "$wind_fn.filter", "$wind_fn.ped", "$wind_fn.info" ); 
 			# a3. run haploview
-			&exeCmd_1cmd("java -jar $glob{'jar_haploview'} -n -pedfile $wind_fn.ped -info $wind_fn.info -log $wind_fn.log -dprime -maxdistance $glob{'maxdistance'} -minMAF $glob{'minMAF'} -hwcutoff $glob{'hwcutoff'} -memory $glob{'memory'}") and &stopErr("[Err] Stop to run haploview for $wind_fn\n"); 
+			&exeCmd_1cmd("$glob{'exe_java'} -jar $glob{'jar_haploview'} -n -pedfile $wind_fn.ped -info $wind_fn.info -log $wind_fn.log -dprime -maxdistance $glob{'maxdistance'} -minMAF $glob{'minMAF'} -hwcutoff $glob{'hwcutoff'} -memory $glob{'memory'}") and &stopErr("[Err] Stop to run haploview for $wind_fn\n"); 
 			# a4. summarize .LD file; 
 			&bin_LD( "$wind_fn.ped.LD" , [$wind_S_prev, $wind_E_prev, "$wind_fn.info" ] ); # Write $wind_fn.ped.LD.cnt, format : v_Dist \\t pairs_of_dist \\t sum_R2 \\t sum_D' \\t avg_R2 \\t avg_D' ;
 		}
