@@ -7,6 +7,7 @@
 # 2014-03-04 Fix a bug in which we fail to classify some end-to-end alignments. 
 use strict;
 use warnings;
+use LogInforSunhh; 
 use Getopt::Long;
 my %opts;
 
@@ -159,6 +160,7 @@ defined $opts{out} and $oFH = &writeFH( $opts{out} );
 my %qBlks; # {qid}=>[qstart, qend, skingdom_class]
 my %qLen; # {qid}=>query_length
 my %dvd_site; # {qid}{block-edge}=>1
+my %scf_order; 
 # Divide query into minimum block units that should be intact in any alignment.
 while (<>) {
 	/^qseqid\t/ and next;
@@ -169,6 +171,7 @@ while (<>) {
 	# I prefer to use all acceptable hsp instead of top hits or top hsp, because the sequence length varies and because I limit number of hits when blasting.
 	#### Record query blocks assigned to a kingdom_class.
 	my $qid = $ta[0]; # Query name
+	$scf_order{$qid} //= $.; 
 	my $sid = $ta[1]; # Hit name
 	my $skd = $ta[17]; # Hit kingdom class
 	my $sTXID = $ta[15]; 
@@ -213,17 +216,48 @@ if ( $is_joinInEx == 1 ) {
 }
 
 
-for my $qid (keys %dvd_site) {
+for my $qid (sort { $scf_order{$a} <=> $scf_order{$b} } keys %dvd_site) {
 warn "[Msg]Processing scaff [$qid]\n";
 	## Make minimum block units for each query.
 	my @qpoints = sort { $a<=>$b } keys %{ $dvd_site{$qid} }; # Sort block boundary sites.
-	$qpoints[0] > 1 and unshift(@qpoints, 1);
-	$qpoints[-1] < $qLen{$qid} and push(@qpoints, $qLen{$qid});
+	# $qpoints[0] > 1 and unshift(@qpoints, 1);
+	# $qpoints[-1] < $qLen{$qid} and push(@qpoints, $qLen{$qid});
 	my @qMinBlks ; # Initialize minimum blocks. [qstart, qend, {{skingdom=>nCount}}, {hitName=>1} ]
-	POINTS:
-	for (my $i=0; $i<$#qpoints; $i++) {
-		$qpoints[$i+1] == $qpoints[$i]+1 and next POINTS;
-		push(@qMinBlks, [ @qpoints[ $i, $i+1 ] ]); # Here the boundary site might overlap to the neighbour.
+	if ( @qpoints == 0 ) {
+		&stopErr("[Err] Failed to find dvd_site for [$qid]\n"); 
+	} elsif ( @qpoints == 1 ) {
+		# This only happens when qS == qE in blocks; 
+		if ($qpoints[0] == 1) {
+			push( @qMinBlks, [ 0.5, 1.5 ] ); 
+		}
+		if (@qMinBlks == 0) {
+			push( @qMinBlks, [ 0.5, $qpoints[0]-0.5 ] ); 
+			push( @qMinBlks, [ $qMinBlks[-1][1], $qpoints[0]+0.5 ] ); 
+		}
+		if ($qMinBlks[-1][1] < $qLen{$qid}+0.5) {
+			push( @qMinBlks, [ $qMinBlks[-1][1], $qLen{$qid}+0.5 ] ); 
+		}
+	} else {
+		POINTS: 
+		for (my $i=0; $i<$#qpoints; $i++) {
+			if (@qMinBlks > 0) {
+				$qMinBlks[-1][1] == $qpoints[$i]+0.5 or &stopErr("[Err] end blk [$qMinBlks[-1][1]] not match curr_start [$qpoints[$i]]\n"); 
+			} else {
+				$i == 0 or &stopErr("[Err] why this?\n"); 
+				if ( $qpoints[$i] > 1 ) {
+					push( @qMinBlks, [ 0.5 , $qpoints[$i]-0.5 ] ); # Unmapped region in 5'-end . 
+					push( @qMinBlks , [ $qpoints[$i]-0.5, $qpoints[$i]+0.5 ] ); # Left-most point of mapping region. 
+				} else {
+					push( @qMinBlks, [ 0.5 , 1.5 ] ); # Left-most point of mapping region. 
+				}
+			}
+			$qMinBlks[-1][1] < $qpoints[$i+1]-0.5 and push( @qMinBlks , [ $qMinBlks[-1][1], $qpoints[$i+1]-0.5 ] ); # Inner mapping region. 
+			push( @qMinBlks, [ $qMinBlks[-1][1], $qpoints[$i+1]+0.5 ] ); # Right-most of current block. 
+		}
+	}
+	if ( $qMinBlks[-1][1] != $qLen{$qid}+0.5 ) {
+		# There is some region left in the 3'-end. 
+		push( @qMinBlks, [ $qMinBlks[-1][1], $qLen{$qid}+0.5 ] ); 
 	}
 	## Give type counts (contributions) for each unit.
 	my @qSrtBlks = sort { $a->[0]<=>$b->[0] || $a->[1]<=>$b->[1] || $skingdom{$a->[2]} <=> $skingdom{$b->[2]} } @{ $qBlks{$qid} }; # Sort query aligned blocks for following comparison.
@@ -283,9 +317,9 @@ warn "[Msg]Processing scaff [$qid]\n";
 		print {$oFH} join("\t",
 			$qid,
 			$qLen{$qid},
-			$tr1->[0],
-			$tr1->[1],
-			$tr1->[1]-$tr1->[0]+1,
+			$tr1->[0]+0.5,
+			$tr1->[1]-0.5,
+			$tr1->[1]-$tr1->[0],
 			join(";;", @oskd),
 			join(";;", @oInEx)
 		)."\n";
@@ -302,8 +336,8 @@ warn "[Msg]Processing scaff [$qid]\n";
 #					]
 #				);
 				push( @combInEx,
-					[( $tr1->[0]-1 <= $opts{maxUn} ) ? 1 : $tr1->[0] ,           # qstart
-					$tr1->[1],            # qend
+					[( $tr1->[0]-0.5 <= $opts{maxUn} ) ? 1 : $tr1->[0]+0.5 ,           # qstart
+					$tr1->[1]-0.5,            # qend
 					[$kR1, $vR1, $kStr1], # [KingdomTypes_Ref, KingdomCounts_Ref, KingdomTypes_String]
 					[$kR2, $vR2, $kStr2]  # [InExcludeTypes_Ref, InExcludeCounts_Ref, InExcludeTypes_String]
 					]
@@ -311,8 +345,8 @@ warn "[Msg]Processing scaff [$qid]\n";
 			} elsif ( $kStr2 eq 'In' and $vR2->[0] == 0 ) {
 				# the current block is unknown.
 				push( @combInEx,
-					[$tr1->[0],           # qstart
-					$tr1->[1],            # qend
+					[$tr1->[0]+0.5,           # qstart
+					$tr1->[1]-0.5,            # qend
 					[$kR1, $vR1, $kStr1], # [KingdomTypes_Ref, KingdomCounts_Ref, KingdomTypes_String]
 					[$kR2, $vR2, $kStr2]  # [InExcludeTypes_Ref, InExcludeCounts_Ref, InExcludeTypes_String]
 					]
@@ -322,31 +356,31 @@ warn "[Msg]Processing scaff [$qid]\n";
 				pop(@combInEx);
 				push( @combInEx,
 					[1,
-					$tr1->[1],
+					$tr1->[1]+0.5,
 					[$kR1, $vR1, $kStr1],
 					[$kR2, $vR2, $kStr2]
 					]
 				);
-			} elsif ( $tr1->[0] - $combInEx[-1][1] - 1 <= $opts{maxUn} ) {
+			} elsif ( $tr1->[0] - $combInEx[-1][1] - 0.5 <= $opts{maxUn} ) {
 				# This is near the previous block.
 				if      ( $combInEx[-1][3][2] eq $kStr2 and ( $combInEx[-1][3][2] ne 'In' or $combInEx[-1][3][1][0] > 0 ) ) {
 					# Same InEx class, so renew the last element.
 					&renewEle( $combInEx[-1] ,
-						[ $tr1->[0], $tr1->[1], [$kR1, $vR1, $kStr1], [$kR2, $vR2, $kStr2] ]
+						[ $tr1->[0]+0.5, $tr1->[1]-0.5, [$kR1, $vR1, $kStr1], [$kR2, $vR2, $kStr2] ]
 					);
 				} elsif ( $combInEx[-1][3][2] eq 'In' and $combInEx[-1][3][1][0] == 0 ) {
 					# The previous one is Unknown.
-					if ( scalar(@combInEx) > 1 and ($tr1->[0] - $combInEx[-2][3][1] - 1 <= $opts{maxUn}) and $combInEx[-2][3][2] eq $kStr1 ) {
+					if ( scalar(@combInEx) > 1 and ($tr1->[0]+0.5 - $combInEx[-2][3][1] - 1 <= $opts{maxUn}) and $combInEx[-2][3][2] eq $kStr1 ) {
 						# The one before previous "unkown" is near enough, and same to the current one.
 						pop(@combInEx); # Remove the previous "unkown" record. then renew the last element.
 						&renewEle( $combInEx[-1] ,
-							[ $tr1->[0], $tr1->[1], [$kR1, $vR1, $kStr1], [$kR2, $vR2, $kStr2] ]
+							[ $tr1->[0]+0.5, $tr1->[1]-0.5, [$kR1, $vR1, $kStr1], [$kR2, $vR2, $kStr2] ]
 						);
 					} else {
 						# Should be a new block.
 						push( @combInEx,
-							[$tr1->[0],
-							$tr1->[1],
+							[$tr1->[0]+0.5,
+							$tr1->[1]-0.5,
 							[$kR1, $vR1, $kStr1],
 							[$kR2, $vR2, $kStr2]
 							]
@@ -355,8 +389,8 @@ warn "[Msg]Processing scaff [$qid]\n";
 				} else {
 					# Just push a new record.
 					push( @combInEx,
-						[$tr1->[0],
-						$tr1->[1],
+						[$tr1->[0]+0.5,
+						$tr1->[1]-0.5,
 						[$kR1, $vR1, $kStr1],
 						[$kR2, $vR2, $kStr2]
 						]
@@ -365,8 +399,8 @@ warn "[Msg]Processing scaff [$qid]\n";
 			} else {
 				# Just push a new record.
 				push( @combInEx,
-					[$tr1->[0],
-					$tr1->[1],
+					[$tr1->[0]+0.5,
+					$tr1->[1]-0.5,
 					[$kR1, $vR1, $kStr1],
 					[$kR2, $vR2, $kStr2]
 					]
