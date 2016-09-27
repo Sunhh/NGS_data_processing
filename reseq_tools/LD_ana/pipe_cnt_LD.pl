@@ -20,6 +20,7 @@ GetOptions(\%opts,
 	"pl_snpTbl_sepByWind:s", # /home/Sunhh/tools/github/NGS_data_processing/reseq_tools/fst/snpTbl_sepByWind.pl 
 	"pl_dealTbl:s",          # /home/Sunhh/tools/github/NGS_data_processing/deal_table.pl
 	"jar_haploview:s",       # /data/Sunhh/src/Evolution/haploview/Haploview4.2.jar
+	"para_haploview:s",      # '' 
 	"maxNmissR:f",   # 0.40 
 	"minMAF:f",      # 0.05 
 	"tmp_dir:s",     # Default not assigned. 
@@ -39,6 +40,7 @@ $default_para{'wind_step'}   = 1e6;
 $default_para{'pl_snpTbl_sepByWind'} = '/home/Sunhh/tools/github/NGS_data_processing/reseq_tools/fst/snpTbl_sepByWind.pl'; 
 $default_para{'pl_dealTbl'}          = '/home/Sunhh/tools/github/NGS_data_processing/deal_table.pl'; 
 $default_para{'jar_haploview'}       = '/data/Sunhh/src/Evolution/haploview/Haploview4.2.jar'; 
+$default_para{'para_haploview'}      = ''; 
 $default_para{'maxNmissR'}   = 0.10; 
 $default_para{'minMAF'}      = 0.05; 
 $default_para{'maxdistance'} = 1000; 
@@ -98,6 +100,7 @@ For haploview parameters :
 -maxdistance       [$default_para{'maxdistance'}]
 -hwcutoff          [$default_para{'hwcutoff'}]
 -memory            [$default_para{'memory'}]
+-para_haploview    [$default_para{'para_haploview'}]
 
 
 -pl_snpTbl_sepByWind      [$default_para{'pl_snpTbl_sepByWind'}]
@@ -300,7 +303,7 @@ sub run_pipe {
 			# a2. generate .ped and .info files. 
 			&cnvt_snpTbl_to_ped( "$wind_fn.filter", "$wind_fn.ped", "$wind_fn.info" ); 
 			# a3. run haploview
-			&exeCmd_1cmd("$glob{'exe_java'} -jar $glob{'jar_haploview'} -n -pedfile $wind_fn.ped -info $wind_fn.info -log $wind_fn.log -dprime -maxdistance $glob{'maxdistance'} -minMAF $glob{'minMAF'} -hwcutoff $glob{'hwcutoff'} -memory $glob{'memory'}") and &stopErr("[Err] Stop to run haploview for $wind_fn\n"); 
+			&exeCmd_1cmd("$glob{'exe_java'} -jar $glob{'jar_haploview'} -n -pedfile $wind_fn.ped -info $wind_fn.info -log $wind_fn.log -dprime -maxdistance $glob{'maxdistance'} -minMAF $glob{'minMAF'} -hwcutoff $glob{'hwcutoff'} -memory $glob{'memory'} $glob{'para_haploview'}") and &stopErr("[Err] Stop to run haploview for $wind_fn\n"); 
 			# a4. summarize .LD file; 
 			&bin_LD( "$wind_fn.ped.LD" , [$wind_S_prev, $wind_E_prev, "$wind_fn.info" ] ); # Write $wind_fn.ped.LD.cnt, format : v_Dist \\t pairs_of_dist \\t sum_R2 \\t sum_D' \\t avg_R2 \\t avg_D' ;
 		}
