@@ -8,6 +8,7 @@
 use strict;
 use warnings;
 use LogInforSunhh; 
+use fileSunhh; 
 use Getopt::Long;
 my %opts;
 
@@ -47,6 +48,8 @@ Eukaryota      8
 Satellite      9
 Bacteria;Eukaryota  10
 Eukaryota;Viruses   11
+In                  10000
+Ex                  10001
 );
 my %isInEx=qw(
 NA        Ex
@@ -469,6 +472,46 @@ sub parse1 {
 	return(\@tk, \@tv, join(';;', @tk));
 }# End sub parse1
 
+sub joinVR {
+	my ($e1, $e2, $size1, $size2, $sizeB) = @_; 
+	my %k2v; 
+	for (my $i=0; $i<@{$e1->[0]}; $i++) {
+		$k2v{$e1->[0][$i]} = $e1->[1][$i] * $size1; 
+	}
+	for (my $i=0; $i<@{$e2->[0]}; $i++) {
+		$k2v{$e2->[0][$i]} += ( $e2->[1][$i] * $size2 ); 
+	}
+	for my $k (keys %k2v) {
+		$k2v{$k} = $k2v{$k}/$sizeB; 
+	}
+	my @k = sort { $skingdom{$a}<=>$skingdom{$b} } keys %k2v; 
+	my @v = @k2v{@k}; 
+	return( [\@k , \@v, join(';;', @k)] ); 
+}# joinVR() 
+
+# Renew the last element in array @combInEx
+# input  : ($combInEx[-1], $toBeAdd_combInEx_ele)
+# output : new $combInEx[-1] .
+# In fact i do not think we need that return value, because the passed variable is an reference.
+sub renewEle {
+	my ($er1, $er2) = @_;
+	my $size1 = $er1->[1] - $er1->[0] + 1;
+	my $size2 = $er2->[1] - $er2->[0] + 1;
+	my $new_s = ($er1->[0] > $er2->[0]) ? $er2->[0] : $er1->[0]; 
+	my $new_e = ($er1->[1] < $er2->[1]) ? $er2->[1] : $er2->[1]; 
+
+	$er1->[2] = &joinVR( $er1->[2], $er2->[2], $size1, $size2, $new_e-$new_s+1 ); 
+	$er1->[3] = &joinVR( $er1->[3], $er2->[3], $size1, $size2, $new_e-$new_s+1 ); 
+	$er1->[0] = $new_s; 
+	$er1->[1] = $new_e; 
+
+	return($er1);
+}# End sub renewEle
+
+#############################################################################
+###############  Dropped subroutines          ###############################
+#############################################################################
+
 # Mean values in [$vR1] and [$vR2]
 # 这里的加和规则没办法做成绝对准确，反正每次加和, 分子部分会有1个hit的失真, 分母可能有1bp重复, 就这样吧, 被大分母除一下也就可以参考了；
 # 浪费了太多时间考虑这个规则了, 简单一些.
@@ -487,12 +530,11 @@ sub avgVR {
 	}
 	return(\@avg);
 }# End sub avgVR
-
 # Renew the last element in array @combInEx
 # input  : ($combInEx[-1], $toBeAdd_combInEx_ele)
 # output : new $combInEx[-1] .
 # In fact i do not think we need that return value, because the passed variable is an reference.
-sub renewEle {
+sub renewEle_2 {
 	my ($er1, $er2) = @_;
 	my $size1 = $er1->[1] - $er1->[0] + 1;
 	my $size2 = $er2->[1] - $er2->[0] + 1;
@@ -530,7 +572,7 @@ sub renewEle {
 	return($er1);
 }# End sub renewEle
 
-sub openFH ($$) {
+sub openFH_dropped ($$) {
 	my $f = shift; 
 	my $type = shift; 
 	my %goodFileType = qw(
