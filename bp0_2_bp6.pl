@@ -5,6 +5,7 @@
 # edit 2010-10-07 using a 'index' method to do regexp match. 
 # edit 2010-11-08 fix a bug occurring when there is a query without any sbjct hits. The line is like "^***** No hits found *****\n"; 
 # edit 2014-06-02 Now can be used for both results from blast and blast+, and can give infor for subject_description. 
+# edit 2016-09-30 Use &openFH() to open any file. 
 
 use strict; 
 use fileSunhh; 
@@ -47,16 +48,17 @@ my $obn6fh = \*STDOUT;
 defined $opts{'geno'} and $opts{'snp'} = 1; 
 
 if ($opts{snp}) {
-	open BN6, '<', "$opts{bn6}" or do { print "failed to open file(-bn6) $opts{bn6}. $!\n"; &usage(); }; 
+	my $fh_bn6 = &openFH( $opts{'bn6'}, '<' ) ; 
+	# open BN6, '<', "$opts{bn6}" or do { print "failed to open file(-bn6) $opts{bn6}. $!\n"; &usage(); }; 
 	my %uniq; 
-	while (<BN6>) {
+	while (<$fh_bn6>) {
 		s/[^\S\t]+$//;
 		/^\s*$/ and next; 
 		my @tmp = split(/\t/, $_); 
 		defined $uniq{$_} or push(@{$snpaln{$tmp[0]}}, $_); 
 		$uniq{$_} = 1; 
 	}
-	close BN6; 
+	close($fh_bn6); 
 }else{
 	$obn6fh = &openFH($opts{out}, '>'); 
 	print $obn6fh join("\t", qw/qseqid sseqid pident aln_len mismatch gapopen qstart qend sstart send evalue bitscore qlen slen strand sdef/)."\n"; 
