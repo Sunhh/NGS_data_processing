@@ -28,7 +28,7 @@ sub prepare_glob {
 # -new_agp        [filename] .AGP format. 
 #                   old_agp and new_agp should share the same contig sets. 
 #
-# -old_loc        [filename] Format : chrID \\t position \\n
+# -old_loc        [filename] Format : chrID \\t position \\t strand(+/-) \\n
 #
 #
 # -new_loc        [filename] This is the output file name. STDOUT if not given. 
@@ -57,8 +57,9 @@ my @aa_loci = &fileSunhh::load_tabFile( $glob{'fn_old_loc'} , 1 );
 for my $a1 (@aa_loci) {
 	@$a1 == 0 and do { print { $glob{'fh_new_loc'} } "chr\tpos\tstr\n"; next; }; 
 	$a1->[0] =~ m!^\s*#|^(chr|chromID|chrID|chrom|chromosome|chromosomeID)$!i and do { print { $glob{'fh_new_loc'} } join("\t", @$a1, qw/chr pos str/)."\n"; next; }; 
-	my ($old_scfID, $old_scfPos) = ($a1->[0], $a1->[1]); 
-	my @new_scfInf = $ms_obj->transfer_position( 'from_ref2qry' => $glob{'old_s2c'}, 'to_qry2ref' => $glob{'new_c2s'}, 'fromLoc' => [$old_scfID, $old_scfPos] ); 
+	$a1->[2] //= '+'; 
+	my ($old_scfID, $old_scfPos, $old_scfStr) = ($a1->[0], $a1->[1], $a1->[2]); 
+	my @new_scfInf = $ms_obj->transfer_position( 'from_ref2qry' => $glob{'old_s2c'}, 'to_qry2ref' => $glob{'new_c2s'}, 'fromLoc' => [$old_scfID, $old_scfPos, $old_scfStr] ); 
 	print { $glob{'fh_new_loc'} } join("\t", $old_scfID, $old_scfPos, $new_scfInf[0], $new_scfInf[1], $new_scfInf[2])."\n"; 
 }
 
