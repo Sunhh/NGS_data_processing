@@ -808,6 +808,7 @@ sub max {
 Function: This is not a method, but a sub-routine(). 
 
 Description: For calculating insert sizes. 
+
              Following Heng Li's bwa method (Estimating Insert Size Distribution). 
              But the max/min distance of INS are only using 6 * sigma values. 
              http://linux.die.net/man/1/bwa
