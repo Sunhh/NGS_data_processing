@@ -452,6 +452,7 @@ sub fragmentRd{
 }#sub fragmentRd() 
 
 sub showQscale {
+	$opts{'phred_scale'} = undef(); 
 	print STDOUT join("\t", qw/InFqName QualScale/)."\n"; 
 	if ( !@ARGV ) {
 		my $qscale = &guessPhredScale($InFp[0]); 
