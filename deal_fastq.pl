@@ -76,6 +76,8 @@ perl $0 in.fastq
 
 -reorder      [orderList] Format : rdID_01 \\n rdID_02 \\n rdID_03 \\n ...
 
+-clean_fq     [Boolean] Sometimes the input fastq file has some line shift problem. Clean those records. 
+
 #******* Instruction of this program *********#
 HELP
 	exit(1); 
@@ -97,6 +99,7 @@ GetOptions(\%opts,
 	"randSlct:f", 
 	"get_key!", 
 	"reorder:s", 
+	"clean_fq!", 
 	"help!", 
 ); 
 
@@ -155,10 +158,34 @@ my %good_str = qw(
 &randSlct() if ( defined $opts{'randSlct'} ); 
 &get_key() if ( $opts{'get_key'} ); 
 &reorder() if ( defined $opts{'reorder'} ); 
+&cleanFq() if ( $opts{'clean_fq'} ); 
 
 #****************************************************************#
 #--------------Subprogram------------Start-----------------------#
 #****************************************************************#
+
+sub cleanFq {
+	for my $fh1 (@InFp) {
+		my $base_ln = 1; 
+		my $curr_ln = 0; 
+		my @rec = ('', '', '', ''); 
+		while ($rec[0] = <$fh1>) {
+			$curr_ln ++; 
+			chomp($rec[0]); 
+			($curr_ln - $base_ln + 1) % 4 == 1 or do { &tsmsg("[Wrn] Bad line number [$.] with base_ln [$base_ln]\n"); $base_ln = $curr_ln ; }; 
+			$rec[0] =~ m!^\@! or do { &tsmsg("[Wrn] Skip line [$curr_ln] content [$rec[0]]\n"); next; }; 
+			$rec[1] = <$fh1>; 
+			$rec[2] = <$fh1>; 
+			$rec[3] = <$fh1>; 
+			$curr_ln += 3; 
+			chomp(@rec); 
+			( $rec[2] =~ m!^\+! and length($rec[1]) == length($rec[3]) ) or do { &tsmsg("[Wrn] Skip read record :\n" . join("\n", @rec)."\n"); next; }; 
+			print STDOUT join("\n", @rec)."\n"; 
+		}
+		close($fh1); 
+	}
+	return; 
+}# cleanFq () 
 
 # -randSlct     [1]
 # -paired       
