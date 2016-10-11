@@ -1175,6 +1175,7 @@ Output   : ( [allele_1_char, allele_1_cnt] , [allele_2_char, allele_2_cnt] )
     Input ['./.'] => Output ( ['.', 2] ); 
     Input ['A/a'] => Output ( ['A', 2] ); 
     Input ['T/A'] => Output ( ['A', 1], ['T', 1] ); 
+    Input ['A/T'] => Output ( ['A', 1], ['T', 1] ); 
     Input ['A/.'] => Output ( die ); 
 =cut
 sub tab_allele {
