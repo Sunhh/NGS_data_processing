@@ -1165,13 +1165,15 @@ sub AA2array {
 =head1 tab_allele( $allele_in_vcfTab )
 
 Input    : Must be diploid, and no degenerated characters allowed. Examples : 
+
     './.'   -   missing
     'A/A'   -   homozygous A. Equivalent to 'A/a'; 
     'A/T'   -   heterozygous A/T. Equivalent to 'T/A'; 
     'A/.'   -   wrong format. 
 
 Output   : ( [allele_1_char, allele_1_cnt] , [allele_2_char, allele_2_cnt] )
-      All output alleles are in upper case. 
+
+    All output alleles are in upper case. 
     Input ['./.'] => Output ( ['.', 2] ); 
     Input ['A/a'] => Output ( ['A', 2] ); 
     Input ['T/A'] => Output ( ['A', 1], ['T', 1] ); 
