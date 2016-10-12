@@ -27,6 +27,7 @@
 use strict;
 use warnings; 
 use fileSunhh; 
+use LogInforSunhh; 
 
 use Getopt::Long;
 my %opts;
@@ -53,6 +54,7 @@ GetOptions(\%opts,
 	"col_head!", 
 	"chID_RefLis:s", "chID_Row!", "chID_OldColN:i", "chID_NewColN:i", "chID_skipH:i", "chID_RowColN:i", # Change Column/Row names according to reference. 
 	"spec_loci_1from2!", "spec_loci_f1:s", "spec_loci_f2:s", "spec_loci_minLen:i", 
+	"log_ln:i", 
 	"help!");
 sub usage {
 
@@ -118,6 +120,8 @@ command:perl $0 <STDIN|parameters>
 
   -symbol         Defining the symbol to divide data.Default is "\\t";
   -dR2dN          [Boolean] Change \\r to \\n in files. 
+
+  -log_ln         [0]
 ##################################################
 INFO
 
@@ -150,6 +154,8 @@ else
 
 my $symbol = "\t";
 &goodVar($opts{symbol}) and $symbol = $opts{symbol};
+
+$opts{'log_ln'} //= 0; 
 
 
 &reverse_lines() if($opts{reverse});
@@ -377,12 +383,15 @@ sub kSrch {
 	my %idx_key; 
 	for my $idxF ( &splitL(",", $opts{'kSrch_idx'}) ) {
 		my $fh = &openFH( $idxF, '<' ); 
+		my %tmp_cnt = ( 'cntN_base'=>0 , 'cntN_step'=>$opts{'log_ln'} ); 
 		if ( $opts{kSrch_line} ) {
 			while (<$fh>) {
+				$opts{'log_ln'} > 0 and &fileSunhh::log_section( $. , \%tmp_cnt ) and &tsmsg("[Msg] Reading [$.] line in kSrch_idx\n"); 
 				$idx_key{$_} = 1; 
 			}
 		}else{
 			while (<$fh>) {
+				$opts{'log_ln'} > 0 and &fileSunhh::log_section( $. , \%tmp_cnt ) and &tsmsg("[Msg] Reading [$.] line in kSrch_idx\n"); 
 				chomp; 
 				my @temp = &splitL($symbol, $_); 
 				my $tkey = join("\t", @temp[@idx_Cols]); 
@@ -393,9 +402,11 @@ sub kSrch {
 	}# for my $idxF 
 
 	for my $fh (@InFp) {
+		my %tmp_cnt = ( 'cntN_base'=>0 , 'cntN_step'=>$opts{'log_ln'} ); 
 		if ( $opts{kSrch_line} ) {
 			# Using the whole line as a key. 
 			while (<$fh>) {
+				$opts{'log_ln'} > 0 and &fileSunhh::log_section( $. , \%tmp_cnt ) and &tsmsg("[Msg] Reading [$.] line in kSrch_src\n"); 
 				if ($opts{kSrch_drop}) {
 					$idx_key{$_} or print; 
 				}else{
@@ -405,6 +416,7 @@ sub kSrch {
 		}else{
 			# Using the selected columns as key. 
 			while (<$fh>) {
+				$opts{'log_ln'} > 0 and &fileSunhh::log_section( $. , \%tmp_cnt ) and &tsmsg("[Msg] Reading [$.] line in kSrch_src\n"); 
 				chomp; 
 				my @temp = &splitL($symbol, $_); 
 				my $tkey = join("\t", @temp[@src_Cols]); 

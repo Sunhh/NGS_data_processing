@@ -707,9 +707,11 @@ sub cnvt_to_rgb {
 =head1 _parseCol( $col_string )
 
 Required    : $col_string
+
  $col_string : Like 0-100 | 0,3,4,5-7,1-10 | 10-8
 
 Function    : 
+
  '0-5' returns (0 .. 5)
  '0,3,5-7,6-9' returns (0,3,5,6,7,6,7,8,9)
  ' -3 - -4, 10-8'  returns (-3,-4,10,9,8)
