@@ -1198,6 +1198,30 @@ sub tab_allele {
 	return();
 }# tab_allele ()
 
+=head1 tab_allele_to_genotype ( \@P1_allele, $number_of_ploidy )
+
+Output    : ( $genotype_string )
+
+=cut
+sub tab_allele_to_genotype {
+	my ( $ar, $pn ) = @_; 
+	$pn //= 2; 
+	my @back; 
+	if (@$ar > $pn) {
+		&tsmsg("[Wrn] Input ploidy is higher than expected [$pn].\n"); 
+		# stopErr("[Err] Input ploidy is higher than expected [$pn].\n"); 
+		@back = ( '.' ) x $pn; 
+		return( join('/', @back) ); 
+	}
+	for (my $i=0; $i<$pn; $i++) {
+		my $j=$i; 
+		while ($j >= scalar(@$ar)) { $j -= scalar(@$ar); } 
+		$j < 0 and &stopErr("[Err] Bad [i=$i j=$j]\n"); 
+		push(@back, $ar->[$j][0]); 
+	}
+	return( join('/', @back) ); 
+}# tab_allele_to_genotype () 
+
 =head1 tab_class_PP_al( \@P1_allele , @P2_allele )
 
 Input     : @P1_allele is output of &tab_allele( $P1_allele ); 

@@ -77,6 +77,7 @@ for (my $i=$opts{'beginLn'}-1; $i<$opts{'endLn'}; $i+=$opts{'grpLn'}) {
 		}
 	}
 	$pm->finish; 
+	$MAX_PROCESSES = &change_procN($pm, $opts{'nprocF'}, $MAX_PROCESSES); 
 }
 $pm->wait_all_children; 
 
