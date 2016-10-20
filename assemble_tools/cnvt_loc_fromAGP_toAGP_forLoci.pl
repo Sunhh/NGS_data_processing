@@ -73,7 +73,7 @@ for my $a1 (@aa_loci) {
 			$a1->[3] = reverse($a1->[3]); 
 			my @alt_al_a = split(/,/, $alt_al); 
 			for my $alt_al_t (@alt_al_a) {
-				$alt_al_t =~ m!^[ATGCN*]$! or &stopErr("[Err] Bad alt allele [$alt_al_t] in [$alt_al]\n"); 
+				$alt_al_t =~ m!^[ATGCN*]+$! or &stopErr("[Err] Bad alt allele [$alt_al_t] in [$alt_al]\n"); 
 				$alt_al_t =~ tr/ATGCatgc/TACGtacg/; 
 				$alt_al_t = reverse($alt_al_t); 
 			}
