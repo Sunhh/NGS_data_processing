@@ -66,9 +66,13 @@ Function     : Save all sequences' information in hash
 'has_head' = 1 by default. 
 
 Return       : (\%key_to_infor)
+
  \%key_to_infor : {key} => value
+
    {$seq_ID}      => \%seq_record_hash; 
+
      \%seq_record_hash : {key} => value 
+
        {'head'}       => the line heading with '>', but with heading '>' removed; 
        {'key'}        => sequence ID ; 
        {'definition'} => Same to 'head' except that 'key' is removed. 
