@@ -4,6 +4,8 @@ use warnings;
 use fileSunhh; 
 use mathSunhh; 
 my $ms_obj = mathSunhh->new(); 
+use fastaSunhh; 
+my $fs_obj = fastaSunhh->new(); 
 use LogInforSunhh; 
 use Getopt::Long; 
 my %opts; 
@@ -17,6 +19,7 @@ GetOptions(\%opts,
 	"colN_seqStr:s", 
 	"for_gff3!", 
 	"for_vcf!", 
+	  "refFas:s", 
 	"help!", 
 ); 
 
@@ -66,6 +69,7 @@ for my $a1 (@aa_loci) {
 		my $ref_al = $a1->[3]; 
 		my $alt_al = $a1->[4]; 
 		if ( $old_scfStr ne $new_scfStr) {
+			$ref_al eq '-' and $ref_al = '*'; 
 			$ref_al =~ m!^[ATGCN]+$! or &stopErr("[Err] Bad ref allele [$ref_al]\n"); 
 			my $len = length($ref_al); 
 			$a1->[1] = $a1->[1]-$len+1; 
@@ -137,6 +141,12 @@ HH
 		$glob{'colN_seqID'}  = [0]; 
 		$glob{'colN_seqStr'} = []; 
 		$glob{'colN_seqP'}   = [1]; 
+	}
+	if ( defined $opts{'refFas'} ) {
+		$glob{'refH'} = $fs_obj->save_seq_to_hash( 'faFile' => $opts{'refFas'} ); 
+		for my $tk ( keys %{$glob{'refH'}} ) {
+			$glob{'refH'}{$tk}{'seq'} =~ s!\s!!g; 
+		}
 	}
 }# prepare_glob() 
 
