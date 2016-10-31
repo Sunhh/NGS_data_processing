@@ -23,6 +23,7 @@
 # 2015-07-14 Add -spec_loci_1from2 to find region in -spec_loci_f1 (Format: ID\tstart\tEnd) that is absent in -spec_loci_f2 (Format: ID\tStart\tEnd). 
 # 2016-03-09 Add -col_sort_rule for more flexible. 
 # 2016-03-11 Finally, I accept to add my own perl modules into this frequently used script. Change all split to &splitL(); 
+# 2016-10-31 Add -colByTbl_cut to use 'cut & paste' method. 
 
 use strict;
 use warnings; 
@@ -33,7 +34,7 @@ use Getopt::Long;
 my %opts;
 GetOptions(\%opts,
 	"combine!","column:s",
-	"colByTbl:s", "colByTbl_also:s", 
+	"colByTbl:s", "colByTbl_also:s", "colByTbl_cut:i", 
 	"max_col:s","min_col:s",
 	"skip:i",
 	"reverse!",
@@ -61,13 +62,14 @@ sub usage {
 	my $info=<<INFO;
 ##################################################
 command:perl $0 <STDIN|parameters>
-# 2016-03-09
+# 2016-10-31
 
   -help           help infomation;
   -combine        combine files;
   -column<int>    cols "num1,num2,num3..." will be picked out and joined to a new line;
   -colByTbl<Str>  [index_file]. The 1st column of index_file is used to match the first line of input.table. Output matching columns from input.table. 
    -colByTbl_also [Str] Cols "num1,num2,num3" will be output before checking the matching between input.table and index_file. 
+   -colByTbl_cut  [CPU_number] Use 'cut' and 'paste' command in Linux to try to shorten the processing time. 
   -max_col        Similar to -column, compare by order;
   -min_col        Similar to -column, compare by order;
   -skip<int>      Skip first <int> lines.Usually for skipping head lines;
@@ -137,6 +139,8 @@ if ($opts{help} or (-t and !@ARGV) and !$opts{spec_loci_1from2}) {
 #****************************************************************#
 #--------------Main-----Function-----Start-----------------------#
 #****************************************************************#
+
+my %glob; 
 
 # Making File handles for reading;
 our @InFp = () ;  
@@ -260,8 +264,14 @@ sub specLoci {
 
 # Extract columns according to $opts{'colByTbl'}; 
 sub colByTbl {
+	use Parallel::ForkManager; 
 	my @col_also = (); 
 	defined $opts{'colByTbl_also'} and @col_also = &parseCol($opts{'colByTbl_also'}); 
+	$opts{'colByTbl_cut'} //= 0; 
+	if ( $opts{'colByTbl_cut'} > 0 ) {
+		use Parallel::ForkManager; 
+		$glob{'pm'} = new Parallel::ForkManager($opts{'colByTbl_cut'}); 
+	}
 	my $idxFh = &openFH($opts{'colByTbl'}, '<'); 
 	my (%needColID, $cnt); 
 	$cnt = 0; 
@@ -271,32 +281,89 @@ sub colByTbl {
 		defined $needColID{$ta[0]} or do { $needColID{$ta[0]} = $cnt; $cnt ++; }; 
 	}
 	close($idxFh); 
-	
-	for my $fh ( @InFp ) {
-		my @cur_ColNs = @col_also; 
-		{
-			my $first_line = <$fh>; 
-			my %cur_ID2ColN; 
-			chomp($first_line); 
-			my @ta = &splitL($symbol, $first_line); 
-			for (my $i=0; $i<@ta; $i++) {
-				defined $needColID{$ta[$i]} and $cur_ID2ColN{$ta[$i]} = $i; 
-			}
-			for (sort { $needColID{$a} <=> $needColID{$b} } keys %needColID) {
-				if ( defined $cur_ID2ColN{$_} ) {
-					push(@cur_ColNs, $cur_ID2ColN{$_}); 
-				} else {
-					push(@cur_ColNs, 'NA'); 
+
+	if ( $opts{'colByTbl_cut'} > 0 ) {
+		my $wrk_dir = &fileSunhh::new_tmp_dir(); 
+		mkdir($wrk_dir) or &stopErr("[Err] Failed to create tmp_dir [$wrk_dir]\n"); 
+		my $argv_i = -1; 
+		for my $fh ( @InFp ) {
+			$argv_i ++; 
+			my @cur_ColNs = @col_also; 
+			my $has_empty = 0; 
+			{
+				my $first_line = <$fh>; chomp($first_line); 
+				my @ta = &splitL($symbol, $first_line); 
+				my %cur_ID2ColN; 
+				for (my $i=0; $i<@ta; $i++) {
+					defined $needColID{$ta[$i]} and $cur_ID2ColN{$ta[$i]} = $i; 
 				}
+				for (sort { $needColID{$a} <=> $needColID{$b} } keys %needColID) {
+					if ( defined $cur_ID2ColN{$_} ) {
+						push(@cur_ColNs, $cur_ID2ColN{$_}); 
+					} else {
+						push(@cur_ColNs, 'NA'); 
+					}
+				}
+				&tsmsg("[Msg] Copying raw file\n"); 
+				my $base0_fh = &openFH("$wrk_dir/base0", '>'); 
+				print {$base0_fh} "$first_line\n"; 
+				while (<$fh>) {
+					print {$base0_fh} $_; 
+				}
+				close($base0_fh); 
+				&tsmsg("[Msg] Finish copying file\n"); 
 			}
-			print STDOUT join("\t", map { ( $_ eq 'NA' ) ? '' : $ta[$_] ; } @cur_ColNs)."\n"; 
+			for (my $i=0; $i<@cur_ColNs; $i++) {
+				my $pid = $glob{'pm'}->start and next; 
+				if ( $cur_ColNs[$i] eq 'NA' ) {
+					unless ( $has_empty ) {
+						my $iC = $#cur_ColNs+2; 
+						&exeCmd_1cmd("cut -f $iC $wrk_dir/base0 > $wrk_dir/empty"); 
+						$has_empty = 1; 
+					}
+					&exeCmd_1cmd("ln -s empty $wrk_dir/s$i"); 
+				} else {
+					my $iC = $cur_ColNs[$i]+1; 
+					&exeCmd_1cmd("cut -f $iC $wrk_dir/base0 > $wrk_dir/s$i"); 
+				}
+				$glob{'pm'}->finish; 
+			}
+			$glob{'pm'}->wait_all_children; 
+			my $cmdLn = join(" ", 'paste', map { "$wrk_dir/s$_" } (0 .. $#cur_ColNs)); 
+			open O, '-|', "$cmdLn" or &stopErr("[Err] Failed to exe paste [$cmdLn]\n"); 
+			while (<O>) {
+				print STDOUT $_; 
+			}
+			close O; 
 		}
-		while (<$fh>) {
-			chomp; 
-			my @ta = &splitL($symbol, $_); 
-			print STDOUT join("\t", map { ( $_ eq 'NA' ) ? '' : $ta[$_] ; } @cur_ColNs)."\n"; 
+		&fileSunhh::_rmtree($wrk_dir); 
+	} else {
+		for my $fh ( @InFp ) {
+			my @cur_ColNs = @col_also; 
+			{
+				my $first_line = <$fh>; 
+				my %cur_ID2ColN; 
+				chomp($first_line); 
+				my @ta = &splitL($symbol, $first_line); 
+				for (my $i=0; $i<@ta; $i++) {
+					defined $needColID{$ta[$i]} and $cur_ID2ColN{$ta[$i]} = $i; 
+				}
+				for (sort { $needColID{$a} <=> $needColID{$b} } keys %needColID) {
+					if ( defined $cur_ID2ColN{$_} ) {
+						push(@cur_ColNs, $cur_ID2ColN{$_}); 
+					} else {
+						push(@cur_ColNs, 'NA'); 
+					}
+				}
+				print STDOUT join("\t", map { ( $_ eq 'NA' ) ? '' : $ta[$_] ; } @cur_ColNs)."\n"; 
+			}
+			while (<$fh>) {
+				chomp; 
+				my @ta = &splitL($symbol, $_); 
+				print STDOUT join("\t", map { ( $_ eq 'NA' ) ? '' : $ta[$_] ; } @cur_ColNs)."\n"; 
+			}
+			close ($fh); 
 		}
-		close ($fh); 
 	}
 	
 }# sub colByTbl() 
