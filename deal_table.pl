@@ -114,7 +114,14 @@ command:perl $0 <STDIN|parameters>
 
   '-kSrch_idx:s','-kSrch_idxCol:s','-kSrch_srcCol:s','-kSrch_drop!', '-kSrch_line!', # Similar to linux command join, without joining and with more index columns. Combined from uniqComb.pl 
 
-  '-chID_RefLis:s', '-chID_Row!', '-chID_OldColN:i', '-chID_NewColN:i', '-chID_skipH:i', '-chID_RowColN:i', # Change Column/Row names according to reference.
+  # Change Column/Row names according to reference. Need -chID_RefLis . 
+  -chID_RefLis      [filename] With OldCol and NewCol for name conversion; 
+    -chID_OldColN   [ColN] Column number of OldCol in RefLis
+    -chID_NewColN   [ColN] Column number of NewCol in RefLis
+  -chID_Row         [Boolean]  Together with -chID_RowColN for replacing IDs in specified column_N of each row. 
+    -chID_skipH     [Number]  If >= 1, the heading Number of lines will not be changed. 
+    -chID_RowColN   [Number]  The column_N that needs to be changed. 
+  
 
   '-spec_loci_1from2!', '-spec_loci_f1:s', '-spec_loci_f2:s' , # Find region in -spec_loci_f1 that is absent in -spec_loci_f2. 
                   # Format of '-spec_loci_f1/2' : ID \\t Start \\t End \\n
