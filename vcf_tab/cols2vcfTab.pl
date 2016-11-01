@@ -13,7 +13,9 @@ while (<>) {
 		next; 
 	}
 	for my $tb (@ta[3..$#ta]) { 
-		if      ( $tb =~ s!^([ATGCN*])$!$1/$1! ) {
+		if      ( $tb =~ s!^([ATGC*])$!$1/$1! ) {
+			; 
+		} elsif ( $tb =~ s!^[nN]$!./.!i ) {
 			; 
 		} elsif ( $tb =~ s!^([ATGC*])([ATGC*])$!$1/$2! ) {
 			; 
