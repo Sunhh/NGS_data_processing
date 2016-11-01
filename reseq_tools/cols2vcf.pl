@@ -59,8 +59,9 @@ while (<>) {
 		next; 
 	}
 
-	my $chr = $ta[0]; 
-	$chr =~ s!^WM97_Chr0*!!i; 
+	my $chr_ori = $ta[0]; 
+	my $chr = $chr_ori; 
+	$chr =~ s!^WM97(?i:v\d*)?_Chr0*!!i; 
 	$chr eq '' and $chr = 20; 
 	$chr =~ m/^\d+$/ or &stopErr("[Err] chr=$chr not a number\n"); 
 
@@ -99,7 +100,7 @@ while (<>) {
 		}
 	}
 
-	print STDOUT join( "\t", $chr, $posi, "s${chr}_${posi}", $allele_base[0], join(',', @allele_base[1 .. $#allele_base]), qw/. PASS . GT/, @allele_str)."\n"; 
+	print STDOUT join( "\t", $chr_ori, $posi, "s${chr}_${posi}", $allele_base[0], join(',', @allele_base[1 .. $#allele_base]), qw/. PASS . GT/, @allele_str)."\n"; 
 
 }
 
