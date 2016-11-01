@@ -22,7 +22,7 @@ while (<>) {
 		} elsif ( $tb =~ s!^([ATGC])([ATGC])\+([ATGC]+)$!$1/$2$3! ) {
 			; 
 		} elsif ( $tb =~ m!^\+!) { 
-			$tb = "N/N"; 
+			$tb = "./."; 
 		} else { 
 			die "$tb\n"; 
 		}
