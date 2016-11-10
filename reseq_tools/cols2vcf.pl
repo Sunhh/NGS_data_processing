@@ -61,7 +61,7 @@ while (<>) {
 
 	my $chr_ori = $ta[0]; 
 	my $chr = $chr_ori; 
-	$chr =~ s!^WM97(?i:v\d*)?_Chr0*!!i; 
+	$chr =~ s!^(WM97(?i:v\d*)?_)?Chr0*!!i; 
 	$chr eq '' and $chr = 20; 
 	$chr =~ m/^\d+$/ or &stopErr("[Err] chr=$chr not a number\n"); 
 
