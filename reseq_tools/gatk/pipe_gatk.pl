@@ -51,6 +51,7 @@ GetOptions(\%opts,
 	"do_step9!",      # Generate commands for step 9 if given. 
 	"do_step10!",     # Generate commands for step 10 if given. 
 	"do_step11!",     # Generate commands for step 11 if given. 
+	  "step11_sampleN:i", # If sampleN < 10, I won't use 'InbreedingCoeff'. 
 	
 	"conf_file:s",    # Required. This file tells the path information of softwares. 
 ); 
@@ -152,6 +153,8 @@ sub mk_cmd_for_step11 {
 	$param{'in_rawVCF'}       //= "$opts{'prj_ID'}_rawV.vcf"; 
 	$param{'in_snpFiltVCF'}   //= "$opts{'prj_ID'}_filt00V_snps.vcf"; 
 	$param{'in_indelFiltVCF'} //= "$opts{'prj_ID'}_filt00V_indels.vcf"; 
+	$param{'step11_sampleN'}  //= $opts{'step11_sampleN'}; 
+	$param{'step11_sampleN'}  //= 'NA'; # InbreedingCoeff
 	my $cmd; 
 	# For snps 
 	$cmd = "$cfg{'exe_java'} -Xmx4G -jar $cfg{'jar_gatk'} -T VariantRecalibrator   -R $cfg{'ref_fasta'}   -input $param{'in_rawVCF'}   -recalFile $opts{'prj_ID'}_snps.recal   -tranchesFile $opts{'prj_ID'}_snps.tranches   -nt 4   -resource:$opts{'prj_ID'}_hd_snp,known=false,training=true,truth=true,prior=10.0 $param{'in_snpFiltVCF'} "; 
@@ -162,7 +165,7 @@ sub mk_cmd_for_step11 {
 	$cmd .= "  -an FS "; 
 	$cmd .= "  -an SOR "; 
 	$opts{'forGBS'} or $cmd .= "  -an DP "; 
-	$cmd .= "  -an InbreedingCoeff "; 
+	($param{'step11_sampleN'} eq 'NA' or $param{'step11_sampleN'} >= 10) and $cmd .= "  -an InbreedingCoeff "; 
 	$cmd .= "  -mode SNP "; 
 	$cmd .= "  -tranche 100.0 -tranche 99.9 -tranche 99.0 -tranche 90.0 "; 
 	$cmd .= "  -rscriptFile $opts{'prj_ID'}_SNP_plots.R "; 
@@ -183,7 +186,7 @@ sub mk_cmd_for_step11 {
 	$cmd .= "  -an SOR "; 
 	$cmd .= "  -an MQRankSum "; 
 	$cmd .= "  -an ReadPosRankSum "; 
-	$cmd .= "  -an InbreedingCoeff "; 
+	($param{'step11_sampleN'} eq 'NA' or $param{'step11_sampleN'} >= 10) and $cmd .= "  -an InbreedingCoeff "; 
 	$cmd .= "  -mode INDEL "; 
 	$cmd .= "  -tranche 100.0 -tranche 99.9 -tranche 99.0 -tranche 90.0 "; 
 	$cmd .= "  --maxGaussians 4 "; 
@@ -256,6 +259,7 @@ sub mk_cmd_for_step7 {
 	my @fq_infor = @{ &load_prefList($opts{'in_pref_list'}) }; # 
 	# print STDOUT "set -o pipefail\n\n"; 
 	my $no_in_batch = 200; 
+	defined $cfg{'No_combineGVCF'} and $cfg{'No_combineGVCF'} > 0 and $no_in_batch = $cfg{'No_combineGVCF'}; 
 	my $max_j; 
 	for (my $j=0; $j*$no_in_batch < @fq_infor; $j++) {
 		my $cmd = "$cfg{'exe_java'} -Xmx8G -jar $cfg{'jar_gatk'} -T CombineGVCFs   -R $cfg{'ref_fasta'}   -o $opts{'prj_ID'}_jn${j}.g.vcf "; 
@@ -263,7 +267,7 @@ sub mk_cmd_for_step7 {
 			my %th1 = %{$fq_infor[$i+$j*$no_in_batch]}; 
 			$cmd .= "  -V $th1{'pref'}.g.vcf "; 
 		}
-		$cmd .= "1>s7.std.$opts{'prj_ID'}_jn${j} 2>s7.err.$opts{'prj_ID'}_jn${j}\n"; 
+		$cmd .= "1>s7.std.$opts{'prj_ID'}_jn${j} 2>s7.err.$opts{'prj_ID'}_jn${j}"; 
 		$only_cnt == 0 and print STDOUT "$cmd\n"; 
 		$max_j //= $j; 
 		$max_j < $j and $max_j = $j; 
@@ -292,11 +296,11 @@ sub mk_cmd_for_step5c {
 		my %th1 = %$h1; 
 		my $cmd = "$cfg{'exe_java'} -Xmx10G -jar $cfg{'jar_gatk'} -T BaseRecalibrator   -R $cfg{'ref_fasta'}   -I $th1{'pref'}_dedup_pipe2.bam $cfg{'known_dbsnp'} $cfg{'para_bqsr'} -o $th1{'pref'}_recal_data.table > s5c.$th1{'pref'}.std 2> s5c.$th1{'pref'}.err"; 
 		print STDOUT "$cmd\n"; 
-		my $cmd = "### To run separately: $cfg{'exe_java'} -Xmx10G -jar $cfg{'jar_gatk'} -T BaseRecalibrator   -R $cfg{'ref_fasta'}   -I $th1{'pref'}_dedup_pipe2.bam $cfg{'known_dbsnp'} $cfg{'para_bqsr'} -BQSR $th1{'pref'}_recal_data.table   -o $th1{'pref'}.post_recal_data.table 1>s5c.$th1{'pref'}.std.s2a 2> s5c.$th1{'pref'}.err.s2a"; 
+		$cmd = "### To run separately: $cfg{'exe_java'} -Xmx10G -jar $cfg{'jar_gatk'} -T BaseRecalibrator   -R $cfg{'ref_fasta'}   -I $th1{'pref'}_dedup_pipe2.bam $cfg{'known_dbsnp'} $cfg{'para_bqsr'} -BQSR $th1{'pref'}_recal_data.table   -o $th1{'pref'}.post_recal_data.table 1>s5c.$th1{'pref'}.std.s2a 2> s5c.$th1{'pref'}.err.s2a"; 
 		print STDOUT "$cmd\n"; 
-		my $cmd = "### To run separately: $cfg{'exe_java'} -Xmx10G -jar $cfg{'jar_gatk'} -T AnalyzeCovariates   -R $cfg{'ref_fasta'}   -before $th1{'pref'}_recal_data.table -after $th1{'pref'}.post_recal_data.table -plots $th1{'pref'}.recal_plots.pdf 1> s5c.$th1{'pref'}.std.s2b 2> s5c.$th1{'pref'}.err.s2b"; 
+		$cmd = "### To run separately: $cfg{'exe_java'} -Xmx10G -jar $cfg{'jar_gatk'} -T AnalyzeCovariates   -R $cfg{'ref_fasta'}   -before $th1{'pref'}_recal_data.table -after $th1{'pref'}.post_recal_data.table -plots $th1{'pref'}.recal_plots.pdf 1> s5c.$th1{'pref'}.std.s2b 2> s5c.$th1{'pref'}.err.s2b"; 
 		print STDOUT "$cmd\n"; 
-		my $cmd = "$cfg{'exe_java'} -Xmx10G -jar $cfg{'jar_gatk'} -T PrintReads   -R $cfg{'ref_fasta'}   -I $th1{'pref'}_dedup_pipe2.bam   -BQSR $th1{'pref'}_recal_data.table   -o $th1{'pref'}.recal_reads.bam 1> s5c.$th1{'pref'}.std.s3 2> s5c.$th1{'pref'}.err.s3"; 
+		$cmd = "$cfg{'exe_java'} -Xmx10G -jar $cfg{'jar_gatk'} -T PrintReads   -R $cfg{'ref_fasta'}   -I $th1{'pref'}_dedup_pipe2.bam   -BQSR $th1{'pref'}_recal_data.table   -o $th1{'pref'}.recal_reads.bam 1> s5c.$th1{'pref'}.std.s3 2> s5c.$th1{'pref'}.err.s3"; 
 		print STDOUT "$cmd\n"; 
 		print STDOUT "\n"; 
 	}
@@ -313,7 +317,13 @@ sub mk_cmd_for_step5b {
 		my %th1 = %$h1; 
 		push(@{$sm_to_bam{$th1{'SM'}}}, "$th1{'pref'}_dedup_pipe2.bam"); 
 	}
-	for my $smID (sort keys %sm_to_bam) {
+	my %used; 
+	for my $h1 (@fq_infor) {
+		my %th1 = %$h1; 
+		my $smID = $th1{'SM'}; 
+		defined $used{$smID} and next; 
+		$used{$smID} = 1; 
+		
 		my @bams = @{$sm_to_bam{$smID}}; 
 		@bams == 0 and &stopErr("[Err] Failed to find bam files for [$smID]\n"); 
 		my $cmd = "$cfg{'exe_java'} -jar $cfg{'jar_picard'} MergeSamFiles   OUTPUT=${smID}_merged_dedup_pipe2.bam   SORT_ORDER=coordinate   ASSUME_SORTED=true "; 
@@ -321,7 +331,10 @@ sub mk_cmd_for_step5b {
 			$cmd .= "  INPUT=$tf COMMENT=Add_$tf "; 
 		}
 		print STDOUT "$cmd 1>s5b.std.${smID}.s1 2>s5b.err.${smID}.s1\n"; 
-		&fileSunhh::write2file($opts{'step5b_o_pref_list'}, join("\t", "${smID}", 'NA', 'NA', "${smID}_merged", 'NA', 'NA')."\n", '>>'); 
+		my $fq1_fn = 'fq1'; 
+		my $fq2_fn = 'fq2'; 
+		( defined $th1{'fq2'} and $th1{'fq2'} ne '' ) or $fq2_fn = 'NA'; 
+		&fileSunhh::write2file($opts{'step5b_o_pref_list'}, join("\t", "${smID}", 'NA', 'NA', "${smID}_merged", $fq1_fn, $fq2_fn)."\n", '>>'); 
 		$cmd = "$cfg{'exe_java'} -jar $cfg{'jar_picard'} BuildBamIndex   I=${smID}_merged_dedup_pipe2.bam 1>s5b.std.${smID}.s2 2>s5b.err.${smID}.s2"; 
 		print STDOUT "$cmd\n"; 
 	}
