@@ -470,6 +470,8 @@ sub load_prefList {
 		my %th; 
 		$opts{'singleFq'} and $fq2 = ''; 
 		$fq2 //= ''; 
+		$fq1 =~ m/^na$/i and do { &tsmsg("[Wrn] Skip bad line without fq1 [$_]\n"); next; }; 
+		$fq2 =~ m/^na$/i and $fq2 = ''; 
 		$th{'SM'} = $sm; 
 		$th{'RG'} = $rg; 
 		$th{'LB'} = $lb; 
