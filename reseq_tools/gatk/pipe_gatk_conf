@@ -23,6 +23,7 @@ para_reSeqPrintSample 2 2 0.3
 #exe_reSeqPrintSample  __dirMao__/reSeqPrintSample.indel.fast.strAssign.moreHeter
 #exe_rmRedunSam2       __dirMao__/rmRedunSam2
 #exe_rmRedunSam3       __dirMao__/rmRedunSam3
+No_combineGVCF         50
 
 exe_bcftools           bcftools
 grp_sbSampleN          40
