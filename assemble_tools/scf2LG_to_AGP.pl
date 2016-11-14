@@ -25,8 +25,11 @@ HH
 my %str2char; 
 %str2char = qw(
 F    +
+f    +
 R    -
+r    -
 U    ?
+u    ?
 ); 
 
 my @infor_scf2LG; 
