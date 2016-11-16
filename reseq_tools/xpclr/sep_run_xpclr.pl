@@ -28,9 +28,15 @@ mkdir($tmp_dir) or &stopErr("[Err] Failed to create dir [$tmp_dir]\n");
 # Look for the effective start P
 $glob{'ladder'} = [200 , 2000, 20000]; 
 for my $n (@{$glob{'ladder'}}) {
-	&fileSunhh::write2file( "${tmp_dir}/test_g1.geno", join("\n", @geno_1[0 .. ($n-1)])."\n", '>' ); 
-	&fileSunhh::write2file( "${tmp_dir}/test_g2.geno", join("\n", @geno_2[0 .. ($n-1)])."\n", '>' ); 
-	&fileSunhh::write2file( "${tmp_dir}/test.snp", join("\n", map { $_->[1] } @snp[0 .. ($n-1)])."\n", '>' ); 
+	my $tn = $n; 
+	$tn > $#snp and $tn = $#snp; 
+	if ( $tn == -1 ) {
+		# There is no input at all. 
+		exit; 
+	}
+	&fileSunhh::write2file( "${tmp_dir}/test_g1.geno", join("\n", @geno_1[0 .. ($tn-1)])."\n", '>' ); 
+	&fileSunhh::write2file( "${tmp_dir}/test_g2.geno", join("\n", @geno_2[0 .. ($tn-1)])."\n", '>' ); 
+	&fileSunhh::write2file( "${tmp_dir}/test.snp", join("\n", map { $_->[1] } @snp[0 .. ($tn-1)])."\n", '>' ); 
 	&exeCmd_1cmd("XPCLR -xpclr   ${tmp_dir}/test_g1.geno ${tmp_dir}/test_g2.geno ${tmp_dir}/test.snp ${tmp_dir}/test.out   $xpclr_para"); 
 	open F,'<',"${tmp_dir}/test.out.xpclr.txt" or die ;
 	while (<F>) {

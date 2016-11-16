@@ -27,14 +27,17 @@ if ( add_mainTxt ) {
 
 plot_jnChr <- function ( jn=jn , chrlen=chrlen , cv='Avg', cols=NULL, jn_02=NULL, main_txt=c('', ''), ... ) {
 	if ( is.null(cols) ) { cols <- rainbow(length(chrlen$chrID)) }
-	y_max <- max( jn[[cv]] )
+	k1 <- !is.na( jn[[cv]] )
+	y_max <- max( jn[[cv]][k1] )
 	y_min <- 0
-	x_max <- max( jn$WindE )
+	x_max <- max( jn$WindE[k1] )
 	# x_min <- min( jn$WindS )
 	x_min <- 0
+	k2 <- NULL 
 	if ( !is.null(jn_02) ) {
-		y_max <- max( jn[[cv]] , jn_02[[cv]] )
-		x_max <- max( jn$WindE , jn_02$WindE )
+		k2 <- !is.na( jn_02[[cv]] )
+		y_max <- max( jn[[cv]][k1] , jn_02[[cv]][k2] )
+		x_max <- max( jn$WindE[k1] , jn_02$WindE[k2] )
 		# x_min <- min( jn$WindS , jn_02$WindS )
 		par( mfrow=c(2,1) )
 	}
@@ -43,8 +46,8 @@ plot_jnChr <- function ( jn=jn , chrlen=chrlen , cv='Avg', cols=NULL, jn_02=NULL
 	axis( side=1, at = rowMeans( chrlen[,c(3,4)]) , labels = chrlen$chrID , tick = FALSE )
 	axis( side=2 )
 	for (i in 1:length(chrlen$chrID)) {
-		kk <- jn$WindS >= chrlen$chrCumS[i] & jn$WindE <= chrlen$chrCumE[i]
-		points( jn$WindS[kk] , jn[[cv]][kk] , pch=20, cex=0.3, col=cols[i], ... )
+		kk <- jn$WindS[k1] >= chrlen$chrCumS[i] & jn$WindE[k1] <= chrlen$chrCumE[i]
+		points( jn$WindS[k1][kk] , jn[[cv]][k1][kk] , pch=1, cex=0.5, col=cols[i], ... )
 		# points( jn$WindS[kk] , jn[[cv]][kk] , pch='.',           col=cols[i] )
 	}
 	if ( !is.null(jn_02) ) {
@@ -53,8 +56,8 @@ plot_jnChr <- function ( jn=jn , chrlen=chrlen , cv='Avg', cols=NULL, jn_02=NULL
 		axis( side=1, at = rowMeans( chrlen[,c(3,4)]) , labels = chrlen$chrID , tick = FALSE )
 		axis( side=2 )
 		for (i in 1:length(chrlen$chrID)) {
-			kk <- jn_02$WindS >= chrlen$chrCumS[i] & jn_02$WindE <= chrlen$chrCumE[i]
-			points( jn_02$WindS[kk] , jn_02[[cv]][kk] , pch=20, cex=0.3, col=cols[i], ... )
+			kk <- jn_02$WindS[k2] >= chrlen$chrCumS[i] & jn_02$WindE[k2] <= chrlen$chrCumE[i]
+			points( jn_02$WindS[k2][kk] , jn_02[[cv]][k2][kk] , pch=2, cex=0.5, col=cols[i], ... )
 			# points( jn_02$WindS[kk] , jn_02[[cv]][kk] , pch='.',           col=cols[i] )
 		}
 	}

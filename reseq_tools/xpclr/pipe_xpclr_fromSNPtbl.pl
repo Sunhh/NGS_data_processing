@@ -10,6 +10,7 @@ my %opts;
 GetOptions(\%opts, 
 	"help!", 
 	"in_snpTbl:s", # Acc131_mask.snp_addGmP 
+	  "lis_chrID2num:s", # chrID \\t number 
 	"in_wind:s",   # WM97_w10ks10k.wind 
 	"in_annot:s",  # WM97_v6.annot.definition.annot
 	"set_para:s@",  # 'med01_qtCut=0.03;med01_grpLen=5;med01_grpGood=3;med01_grpExt=0;'
@@ -79,6 +80,11 @@ my $help_txt = <<HH;
 # -in_annot        [filename] Similar to file 'WM97_v6.annot.definition.annot'
 #                    Format : chrID       \\t start  \\t end    \\t strand \\t ....
 #                             WM97_Chr00  \\t 258813 \\t 259526 \\t +      \\t Cla000003 \\t C14402000:7:720:+ \\t Mitochondrial transcription termination factor
+#
+# -lis_chrID2num   [filename] 
+#                    Format : chrID       \\t chrNumber
+#                             PG1         \\t 1
+#                             scf_01      \\t 2
 # -set_para        [string] Default is as following: 
 # ==========================================================
 $opts{'set_para_help'}
@@ -105,6 +111,20 @@ mkdir($wrk_dir) or &stopErr("[Err] Failed to create directory [$wrk_dir]\n");
 my $fn_snp_wiGmP = $opts{'in_snpTbl'}; 
 my $fn_wind      = $opts{'in_wind'}; 
 my $fn_annot     = $opts{'in_annot'}; 
+my $fn_chrID2num = $opts{'lis_chrID2num'}; 
+$fn_chrID2num //= ''; 
+if ( defined $fn_chrID2num and $fn_chrID2num ne '' ) {
+	my $fh = &openFH( $fn_chrID2num, '<' ); 
+	while (&wantLineC($fh)) {
+		my @ta = &splitL("\t", $_); 
+		( defined $ta[0] and defined $ta[1] ) or &tsmsg("[Wrn] Skip chrID2num line: $_\n"); 
+		defined $glob{'chr_id2num'}{$ta[0]} and &stopErr("[Err] Repeat chrID [$ta[0]]\n"); 
+		defined $glob{'chr_num2id'}{$ta[1]} and &stopErr("[Err] Repeat number [$ta[1]]\n"); 
+		$glob{'chr_id2num'}{$ta[0]} = $ta[1]; 
+		$glob{'chr_num2id'}{$ta[1]} = $ta[0]; 
+	}
+	close ($fh); 
+}
 
 my %lis = %{ &load_comp_list( $fn_list ) }; 
 # Here lis_A relates to genofile1 in XPCLR, which is used as object population. 
@@ -117,7 +137,7 @@ if ( $opts{'firstAsObjPop'} ) {
 }
 
 mkdir("$wrk_dir/input/"); 
-&exeCmd_1cmd("$glob{'prepare_xpclr_input_wiGmP.pl'} $wrk_dir/input/input $fn_snp_wiGmP $wrk_dir/lis_A $wrk_dir/lis_B") and &stopErr("[Err] here.\n"); 
+&exeCmd_1cmd("$glob{'prepare_xpclr_input_wiGmP.pl'} $wrk_dir/input/input $fn_snp_wiGmP $wrk_dir/lis_A $wrk_dir/lis_B $fn_chrID2num") and &stopErr("[Err] here.\n"); 
 $glob{'fh_o_wXPCLR'} = &openFH( "$wrk_dir/xpclr_$glob{'windTag'}" , '>' ); 
 opendir DD,"$wrk_dir/input/" or &stopErr("[Err] Failed to opendir [$wrk_dir/input/]\n"); 
 for my $d (readdir(DD)) {

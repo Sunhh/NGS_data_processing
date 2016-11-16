@@ -10,11 +10,26 @@ my $opref  = shift;
 my $fn_snp = shift; 
 my $fn_lis1 = shift; 
 my $fn_lis2 = shift;
+my $fn_chrID2num = shift; 
+$fn_chrID2num //= ''; 
+
 
 my %glob; 
 my $gmCn = 2; 
 
+
+if ( defined $fn_chrID2num and $fn_chrID2num ne '' ) {
+	my $fh = &openFH( $fn_chrID2num , '<' ); 
+	while (&wantLineC($fh)) {
+		my @ta = &splitL( "\t", $_ ); 
+		( defined $ta[0] and defined $ta[1] ) or next; 
+		$glob{'chr_id2num'}{$ta[0]} = $ta[1]; 
+	}
+	close($fh); 
+}
+
 my %fho; 
+my %fno; 
 
 my %indv_1 = &indv_list($fn_lis1); 
 my %indv_2 = &indv_list($fn_lis2); 
@@ -108,9 +123,19 @@ while (&wantLineC($fh_snp)) {
 	$geno{"$aa[1]$aa[0]"} = '1 0'; 
 	$geno{"N"}            = '9 9'; 
 
-	my $chrN = $ta[0]; 
-	$chrN =~ s!^(chr|WM97_Chr)!!i; 
-	$chrN =~ s!^0+!!; 
+	
+	my $chrID = $ta[0]; 
+	my $chrN ; 
+	if ( defined $glob{'chr_id2num'}{$chrID} ) {
+		$chrN = $glob{'chr_id2num'}{$chrID}; 
+	} else {
+		$chrN = &wm97Sunhh::chrID_to_number( $chrID , 'WM97_Chr'); 
+		$chrN =~ m!^\d+$! or &stopErr("[Err] Failed to convert chrID [$chrID] to number [$chrN]\n"); 
+		defined $glob{'chr_num2id'}{$chrN} and &stopErr("[Err] Repeat chrN [$chrN] for differnt chrID [$glob{'chr_num2id'}{$chrN} $chrID]\n"); 
+		$glob{'chr_id2num'}{$chrID} = $chrN; 
+		$glob{'chr_num2id'}{$chrN}  = $chrID; 
+	}
+
 	$chrN =~ m!^\d+$! or &stopErr("[Err] Bad chrID [$chrN] from [$ta[0]]\n"); 
 
 	my $gmP = $ta[$gmCn]; 
@@ -120,25 +145,41 @@ while (&wantLineC($fh_snp)) {
 	$prev{'gmID'} = $ta[0]; 
 	$prev{'gmP'}  = $gmP; 
 
-	unless ( defined $fho{$ta[0]} ) {
-		$fho{$ta[0]}{'geno1'} = &openFH( "${opref}.$ta[0]_g1.geno", '>' ); 
-		$fho{$ta[0]}{'geno2'} = &openFH( "${opref}.$ta[0]_g2.geno", '>' ); 
-		$fho{$ta[0]}{'SNP'}   = &openFH( "${opref}.$ta[0].snp",     '>' ); 
+	#unless ( defined $fho{$ta[0]} ) {
+	#	$fho{$ta[0]}{'geno1'} = &openFH( "${opref}.$ta[0]_g1.geno", '>' ); 
+	#	$fho{$ta[0]}{'geno2'} = &openFH( "${opref}.$ta[0]_g2.geno", '>' ); 
+	#	$fho{$ta[0]}{'SNP'}   = &openFH( "${opref}.$ta[0].snp",     '>' ); 
+	#}
+	#
+	#
+	#print {$fho{$ta[0]}{'geno1'}} join(' ', map { $geno{$_} } @ta_1)."\n"; 
+	#print {$fho{$ta[0]}{'geno2'}} join(' ', map { $geno{$_} } @ta_2)."\n"; 
+	#
+	#my $mrkID = "$ta[0]_$ta[1]"; 
+#	print {$fho{$ta[0]}{'SNP'}} join( "\t", $mrkID, $chrN, $phy2gm_P{$ta[0]}{$ta[1]}, $ta[1], $aa[0], $aa[1] )."\n"; 
+	#print {$fho{$ta[0]}{'SNP'}} join( "\t", $mrkID, $chrN, $gmP                     , $ta[1], $aa[0], $aa[1] )."\n"; 
+
+	unless ( defined $fno{$ta[0]} ) {
+		$fno{$ta[0]}{'geno1'} = "${opref}.$ta[0]_g1.geno"; 
+		$fno{$ta[0]}{'geno2'} = "${opref}.$ta[0]_g2.geno"; 
+		$fno{$ta[0]}{'SNP'}   = "${opref}.$ta[0].snp"; 
+		&fileSunhh::write2file( $fno{$ta[0]}{'geno1'}, '', '>' ); 
+		&fileSunhh::write2file( $fno{$ta[0]}{'geno2'}, '', '>' ); 
+		&fileSunhh::write2file( $fno{$ta[0]}{'SNP'}  , '', '>' ); 
 	}
 
-	print {$fho{$ta[0]}{'geno1'}} join(' ', map { $geno{$_} } @ta_1)."\n"; 
-	print {$fho{$ta[0]}{'geno2'}} join(' ', map { $geno{$_} } @ta_2)."\n"; 
+	&fileSunhh::write2file( $fno{$ta[0]}{'geno1'}, join(' ', map { $geno{$_} } @ta_1)."\n", '>>' ); 
+	&fileSunhh::write2file( $fno{$ta[0]}{'geno2'}, join(' ', map { $geno{$_} } @ta_2)."\n", '>>' ); 
 
 	my $mrkID = "$ta[0]_$ta[1]"; 
-#	print {$fho{$ta[0]}{'SNP'}} join( "\t", $mrkID, $chrN, $phy2gm_P{$ta[0]}{$ta[1]}, $ta[1], $aa[0], $aa[1] )."\n"; 
-	print {$fho{$ta[0]}{'SNP'}} join( "\t", $mrkID, $chrN, $gmP                     , $ta[1], $aa[0], $aa[1] )."\n"; 
+	&fileSunhh::write2file( $fno{$ta[0]}{'SNP'}, join( "\t", $mrkID, $chrN, $gmP                     , $ta[1], $aa[0], $aa[1] )."\n", '>>' ); 
 
 }
-for my $chrID ( keys %fho ) {
-	for my $k2 ( qw/geno1 geno2 SNP/ ) {
-		close( $fho{$chrID}{$k2} ); 
-	}
-}
+#for my $chrID ( keys %fho ) {
+#	for my $k2 ( qw/geno1 geno2 SNP/ ) {
+#		close( $fho{$chrID}{$k2} ); 
+#	}
+#}
 
 &tsmsg("[Rec] Done. $0\n"); 
 
