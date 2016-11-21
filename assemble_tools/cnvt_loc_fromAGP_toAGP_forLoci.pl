@@ -29,10 +29,17 @@ my %glob;
 
 &prepare_glob();  
 
-%{$glob{'old_c2s'}} = %{ &fileSunhh::load_agpFile( $glob{'fn_old_agp'} ) }; 
+if ( defined $glob{'fn_old_agp'} ) {
+	%{$glob{'old_c2s'}} = %{ &fileSunhh::load_agpFile( $glob{'fn_old_agp'} ) }; 
+	%{$glob{'old_s2c'}} = %{ &fileSunhh::reverse_agpHash($glob{'old_c2s'}) }; 
+} else {
+	%{$glob{'old_c2s'}} = (); 
+	%{$glob{'old_s2c'}} = (); 
+}
+
+
 %{$glob{'new_c2s'}} = %{ &fileSunhh::load_agpFile( $glob{'fn_new_agp'} ) }; 
 
-%{$glob{'old_s2c'}} = %{ &fileSunhh::reverse_agpHash($glob{'old_c2s'}) }; 
 
 my @aa_loci = &fileSunhh::load_tabFile( $glob{'fn_old_loc'} , 1 ); 
 
@@ -46,7 +53,12 @@ for my $a1 (@aa_loci) {
 	$old_scfStr eq '.' and $old_scfStr = '+'; 
 	for my $cN ( @{$glob{'colN_seqP'}} ) {
 		my ($old_scfID, $old_scfPos) = ( @{$a1}[ $glob{'colN_seqID'}[0], $cN ] ); 
-		my @new_scfInf = $ms_obj->transfer_position( 'from_ref2qry' => $glob{'old_s2c'}, 'to_qry2ref' => $glob{'new_c2s'}, 'fromLoc' => [$old_scfID, $old_scfPos, $old_scfStr] ); 
+		my @new_scfInf; 
+#		if ( defined $glob{'fn_old_agp'} ) {
+			@new_scfInf = $ms_obj->transfer_position( 'from_ref2qry' => $glob{'old_s2c'}, 'to_qry2ref' => $glob{'new_c2s'}, 'fromLoc' => [$old_scfID, $old_scfPos, $old_scfStr] ); 
+#		} else {
+#			@new_scfInf = ( $old_scfID, $old_scfPos, '+' ); 
+#		}
 		$new_scfID  //= $new_scfInf[0]; 
 		$new_scfStr //= $new_scfInf[2]; 
 		$new_scfID  eq $new_scfInf[0] or &stopErr("[Err] Different new_scfID  for [$old_scfID, $old_scfPos, $old_scfStr]\n"); 
@@ -118,10 +130,11 @@ HH
 
 	$glob{'fh_new_loc'} = \*STDOUT; 
 	defined $opts{'new_loc'} and $glob{'fh_new_loc'} = &openFH($opts{'new_loc'}, '>'); 
-	for my $fn (qw/old_agp new_agp old_loc/) {
+	for my $fn (qw/new_agp old_loc/) {
 		defined $opts{$fn} or do { &tsmsg("[Err]\n"); &tsmsg("[Err] -$fn needed.\n\n"); &LogInforSunhh::usage($glob{'help_txt'}); }; 
 		$glob{"fn_$fn"} = $opts{$fn}; 
 	}
+	defined $opts{'old_agp'} and $glob{'fn_old_agp'} = $opts{'old_agp'}; 
 	for my $tk (qw/colN_seqID colN_seqP colN_seqStr/) {
 		defined $opts{$tk} and $glob{$tk} = $opts{$tk}; 
 	}
