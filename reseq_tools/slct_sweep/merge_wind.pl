@@ -9,6 +9,7 @@ my %ord;
 while (<>) {
 	chomp; 
 	my @ta = split(/\t/, $_); 
+	$ta[1] eq 'chrS' and next; 
 	$ord{$ta[0]} //= $.; 
 	push(@{$raw_blks{$ta[0]}}, [$ta[1], $ta[2]]); 
 }
