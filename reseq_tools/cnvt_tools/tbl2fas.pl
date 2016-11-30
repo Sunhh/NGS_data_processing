@@ -44,6 +44,14 @@ while (<>) {
 	chomp; 
 	my @ta = split(/\t/, $_); 
 	for (my $i=$opts{'startColN'}; $i<@ta; $i++) {
+		if ( $ta[$i] =~ m!/! ) {
+			if ( $ta[$i] =~ s!^(\S+)/\1$!$1! ) {
+			} elsif ( $ta[$i] =~ s!^([ATGC])/([ATGC])$!$1$2! ) {
+			} else {
+				$ta[$i] = "N"; 
+			}
+		}
+		$ta[$i] eq '.' and $ta[$i] = "N"; 
 		if ( $ta[$i] eq '*' ) {
 			$ta[$i] = '-'; 
 		} else {

@@ -41,7 +41,7 @@ while (<$fh>) {
 	if ( $ta[1] =~ m/^pos$/i ) {
 		if ( $has_header == 0 ) {
 			$has_header = 1; 
-			print join("\t", "#CHROM", "POS", qw/ID REF ALT QUAL FILTER INFO FORMAT/, @ta[2..$#ta])."\n"; 
+			print join("\t", "#CHROM", "POS", qw/ID REF ALT QUAL FILTER INFO FORMAT/, @ta[3..$#ta])."\n"; 
 			next; 
 		} else {
 			&stopErr("[Err] repeat header.\n$_\n"); 
@@ -50,7 +50,7 @@ while (<$fh>) {
 	my $mrkID = "$ta[0]_$ta[1]"; 
 	my $refBase = uc( substr( $seq{$ta[0]}{'seq'}, $ta[1]-1, 1 ) ); 
 	my %alleles; 
-	for my $tb (@ta[2 .. $#ta]) {
+	for my $tb (@ta[3 .. $#ta]) {
 		my @idv_al = &SNP_tbl::tab_allele($tb); 
 		$idv_al[0][0] eq '.' and next; 
 		for my $tc (@idv_al) {
@@ -67,13 +67,13 @@ while (<$fh>) {
 		push( @arr_ALT, $sort_al[$i] ); 
 	}
 	my $txt_ALT = ( scalar(@arr_ALT) > 0 ) ? join(',', @arr_ALT) : '.' ; 
-	for my $tb ( @ta[2 .. $#ta] ) {
+	for my $tb ( @ta[3 .. $#ta] ) {
 		my @idv_al = &SNP_tbl::tab_allele($tb); 
 		$idv_al[0][0] eq '.' and do { $tb = './.'; next; }; 
 		$#idv_al == 0 and push(@idv_al, $idv_al[0]); 
 		$tb = join('/', sort { $a <=> $b ; } map { $geno2num{$_->[0]} } @idv_al ); 
 	}
-	print join("\t", $ta[0], $ta[1], '.', $refBase, $txt_ALT, '.', '.', '.', 'GT', @ta[2 .. $#ta])."\n"; 
+	print join("\t", $ta[0], $ta[1], '.', $refBase, $txt_ALT, '.', '.', '.', 'GT', @ta[3 .. $#ta])."\n"; 
 }
 close($fh); 
 
