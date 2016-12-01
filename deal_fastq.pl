@@ -42,6 +42,7 @@ perl $0 in.fastq
 
 -33to64       [Boolean] Transform phred33 to phred64 quality. 
 -64to33       [Boolean] Transform phred64 to phred33 quality. 
+-sol2phred    [Boolean] Transform solexa fastq qualities to phred33 qualities. 
 
 -rd_Num       [Boolean] Summary read number/length of fq files. 
 -rd_Num_fast  [Boolean] Read simple format of fastq faster. Need -rd_Num assigned. 
@@ -92,7 +93,7 @@ GetOptions(\%opts,
 	"sepR12_pref:s", 
 	"joinR12!", # In fact, this function can be performed by keep_len() subroutine with "-keep_len 0- -paired "
 	"showQscale!", 
-	"33to64!", "64to33!", 
+	"33to64!", "64to33!", "sol2phred!", 
 	"rd_Num!", "rd_Num_fast!", "rd_LenHist!", "rd_LenHist_pmin!", "rd_LenHist_range:s", "rd_LenHist_name:s", 
 	"frag:s", "frag_r!", "frag_c!", 
 	"search:s", "srch_strand:s", "srch_back:s", "srch_drop!", "srch_max!", 
@@ -148,6 +149,7 @@ my %good_str = qw(
 &showQscale() if ( $opts{showQscale} ); 
 &fq2fq( 64-33 ) if ( $opts{'33to64'} ); 
 &fq2fq( 33-64 ) if ( $opts{'64to33'} ); 
+&sol2phred_fq() if ( $opts{'sol2phred'} ); 
 &sepR12( $opts{sepR12_pref} ) if ( defined $opts{sepR12_pref} and $opts{sepR12_pref} ne '' ); 
 &joinR12() if ( $opts{joinR12} ); 
 &fq2Val() if ( $opts{fq2Val} ); 
@@ -767,6 +769,16 @@ sub fq2fq {
 		}
 	}#
 }#sub fq2fq() 
+
+# Convert sol_fmt.fq to phredQ_fmt.fq
+sub sol2phred_fq {
+	for my $fh ( @InFp ) {
+		while ( my $rdRec = &get_fq_record($fh) ) {
+			$rdRec->{'qual'} =~ tr!>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[ \\ ]^_`abcdefghijklmnopqrstuvwxyz \{ |}~!#####$%&'()*+,-./0123456789:;< \= >?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[ \\ ]^_!; 
+			print STDOUT "\@$rdRec->{'id'}$rdRec->{'seq'}+\n$rdRec->{'qual'}\n"; 
+		}
+	}
+}# sol2phred_fq() 
 
 
 #****************************************************************#
