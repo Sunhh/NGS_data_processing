@@ -14,7 +14,7 @@ my $geno_col = 2;
 sub usage {
 	print STDERR <<HH; 
 
-Only simple genotypes /^[ATGC*N]\\$|^[ATGC]\\+[ATGC]+\\$|^[ATGC*][ATGC*]\$/ kept.
+Only simple genotypes /^[ATGC*N]\$|^[ATGC]\\+[ATGC]+\$|^[ATGC*][ATGC*]\$/ kept.
 
 perl $0 merged.snp > merged.snp.woWeired
 
