@@ -148,4 +148,52 @@ sub usage {
 	exit(1); 
 }
 
+=head1 LogInforSunhh::change_procN( $pm, $nprocF, prev_maxP )
+
+$pm         comes from 'new Parallel::ForkManager($MAX_PROCESSES);'
+$nprocF     is file name to check, with the first line is an integer. 
+$prev_maxP  is previous processes number to use. 
+
+The maximum process number for Parallel::ForkManager is changed to $new_maxP_in_nprocF ; 
+
+Return      : ( $new_maxP_in_nprocF )
+
+Example of using 'Parallel::ForkManager' : 
+
+ use Parallel::ForkManager;
+ my $cpuN = 10;
+ my $nprocF = 'Nproc';
+
+ my $pm = new Parallel::ForkManager($cpuN);
+ for ( 1 .. 100 ) {
+
+ 	$cpuN = &change_procN( $pm, $nprocF, $cpuN );
+ 	my $pid = $pm->start and next;
+ 	#
+ 	# Do something that is not shared between processes' memory.
+ 	#
+ 	$pm->finish;
+ 
+ }
+ $pm->wait_all_children;
+
+
+=cut
+sub change_procN {
+	my ($pm, $nprocF, $prev_maxP) = @_; 
+	-e $nprocF or return $prev_maxP; 
+	open F,'<',"$nprocF" or &stopErr("[Err] Failed to open [$nprocF].\n"); 
+	my $new_maxP = <F>; 
+	chomp($new_maxP); 
+	$new_maxP = (split(/\s+/, $new_maxP))[0]; 
+	$new_maxP = int($new_maxP); 
+	close F; 
+	if ($new_maxP > 0 and $new_maxP != $prev_maxP) {
+		$pm->set_max_procs($new_maxP); 
+		&tsmsg("[Rec] Changing MAX_PROCESSES from $prev_maxP to $new_maxP\n"); 
+	}
+	return $new_maxP; 
+}# change_procN () 
+
+
 1; 
