@@ -41,8 +41,10 @@ sub _initialize {
 
 Required : \@units
 
-Function : A repeat function similar to rep() in R. 
-           First apply 'each', then apply 'times', and at least apply 'length'; 
+Function : 
+
+	A repeat function similar to rep() in R. 
+	First apply 'each', then apply 'times', and at least apply 'length'; 
 
 Return   : \@repeated_eles 
 
@@ -77,8 +79,10 @@ sub repArr {
 
 Required : Null 
 
-Function : Construct 'safeNumber' hash to store not used numbers in the same object. 
-            It seems that this number is not only unique in the same object, but also unique in all objects in the same module calling this mathSunhh.pm module. 
+Function :
+
+	Construct 'safeNumber' hash to store not used numbers in the same object. 
+	It seems that this number is not only unique in the same object, but also unique in all objects in the same module calling this mathSunhh.pm module. 
 
 Input    : Null 
 
@@ -131,12 +135,15 @@ sub newNumber {
 =head2 offspringArray( $rootID, $code_reference_of_function, 'unique'=>1 )
 
 Required : 
+
   $rootID
   $code_reference_of_function : sub { return [@arr_value_as_next_self_loop] }
 
-Function : Trace back all offsprings from root ID according to sub_routine_reference given. 
-           Be aware that if the offspring has the same ID of rootID, this function will terminate!!! 
-           This is used to avoid infinite cycles caused by relationship: rootID is a child of rootID. 
+Function : 
+
+  Trace back all offsprings from root ID according to sub_routine_reference given. 
+  Be aware that if the offspring has the same ID of rootID, this function will terminate!!! 
+  This is used to avoid infinite cycles caused by relationship: rootID is a child of rootID. 
 
 Input    : ( $rootID, sub { return @offspring; }, 'unique'=>1 )
 
@@ -190,6 +197,7 @@ Function: return a list of windows in hash reference according to given [window_
   If 'max_end_wind_num' > 0, maximum 'max_end_wind_num' number of window reaching the end position are kept. 
 
 Return  : \%back_wind; 
+
  'keys'  => values
  'info' => {'ttl_start/ttl_end/wind_size/wind_step/minRatio/windSloci' => values} 
    {'info'}{'windSloci'} = [ start_pos_0, start_pos_1, start_pos_2, ... ]
@@ -239,13 +247,16 @@ sub setup_windows {
 )
 
 Required: 
+
  'posi/position'
 
 Function: 
+
  Given a position, return an array reference recording all start_positions of windows that this position locates in. 
  'wind_hash' will mask 'ttl_*' and 'wind_size/wind_step'. 
 
 Return  : 
+
  \@back_si = [si_1, si_2, si_3, ...]
  Here "si" should be a key of %{$parm{'wind_hash'}{loci}}; 
 
@@ -344,18 +355,21 @@ sub ovl_region {
 )
 
 Required : 
+
  $sePair_list1 : [ [s11,e11], [s12,e12], ... ]
  $sePair_list2 : [ [s21,e21], [s22,e22], ... ]
 
 Return   : 
+
  Case 'compare'='same'   : 1/0 : 1 for yes_same, 0 for different. 
  Case 'compare'='ovl'    : ( $ovlLen_nonDup, $ovlCnt_mayDup, \@ovlLoc ) 
                          : @ovlLoc=([overlap_S1, overlap_E1], [overlap_S2, overlap_E2], 
  Case 'compare'='nonovl' : ( [@spec1], [@spec2] ) 
                          : @spec1=( [nonOvl_lis1_S1, nonOvl_lis1_E1], [nonOvl_lis1_S1, nonOvl_lis1_E1], ... )
-						 : @spec2=( [nonOvl_lis2_S1, nonOvl_lis2_E1], [nonOvl_lis2_S1, nonOvl_lis2_E1], ... )
+                         : @spec2=( [nonOvl_lis2_S1, nonOvl_lis2_E1], [nonOvl_lis2_S1, nonOvl_lis2_E1], ... )
 
 Function : 
+
  Case 'sort'='0'         : Use the input order in list1/list2; 
  Case 'sort'='single'    : Sort numbers from small to large one by one; 
  Case 'sort'='pair'      : Sort numbers from small to large as pairs, but no sorting within any pair. 
@@ -524,15 +538,19 @@ sub mergeLocBlk {
 }# mergeLocBlk() 
 
 =head1 _setHashFromArr(@keyVal_array)
+=cut
 
 =head2 _setHashFromArr(@keyVal_array)
 
 Required: @keyVal_array
 
-Function: @keyVal_array contain ( key1, val1, key2, val2, ... ) pairs. 
-          It will skip the latter duplicated keyN. 
+Function: 
+
+  @keyVal_array contain ( key1, val1, key2, val2, ... ) pairs. 
+  It will skip the latter duplicated keyN. 
 
 Return  : %back_hash
+
   In %back_hash : 
    {keyN} => valN
 
@@ -560,11 +578,11 @@ sub _setHashFromArr {
 =head2 switch_position('qry2ref'=>\%refPos, 'qryID'=>$queryID, 'qryPos'=>$queryPos, 'qryStr'=>'+/-')
 
 Input       : 
+
  %refPos   : {qryID} => sortedByQrySE [ [qryS_1, qryE_1, refID_1, refS_1, refE_1, refStr_1(+/-)], [qryS_2, qryE_2, refID_2, refS_2, refE_2, refStr_2], ... ]
  
-               qryS <= qryE && refS <= refE 
-
-			   qryS_1 <= qryS_2 ... 
+             Requires : qryS <= qryE && refS <= refE 
+                        qryS_1 <= qryS_2 ... 
 
 Function    : 
 
@@ -607,6 +625,7 @@ sub switch_position {
 =head2 transfer_position( 'from_ref2qry'=>\%agp_scf2ctg, 'to_qry2ref'=>\%agp_ctg2scf, 'fromLoc'=>[$from_scfID, $from_scfPos, $from_scfStrand] )
 
 Input       : 
+
   %agp_scf2ctg : Normally it is reversed output of &fileSunhh::load_agpFile(); 
   %agp_ctg2scf : It is directly output of &fileSunhh::load_agpFile();
   Only one-to-one relationship is allowed. 
@@ -679,6 +698,7 @@ Function : Get a series of color for heat map.
 Return : ( "rgb(R,G,B)" )
 
 Required : 
+
   $col = [ [r1,g1,b1], [r2,g2,b2], [r3,g3,b3], ... ]
   $min , $max : value range; 
   $val : current value. 
@@ -741,6 +761,7 @@ sub _parseCol {
 }# _parseCol() 
 
 =head1 _mean(@numbers)
+
 =cut
 sub _mean {
 	my $stat = Statistics::Descriptive::Full->new(); 
@@ -748,6 +769,7 @@ sub _mean {
 	return $stat->mean(); 
 }
 =head1 _sum(@numbers)
+
 =cut
 sub _sum {
 	my $stat = Statistics::Descriptive::Full->new(); 
@@ -755,6 +777,7 @@ sub _sum {
 	return $stat->sum(); 
 }
 =head1 _median(@numbers)
+
 =cut
 sub _median {
 	my $stat = Statistics::Descriptive::Full->new(); 
@@ -764,6 +787,8 @@ sub _median {
 
 
 =head1 min(@numbers)
+
+=cut
 
 =head2 min(@numbers)
 
@@ -786,9 +811,11 @@ sub min {
 
 =head1 max(@numbers)
 
+=cut
+
 =head2 max(@numbers)
 
-Function: This is not a method, but a sub-routine()
+Function: This is not a method, but a subroutine()
 
 =cut
 sub max {
@@ -811,15 +838,24 @@ Function: This is not a method, but a sub-routine().
 
 Description: For calculating insert sizes. 
 
-             Following Heng Li's bwa method (Estimating Insert Size Distribution). 
-             But the max/min distance of INS are only using 6 * sigma values. 
-             http://linux.die.net/man/1/bwa
-             BWA estimates the insert size distribution per 256*1024 read pairs. It first collects pairs of reads with both ends mapped with a single-end quality 20 or higher and then calculates median (Q2), lower and higher quartile (Q1 and Q3). It estimates the mean and the variance of the insert size distribution from pairs whose insert sizes are within interval [Q1-2(Q3-Q1), Q3+2(Q3-Q1)]. The maximum distance x for a pair considered to be properly paired (SAM flag 0x2) is calculated by solving equation Phi((x-mu)/sigma)=x/L*p0, where mu is the mean, sigma is the standard error of the insert size distribution, L is the length of the genome, p0 is prior of anomalous pair and Phi() is the standard cumulative distribution function. For mapping Illumina short-insert reads to the human genome, x is about 6-7 sigma away from the mean. Quartiles, mean, variance and x will be printed to the standard error output.
+  Following Heng Li's bwa method (Estimating Insert Size Distribution). 
+  But the max/min distance of INS are only using 6 * sigma values. 
+  http://linux.die.net/man/1/bwa
+    BWA estimates the insert size distribution per 256*1024 read pairs. 
+    It first collects pairs of reads with both ends mapped with a single-end quality 20 or higher and then calculates median (Q2), 
+    lower and higher quartile (Q1 and Q3). 
+    It estimates the mean and the variance of the insert size distribution from pairs whose insert sizes are within interval [Q1-2(Q3-Q1), Q3+2(Q3-Q1)]. 
+    The maximum distance x for a pair considered to be properly paired (SAM flag 0x2) is calculated by solving equation Phi((x-mu)/sigma)=x/L*p0, 
+    where mu is the mean, sigma is the standard error of the insert size distribution, L is the length of the genome, 
+    p0 is prior of anomalous pair and Phi() is the standard cumulative distribution function. 
+    For mapping Illumina short-insert reads to the human genome, x is about 6-7 sigma away from the mean. 
+    Quartiles, mean, variance and x will be printed to the standard error output.
 
 Input      : (\@ins_value_array)
 
 Output     : (\%hash_of_values) 
-             keys = qw(SUM COUNT MEAN MEDIAN Q1 Q3 interval_low interval_high interval_mean interval_median interval_var interval_stdev interval_cnt limit_low limit_high min max)
+
+  keys = qw(SUM COUNT MEAN MEDIAN Q1 Q3 interval_low interval_high interval_mean interval_median interval_var interval_stdev interval_cnt limit_low limit_high min max)
 
 =cut
 sub ins_calc {
@@ -899,9 +935,9 @@ sub permutations {
 
 =head1 combinations(\@list_of_ele, $n_in_class)
 
-This is not a method, but a sub-routine. 
+  This is not a method, but a sub-routine. 
 
-Given (\@list_of_ele, $n_in_class), return all combinations by array. Return ([@comb1_of_ele], [@comb2_of_ele], ...) 
+  Given (\@list_of_ele, $n_in_class), return all combinations by array. Return ([@comb1_of_ele], [@comb2_of_ele], ...) 
 
 =cut
 sub combinations {
@@ -998,25 +1034,29 @@ sub dvd_array {
 
 =head1 complete_pair_for_grouping ( \%relation_pairs )
 
-Input      : Format of %relation_pairs is 
-             {$element_1}{$element_2} = 1; 
-             {$element_3}{$element_4} = 1; 
-             {$element_4}{$element_3} = 1; 
-             {$element_5}{$element_6} = 1; 
-             {$element_1}{$element_6} = 1; 
-             {$element_6}{$element_1} = 1; 
-             ...... 
+Input      : 
 
-Output     : ( \%complete_relation_pairs )
-             {$element_1}{$element_2} = 1; 
-             {$element_2}{$element_1} = 1; 
-             {$element_3}{$element_4} = 1; 
-             {$element_4}{$element_3} = 1; 
-             {$element_5}{$element_6} = 1; 
-             {$element_5}{$element_5} = 1; 
-             {$element_1}{$element_6} = 1; 
-             {$element_6}{$element_1} = 1; 
-             ...... 
+ Format of %relation_pairs is 
+   {$element_1}{$element_2} = 1; 
+   {$element_3}{$element_4} = 1; 
+   {$element_4}{$element_3} = 1; 
+   {$element_5}{$element_6} = 1; 
+   {$element_1}{$element_6} = 1; 
+   {$element_6}{$element_1} = 1; 
+   ...... 
+
+Output     : 
+
+ ( \%complete_relation_pairs )
+   {$element_1}{$element_2} = 1; 
+   {$element_2}{$element_1} = 1; 
+   {$element_3}{$element_4} = 1; 
+   {$element_4}{$element_3} = 1; 
+   {$element_5}{$element_6} = 1; 
+   {$element_5}{$element_5} = 1; 
+   {$element_1}{$element_6} = 1; 
+   {$element_6}{$element_1} = 1; 
+   ...... 
 
 =cut
 sub complete_pair_for_grouping {
@@ -1041,22 +1081,27 @@ sub complete_pair_for_grouping {
 
 Required   : Do be aware that in %relation_pairs, each pair should have two formed key pairs, {k1}{k2} and {k2}{k1}
 
-Input      : Format of %relation_pairs is 
-             {$element_1}{$element_2} = 1; 
-             {$element_2}{$element_1} = 1; 
-             {$element_3}{$element_4} = 1; 
-             {$element_4}{$element_3} = 1; 
-             {$element_5}{$element_6} = 1; 
-             {$element_5}{$element_5} = 1; 
-             {$element_1}{$element_6} = 1; 
-             {$element_6}{$element_1} = 1; 
-             ...... 
+Input      : 
 
-Function   : Divide elements in %relation_pairs into groups. 
-             Each group contains related elements, and there is no related pairs between groups. 
-             This should be much faster than &divide_group(); 
+ Format of %relation_pairs is 
+   {$element_1}{$element_2} = 1; 
+   {$element_2}{$element_1} = 1; 
+   {$element_3}{$element_4} = 1; 
+   {$element_4}{$element_3} = 1; 
+   {$element_5}{$element_6} = 1; 
+   {$element_5}{$element_5} = 1; 
+   {$element_1}{$element_6} = 1; 
+   {$element_6}{$element_1} = 1; 
+   ...... 
+
+Function   : 
+
+ Divide elements in %relation_pairs into groups. 
+   Each group contains related elements, and there is no related pairs between groups. 
+   This should be much faster than &divide_group(); 
 
 Output     : (\@back_groups_array)
+ 
  @back_groups_array format is ( [group_1_ele_1, group1_ele_2, ...], [group_2_ele_1, group_2_ele_2, ...], ... ); 
 
 =cut
@@ -1073,18 +1118,23 @@ sub divide_group_fromHash {
 
 Required   : 
 
-Input      : Format of @elements_in_groups is 
-             ([ ele1, ele2, ... ], 
-             [ele3, ele4, ele5, ...], 
-             [ele1, ele3], 
-             [ele6, ele7, ele8], 
-             [ele11, ele10, ele9], 
-             ......)
+Input      : 
 
-Function   : Divide elements in @elements_in_groups into groups. 
-             Each group contains related elements, and there is no related pairs between groups. 
+ Format of @elements_in_groups is 
+   ([ ele1, ele2, ... ], 
+    [ele3, ele4, ele5, ...], 
+    [ele1, ele3], 
+    [ele6, ele7, ele8], 
+    [ele11, ele10, ele9], 
+    ......)
+
+Function   :
+
+ Divide elements in @elements_in_groups into groups. 
+ Each group contains related elements, and there is no related pairs between groups. 
 
 Output     : (\@back_groups_array)
+
  @back_groups_array format is ( [group_1_ele_1, group1_ele_2, ...], [group_2_ele_1, group_2_ele_2, ...], ... ); 
 
 =cut
@@ -1162,21 +1212,26 @@ sub divide_group_fromArray {
 
 Required   : Do be aware that in %relation_pairs, each pair should have two formed key pairs, {k1}{k2} and {k2}{k1}
 
-Input      : Format of %relation_pairs is 
-             {$element_1}{$element_2} = 1; 
-             {$element_2}{$element_1} = 1; 
-             {$element_3}{$element_4} = 1; 
-             {$element_4}{$element_3} = 1; 
-             {$element_5}{$element_6} = 1; 
-             {$element_5}{$element_5} = 1; 
-             {$element_1}{$element_6} = 1; 
-             {$element_6}{$element_1} = 1; 
-             ...... 
+Input      : 
 
-Function   : Divide elements in %relation_pairs into groups. 
-             Each group contains related elements, and there is no related pairs between groups. 
+ Format of %relation_pairs is 
+   {$element_1}{$element_2} = 1; 
+   {$element_2}{$element_1} = 1; 
+   {$element_3}{$element_4} = 1; 
+   {$element_4}{$element_3} = 1; 
+   {$element_5}{$element_6} = 1; 
+   {$element_5}{$element_5} = 1; 
+   {$element_1}{$element_6} = 1; 
+   {$element_6}{$element_1} = 1; 
+   ...... 
+
+Function   : 
+
+ Divide elements in %relation_pairs into groups. 
+ Each group contains related elements, and there is no related pairs between groups. 
 
 Output     : (\@back_groups_array)
+
  @back_groups_array format is ( [group_1_ele_1, group1_ele_2, ...], [group_2_ele_1, group_2_ele_2, ...], ... ); 
 
 =cut
@@ -1195,21 +1250,26 @@ sub divide_group {
 
 =head1 extract_group( \%relation_pairs, \%excluded_IDs, $in_seed_element ) 
 
-Input      : Format of %relation_pairs is 
-             {$element_1}{$element_2} = 1; 
-             {$element_3}{$element_4} = 1; 
-             {$element_5}{$element_6} = 1; 
-             {$element_1}{$element_6} = 1; 
-             ...... 
+Input      :
 
-             Format of %excluded_IDs is [IDs that should not be considered.]
-             {$element_x1} = 1; 
-             {$element_x2} = 1; 
-             ...... 
+ Format of %relation_pairs is 
+   {$element_1}{$element_2} = 1; 
+   {$element_3}{$element_4} = 1; 
+   {$element_5}{$element_6} = 1; 
+   {$element_1}{$element_6} = 1; 
+   ...... 
 
-Function   : Extract a group which contains all and only contains the elements related to $in_seed_element by some chaining. 
+ Format of %excluded_IDs is [IDs that should not be considered.]
+   {$element_x1} = 1; 
+   {$element_x2} = 1; 
+   ...... 
+
+Function   : 
+
+ Extract a group which contains all and only contains the elements related to $in_seed_element by some chaining. 
 
 Output     : (\%group_IDs, \%new_excluded_IDs)
+
  %group_IDs is in format {$in_seed_element} = 1, {$relate_ID_1} = 1, {$relate_ID_2} = 1, ...
  %new_excluded_IDs is in the same format of %exluded_IDs, and include all IDs in %excluded_IDs and IDs in %group_IDs; 
 
@@ -1233,21 +1293,26 @@ sub extract_group {
 
 =head1 extract_group_fromHash( \%relation_pairs, \%excluded_IDs, $in_seed_element ) 
 
-Input      : Format of %relation_pairs is 
-             {$element_1}{$element_2} = 1; 
-             {$element_3}{$element_4} = 1; 
-             {$element_5}{$element_6} = 1; 
-             {$element_1}{$element_6} = 1; 
-             ...... 
+Input      : 
 
-             Format of %excluded_IDs is [IDs that should not be considered.]
-             {$element_x1} = 1; 
-             {$element_x2} = 1; 
-             ...... 
+ Format of %relation_pairs is 
+   {$element_1}{$element_2} = 1; 
+   {$element_3}{$element_4} = 1; 
+   {$element_5}{$element_6} = 1; 
+   {$element_1}{$element_6} = 1; 
+   ...... 
 
-Function   : Extract a group which contains all and only contains the elements related to $in_seed_element by some chaining. 
+ Format of %excluded_IDs is [IDs that should not be considered.]
+   {$element_x1} = 1; 
+   {$element_x2} = 1; 
+   ...... 
+
+Function   : 
+
+ Extract a group which contains all and only contains the elements related to $in_seed_element by some chaining. 
 
 Output     : (\%group_IDs, \%new_excluded_IDs)
+
  %group_IDs is in format {$in_seed_element} = 1, {$relate_ID_1} = 1, {$relate_ID_2} = 1, ...
  %new_excluded_IDs is in the same format of %exluded_IDs, and include all IDs in %excluded_IDs and IDs in %group_IDs; 
 
@@ -1274,23 +1339,28 @@ sub extract_group_fromHash {
 
 =head1 extract_group_fromArray( \@elements_in_groups, \%excluded_IDs, $in_seed_element ) 
 
-Input      : Format of @elements_in_groups is 
-             ([ ele1, ele2, ... ], 
-             [ele3, ele4, ele5, ...], 
-             [ele1, ele3], 
-             [ele6, ele7, ele8], 
-             [ele11, ele10, ele9], 
-             ......
-             )
+Input      : 
 
-             Format of %excluded_IDs is [IDs that should not be considered.]
-             {$element_x1} = 1; 
-             {$element_x2} = 1; 
-             ...... 
+  Format of @elements_in_groups is 
+    ([ ele1, ele2, ... ], 
+     [ele3, ele4, ele5, ...], 
+     [ele1, ele3], 
+     [ele6, ele7, ele8], 
+     [ele11, ele10, ele9], 
+     ......
+    )
 
-Function   : Extract a group which contains all and only contains the elements related to $in_seed_element by some chaining. 
+  Format of %excluded_IDs is [IDs that should not be considered.]
+    {$element_x1} = 1; 
+    {$element_x2} = 1; 
+    ......
+
+Function   :
+
+ Extract a group which contains all and only contains the elements related to $in_seed_element by some chaining. 
 
 Output     : (\%group_IDs, \%new_excluded_IDs)
+
  %group_IDs is in format {$in_seed_element} = 1, {$relate_ID_1} = 1, {$relate_ID_2} = 1, ...
  %new_excluded_IDs is in the same format of %exluded_IDs, and include all IDs in %excluded_IDs and IDs in %group_IDs; 
 
@@ -1334,15 +1404,18 @@ sub extract_group_fromArray {
 =head1 sep_loc2_by_loc1_multiLoc2( \@loci_1, \@loci_2, [@colN_from_loci_1] )
 
 Required   : 
+
  \@loci_1 should be sorted by each start position! 
  \@loci_1 and \@loci_2 in the same format: [ [sec_1_S, sec_1_E], [sec_2_S, sec_2_E], ...  ]
 
 Function   : 
+
  Separate @loci_2 regions by overlapping @loci_1 or not. 
  And return regions contained in @loci_2; 
  \@loci_2 will be merged into non-overlapping segments. 
 
 Return     : (\@not_overlappedSE, \@overlappedSE)
+
  Format of @not_overlappedSE
 
 =cut
@@ -1364,6 +1437,7 @@ sub sep_loc2_by_loc1_multiLoc2 {
 =head1 sep_loc2_by_loc1_singleLoc2( \@loci_1, [$s2, $e2], [@colN_from_loci_1] ) 
 
 Input      : 
+
  \@loci_1 should be sorted by each start position! 
  \@loci_1 in the format: [ [sec_1_S, sec_1_E], [sec_2_S, sec_2_E], ...  ]
  [@colN_from_loci_1] : Default [], means no columns to add. 
@@ -1372,10 +1446,12 @@ Input      :
 Required   : \@loci_1 , [$s2, $e2]
 
 Function   : 
+
  Separate [$s2, $e2] region by overlapping @loci_1 or not. 
  And return regions contained in [$s2, $e2]
 
 Return     : (\@not_overlappedSE, \@overlappedSE, $idx_start)
+
  Format of @not_overlappedSE : ( [ $s_1, $e_1 ], [ $s_2, $e_2 ], ... )
  Format of @overlappedSE : ( [ $s_1, $e_1, ... added ], [ $s_2, $e_2, ... added ], ... )
  $idx_start : The elements before this index_element is not larger than any of \@not_overlappedSE|\@overlappedSE . 
@@ -1437,12 +1513,12 @@ sub sep_loc2_by_loc1_singleLoc2 {
 Input      : 
 
  \@reference_1to2 : Format as [ $start1, $end1, $start2, $end2 ], in which loc_1 [$start1,$end1] is mapped to loc_2 [$start2, $end2]; 
- 
  \@LocSE_1        : Format as [ $targetS_1, $targetE_1 ] 
- 
  '+/-'            : The strand (direction) how loc_1 is aligned to loc_2. If '-', $start1 is mapped to $end2, and $end1 is mapped to $start2; 
 
-Function   : According to \@reference_1to2, map loc_1 positions [ $targetS_1, $targetE_1 ] to loc_2 positions, and return them. 
+Function   : 
+
+ According to \@reference_1to2, map loc_1 positions [ $targetS_1, $targetE_1 ] to loc_2 positions, and return them. 
 
 Return     : ( $targetS_2, $targetE_2 )
 
@@ -1471,6 +1547,7 @@ sub map_loc_byReference {
 =head1 insert_SEloc_toSEArray( \@toSEArray, \@SEloc, $idx_start )
 
 Input      : 
+
  \@toSEArray   : Sorted. [ [$s1,$e1], [$s2, $e2], ... ]
  \@SEloc       : [ $s, $e ]
  $idx_start    : The elements in @toSEArray before index($idx_start) is not smaller than $s. Default 0. 
@@ -1533,7 +1610,7 @@ sub log10 {
 ############################################################
 =head1 _decimal_to_hexa ( $number_in_decimal )
 
-Please don't provide decimal fraction!!! 
+ Please don't provide decimal fraction!!! 
 
 Return        : ( $number_in_hexadecimal )
 
@@ -1636,6 +1713,7 @@ sub _Decode_deciN {
 Return        : (\%db_loc)
 
 Usage case 1  : 
+
     my @loc = ( [1,100], [2 , 384745], [10,21], [50,60], [384745, 984672], [20,55], [1, 9999], [4,11], [10,20], [10,21], [10,19]); 
     my %locDb_h = %{ &index_SEloc( \@loc, { 'binSize' => 100 , 'maxP' => 11 } ) }; 
     print "intact raw data Start:\n"; 
@@ -1665,33 +1743,36 @@ Usage case 1  :
 
 
 
-Description   : This is the main function I want to use in RNAseq counting. 
-               $loc_N_S should be no larger than (<=) $loc_N_E ; 
-By self()
+Description   : 
+
+    This is the main function I want to use in RNAseq counting. 
+    $loc_N_S should be no larger than (<=) $loc_N_E ; 
+
+ By self()
     Add ->{'binSize'}             => 1000 ; 
     Add ->{'maxP'}                => 11 ; 
     Add ->{'realLoc'}             => [ [$rawLoc_1_S, $rawLoc_1_E], [$rawLoc_2_S, $rawLoc_2_E], ... ]
     Add ->{'minV'}                => $min_of_locS_locE_value; 
     Add ->{'maxV'}                => $max_of_locS_locE_value; 
-By _binRealLoc2BinLoc() 
+ By _binRealLoc2BinLoc() 
     Add ->{'rawIdx2realIdx'}{$rawIdx}    -> [$realIdx_1, $realIdx_2, ...]
           # This relationship is the most important to transform 'rawLoc' to 'realLoc' information. 
     Add ->{'rawLoc'}              => [ [$rawLoc_1_S, $rawLoc_1_E], [$rawLoc_2_S, $rawLoc_2_E], ... ]
           # Here 'rawLoc' stands for 'binLoc'; 
     Add ->{'rawNum'}              => [ $rawLoc_1_S, $rawLoc_2_S, $rawLoc_3_S, ... ]
           # Here 'rawNum' is related to 'rawLoc' instead of 'realLoc'
-By _fill_rawN2rawIdx()
+ By _fill_rawN2rawIdx()
     Add ->{'rawN2rawIdx'}{$rawLoc_S} => [ $rawIdx1, $rawIdx2, ... ]
                          # Here $rawLoc_S === $rawNum
                          # This value will be replaced by the following _fill_struct_SEloc() function. 
-By _fill_struct_SEloc()
+ By _fill_struct_SEloc()
     Add ->{'struct'}           => [ structure_database ]
                                   # final value of 'struct' is ->{'rawN2rawIdx'}{$rawN} in a corrected order. 
                                   # and here $rawN is the start of each location. 
                                   # Formatted as [ $rawIdx1, $rawIdx2, ... ]
                                   # Note that the 'raw' here related to 'rawLoc' instead of 'realLoc'. 
     Replace ->{'rawN2rawIdx'}  => $final_value_of_"$ah->{'struct'}", which is now in a corrected order. 
-By _fill_sorted_rawIdx()
+ By _fill_sorted_rawIdx()
     Add ->{'sorted_rawIdx'} => [ [$rawIdx3, $rawIdx8, ...], [$rawIdx2], ... ];
           # Here $rawIdx3_rawNumber is equal to $rawIdx8_rawNumber, and smaller than $rawIdx2_rawNumber;
           # The array_reference in values is linked to ->{'rawN2rawIdx'}{$rawN} for easy changes;
@@ -1757,7 +1838,9 @@ sub ret_sortedRealLoc {
 
 Return       : (\%db_num)
 
-Function     : Index the numbers, producing keys in \%db_num, including : {'maxP|rawNum|rawN2rawIdx|struct|sorted_rawIdx|rawN2srtIdx'}
+Function     : 
+
+ Index the numbers, producing keys in \%db_num, including : {'maxP|rawNum|rawN2rawIdx|struct|sorted_rawIdx|rawN2srtIdx'}
     ->{'maxP'}          =>  11 , or someother number (>0) showing the depth of structure and the depth (length)  of encoded number path (for &_Encode_deciN())
     ->{'rawNum'}        =>  [@raw_numbers]
     ->{'rawN2rawIdx'}   =>  { $rawNum => [ $rawIdx1, $rawIdx2, ... ] } according to ->{'rawNum'}
@@ -1767,7 +1850,7 @@ Function     : Index the numbers, producing keys in \%db_num, including : {'maxP
                                # Here, $rawIdx3_rawNumber ( === ->{'rawNum'}[$rawIdx3] ) is equal to $rawIdx8_rawNumber, and smaller than $rawIdx2_rawNumber;
     ->{'rawN2srtIdx'}   =>  { $rawNum => $index_of_'sorted_rawIdx'_array }
 
-Usage case 1 : 
+ Usage case 1 : 
     my @numbers = ( 1.. 100, 40 .. 50 ,105, 103, 105, 150, 1, 999, 3000, 888, 444, 999, 3000, 999, 99999999999999, 111, 99999999999399 ); 
     my %numDb_h = %{ &index_numbers( \@numbers, { 'maxP' => 11 } ) }; 
 
@@ -1909,7 +1992,7 @@ sub _sideClose_pathInStruct {
 
 Return        : ( $diff_value_by_decode_num )
 
-num($path_1) - num($path_2)
+ num($path_1) - num($path_2)
 
 =cut
 sub _distance_paths{
@@ -1938,7 +2021,7 @@ sub _defined_pathInStruct {
 
 Return        : ( [ [$struct_path, $struct_final_value], [$struct_path, $struct_final_value], ...  ] )
 
-From small (first) to big (last) order. 
+ From small (first) to big (last) order. 
 
 =cut
 sub _lsAll_inStruct {
@@ -2128,8 +2211,10 @@ sub _put_num2Struct {
 
 Return        : ( [realLocIdx_1, realLocIdx_2, ...] )
 
-Description   : Change 'rawIdx' in database to 'realIdx' numbers; 
-                If the third parameter is true (default) (not zero or null), the duplicated realIdx will be removed. 
+Description   : 
+
+ Change 'rawIdx' in database to 'realIdx' numbers; 
+ If the third parameter is true (default) (not zero or null), the duplicated realIdx will be removed. 
 
 =cut
 sub _locDb_rawIdx2realIdx {
@@ -2159,8 +2244,10 @@ sub _locDb_rawIdx2realIdx {
 
 Return        : () 
 
-FUnction      : 
+Function      : 
+
     Add ->{'rawN2rawIdx'}{$rawNum} => [ $rawIdx1, $rawIdx2, ... ] according to ->{'rawNum'}
+
 =cut
 sub _fill_rawN2rawIdx {
 	my ($ah) = @_; 
@@ -2172,8 +2259,10 @@ sub _fill_rawN2rawIdx {
 
 =head1 _fill_struct( \%db_num ) 
 
-Function    : Add ->{'struct'}     => [ structure_database ]
-              final value of 'struct' is ->{'rawN2rawIdx'}{$rawN} 
+Function    : 
+
+ Add ->{'struct'}     => [ structure_database ]
+ final value of 'struct' is ->{'rawN2rawIdx'}{$rawN} 
 
 =cut
 sub _fill_struct {
@@ -2190,11 +2279,13 @@ sub _fill_struct {
 Return       : ()
 
 Function     : 
+
     The second added 'maxP' only works when $db_loc{'maxP'} is undefined. 
     Add ->{'struct'}           => [ structure_database ]
                                   # final value of 'struct' is ->{'rawN2rawIdx'}{$rawN} in a corrected order. 
                                   # and here $rawN is the start of each location. 
     Replace ->{'rawN2rawIdx'}  => $final_value_of_"$ah->{'struct'}", which is now in a corrected order. 
+
 =cut
 sub _fill_struct_SEloc {
 	my ($ah, $pH) = @_; 
@@ -2245,6 +2336,7 @@ sub _fill_struct_SEloc {
 =head1 _fill_sorted_rawIdx( \%db_num )
 
 Function : 
+
            Add ->{'sorted_rawIdx'} => [ [$rawIdx3, $rawIdx8, ...], [$rawIdx2], ... ];
            # Here $rawIdx3_rawNumber is equal to $rawIdx8_rawNumber, and smaller than $rawIdx2_rawNumber;
            # The array_reference in values is linked to ->{'rawN2rawIdx'}{$rawN} for easy changes;
@@ -2294,9 +2386,11 @@ sub _hasPos_inLocDb {
 
 Return        : ([$idx1_in_'rawLoc_array', $idx2_in_'rawLoc_array', ...]) 
 
-Description   : Better ignore this inner function. 
-                $idx1_in_'rawLoc_array' can be used in $db_loc{'rawLoc'}[$idx1_in_rawLoc_array] (Value=[$rawLocS, $rawLocE]). 
-                Be aware that when there are overlaps between rawLocs, the return might be not complete!!! 
+Description   : 
+
+ Better ignore this inner function. 
+ $idx1_in_'rawLoc_array' can be used in $db_loc{'rawLoc'}[$idx1_in_rawLoc_array] (Value=[$rawLocS, $rawLocE]). 
+ Be aware that when there are overlaps between rawLocs, the return might be not complete!!! 
 
 =cut
 sub _map_loc_to_rawIdx {
@@ -2361,6 +2455,7 @@ sub _addHash {
 Return       : () 
 
 Function     : 
+
     When 'binSize' <= 0 , no BIN action is processed. In this case, 'rawLoc' is identical to 'realLoc'. 
 
     Add ->{'rawIdx2realIdx'}{$rawIdx}    -> [$realIdx_1, $realIdx_2, ...]
