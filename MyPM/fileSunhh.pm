@@ -390,10 +390,16 @@ sub new_tmp_file {
 	return undef(); 
 }# sub new_tmp_file() 
 
-=head1 dvd_file( $in_filename_or_filehandle, $num_of_groups, 'keep_order'=>0, 'with_header'=>0, 'sub_pref'=>'sub_' )
+=head1 dvd_file( $in_filename_or_filehandle, $num_of_groups, 'keep_order'=>0, 'with_header'=>0, 'sub_pref'=>'sub_', 'tmpFile' => '', 'tmpDir'=>'' )
 
-Function       : divide $in_filename_or_filehandle into subgroup_files within format 'sub_pref'$grpNumber . 
+Function       : 
+
+  divide $in_filename_or_filehandle into subgroup_files within format 'sub_pref'$grpNumber . 
   If the line number of in_file is smaller than $num_of_groups, $num_of_in_file_lines (-1 if with header) sub_files will be created. 
+  If 'tmpFile' is not '', at first save input to $tmpFile and delete it after using. 
+  Ff 'tmpFile' is '' and 'tmpDir' is not '', then find create $tmpFile under $tmpDir. 
+  Using $tmpFile or $tmpDir can help to reduce memory usage. 
+  
 
 Return         : ($sub_filename_1, $sub_filename_2, ...)
   If in_file is : 
@@ -432,7 +438,79 @@ sub dvd_file {
 	$parm{'keep_order'} //= 0; 
 	$parm{'with_header'} //= 0; 
 	$parm{'sub_pref'} //= 'sub_'; 
+	$parm{'tmpFile'}  //= ''; 
+	$parm{'tmpDir'}   //= ''; 
 	my $header = ''; 
+
+	if ( $parm{'tmpFile'} ne '' or $parm{'tmpDir'} ne '' ) {
+		if ( $parm{tmpFile} eq '' and $parm{'tmpDir'} ne '' ) {
+			my $curr_dir = &_abs_path("./"); 
+			my $temp_dir = &_abs_path($parm{'tmpDir'}); 
+			chdir( $temp_dir ); 
+			$parm{'tmpFile'} = &new_tmp_file(); 
+			$parm{'tmpFile'} = "$temp_dir/$parm{'tmpFile'}"; 
+			&write2file( $parm{'tmpFile'}, '', '>' ); 
+			chdir( $curr_dir ); 
+		}
+		# Write $tmpFile as basic file. 
+		my $ofh_0 = &openFH( $parm{'tmpFile'}, '>' ); 
+		my $all_lineN = 0; 
+		if ( $parm{'with_header'} ) {
+			$header = <$inFh>; 
+		}
+		while ( <$inFh> ) {
+			$all_lineN ++; 
+			print {$ofh_0} $_; 
+		}
+		close($ofh_0); 
+		# setup output filenames. 
+		my $ifh_0 = &openFH( $parm{'tmpFile'}, '<' ); 
+		my %sub_fn; 
+		if ( $parm{'keep_order'} ) {
+			my $per_lineN = $all_lineN / $grpN; 
+			int( $per_lineN ) == $per_lineN or $per_lineN = int($per_lineN) + 1; 
+			my $end_lineN = $per_lineN; 
+			my $suff_i = int( $end_lineN / $per_lineN ) - 1; 
+			my $subFn  = "$parm{'sub_pref'}$suff_i"; 
+			$sub_fn{'hash'}{$subFn} = 1; 
+			push( @{$sub_fn{'arr'}}, $subFn ); 
+			my $ofh_sub = &openFH( $subFn, '>' ); 
+			$parm{'with_header'} and print {$ofh_sub} $header; 
+			while ( my $line_0 = <$ifh_0> ) {
+				unless ( $. <= $end_lineN ) {
+					$end_lineN += $per_lineN; 
+					$. <= $end_lineN or &stopErr("[Err] \$. = $. and end_lineN = $end_lineN\n"); 
+					$suff_i = int( $end_lineN / $per_lineN ) - 1; 
+					close($ofh_sub); 
+					$subFn = "$parm{'sub_pref'}$suff_i"; 
+					$sub_fn{'hash'}{$subFn} = 1; 
+					push( @{$sub_fn{'arr'}}, $subFn ); 
+					$ofh_sub = &openFH( $subFn, '>' ); 
+					$parm{'with_header'} and print {$ofh_sub} $header; 
+				}
+				print {$ofh_sub} $line_0; 
+			}
+			close($ofh_sub); 
+			
+		} else {
+			while ( my $line_0 = <$ifh_0> ) {
+				my $suff_i = ($.-1) % $grpN; 
+				my $subFn = "$parm{'sub_pref'}$suff_i"; 
+				unless ( defined $sub_fn{'hash'}{$subFn} ) {
+					$sub_fn{'hash'}{$subFn} = 1; 
+					push( @{$sub_fn{'arr'}}, $subFn ); 
+					&write2file( $subFn, '', '>' ); 
+					$parm{'with_header'} and &write2file( $subFn, $header, '>' ); 
+				}
+				&write2file( $subFn, $line_0, '>>' ); 
+			}
+		}
+		close( $ifh_0 ); 
+		&_rmtree( $parm{'tmpFile'} ); 
+		return( @{$sub_fn{'arr'}} ); 
+	}
+
+
 	my (@in_data); 
 	if ( $is_inFh ) {
 		@in_data = <$inFh>; 
