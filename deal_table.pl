@@ -24,6 +24,7 @@
 # 2016-03-09 Add -col_sort_rule for more flexible. 
 # 2016-03-11 Finally, I accept to add my own perl modules into this frequently used script. Change all split to &splitL(); 
 # 2016-10-31 Add -colByTbl_cut to use 'cut & paste' method. 
+# 2016-12-01 Add -cpuN for selected, time consuming tasks. 
 
 use strict;
 use warnings; 
@@ -55,6 +56,7 @@ GetOptions(\%opts,
 	"col_head!", 
 	"chID_RefLis:s", "chID_Row!", "chID_OldColN:i", "chID_NewColN:i", "chID_skipH:i", "chID_RowColN:i", # Change Column/Row names according to reference. 
 	"spec_loci_1from2!", "spec_loci_f1:s", "spec_loci_f2:s", "spec_loci_minLen:i", 
+	"cpuN:i", 
 	"log_ln:i", 
 	"help!");
 sub usage {
@@ -131,6 +133,11 @@ command:perl $0 <STDIN|parameters>
   -dR2dN          [Boolean] Change \\r to \\n in files. 
 
   -log_ln         [0]
+
+  -cpuN           [1] Multi-threading. Available for : 
+                    -column
+                    -chID_RefLis
+                    -fillNull
 ##################################################
 INFO
 
@@ -167,12 +174,31 @@ my $symbol = "\t";
 &goodVar($opts{symbol}) and $symbol = $opts{symbol};
 
 $opts{'log_ln'} //= 0; 
+$opts{'cpuN'}   //= 1; 
+$opts{'cpuN'} = int( $opts{'cpuN'} ); 
+$opts{'cpuN'} < 1 and $opts{'cpuN'} = 1; 
+
+
+#****************************************************************#
+#--------------Main-----Use multi-processes----------------------#
+#****************************************************************#
+my $pm; 
+if ( $opts{'cpuN'} > 1 ) {
+	use Parallel::ForkManager; 
+	$pm = new Parallel::ForkManager($opts{'cpuN'}); 
+}
+
+
+#****************************************************************#
+#--------------Main-----Invoke functions-t-----------------------#
+#****************************************************************#
+
 
 
 &reverse_lines() if($opts{reverse});
 &skip() if (&goodVar($opts{skip}) and $opts{skip}>0);
 &combine() if ($opts{combine});
-&column() if ( &goodVar($opts{column}) );
+&column() if ( &goodVar($opts{column}) ); # Should have; 
 &extreme() if ( &goodVar($opts{max_col}) || &goodVar($opts{min_col}) );
 &colStat() if ( &goodVar($opts{col_stat}) );
 if ( &goodVar($opts{col_sort}) ) {
@@ -394,33 +420,91 @@ sub chRowColName {
 	
 	for my $fh ( @InFp ) {
 		my $cur_n = -1; 
-		while (<$fh>) {
-			chomp; 
-			if ( $. <= $opts{chID_skipH} ) {
-				print STDOUT "$_\n"; 
-				next; 
-			} else {
-				$cur_n ++; 
+
+		if ( defined $pm ) {
+			$opts{'cpuN'} > 1 or &stopErr("[Err] Check 02 in chRowColName()\n"); 
+			# Keep header 
+			my $header_txt = ''; 
+			if ( $opts{'chID_skipH'} > 0 ) {
+				my $cnt = 0; 
+				while (<$fh>) {
+					$cnt ++; 
+					$header_txt .= $_; 
+					$cnt == $opts{'chID_skipH'} and last; 
+				}
 			}
-			if ( m!^\s*(#|$)! ) {
-				print STDOUT "$_\n"; 
-				next; 
-			}
-	
-			if ( $is_rowID ) {
-				my @ta = &splitL($symbol, $_); 
-				$ta[$opts{chID_RowColN}] = $old2new{ $ta[$opts{chID_RowColN}] } // $ta[$opts{chID_RowColN}] ; 
-				print STDOUT join("\t", @ta)."\n"; 
-			} elsif ( $cur_n == 0 ) {
-				my @ta = &splitL($symbol, $_); 
+			unless ( $is_rowID ) {
+				my $h_line = <$fh>; 
+				chomp($h_line); 
+				my @ta = &splitL( $symbol, $h_line ); 
 				for my $tb (@ta) {
 					$tb = $old2new{$tb} // $tb; 
 				}
-				print STDOUT join("\t", @ta)."\n"; 
-			} else {
-				print STDOUT "$_\n"; 
+				$header_txt .= join("\t", @ta)."\n"; 
 			}
-		}# End while 
+
+			my $wrk_dir = &fileSunhh::new_tmp_dir(); 
+			mkdir($wrk_dir) or &stopErr("[Err] Failed to create dir [$wrk_dir]\n"); 
+			my @sub_fn = &fileSunhh::dvd_file( $fh, $opts{'cpuN'}, 'keep_order' => 1, 'with_header' => 0, 'sub_pref' => "$wrk_dir/sub_", 'tmpFile' =>      "$wrk_dir/base_0" );
+			for my $sfn (@sub_fn) {
+				my $pid = $pm->start and next; 
+				if ( $is_rowID ) {
+					open F,'<',"$sfn" or &stopErr("[Err] Failed to open file [$sfn]\n");
+					open O,'>',"$sfn.o" or &stopErr("[Err] Failed to open file [$sfn.o]\n"); 
+					while (<F>) {
+						chomp; 
+						my @ta = &splitL( $symbol, $_ ); 
+						$ta[$opts{chID_RowColN}] = $old2new{ $ta[$opts{chID_RowColN}] } // $ta[$opts{chID_RowColN}] ; 
+						print O join("\t", @ta)."\n"; 
+					}
+					close O; 
+					close F; 
+				} else {
+					&fileSunhh::_move( $sfn, "$sfn.o" ); 
+				}
+				$pm->finish;
+			}
+			$pm->wait_all_children; 
+
+			# Add $header_txt and sub_fn to final one. 
+			print STDOUT $header_txt; 
+			for my $sfn ( @sub_fn ) {
+				open F,'<',"$sfn.o" or &stopErr("[Err] Failed to reopen file [$sfn.o]\n"); 
+				while (<F>) {
+					print STDOUT $_; 
+				}
+				close F; 
+			}
+			&fileSunhh::_rmtree($wrk_dir); 
+		} else {
+			while (<$fh>) {
+				chomp; 
+				if ( $. <= $opts{chID_skipH} ) {
+					print STDOUT "$_\n"; 
+					next; 
+				} else {
+					$cur_n ++; 
+				}
+				if ( m!^\s*(#|$)! ) {
+					print STDOUT "$_\n"; 
+					next; 
+				}
+				if ( $is_rowID ) {
+					my @ta = &splitL($symbol, $_); 
+					$ta[$opts{chID_RowColN}] = $old2new{ $ta[$opts{chID_RowColN}] } // $ta[$opts{chID_RowColN}] ; 
+					print STDOUT join("\t", @ta)."\n"; 
+				} elsif ( $cur_n == 0 ) {
+					my @ta = &splitL($symbol, $_); 
+					for my $tb (@ta) {
+						$tb = $old2new{$tb} // $tb; 
+					}
+					print STDOUT join("\t", @ta)."\n"; 
+				} else {
+					print STDOUT "$_\n"; 
+				}
+			}# End while 
+		}
+
 	}#End for 
 	return 0; 
 }# sub chRowColName () 
@@ -536,12 +620,41 @@ sub fillNull {
 	my $tc = 1; 
 	$opts{fillNull} ne '' and $tc = $opts{fillNull}; 
 	for my $fh (@InFp) {
-		while (<$fh>) {
-			while (s/$symbol$symbol/$symbol$tc$symbol/og) { 1; } 
-			s/^$symbol/$tc$symbol/o; 
-			s/$symbol$/$symbol$tc/o; 
-			print; 
-		}# End while 
+		if ( defined $pm ) {
+			$opts{'cpuN'} > 1 or &stopErr("[Err] Check 01 in column()\n"); 
+			my $wrk_dir = &fileSunhh::new_tmp_dir(); 
+			mkdir($wrk_dir) or &stopErr("[Err] Failed to create dir [$wrk_dir]\n"); 
+			my @sub_fn = &fileSunhh::dvd_file( $fh, $opts{'cpuN'}, 'keep_order' => 1, 'with_header' => 0, 'sub_pref' => "$wrk_dir/sub_", 'tmpFile' => "$wrk_dir/base_0" ); 
+			for my $sfn (@sub_fn) {
+				my $pid = $pm->start and next; 
+				open F,'<',"$sfn" or &stopErr("[Err] Failed to open file [$sfn]\n"); 
+				open O,'>',"$sfn.o" or &stopErr("[Err] Failed to open file [$sfn.o]\n"); 
+				while (<F>) {
+					while (s/$symbol$symbol/$symbol$tc$symbol/og) { 1; } 
+					s/^$symbol/$tc$symbol/o; 
+					s/$symbol$/$symbol$tc/o; 
+					print O $_; 
+				}
+				close O; 
+				close F; 
+				$pm->finish; 
+			}
+			$pm->wait_all_children; 
+			for my $sfn ( @sub_fn ) {
+				open F,'<',"$sfn.o" or &stopErr("[Err] Failed to open file [$sfn.o]\n"); 
+				while (<F>) {
+					print STDOUT $_; 
+				}
+				close F; 
+			}
+		} else {
+			while (<$fh>) {
+				while (s/$symbol$symbol/$symbol$tc$symbol/og) { 1; } 
+				s/^$symbol/$tc$symbol/o; 
+				s/$symbol$/$symbol$tc/o; 
+				print; 
+			}# End while 
+		}
 	}# End $fh in @InFp
 }# End sub fillNull
 
@@ -838,10 +951,39 @@ sub combine{
 sub column{
 	my @cols=&parseCol($opts{column});
 	for my $fh (@InFp) {
-		while (<$fh>) {
-			chomp; s/[^\S$symbol]+$//; 
-			my @temp = &splitL($symbol, $_); 
-			print STDOUT join("\t",@temp[@cols])."\n";
+		if ( defined $pm ) {
+			$opts{'cpuN'} > 1 or &stopErr("[Err] Check 01 in column()\n"); 
+			my $wrk_dir = &fileSunhh::new_tmp_dir(); 
+			mkdir($wrk_dir) or &stopErr("[Err] Failed to create dir [$wrk_dir]\n"); 
+			my @sub_fn = &fileSunhh::dvd_file( $fh, $opts{'cpuN'}, 'keep_order' => 1, 'with_header' => 0, 'sub_pref' => "$wrk_dir/sub_", 'tmpFile' => "$wrk_dir/base_0" ); 
+			for my $sfn (@sub_fn) {
+				my $pid = $pm->start and next; 
+				open F,'<',"$sfn" or &stopErr("[Err] Failed to open file [$sfn]\n"); 
+				open O,'>',"$sfn.o" or &stopErr("[Err] Failed to open file [$sfn.o]\n"); 
+				while (<F>) {
+					chomp; s/[^\S$symbol]+$//; 
+					my @temp = &splitL($symbol, $_); 
+					print O join("\t",@temp[@cols])."\n"; 
+				}
+				close O; 
+				close F; 
+				$pm->finish; 
+			}
+			$pm->wait_all_children; 
+			for my $sfn ( @sub_fn ) {
+				open F,'<',"$sfn.o" or &stopErr("[Err] Failed to open file [$sfn.o]\n"); 
+				while (<F>) {
+					print STDOUT $_; 
+				}
+				close F; 
+			}
+			&fileSunhh::_rmtree( $wrk_dir ); 
+		} else {
+			while (<$fh>) {
+				chomp; s/[^\S$symbol]+$//; 
+				my @temp = &splitL($symbol, $_); 
+				print STDOUT join("\t",@temp[@cols])."\n";
+			}
 		}
 	}# End for $fh in @InFp 
 }# end column

@@ -477,10 +477,12 @@ sub dvd_file {
 			push( @{$sub_fn{'arr'}}, $subFn ); 
 			my $ofh_sub = &openFH( $subFn, '>' ); 
 			$parm{'with_header'} and print {$ofh_sub} $header; 
+			my $curr_lineN = 0; 
 			while ( my $line_0 = <$ifh_0> ) {
-				unless ( $. <= $end_lineN ) {
+				$curr_lineN ++; 
+				unless ( $curr_lineN <= $end_lineN ) {
 					$end_lineN += $per_lineN; 
-					$. <= $end_lineN or &stopErr("[Err] \$. = $. and end_lineN = $end_lineN\n"); 
+					$curr_lineN <= $end_lineN or &stopErr("[Err] \$curr_lineN = $curr_lineN and end_lineN = $end_lineN\n"); 
 					$suff_i = int( $end_lineN / $per_lineN ) - 1; 
 					close($ofh_sub); 
 					$subFn = "$parm{'sub_pref'}$suff_i"; 
@@ -494,8 +496,10 @@ sub dvd_file {
 			close($ofh_sub); 
 			
 		} else {
+			my $curr_lineN = 0; 
 			while ( my $line_0 = <$ifh_0> ) {
-				my $suff_i = ($.-1) % $grpN; 
+				$curr_lineN ++; 
+				my $suff_i = ($curr_lineN-1) % $grpN; 
 				my $subFn = "$parm{'sub_pref'}$suff_i"; 
 				unless ( defined $sub_fn{'hash'}{$subFn} ) {
 					$sub_fn{'hash'}{$subFn} = 1; 
@@ -548,14 +552,16 @@ sub dvd_file {
 			}
 		}
 		my $fh = &openFH($inFn); 
+		my $curr_lineN = 0; 
 		while ( <$fh> ) {
-			if ( $. == 1 and $parm{'with_header'} ) {
+			$curr_lineN ++; 
+			if ( $curr_lineN == 1 and $parm{'with_header'} ) {
 				for my $tfh ( @sub_fh ) {
 					print {$tfh} $_; 
 				}
 				next; 
 			}
-			print {$ln2fh{$.}} $_; 
+			print {$ln2fh{$curr_lineN}} $_; 
 		}
 		close($fh); 
 		for my $tfh (@sub_fh) {
