@@ -25,6 +25,7 @@
 # 2016-03-11 Finally, I accept to add my own perl modules into this frequently used script. Change all split to &splitL(); 
 # 2016-10-31 Add -colByTbl_cut to use 'cut & paste' method. 
 # 2016-12-01 Add -cpuN for selected, time consuming tasks. 
+# 2016-12-02 'cut & paste' method for -colByTbl_cut is not fast enough. trying to use -cpuN
 
 use strict;
 use warnings; 
@@ -297,14 +298,8 @@ sub specLoci {
 
 # Extract columns according to $opts{'colByTbl'}; 
 sub colByTbl {
-	use Parallel::ForkManager; 
 	my @col_also = (); 
 	defined $opts{'colByTbl_also'} and @col_also = &parseCol($opts{'colByTbl_also'}); 
-	$opts{'colByTbl_cut'} //= 0; 
-	if ( $opts{'colByTbl_cut'} > 0 ) {
-		use Parallel::ForkManager; 
-		$glob{'pm'} = new Parallel::ForkManager($opts{'colByTbl_cut'}); 
-	}
 	my $idxFh = &openFH($opts{'colByTbl'}, '<'); 
 	my (%needColID, $cnt); 
 	$cnt = 0; 
@@ -315,81 +310,61 @@ sub colByTbl {
 	}
 	close($idxFh); 
 
-	if ( $opts{'colByTbl_cut'} > 0 ) {
-		my $wrk_dir = &fileSunhh::new_tmp_dir(); 
-		mkdir($wrk_dir) or &stopErr("[Err] Failed to create tmp_dir [$wrk_dir]\n"); 
-		my $argv_i = -1; 
-		for my $fh ( @InFp ) {
-			$argv_i ++; 
-			my @cur_ColNs = @col_also; 
-			my $has_empty = 0; 
-			{
-				my $first_line = <$fh>; chomp($first_line); 
-				my @ta = &splitL($symbol, $first_line); 
-				my %cur_ID2ColN; 
-				for (my $i=0; $i<@ta; $i++) {
-					defined $needColID{$ta[$i]} and $cur_ID2ColN{$ta[$i]} = $i; 
-				}
-				for (sort { $needColID{$a} <=> $needColID{$b} } keys %needColID) {
-					if ( defined $cur_ID2ColN{$_} ) {
-						push(@cur_ColNs, $cur_ID2ColN{$_}); 
-					} else {
-						push(@cur_ColNs, 'NA'); 
-					}
-				}
-				&tsmsg("[Msg] Copying raw file\n"); 
-				my $base0_fh = &openFH("$wrk_dir/base0", '>'); 
-				print {$base0_fh} "$first_line\n"; 
-				while (<$fh>) {
-					print {$base0_fh} $_; 
-				}
-				close($base0_fh); 
-				&tsmsg("[Msg] Finish copying file\n"); 
+
+	for my $fh ( @InFp ) {
+		# header_txt
+		my $header_txt = ''; 
+		my @cur_ColNs = @col_also; 
+		{
+			my $first_line = <$fh>; 
+			my %cur_ID2ColN; 
+			chomp($first_line); 
+			my @ta = &splitL($symbol, $first_line); 
+			for (my $i=0; $i<@ta; $i++) {
+				defined $needColID{$ta[$i]} and $cur_ID2ColN{$ta[$i]} = $i; 
 			}
-			for (my $i=0; $i<@cur_ColNs; $i++) {
-				my $pid = $glob{'pm'}->start and next; 
-				if ( $cur_ColNs[$i] eq 'NA' ) {
-					unless ( $has_empty ) {
-						my $iC = $#cur_ColNs+2; 
-						&exeCmd_1cmd("cut -f $iC $wrk_dir/base0 > $wrk_dir/empty"); 
-						$has_empty = 1; 
-					}
-					&exeCmd_1cmd("ln -s empty $wrk_dir/s$i"); 
+			for (sort { $needColID{$a} <=> $needColID{$b} } keys %needColID) {
+				if ( defined $cur_ID2ColN{$_} ) {
+					push(@cur_ColNs, $cur_ID2ColN{$_}); 
 				} else {
-					my $iC = $cur_ColNs[$i]+1; 
-					&exeCmd_1cmd("cut -f $iC $wrk_dir/base0 > $wrk_dir/s$i"); 
+					push(@cur_ColNs, 'NA'); 
 				}
-				$glob{'pm'}->finish; 
 			}
-			$glob{'pm'}->wait_all_children; 
-			my $cmdLn = join(" ", 'paste', map { "$wrk_dir/s$_" } (0 .. $#cur_ColNs)); 
-			open O, '-|', "$cmdLn" or &stopErr("[Err] Failed to exe paste [$cmdLn]\n"); 
-			while (<O>) {
-				print STDOUT $_; 
-			}
-			close O; 
+			$header_txt = join("\t", map { ( $_ eq 'NA' ) ? '' : $ta[$_] ; } @cur_ColNs)."\n"; 
 		}
-		&fileSunhh::_rmtree($wrk_dir); 
-	} else {
-		for my $fh ( @InFp ) {
-			my @cur_ColNs = @col_also; 
-			{
-				my $first_line = <$fh>; 
-				my %cur_ID2ColN; 
-				chomp($first_line); 
-				my @ta = &splitL($symbol, $first_line); 
-				for (my $i=0; $i<@ta; $i++) {
-					defined $needColID{$ta[$i]} and $cur_ID2ColN{$ta[$i]} = $i; 
+		if ( defined $pm ) {
+			$opts{'cpuN'} > 1 or &stopErr("[Err] Check 01 in column()\n"); 
+			# separate files 
+			my $wrk_dir = &fileSunhh::new_tmp_dir( 'create' => 1 ); 
+			my @sub_fn = &fileSunhh::dvd_file( $fh, $opts{'cpuN'}, 'keep_order' => 1, 'with_header' => 0, 'sub_pref' => "$wrk_dir/sub_", 'tmpFile' => "$wrk_dir/base_0" ); 
+			# Process sub-files
+			for my $sfn ( @sub_fn ) {
+				my $pid = $pm->start and next; 
+				open F,'<',"$sfn" or &stopErr("[Err] Failed to open subfile [$sfn]\n"); 
+				open O,'>',"$sfn.o" or &stopErr("[Err] Failed to write subfile [$sfn.o]\n"); 
+				while (<F>) {
+					chomp; 
+					my @ta = &splitL($symbol, $_); 
+					print O join("\t", map { ( $_ eq 'NA' ) ? '' : $ta[$_] ; } @cur_ColNs)."\n"; 
 				}
-				for (sort { $needColID{$a} <=> $needColID{$b} } keys %needColID) {
-					if ( defined $cur_ID2ColN{$_} ) {
-						push(@cur_ColNs, $cur_ID2ColN{$_}); 
-					} else {
-						push(@cur_ColNs, 'NA'); 
-					}
-				}
-				print STDOUT join("\t", map { ( $_ eq 'NA' ) ? '' : $ta[$_] ; } @cur_ColNs)."\n"; 
+				close O; 
+				close F; 
+				$pm->finish; 
 			}
+			$pm->wait_all_children; 
+			# Merge sub-files
+			print STDOUT $header_txt; 
+			for my $sfn ( @sub_fn ) {
+				open F,'<',"$sfn.o" or &stopErr("[Err] Failed to open subfile [$sfn.o]\n"); 
+				while (<F>) {
+					print STDOUT $_; 
+				}
+				close F; 
+			}
+			# Delete temp_dir 
+			&fileSunhh::_rmtree($wrk_dir); 
+		} else {
+			print STDOUT $header_txt; 
 			while (<$fh>) {
 				chomp; 
 				my @ta = &splitL($symbol, $_); 
@@ -398,7 +373,7 @@ sub colByTbl {
 			close ($fh); 
 		}
 	}
-	
+
 }# sub colByTbl() 
 
 # change table's name according to reference list. 
@@ -622,8 +597,7 @@ sub fillNull {
 	for my $fh (@InFp) {
 		if ( defined $pm ) {
 			$opts{'cpuN'} > 1 or &stopErr("[Err] Check 01 in column()\n"); 
-			my $wrk_dir = &fileSunhh::new_tmp_dir(); 
-			mkdir($wrk_dir) or &stopErr("[Err] Failed to create dir [$wrk_dir]\n"); 
+			my $wrk_dir = &fileSunhh::new_tmp_dir( 'create' => 1 ); 
 			my @sub_fn = &fileSunhh::dvd_file( $fh, $opts{'cpuN'}, 'keep_order' => 1, 'with_header' => 0, 'sub_pref' => "$wrk_dir/sub_", 'tmpFile' => "$wrk_dir/base_0" ); 
 			for my $sfn (@sub_fn) {
 				my $pid = $pm->start and next; 
@@ -647,6 +621,7 @@ sub fillNull {
 				}
 				close F; 
 			}
+			&fileSunhh::_rmtree($wrk_dir); 
 		} else {
 			while (<$fh>) {
 				while (s/$symbol$symbol/$symbol$tc$symbol/og) { 1; } 

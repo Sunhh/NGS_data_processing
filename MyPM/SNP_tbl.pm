@@ -865,6 +865,29 @@ sub skipLine {
 # Independent methods. 
 #######################################################
 
+=head1 get_diploid_d2b()
+
+ Return ( %dblist )
+   $dblist{'W'} = ['A', 'T']; 
+   $dblist{'S'} = ['C', 'G']; 
+   $dblist{'M'} = ['A', 'C']; 
+   $dblist{'K'} = ['G', 'T']; 
+   $dblist{'R'} = ['A', 'G']; 
+   $dblist{'Y'} = ['C', 'T']; 
+
+=cut
+sub get_diploid_d2b {
+	my %dblist; 
+	$dblist{'W'} = ['A', 'T']; 
+	$dblist{'S'} = ['C', 'G']; 
+	$dblist{'M'} = ['A', 'C']; 
+	$dblist{'K'} = ['G', 'T']; 
+	$dblist{'R'} = ['A', 'G']; 
+	$dblist{'Y'} = ['C', 'T']; 
+	return(%dblist); 
+}# get_diploid_d2b () 
+
+
 #  Check if there is any variant in given \@array, and return 0-noVariant 1-HasVariant; 
 #  Input ( 'arr'  =>["AA", "a", "N", "*", "A+C", ...], 
 #          'mode' =>'single/skipN'/'skipIndel'/'skipHete'/
@@ -1035,10 +1058,14 @@ sub dna_d2b {
 
 =head1 dna_b2d('AA|AT|AAT|...')
 
-Function   : Translate a set of A/T/G/C array to degenerate base symbol. 
-             If no degenerated base found, I will return undef(); 
+Function   : 
+
+  Translate a set of A/T/G/C array to degenerate base symbol. 
+  If no degenerated base found, I will return undef(); 
 
 Return     : $IUPAC_degenerated_base
+
+  If no degenerated base found, I will return undef(); 
 
 =cut
 sub dna_b2d {

@@ -354,7 +354,7 @@ sub isSkipLine {
 	return 0; 
 }# isSkipLine() 
 
-=head1 new_tmp_dir( 'maxNum' => 999999 )
+=head1 new_tmp_dir( 'maxNum' => 999999 , 'create' => 0 )
 
 Function       : Creat a new temporary directory with name 'tmp\d+', and return the name of dir. 
  I will test from tmp0 to tmp$maxNum until the filename does not exist. 
@@ -363,9 +363,11 @@ Function       : Creat a new temporary directory with name 'tmp\d+', and return 
 sub new_tmp_dir {
 	my %parm = @_; 
 	$parm{'maxNum'} //= 999999; 
+	$parm{'create'} //= 0; 
 	for (my $i=0; $i<=$parm{'maxNum'}; $i++) {
 		my $fname = "tmp$i"; 
 		-e $fname and next; 
+		$parm{'create'} and do { mkdir($fname) or &stopErr("[Err] Failed to create new_tmp_dir [$fname]\n"); }; 
 		return $fname; 
 	}
 	&tsmsg("[Wrn] All tmp dir from tmp0 to tmp$parm{'maxNum'} exists!\n"); 
