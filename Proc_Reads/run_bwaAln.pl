@@ -56,6 +56,14 @@ sub usage {
 #  
 #  -printCmd        [FALSE] Only output commands if given. 
 ################################################################################
+# Example of -para_list
+#oBamPre	inFq1	inFq2
+#Slycopersicoides0_P	Slycopersicoides0_R1.fq.gz	Slycopersicoides0_R2.fq.gz
+#Slycopersicoides1_P	Slycopersicoides1_R1.fq.gz	Slycopersicoides1_R2.fq.gz
+#Slycopersicoides2_P	Slycopersicoides2_R1.fq.gz	Slycopersicoides2_R2.fq.gz
+#Slycopersicoides3_P	Slycopersicoides3_R1.fq.gz	Slycopersicoides3_R2.fq.gz
+#Slycopersicoides10_P	Slycopersicoides10_R1.fq.gz	Slycopersicoides10_R2.fq.gz
+################################################################################
 HH
 	exit; 
 }
@@ -106,10 +114,3 @@ for (my $i=0; $i<@batch; $i++) {
 }
 
 &tsmsg("[Rec]All done.\n"); 
-# Example of -para_list
-#oBamPre	inFq1	inFq2
-#Slycopersicoides0_P	Slycopersicoides0_R1.fq.gz	Slycopersicoides0_R2.fq.gz
-#Slycopersicoides1_P	Slycopersicoides1_R1.fq.gz	Slycopersicoides1_R2.fq.gz
-#Slycopersicoides2_P	Slycopersicoides2_R1.fq.gz	Slycopersicoides2_R2.fq.gz
-#Slycopersicoides3_P	Slycopersicoides3_R1.fq.gz	Slycopersicoides3_R2.fq.gz
-#Slycopersicoides10_P	Slycopersicoides10_R1.fq.gz	Slycopersicoides10_R2.fq.gz

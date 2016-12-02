@@ -195,5 +195,16 @@ sub change_procN {
 	return $new_maxP; 
 }# change_procN () 
 
+=head1 get_pm ( $cpuN )
+
+ Return a new Parallel::ForkManager class with $cpuN CPUs. 
+
+=cut
+sub get_pm {
+	use Parallel::ForkManager; 
+	return( new Parallel::ForkManager($_[0]) ); 
+}# get_pm() 
+
+
 
 1; 
