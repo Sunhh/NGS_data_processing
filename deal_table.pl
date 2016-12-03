@@ -140,7 +140,7 @@ command:perl $0 <STDIN|parameters>
                     -chID_RefLis
                     -fillNull
                     -colByTbl
-                    -kSrch_idx (working)
+                    -kSrch_idx
 ##################################################
 INFO
 
