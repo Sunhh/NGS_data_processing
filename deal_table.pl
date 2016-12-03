@@ -26,6 +26,7 @@
 # 2016-10-31 Add -colByTbl_cut to use 'cut & paste' method. 
 # 2016-12-01 Add -cpuN for selected, time consuming tasks. 
 # 2016-12-02 'cut & paste' method for -colByTbl_cut is not fast enough. trying to use -cpuN
+# 2016-12-03 -colByTbl_cut is removed. 
 
 use strict;
 use warnings; 
@@ -36,7 +37,7 @@ use Getopt::Long;
 my %opts;
 GetOptions(\%opts,
 	"combine!","column:s",
-	"colByTbl:s", "colByTbl_also:s", "colByTbl_cut:i", 
+	"colByTbl:s", "colByTbl_also:s", 
 	"max_col:s","min_col:s",
 	"skip:i",
 	"reverse!",
@@ -72,7 +73,6 @@ command:perl $0 <STDIN|parameters>
   -column<int>    cols "num1,num2,num3..." will be picked out and joined to a new line;
   -colByTbl<Str>  [index_file]. The 1st column of index_file is used to match the first line of input.table. Output matching columns from input.table. 
    -colByTbl_also [Str] Cols "num1,num2,num3" will be output before checking the matching between input.table and index_file. 
-   -colByTbl_cut  [CPU_number] Use 'cut' and 'paste' command in Linux to try to shorten the processing time. 
   -max_col        Similar to -column, compare by order;
   -min_col        Similar to -column, compare by order;
   -skip<int>      Skip first <int> lines.Usually for skipping head lines;
@@ -139,6 +139,8 @@ command:perl $0 <STDIN|parameters>
                     -column
                     -chID_RefLis
                     -fillNull
+                    -colByTbl
+                    -kSrch_idx (working)
 ##################################################
 INFO
 
@@ -538,27 +540,96 @@ sub kSrch {
 		my %tmp_cnt = ( 'cntN_base'=>0 , 'cntN_step'=>$opts{'log_ln'} ); 
 		if ( $opts{kSrch_line} ) {
 			# Using the whole line as a key. 
-			while (<$fh>) {
-				$opts{'log_ln'} > 0 and &fileSunhh::log_section( $. , \%tmp_cnt ) and &tsmsg("[Msg] Reading [$.] line in kSrch_src\n"); 
-				if ($opts{kSrch_drop}) {
-					$idx_key{$_} or print; 
-				}else{
-					$idx_key{$_} and print; 
+			if ( defined $pm ) {
+				$opts{'cpuN'} > 1 or &stopErr("[Err] cpuN not > 1\n"); 
+				# header_txt
+				# separate file
+				my $wrk_dir = &fileSunhh::new_tmp_dir( 'create' => 1 ); 
+				my @sub_fn = &fileSunhh::dvd_file( $fh, $opts{'cpuN'}, 'keep_order' => 1, 'with_header' => 0, 'sub_pref' => "$wrk_dir/sub_", 'tmpFile' => "$wrk_dir/base_0" ); 
+				# process sub-file
+				for my $sfn ( @sub_fn ) { 
+					my $pid = $pm->start and next; 
+					open F,'<',"$sfn" or die; 
+					open O,'>',"$sfn.o" or die; 
+					while (<F>) {
+						if ($opts{kSrch_drop}) {
+							$idx_key{$_} or print O $_; 
+						}else{
+							$idx_key{$_} and print O $_; 
+						}
+					}#End while 
+					close O; 
+					close F; 
+					$pm->finish; 
 				}
-			}#End while 
+				$pm->wait_all_children; 
+				# merge sub-file
+				for my $sfn ( @sub_fn ) {
+					open F,'<',"$sfn.o" or die; 
+					while (<F>) { print STDOUT $_; }
+					close F; 
+				}
+				# delete temporary
+				&fileSunhh::_rmtree($wrk_dir); 
+			} else {
+				while (<$fh>) {
+					$opts{'log_ln'} > 0 and &fileSunhh::log_section( $. , \%tmp_cnt ) and &tsmsg("[Msg] Reading [$.] line in kSrch_src\n"); 
+					if ($opts{kSrch_drop}) {
+						$idx_key{$_} or print; 
+					}else{
+						$idx_key{$_} and print; 
+					}
+				}#End while 
+			}
 		}else{
 			# Using the selected columns as key. 
-			while (<$fh>) {
-				$opts{'log_ln'} > 0 and &fileSunhh::log_section( $. , \%tmp_cnt ) and &tsmsg("[Msg] Reading [$.] line in kSrch_src\n"); 
-				chomp; 
-				my @temp = &splitL($symbol, $_); 
-				my $tkey = join("\t", @temp[@src_Cols]); 
-				if ($opts{kSrch_drop}) {
-					$idx_key{$tkey} or print STDOUT "$_\n"; 
-				}else{
-					$idx_key{$tkey} and print STDOUT "$_\n"; 
+			if ( defined $pm ) {
+				$opts{'cpuN'} > 1 or &stopErr("[Err] cpuN not > 1\n"); 
+				# header_txt
+				# separate file
+				my $wrk_dir = &fileSunhh::new_tmp_dir( 'create' => 1 ); 
+				my @sub_fn = &fileSunhh::dvd_file( $fh, $opts{'cpuN'}, 'keep_order' => 1, 'with_header' => 0, 'sub_pref' => "$wrk_dir/sub_", 'tmpFile' => "$wrk_dir/base_0" ); 
+				# process sub-file
+				for my $sfn ( @sub_fn ) { 
+					my $pid = $pm->start and next; 
+					open F,'<',"$sfn" or die; 
+					open O,'>',"$sfn.o" or die; 
+					while (<F>) {
+						chomp; 
+						my @temp = &splitL($symbol, $_); 
+						my $tkey = join("\t", @temp[@src_Cols]); 
+						if ($opts{kSrch_drop}) {
+							$idx_key{$tkey} or print O "$_\n"; 
+						}else{
+							$idx_key{$tkey} and print O "$_\n"; 
+						}
+					}#End while 
+					close O; 
+					close F; 
+					$pm->finish; 
 				}
-			}# End while 
+				$pm->wait_all_children; 
+				# merge sub-file
+				for my $sfn ( @sub_fn ) {
+					open F,'<',"$sfn.o" or die; 
+					while (<F>) { print STDOUT $_; }
+					close F; 
+				}
+				# delete temporary
+				&fileSunhh::_rmtree($wrk_dir); 
+			} else {
+				while (<$fh>) {
+					$opts{'log_ln'} > 0 and &fileSunhh::log_section( $. , \%tmp_cnt ) and &tsmsg("[Msg] Reading [$.] line in kSrch_src\n"); 
+					chomp; 
+					my @temp = &splitL($symbol, $_); 
+					my $tkey = join("\t", @temp[@src_Cols]); 
+					if ($opts{kSrch_drop}) {
+						$idx_key{$tkey} or print STDOUT "$_\n"; 
+					}else{
+						$idx_key{$tkey} and print STDOUT "$_\n"; 
+					}
+				}# End while 
+			}
 		}# End if kSrch_line 
 	}# for my $fh (@InFp)
 }# End kSrch 

@@ -194,9 +194,17 @@ sub aref_cols2tab {
 				@tc = sort @tc; 
 				$tc[0] eq '*' and @tc[0,1] = @tc[1,0]; 
 			}
+		} elsif ( $tb =~ m!^([ATGC])\+N+$! ) {
+			@tc = ($1, $1);  
 		} elsif ( $tb =~ m!^([ATGC])\+([ATGCN]+)$! ) {
 			@tc = ("$1$2", "$1$2"); 
-		} elsif ( $tb =~ m!^([ATGC\*])([ATGC])\+([ATGC]+)$! ) {
+		} elsif ( $tb =~ m!^([ATGC\*])([ATGC])\+N+$! ) {
+			@tc = ($1, $2); 
+			unless ( $noSrtAl ) {
+				@tc = sort @tc; 
+				$tc[0] eq '*' and @tc[0,1] = @tc[1,0]; 
+			}
+		} elsif ( $tb =~ m!^([ATGC\*])([ATGC])\+([ATGCN]+)$! ) {
 			@tc = ($1, "$2$3"); 
 		} elsif ( $tb =~ m!^\+! ) {
 			@tc = ('.', '.'); 
