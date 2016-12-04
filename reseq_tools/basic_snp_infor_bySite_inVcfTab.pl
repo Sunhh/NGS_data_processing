@@ -54,7 +54,9 @@ Format of vcf.tab :
 HH
 $help_txt .= "\nTypes that can be used in -rules :\n"; 
 for (my $i=0; $i<@hav_type; $i+= 5) {
-	$help_txt .= join("\t", '', @hav_type[$i .. ($i+4)])."\n"; 
+	my $ei = $i+4; 
+	$ei >= $#hav_type and $ei = $#hav_type; 
+	$help_txt .= join("\t", '', @hav_type[$i .. $ei])."\n"; 
 }
 $help_txt .= "#" x 80 . "\n"; 
 
@@ -238,7 +240,11 @@ sub cnt_type {
 
 	my @srt_allele  = sort { $cnt_al{'any_al'}{$b} <=> $cnt_al{'any_al'}{$a} || $a cmp $b }  keys %{$cnt_al{'any_al'}}; 
 	$back{'cnt_alleleTypeN'} = scalar(@srt_allele); 
-	$back{'alleleTypeCnt'}   = join(";;", map { "${_}_$cnt_al{'any_al'}{$_}" } @srt_allele); 
+	if ( $back{'cnt_alleleTypeN'} > 0 ) {
+		$back{'alleleTypeCnt'}   = join(";;", map { "${_}_$cnt_al{'any_al'}{$_}" } @srt_allele); 
+	} else {
+		$back{'alleleTypeCnt'}   = "N_0"; 
+	}
 	$back{'cnt_homo'}        = $cnt_geno{'homo'}; 
 	$back{'cnt_hete'}        = $cnt_geno{'hete'}; 
 	my $al_total = &mathSunhh::_sum( map { $cnt_al{'any_al'}{$_} } @srt_allele ); 
@@ -252,7 +258,11 @@ sub cnt_type {
 	$back{'hete2N_cnt_lmiss'}         = $cnt_indv{'miss'} + $cnt_indv{'hete'}; 
 	my @srt_al_homo = sort { $cnt_al{'homo_al'}{$b} <=> $cnt_al{'homo_al'}{$a} || $a cmp $b } keys %{$cnt_al{'homo_al'}}; 
 	$back{'hete2N_cnt_alleleTypeN'}   = scalar(@srt_al_homo); 
-	$back{'hete2N_alleleTypeCnt'}     = join(";;", map { "${_}_$cnt_al{'homo_al'}{$_}" } @srt_al_homo); 
+	if ( $back{'hete2N_cnt_alleleTypeN'} > 0 ) {
+		$back{'hete2N_alleleTypeCnt'}     = join(";;", map { "${_}_$cnt_al{'homo_al'}{$_}" } @srt_al_homo); 
+	} else {
+		$back{'hete2N_alleleTypeCnt'}     = 'N_0'; 
+	}
 	$back{'hete2N_cnt_homo'}          = $cnt_geno{'homo'}; 
 	my $al_total_homo = &mathSunhh::_sum( map { $cnt_al{'homo_al'}{$_} } @srt_al_homo ); 
 	$al_total_homo //= 0; 
