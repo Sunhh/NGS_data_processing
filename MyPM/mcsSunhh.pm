@@ -239,6 +239,7 @@ sub _readInAlnTbl {
 Input        : Input file format : Chr_ID \\t Chr_Len \\n
 
 Return       : ( \%back )
+
   'arr' => ([ [chr1_ID, chr1_Len, cum_len_prevE, repeat_Idx], [chr2_ID, chr2_Len, cum_len_prevE, repeat_Idx], ... ]); 
   'ord' => { chr_ID => [idx_in_arr, ...] }
 	'repN'=> { chr_ID => $repeat_time }

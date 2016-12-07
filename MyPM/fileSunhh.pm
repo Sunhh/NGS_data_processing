@@ -131,8 +131,11 @@ sub load_bn6File {
 
 =head1 load_tabFile ( $filename , $keep_annot<0> ) 
 
-Function   : Load in a tab delimited file into a array, whose element is a array reference of all files of the line. 
+Function   : 
+
+             Load in a tab delimited file into a array, whose element is a array reference of all files of the line. 
              If $keep_annot is TRUE (1), those lines beginning with '#' or blank lines will also be loaded in. 
+             The ending "\\n" will be removed. 
 
 Return     : ( $line_1_array, $line_2_array, ... )
 
