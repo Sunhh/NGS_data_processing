@@ -254,6 +254,7 @@ sub _readInChrLis {
 		chomp; 
 		m/^\s*(#|$)/ and next; 
 		my @ta = split(/\t/, $_); 
+		$ta[1] =~ m/^len(gth)?$/i and next; 
 		( defined $ta[1] and $ta[1] > 0 ) or do { &tsmsg("[Wrn] Skip scaffold [$ta[0]] with bad length [$ta[1]].\n"); next; }; 
 		$back{'repN'}{$ta[0]}++; 
 		defined $back{'ord'}{$ta[0]} and &tsmsg("[Wrn] Repeated scaffold ID [$ta[0]]\n"); 
