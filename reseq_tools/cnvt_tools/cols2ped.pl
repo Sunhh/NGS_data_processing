@@ -239,11 +239,16 @@ sub geno2num {
 		if ( $a1 eq '.' or $a1 eq 'N' ) {
 			$a1 eq $a2 or &stopErr("[Err] Bad genotype format [$tb]\n"); 
 			return( &get_al2num( 'N' ) , &get_al2num( 'N' ) ); 
+		} elsif ( $a1 =~ m/^[ATGCN*]$/i and $a2 =~ m/^[ATGCN*]$/i ) {
+			my $n1 = &get_al2num($a1) ; 
+			my $n2 = &get_al2num($a2) ; 
+			return( $n1 , $n2 ); 
+		} else {
+			my $n1 = &get_al2num( $a1 ); 
+			my $n2 = &get_al2num( $a2 ); 
+			return( $n1, $n2 ); 
 		}
-		( $a1 =~ m/^[ATGCN*]$/i and $a2 =~ m/^[ATGCN*]$/i ) or &stopErr("[Err] genotype_2 [$tb]\n"); 
-		my $n1 = &get_al2num($a1) ; 
-		my $n2 = &get_al2num($a2) ; 
-		return( $n1 , $n2 ); 
+		# ( $a1 =~ m/^[ATGCN*]$/i and $a2 =~ m/^[ATGCN*]$/i ) or &stopErr("[Err] genotype_2 [$tb]\n"); 
 	}
 	# Mao's pipeline output SNP table format: 
 	$tb =~ m/^N+$/i and return( &get_al2num( 'N' ) , &get_al2num( 'N' ) ); 
