@@ -12,6 +12,8 @@ GetOptions(\%opts,
 	"noHeader!", 
 	"cpuN:i", 
 	"start_colN:i", 
+	"skipInDel!", 
+	"singleChar!", 
 ); 
 
 $opts{'cpuN'} //= 20; 
@@ -25,6 +27,8 @@ perl $0 in.vcf.tab > in.vcf.cols
  -cpuN          [$opts{'cpuN'}]
  -noHeader      [Boolean]
 
+ -skipInDel     [Boolean] Skip lines with InDel alleles. 
+
 # Mask indel genotypes to N, except single '*'. 
 # Only accept bi-allele genotype for cols-format (single-character) genotype. 
 
@@ -33,6 +37,7 @@ HH
 -t and !@ARGV and &LogInforSunhh::usage($help_txt); 
 
 my %dblist; 
+my %b2dlist; 
 {
 	my @aa = (
 	[qw/W A T/], 
@@ -46,10 +51,18 @@ my %dblist;
 		my @bb = @$tr; 
 		$dblist{$bb[0]} = [$bb[1], $bb[2]]; 
 	}
+	for my $tr (@aa) {
+		$b2dlist{"$tr->[1]$tr->[2]"} = $tr->[0]; 
+		$b2dlist{"$tr->[2]$tr->[1]"} = $tr->[0]; 
+	}
+	for my $tb (qw/A T G C/) {
+		$b2dlist{$tb} = $tb; 
+		$b2dlist{"$tb$tb"} = $tb; 
+	}
 }
 
 my $fh = \*STDOUT; 
-@ARGV and $fh = &openFH($ARGV[1]); 
+@ARGV and $fh = &openFH($ARGV[0]); 
 
 
 unless ( defined $opts{'noHeader'} ) {
@@ -69,13 +82,21 @@ for my $sfn ( @sub_fn ) {
 	while (<F>) {
 		chomp;
 		my @ta = &splitL("\t", $_); 
+		my $is_bad_line = 0; 
 		for my $tb ( @ta[$opts{'start_colN'} .. $#ta] ) {
 			$tb = uc($tb); 
+			if ($opts{'skipInDel'}) {
+				$tb =~ m/[\*+]/ and do { $is_bad_line = 1; last; }; 
+			}
 			if ( $tb =~ s!^([ATGC\*])/\1$!$1! ) {
 			} elsif ( $tb =~ s!^([ATGC\*])/([ATGC\*])$!$1$2! ) {
 			} elsif ( $tb eq './.' or $tb eq 'N/N' ) {
 				$tb = 'N'; 
 			} elsif ( $tb =~ m!^[ATGC\*]+/[ATGC\*]+$! ) {
+				if ( $opts{'skipInDel'} ) {
+					$is_bad_line = 1; 
+					last; 
+				}
 				unless ( defined $used{'skip_geno'}{$tb} ) {
 					&tsmsg("[Wrn] Mask genotype [$tb]\n"); 
 					$used{'skip_geno'}{$tb} = 1; 
@@ -93,7 +114,14 @@ for my $sfn ( @sub_fn ) {
 				$tb = 'N'; 
 			}
 			$tb eq '*' and $tb = '-'; 
+			if ($opts{'singleChar'}) {
+				unless ( $tb eq '-' or $tb eq 'N' ) {
+					defined $b2dlist{$tb} or &stopErr("[Err] Unknown genotype [$tb]\n"); 
+					$tb = $b2dlist{$tb}; 
+				}
+			}
 		}
+		$is_bad_line == 0 or next; 
 		print O join("\t", @ta)."\n"; 
 	}
 	close O;

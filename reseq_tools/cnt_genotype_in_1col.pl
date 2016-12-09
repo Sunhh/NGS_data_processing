@@ -37,5 +37,6 @@ while (<$fh>) {
 chomp($head); 
 print join("\t", 'Type', $head)."\n"; 
 for (qw/total N HomoBase homoDel heteDel homoIns heteIns DiHete Other/) {
+	$cnt{$_} //= 0; 
 	print join("\t", $_, $cnt{$_})."\n"; 
 }
