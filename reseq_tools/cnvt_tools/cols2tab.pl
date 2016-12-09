@@ -146,7 +146,7 @@ for my $fh ( @InFp ) {
 	close($fh); 
 }
 
-=head1 aref_cols2tab( \@input_cols, \%used_bad_genotype, $doNotSortAlleles, \%d2b_list )
+=head1 aref_cols2tab( \@input_cols, \%used_bad_genotype, \%d2b_list, $doNotSortAlleles )
 
  $doNotSortAlleles is 0 by default, which means sort alleles (FALSE). 
 
