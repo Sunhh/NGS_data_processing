@@ -17,6 +17,8 @@ $opts{'cpuN'} < 1 and $opts{'cpuN'} = 1;
 
 my $pm = &LogInforSunhh::get_pm( $opts{'cpuN'} ); 
 my %d2b_list = &SNP_tbl::get_diploid_d2b(); 
+my %used; 
+$used{'bad_geno'} = {}; 
 
 my $help_txt = <<HH; 
 
@@ -49,73 +51,108 @@ unless ($opts{'noHeader'}) {
 	@ha=split(/\t/, $head); 
 }
 
-my @cnt_N; 
-my @cnt_hete; 
-my @cnt_homo; 
-
-while (<>) { 
-	($.-1) % 1e6 == 1 and &tsmsg("[Msg] $. lines.\n"); 
-	chomp; 
-	my @ta = split(/\t/, $_); 
-} 
-print STDOUT join("\t", qw/IndvID N_Num Typed_Num Het_Num Hom_Num Het_Ratio Hom_Ratio N_Ratio/)."\n"; 
-for (my $i=$opts{'startColN'}; $i<@ha; $i++) { 
-	$cnt_N[$i] //= 0; 
-	$cnt_hete[$i] //= 0; 
-	$cnt_homo[$i] //= 0; 
-	my $tot = $cnt_N[$i]+$cnt_hete[$i]+$cnt_homo[$i]; 
-	my $tot_typed = $cnt_hete[$i]+$cnt_homo[$i]; 
-	my $rat_hete = ($tot_typed > 0) ? sprintf("%02.02f", $cnt_hete[$i]/$tot_typed*100) : -1 ; 
-	my $rat_homo = ($tot_typed > 0) ? sprintf("%02.02f", $cnt_homo[$i]/$tot_typed*100) : -1 ; 
-	my $rat_miss = ($tot       > 0) ? sprintf("%02.02f", $cnt_N[$i]   /$tot      *100) : -1 ; 
-	print "$ha[$i]\t$cnt_N[$i]\t$tot_typed\t$cnt_hete[$i]\t$cnt_homo[$i]\t$rat_hete\t$rat_homo\t$rat_miss\n";
-}
-
-
 # separate files
 my $wrk_dir = &fileSunhh::new_tmp_dir( 'create' => 1 );
 my @sub_fn = &fileSunhh::dvd_file( $fh, $opts{'cpuN'}, 'keep_order' => 1, 'with_header' => 0, 'sub_pref' => "$wrk_dir/sub_", 'tmpFile' => "$wrk_dir/base_0" );
+close($fh); 
+if ( $opts{'noHeader'} and @ha == 0 ) {
+	open F,'<',"$sub_fn[0]" or die; 
+	$_ = <F>; 
+	chomp; 
+	my @ta = &splitL("\t", $_); 
+	for (my $i=0; $i<@ta; $i++) {
+		$ha[$i] = "Col_$i"; 
+	}
+	close F; 
+}
+
 # Process sub-files
 for my $sfn ( @sub_fn ) {
         my $pid = $pm->start and next;
         open F,'<',"$sfn" or &stopErr("[Err] Failed to open subfile [$sfn]\n");
         open O,'>',"$sfn.o" or &stopErr("[Err] Failed to write subfile [$sfn.o]\n");
+	my @sub_cnt; 
         while (<F>) {
                 chomp;
                 my @ta = &splitL("\t", $_);
-		if ($opts{'noHeader'} and @ha == 0) {
-			for (my $i=0; $i<@ta; $i++) {
-				$ha[$i] = "Col_$i"; 
-			}
+		my @tb = @ta[ $opts{'startColN'} .. $#ta ]; 
+		&SNP_tbl::aref_cols2tab( \@tb,  $used{'bad_geno'}, \%d2b_list, 0); 
+		for (my $i=0; $i<@tb; $i++) {
+			my $j=$i+$opts{'startColN'}-1; 
+			my $type = &type_tabGeno( $tb[$i] ); 
+			$sub_cnt[$j]{$type} ++; 
 		}
-		for (my $i=$opts{'startColN'}; $i<@ta; $i++) { 
-			($ta[$i] eq 'N' or $ta[$i] eq 'n') and do { $cnt_N[$i]++; next; }; 
-			( $ta[$i] =~ m/^[ATGC*]$/i or $ta[$i] =~ m/\+/ ) and do { $cnt_homo[$i]++; next; }; # The '*' and sites with \+ are treated as homozygous. I don't like genotype like 'A*', so I want to remove it before calculation. 
-			(&SNP_tbl::dna_d2b( &SNP_tbl::dna_b2d($ta[$i]) )) > 1 and do { $cnt_hete[$i]++; next; }; # Heterozygous. 
-			&tsmsg("[Wrn] Weired genotype [$ta[$i]] is treated as homozygous.\n"); 
-			$cnt_homo[$i] ++; 
-			# $ta[$i]=~m/^[ATGC*]$|^[ATGC]\+[ATGC]+$/ and $cnt[$i]++; 
-		} 
-                print O join("\t", map { ( $_ eq 'NA' ) ? '' : $ta[$_] ; } @cur_ColNs)."\n";
         }
+	print O join("\t", qw/IndvID N_Num Typed_Num Het_Num Hom_Num Het_Ratio Hom_Ratio N_Ratio/)."\n"; 
+	for (my $i=$opts{'startColN'}; $i<@ha; $i++) { 
+		for my $tk (qw/miss homo hete/) {
+			$sub_cnt[$i]{$tk} //= 0; 
+		}
+		my $tot        = $sub_cnt[$i]{'miss'} + $sub_cnt[$i]{'hete'} + $sub_cnt[$i]{'homo'}; 
+		my $tot_typed  = $sub_cnt[$i]{'hete'} + $sub_cnt[$i]{'homo'}; 
+		my $rat_hete   = ($tot_typed > 0) ? ( $sub_cnt[$i]{'hete'}/$tot_typed*100 ) : -1; 
+		my $rat_homo   = ($tot_typed > 0) ? ( $sub_cnt[$i]{'homo'}/$tot_typed*100 ) : -1; 
+		my $rat_miss   = ($tot       > 0) ? ( $sub_cnt[$i]{'miss'}/$tot      *100 ) : -1; 
+		print O join("\t", $ha[$i], $sub_cnt[$i]{'miss'}, $tot_typed, @{$sub_cnt[$i]}{qw/hete homo/}, $rat_hete, $rat_homo, $rat_miss)."\n"; 
+	}
         close O;
         close F;
         $pm->finish;
 }
-sub cnt_stat {
-}
+
 $pm->wait_all_children;
 # Merge sub-files
-print STDOUT $header_txt;
+my @all_cnt; 
 for my $sfn ( @sub_fn ) {
         open F,'<',"$sfn.o" or &stopErr("[Err] Failed to open subfile [$sfn.o]\n");
+	<F>; 
+	my $i = -1; 
         while (<F>) {
-                print STDOUT $_;
+		$i ++; 
+		chomp; 
+		my @ta = split(/\t/, $_); 
+		$ta[0] eq $ha[$i] or &stopErr("[Err] Different Individual ID [$i-$ta[0]] for $ha[$i] in file [$sfn.o]\n"); 
+		for ( my $j=1; $j<@ta; $j++ ) {
+			if ( $ta[$j] == -1 ) {
+				$all_cnt[$i][$j] //= -1; 
+			} else {
+				$all_cnt[$i][$j] //= -1; 
+				if ( $all_cnt[$i][$j] == -1 ) {
+					$all_cnt[$i][$j] = $ta[$j]; 
+				} else {
+					$all_cnt[$i][$j] += $ta[$j]; 
+				}
+			}
+		}
         }
         close F;
 }
+print STDOUT join("\t", qw/IndvID N_Num Typed_Num Het_Num Hom_Num Het_Ratio Hom_Ratio N_Ratio/)."\n"; 
+for (my $i=$opts{'startColN'}; $i<@ha; $i++) {
+	$ha[$i] eq $all_cnt[$i][0] or &stopErr("[Err] $ha[$i] VS. $all_cnt[$i][0] ?\n"); 
+	my $tot        = $all_cnt[$i][1] + $all_cnt[$i][2]; 
+	my $tot_typed  = $all_cnt[$i][2]; 
+	my $rat_hete   = ($tot_typed > 0) ? ( $all_cnt[$i][3]/$tot_typed*100 ) : -1; 
+	my $rat_homo   = ($tot_typed > 0) ? ( $all_cnt[$i][4]/$tot_typed*100 ) : -1; 
+	my $rat_miss   = ($tot_typed > 0) ? ( $all_cnt[$i][1]/$tot      *100 ) : -1; 
+	print STDOUT join("\t", @{$all_cnt[$i]}[0..4], $rat_hete, $rat_homo, $rat_miss)."\n"; 
+}
+
 # Delete temp_dir
 &fileSunhh::_rmtree($wrk_dir);
 
 
 
+sub type_tabGeno {
+	if ( $_[0] eq './.' ) {
+		return('miss'); 
+	} elsif ( $_[0] =~ m!^([ATGC\*N]+)/([ATGC\*N]+)$! ) {
+		if ( $1 eq $2 ) {
+			return('homo'); 
+		} else {
+			return('hete'); 
+		}
+	} else {
+		&stopErr("[Err] Unknown format of vcfTab genotype [$_[0]]\n"); 
+	}
+}# type_tabGeno

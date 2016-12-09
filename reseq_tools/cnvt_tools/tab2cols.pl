@@ -28,6 +28,7 @@ perl $0 in.vcf.tab > in.vcf.cols
  -noHeader      [Boolean]
 
  -skipInDel     [Boolean] Skip lines with InDel alleles. 
+ -singleChar    [Boolean] If given, 'AC'/'CA' in .cols format will be 'M'. 
 
 # Mask indel genotypes to N, except single '*'. 
 # Only accept bi-allele genotype for cols-format (single-character) genotype. 
