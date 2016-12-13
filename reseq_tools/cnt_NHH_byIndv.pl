@@ -130,9 +130,6 @@ for my $sfn ( @sub_fn ) {
 				}
 			}
 		}
-if ($ta[0] eq 'WM1_GS1_97103_CLV_CLV') {
-	print STDERR join("\t", "$i - $sfn", @{$all_cnt[$i]})."\n"; 
-}
         }
         close F;
 }
