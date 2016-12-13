@@ -148,7 +148,7 @@ for (my $i=$opts{'startColN'}; $i<@ha; $i++) {
 }
 
 # Delete temp_dir
-# &fileSunhh::_rmtree($wrk_dir);
+&fileSunhh::_rmtree($wrk_dir);
 
 
 
