@@ -11,6 +11,7 @@ GetOptions(\%opts,
 	"startColN:i", # 2 
 	"noHeader!", 
 	"cpuN:i", # 20 
+	"input_is_tab!", 
 ); 
 $opts{'startColN'} //= 2; 
 $opts{'cpuN'} //= 20; 
@@ -34,6 +35,8 @@ perl $0 in.snp > in.snp.cntNHH
  -startColN          [$opts{'startColN'}]
  -noHeader           [Bool]
 
+ -input_is_tab       [Bool] Should be given if input is .vcf.tab format. 
+
 Genotype column start from colN=$opts{'startColN'}
 Do not parse the first line. 
 
@@ -47,7 +50,7 @@ my $fh = \*STDOUT;
 
 my @ha; 
 unless ($opts{'noHeader'}) {
-	my $head = <>; 
+	my $head = <$fh>; 
 	chomp($head); 
 	@ha=split(/\t/, $head); 
 }
@@ -77,9 +80,9 @@ for my $sfn ( @sub_fn ) {
                 chomp;
                 my @ta = &splitL("\t", $_);
 		my @tb = @ta[ $opts{'startColN'} .. $#ta ]; 
-		&SNP_tbl::aref_cols2tab( \@tb,  $used{'bad_geno'}, \%d2b_list, 0); 
+		$opts{'input_is_tab'} or &SNP_tbl::aref_cols2tab( \@tb,  $used{'bad_geno'}, \%d2b_list, 0); 
 		for (my $i=0; $i<@tb; $i++) {
-			my $j=$i+$opts{'startColN'}-1; 
+			my $j=$i+$opts{'startColN'}; 
 			my $type = &type_tabGeno( $tb[$i] ); 
 			$sub_cnt[$j]{$type} ++; 
 		}
@@ -107,17 +110,19 @@ my @all_cnt;
 for my $sfn ( @sub_fn ) {
         open F,'<',"$sfn.o" or &stopErr("[Err] Failed to open subfile [$sfn.o]\n");
 	<F>; 
-	my $i = -1; 
+	my $i0 = -1; 
         while (<F>) {
-		$i ++; 
+		$i0 ++; 
+		my $i = $i0 + $opts{'startColN'}; 
 		chomp; 
 		my @ta = split(/\t/, $_); 
-		$ta[0] eq $ha[$i] or &stopErr("[Err] Different Individual ID [$i-$ta[0]] for $ha[$i] in file [$sfn.o]\n"); 
+		$ta[0] eq $ha[$i] or &stopErr("[Err] Different Individual ID [$i-$ta[0]] for $ha[$i] in file [$sfn.o]\nhs=[@ha]\n"); 
+		$all_cnt[$i][0] //= $ta[0]; 
+		$all_cnt[$i][0] eq $ta[0] or &stopErr("[Err] Different ID in all_cnt [$all_cnt[$i][0]] and [$ta[0]]\n"); 
 		for ( my $j=1; $j<@ta; $j++ ) {
+			$all_cnt[$i][$j] //= -1; 
 			if ( $ta[$j] == -1 ) {
-				$all_cnt[$i][$j] //= -1; 
 			} else {
-				$all_cnt[$i][$j] //= -1; 
 				if ( $all_cnt[$i][$j] == -1 ) {
 					$all_cnt[$i][$j] = $ta[$j]; 
 				} else {
@@ -125,6 +130,9 @@ for my $sfn ( @sub_fn ) {
 				}
 			}
 		}
+if ($ta[0] eq 'WM1_GS1_97103_CLV_CLV') {
+	print STDERR join("\t", "$i - $sfn", @{$all_cnt[$i]})."\n"; 
+}
         }
         close F;
 }
@@ -140,12 +148,12 @@ for (my $i=$opts{'startColN'}; $i<@ha; $i++) {
 }
 
 # Delete temp_dir
-&fileSunhh::_rmtree($wrk_dir);
+# &fileSunhh::_rmtree($wrk_dir);
 
 
 
 sub type_tabGeno {
-	if ( $_[0] eq './.' ) {
+	if ( $_[0] eq './.' or $_[0] eq 'N/N' ) {
 		return('miss'); 
 	} elsif ( $_[0] =~ m!^([ATGC\*N]+)/([ATGC\*N]+)$! ) {
 		if ( $1 eq $2 ) {
