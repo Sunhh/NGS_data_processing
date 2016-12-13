@@ -2,6 +2,7 @@
 use strict; 
 use warnings; 
 use LogInforSunhh; 
+use fileSunhh; 
 use SNP_tbl; 
 use Getopt::Long; 
 my %opts; 
