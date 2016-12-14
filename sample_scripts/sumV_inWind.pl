@@ -3,12 +3,13 @@ use strict;
 use warnings; 
 use LogInforSunhh; 
 use mathSunhh; 
+use fileSunhh; 
 
 use Getopt::Long; 
 my %opts;
 GetOptions(\%opts, 
 	"help!", 
-	"wind_length:i", "wind_start:i", "wind_end:i", "wind_step:i", 
+	"wind_length:i", "wind_start:i", "wind_end:i", "wind_step:i", "wind_se_file:s", 
 	"chr_colN:i", "pos_colN:i", "cnt_colN:i", "freq_colN:i", 
 	"maxLine:i", "showAll!", "trimTail!", 
 	"skipHN:i", 
@@ -28,6 +29,9 @@ sub usage {
 #  -wind_step      [wind_length]
 #  -wind_start     [1]
 #  -wind_end       [9999999]
+#  -wind_se_file   [filename] Format : 
+#                    chrID \\t Start \\t End
+#                    chr1  \\t 1     \\t 9999999
 #
 #  -chr_colN       [0] 999999 means there is no chr_colN being used. 
 #  -pos_colN       [1] 999999 means there is no pos_colN being used, then setup windows from cnt_colN
@@ -50,6 +54,12 @@ HH
 # chr10   9225    0.19718189638096        0.468664169787765       1.6131216677027 CT      T       T       T       T       T       C       C       T       T
 # chr10   9318    0.196326356382151       0.217152412804587       0.123718584278465       C       C       C       C       CT      C       AC      C       C
 #
+
+my %glob; 
+if ( defined $opts{'wind_se_file'} ) {
+	$glob{'wind_se'} = {}; 
+	%{$glob{'wind_se'}} = map { $_->[0] => [ $_->[1], $_->[2] ] }&fileSunhh::load_tabFile( $opts{'wind_se_file'}, 0 ); 
+}
 
 $opts{'wind_length'} = $opts{'wind_length'} // 1; 
 $opts{'wind_start'} = $opts{'wind_start'} // 1; 
@@ -85,8 +95,8 @@ while (<>) {
 	my $posV = ( $opts{'pos_colN'} == 999999 ) ? $cntV : $ta[ $opts{'pos_colN'} ] ; 
 	( defined $cntV and $cntV ne '' ) or next; 
 	defined $chr_wind{$chrV} or $chr_wind{$chrV} = $mm->setup_windows(
-	  'ttl_start' => $opts{'wind_start'}, 
-	  'ttl_end'   => $opts{'wind_end'}, 
+	  'ttl_start' => ( defined $glob{'wind_se'}{$chrV} ) ? $glob{'wind_se'}{$chrV}[0] : $opts{'wind_start'}, 
+	  'ttl_end'   => ( defined $glob{'wind_se'}{$chrV} ) ? $glob{'wind_se'}{$chrV}[1] : $opts{'wind_end'}, 
 	  'wind_size' => $opts{'wind_length'}, 
 	  'wind_step' => $opts{'wind_step'}, 
 	  'minRatio'  => 0 
@@ -128,6 +138,9 @@ for my $chrID ( sort keys %chr_wind ) {
 		my %ins_back = %{ mathSunhh::ins_calc( $chr_wind{$chrID}{'vv'}{$ti} ) }; 
 		for my $tk (qw/MEAN/) {
 			$ins_back{$tk} ne '' and $ins_back{$tk} = sprintf("%.4f", $ins_back{$tk}); 
+		}
+		for my $tk ( qw/SUM COUNT MEAN/ ) {
+			$ins_back{$tk} eq '' and $ins_back{$tk} = 0; 
 		}
 		print STDOUT join("\t", $chrID, @{$chr_wind{$chrID}{'loci'}{$ti}}[0,1], @ins_back{qw/SUM COUNT MEAN/})."\n"; 
 	}
