@@ -36,7 +36,7 @@ use LogInforSunhh;
 use Getopt::Long;
 my %opts;
 GetOptions(\%opts,
-	"combine!","column:s",
+	"combine!","column:s","kick_col!", 
 	"colByTbl:s", "colByTbl_also:s", 
 	"max_col:s","min_col:s",
 	"skip:i",
@@ -71,6 +71,7 @@ command:perl $0 <STDIN|parameters>
   -help           help infomation;
   -combine        combine files;
   -column<int>    cols "num1,num2,num3..." will be picked out and joined to a new line;
+   -kick_col      [Boolean] If given, the columns defined by -column will be removed instead of extracted. 
   -colByTbl<Str>  [index_file]. The 1st column of index_file is used to match the first line of input.table. Output matching columns from input.table. 
    -colByTbl_also [Str] Cols "num1,num2,num3" will be output before checking the matching between input.table and index_file. 
   -max_col        Similar to -column, compare by order;
@@ -996,6 +997,8 @@ sub combine{
 #### select special cols to generate a new line
 sub column{
 	my @cols=&parseCol($opts{column});
+	my $need_kick = 0; 
+	$opts{'kick_col'} and $need_kick = 1; 
 	for my $fh (@InFp) {
 		if ( defined $pm ) {
 			$opts{'cpuN'} > 1 or &stopErr("[Err] Check 01 in column()\n"); 
@@ -1009,6 +1012,15 @@ sub column{
 				while (<F>) {
 					chomp; s/[^\S$symbol]+$//; 
 					my @temp = &splitL($symbol, $_); 
+					if ($need_kick == 1) {
+						my %t1 = map { $_ => 1 } @cols; 
+						@cols = (); 
+						for (my $i=0; $i<@temp; $i++) {
+							defined $t1{$i} and next; 
+							push(@cols, $i); 
+						}
+						$need_kick = 0; 
+					}
 					print O join("\t",@temp[@cols])."\n"; 
 				}
 				close O; 
@@ -1028,6 +1040,15 @@ sub column{
 			while (<$fh>) {
 				chomp; s/[^\S$symbol]+$//; 
 				my @temp = &splitL($symbol, $_); 
+				if ($need_kick == 1) {
+					my %t1 = map { $_ => 1 } @cols; 
+					@cols = (); 
+					for (my $i=0; $i<@temp; $i++) {
+						defined $t1{$i} and next; 
+						push(@cols, $i); 
+					}
+					$need_kick = 0; 
+				}
 				print STDOUT join("\t",@temp[@cols])."\n";
 			}
 		}
