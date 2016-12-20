@@ -33,8 +33,12 @@ sub stopErr {
 
 =head1 exeCmd_1cmd($cmd_to_exec, $print_only)
 
-Function : Execute command with system and time record. 
-           When $print_only == 1, will only print command instead of executing it. 
+Function : 
+
+  Execute command with system and time record. 
+  When $print_only == 1, will only print command instead of executing it. 
+  Return 1 if the command fails. 
+
 
 =cut
 sub exeCmd_1cmd {
