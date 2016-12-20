@@ -58,6 +58,7 @@ GetOptions(\%opts,
 	"col_head!", 
 	"chID_RefLis:s", "chID_Row!", "chID_OldColN:i", "chID_NewColN:i", "chID_skipH:i", "chID_RowColN:i", # Change Column/Row names according to reference. 
 	"spec_loci_1from2!", "spec_loci_f1:s", "spec_loci_f2:s", "spec_loci_minLen:i", 
+	"self_agp_from_keyLen!", # output of "deal_fasta.pl -attribute key:len"
 	"cpuN:i", 
 	"log_ln:i", 
 	"help!");
@@ -130,6 +131,8 @@ command:perl $0 <STDIN|parameters>
   '-spec_loci_1from2!', '-spec_loci_f1:s', '-spec_loci_f2:s' , # Find region in -spec_loci_f1 that is absent in -spec_loci_f2. 
                   # Format of '-spec_loci_f1/2' : ID \\t Start \\t End \\n
     '-spec_loci_minLen:i', # Minimum length of specific region. Default is 0; 
+
+  -self_agp_from_keyLen   [Boolean] Input should be output of "deal_fasta.pl -attr key:len"
 
   -symbol         Defining the symbol to divide data.Default is "\\t";
   -dR2dN          [Boolean] Change \\r to \\n in files. 
@@ -252,6 +255,8 @@ if ( &goodVar($opts{col_sort}) ) {
 
 &specLoci() if ( defined $opts{'spec_loci_1from2'} ); 
 
+&kl2agp() if ( defined $opts{'self_agp_from_keyLen'} ); 
+
 for (@InFp) {
 	close ($_);
 }
@@ -260,6 +265,17 @@ for (@InFp) {
 ######################################################################
 ## sub-routines for functions. 
 ######################################################################
+
+sub kl2agp {
+	for my $fh (@InFp) {
+		while (&wantLineC($fh)) {
+			my @ta = &splitL($symbol, $_); 
+			$ta[0] =~ m/^key$/i and next; 
+			print STDOUT join("\t", $ta[0], 1, $ta[1], 1, "W", $ta[0], 1, $ta[1], '+')."\n"; 
+		}
+	}
+}# kl2agp () 
+
 
 # 
 sub specLoci {
