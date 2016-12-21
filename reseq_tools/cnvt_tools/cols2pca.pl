@@ -52,6 +52,7 @@ my %used;
 my @InFp ; 
 -t or @InFp = ( \*STDIN ); 
 if (@ARGV) {
+	@InFp = (); 
 	for (@ARGV) {
 		push( @InFp, &openFH($_, '<') ); 
 	}
@@ -85,7 +86,7 @@ for my $fh (@InFp) {
 	# Deal with header_txt : Nothing to do. 
 	# Sep-files
 	my $wrk_dir = &fileSunhh::new_tmp_dir( 'create' => 1 ); 
-	my @sub_fn = &fileSunhh::dvd_file( $fh, $opts{'cpuN'}, 'keep_order' => 1, 'with_header' => 0, 'sub_pref' => "$wrk_dir/sub_", 'tmpFile' =>      "$wrk_dir/base_0" ); 
+	my @sub_fn = &fileSunhh::dvd_file( $fh, $opts{'cpuN'}, 'keep_order' => 1, 'with_header' => 0, 'sub_pref' => "$wrk_dir/sub_", 'tmpFile' => "$wrk_dir/base_0" ); 
 	# Process-sub-files
 	### Setup %chr_start
 	if ( !(defined $opts{'chr_keyLen'}) ) {
