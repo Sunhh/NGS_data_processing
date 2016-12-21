@@ -73,7 +73,7 @@ for my $fh (@InFp) {
 		$para_prevCID //= $ta[0]; 
 		if ($para_prevCID ne $ta[0]) {
 			$para_prevCID = $ta[0]; 
-			$para_prevCEnd = $para_currCEnd + $opts{'insertLen'}; 
+			$para_prevCEnd += ($para_currCEnd + $opts{'insertLen'}); 
 		}
 		$para_currCEnd = $ta[1]; 
 
