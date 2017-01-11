@@ -42,8 +42,6 @@ my %score;
 my %glb; 
 for my $ar1 (@{$xpclr{'line'}}) {
 	$glb{'chrID'} //= $ar1->[0]; 
-	my $snp_num = $ar1->[2]; 
-	$snp_num > 0 or next; 
 	my $p = $ar1->[3]; 
 	my $v = $ar1->[5]; 
 	$v =~ m/^inf$/i and next; 

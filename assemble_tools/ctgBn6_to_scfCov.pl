@@ -64,11 +64,16 @@ while (<>) {
 	my @ta = split(/\t/, $_); 
 	$ta[2] >= 100 * $opts{'minIdent'} or next; 
 	defined $ctg2scf{$ta[0]} or &stopErr("[Err] No contig_ID [$ta[0]] found.\n"); 
-	defined $ctg2scf{$ta[1]} or &stopErr("[Err] No contig_ID [$ta[1]] found.\n"); 
 	my @r1s = $ms_obj->switch_position( 'qry2ref'=>\%ctg2scf , 'qryID'=>$ta[0], 'qryPos'=>$ta[6] ); 
 	my @r1e = $ms_obj->switch_position( 'qry2ref'=>\%ctg2scf , 'qryID'=>$ta[0], 'qryPos'=>$ta[7] ); 
 	$r1s[0][0] eq $r1e[0][0] or &stopErr("[Err] Bad scaffold found [$r1s[0][0]] and [$r1e[0][0]] : $_\n"); 
-	my @r2s = $ms_obj->switch_position( 'qry2ref'=>\%ctg2scf , 'qryID'=>$ta[1], 'qryPos'=>$ta[8] ); 
+	my @r2s; 
+	if (defined $ctg2scf{$ta[1]}) {
+		@r2s = $ms_obj->switch_position( 'qry2ref'=>\%ctg2scf , 'qryID'=>$ta[1], 'qryPos'=>$ta[8] ); 
+	} else {
+		# defined $ctg2scf{$ta[1]} or &stopErr("[Err] No contig_ID [$ta[1]] found.\n"); 
+		@r2s = ([$ta[1], $ta[8], '+']); 
+	}
 	my $scfID1 = $r1s[0][0]; 
 	my $scfID2 = $r2s[0][0]; 
 	$scfID1 eq $scfID2 and next; 
