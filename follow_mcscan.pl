@@ -1155,7 +1155,15 @@ sub _fill_glist_wiALN {
 
 defined $parm{'gindex'}{ $gpair[$k][$na] } or &stopErr("[Err] No gene location found for [$gpair[$k][$na]]\n"); 
 my $needIdx = $parm{'gindex'}{ $gpair[$k][$na] }; 
-$j > $needIdx and &stopErr("[Err] The location of gene [$gpair[$k][$na]] might be different from .aln file.\n"); 
+# &tsmsg("[Msg] j=$j needIdx=$needIdx $gpair[$k][$na] $gpair[$k][$nb]\n"); 
+if ($j > $needIdx) {
+	&tsmsg("[Err] @{$tr->{'info'}}\n"); 
+	&tsmsg("[Err] minIdx=$minIdx maxIdx=$maxIdx\n"); 
+	&tsmsg("[Err] gene [k=$k na=$na $gpair[$k][$na]][nb=$nb $gpair[$k][$nb]]\n"); 
+	&tsmsg("[Err] depth=$depth[$j]{$tax[$nb]}; use_tax=$use_tax{$tax[$nb]}; tax_nb=$tax[$nb]\n"); 
+	&tsmsg("[Err] The location of gene [$gpair[$k][$na]] might be different from .aln file. [j=$j needIdx=$needIdx]\n"); 
+	&stopErr("[Err] You may try to add -raw_order parameter.\n"); 
+}
 
 				$glist_wiALN[$j][0] ne $gpair[$k][$na] and do { $glist_wiALN[$j][$track] = '||'; next; }; 
 				$glist_wiALN[$j][$track] = $gpair[$k][$nb]; 
