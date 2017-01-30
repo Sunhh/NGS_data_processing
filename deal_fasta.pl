@@ -173,9 +173,8 @@ Usage: $0  <fasta_file | STDIN>
   -aa2cds             [filename_cds.fa] Get AA positioned CDS sequences. 
 
   -cds2aa             [Boolean]
-
-  -codon_table        [1] Could be 1,2,3,4,5,6,7,8,9,10
-  -frame              [1] Could be 1,2,3 (plus strand), -1,-2,-3 (reverse strand)
+    -codon_table        [1] Could be 1,2,3,4,5,6,7,8,9,10
+    -frame              [1] Could be 1,2,3 (plus strand), -1,-2,-3 (reverse strand)
 
 #******* Instruction of this program *********#
 HELP
