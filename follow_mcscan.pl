@@ -16,10 +16,13 @@ GetOptions(\%opts,
  "in_gff:s", # in_gff is similar to mcscan's .bed file, with format as : (OO)N+ \t GeneID \t Start \t End 
  "in_aln:s", # This is the output ".collinearity" file of mcscanX, which should be similar to .align of mcscan or previous mcscanX version. 
  "in_blast:s", # This is the input ".blast" file of mcscanX, 
+ "in_table:s", # This is the output of -aln2table. 
  "out:s", # output filename 
  "aln2list!", "addChr!", "tgt_gff:s", "srt_by:s", "raw_order!", 
  "aln2table!",
    "useYN!", 
+ "sepTable!", 
+   "sepColN:s", 
  "aln2pairList!", 
  "glist2pairs!", "in_glist:s", "pivot_pat:s", "target_pat:s", 
  "slctBlk!", "slct_list:s", "slct_colN:i", "slct_type:s", 
@@ -67,6 +70,10 @@ sub usage {
 #                            Ka / Ks / KaKs / AVG_Ks / Med_Ks / UsedKs / AVG_Ka / Med_Ka / UsedKa / AVG_KaKs / Med_KaKs / UsedKaKs
 #   -useYN        [Boolean] By default, Nei-Gojobori (NG) will be chose in block Ks calculation. But
 #                   I will switch to use Yang-Nielson (YN) results if given this parameter. 
+#
+# -sepTable       [Boolean] Separate table into one gene pair per line format. This is useful when checking gene pair's kaks. 
+#                   Need -in_table 
+#   -sepColN      [11,12,13,14] Only use these columns; 
 # 
 # -glist2pairs    [Boolean] Extract non-redundant gene pairs in gene list. 
 #                   Here the gene list is the output of -aln2list. 
@@ -259,12 +266,52 @@ if ( $opts{'aln2list'} ) {
 	 'in_aln' => $opts{'in_aln'}, 
 	 'useYN' => $opts{'useYN'}, 
 	); 
+} elsif ( $opts{'sepTable'} ) {
+	$opts{'sepColN'} //= '11,12,13,14'; 
+	&sep_tab (
+	  'in_table'=> $opts{'in_table'}, 
+	  'sepColN' => $opts{'sepColN'}, 
+	); 
 } else {
 	&usage(); 
 }
 ####################################################################################################
 # Sub-functions to be called 
 ####################################################################################################
+
+sub sep_tab {
+	my %parm = $ms_obj->_setHashFromArr(@_); 
+	$parm{'sepColN'} //= '11,12,13,14'; 
+	my @CV = split(/,/, $parm{'sepColN'}); 
+	open F,'<',"$parm{'in_table'}" or die; 
+	while (<F>) {
+		chomp; 
+		my @ta = split(/\t/, $_); 
+		if ( $ta[0] eq 'BlkID' ) {
+			print STDOUT join("\t", $ta[0], @ta[@CV])."\n"; 
+			next; 
+		}
+		my $maxN = -1; 
+		for my $tv (@CV) {
+			my @tc = split(/,/, $ta[$tv]);
+			$maxN < scalar(@tc) and $maxN = scalar(@tc);
+		}
+		for (my $i=0; $i<$maxN; $i++) {
+			my @o; 
+			for (my $j=0; $j<@CV; $j++) {
+				my $tv = $CV[$j];
+				my @tc = split(/,/, $ta[$tv]);
+				if ( defined $tc[$i] ) {
+					push(@o, $tc[$i]);
+				} else {
+					push(@o, $tc[0]);
+				}
+			}
+			print STDOUT join("\t", $ta[0], @o)."\n"; 
+		}
+	}
+	close F; 
+}# sep_tab () 
 
 sub mcs_addKaKs {
 	my %parm = $ms_obj->_setHashFromArr(@_); 
