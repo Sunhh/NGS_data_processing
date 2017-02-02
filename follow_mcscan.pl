@@ -73,7 +73,7 @@ sub usage {
 #
 # -sepTable       [Boolean] Separate table into one gene pair per line format. This is useful when checking gene pair's kaks. 
 #                   Need -in_table 
-#   -sepColN      [11,12,13,14] Only use these columns; 
+#   -sepColN      [0,11,12,13,14] Only use these columns; 
 # 
 # -glist2pairs    [Boolean] Extract non-redundant gene pairs in gene list. 
 #                   Here the gene list is the output of -aln2list. 
@@ -267,7 +267,7 @@ if ( $opts{'aln2list'} ) {
 	 'useYN' => $opts{'useYN'}, 
 	); 
 } elsif ( $opts{'sepTable'} ) {
-	$opts{'sepColN'} //= '11,12,13,14'; 
+	$opts{'sepColN'} //= '0,11,12,13,14'; 
 	&sep_tab (
 	  'in_table'=> $opts{'in_table'}, 
 	  'sepColN' => $opts{'sepColN'}, 
@@ -281,7 +281,7 @@ if ( $opts{'aln2list'} ) {
 
 sub sep_tab {
 	my %parm = $ms_obj->_setHashFromArr(@_); 
-	$parm{'sepColN'} //= '11,12,13,14'; 
+	$parm{'sepColN'} //= '0,11,12,13,14'; 
 	my @CV = split(/,/, $parm{'sepColN'}); 
 	open F,'<',"$parm{'in_table'}" or die; 
 	while (<F>) {
@@ -307,7 +307,7 @@ sub sep_tab {
 					push(@o, $tc[0]);
 				}
 			}
-			print STDOUT join("\t", $ta[0], @o)."\n"; 
+			print STDOUT join("\t", @o)."\n"; 
 		}
 	}
 	close F; 

@@ -415,7 +415,7 @@ sub aa2cds {
 			my $res = $cds_seq{'len'}{$tk} % 3; 
 			my $t_seq = $cds_seq{'seq'}{$tk}; 
 			$res > 0 and $t_seq .= ( 'N' x (3-$res) ); 
-			my $t_pos = length($t_seq/3)-1; 
+			my $t_pos = length($t_seq)/3-1; 
 			for (my $ip = $t_pos; $ip > $aa_pos; $ip--) {
 				my $bbb = substr( $t_seq, $ip*3, 3 ); 
 				my ($curr_bbb2aa) = &bbb2aa( $bbb, $opts{'codon_table'} ); 
