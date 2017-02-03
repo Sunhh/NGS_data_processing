@@ -102,8 +102,8 @@ for my $tr1 (@{$ogs_h{'OGs'}}) {
 		print OPHY "$indv_ID   $c_h{$tk}{'seq'}\n"; 
 	}
 	close OPHY; 
-	&exeCmd_1cmd("$opts{'exe_codeml'} ./c.0.ctl 1> c.0.out"); 
-	&exeCmd_1cmd("$opts{'exe_codeml'} ./c.1.ctl 1> c.1.out"); 
+	&exeCmd_1cmd("$opts{'exe_codeml'} ./c.0.ctl 1> c.0.out") and do { &print_std($tr1->[0], ("NA") x 5, join(",",@{$tr1}[1 .. $#$tr1]), 'NA'); next; }; 
+	&exeCmd_1cmd("$opts{'exe_codeml'} ./c.1.ctl 1> c.1.out") and do { &print_std($tr1->[0], ("NA") x 5, join(",",@{$tr1}[1 .. $#$tr1]), 'NA'); next; }; 
 	my $ofn_0 = &get_ofn_ctl("./c.0.ctl"); 
 	my $ofn_1 = &get_ofn_ctl("./c.1.ctl"); 
 	my %v_0   = &infor_mlc($ofn_0); 
