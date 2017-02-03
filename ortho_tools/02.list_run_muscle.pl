@@ -21,6 +21,7 @@ $opts{'startColN'} //= 0;
 $opts{'startRowN'} //= 1; 
 $opts{'min2max_var'} //= -1; 
 $opts{'minProt_len'} //= -1; 
+$opts{'para_trimal'} //= '-gt 0.9'; 
 
 
 my $help_txt = <<HH; 
@@ -38,6 +39,8 @@ Format of -tax_list : tax1 \\n tax2 \\n tax3 ...
 -startRowN      [$opts{'startRowN'}] 1-indexed. 
 -min2max_var    [-1] [0-1]; 
 -minProt_len    [-1] 
+
+-para_trimal    ['-gt 0.9']
 
 HH
 
@@ -68,7 +71,7 @@ for ( my $i=0; $i<@grp_list; $i++ ) {
 	}
 	chdir($tmp_dir); 
 	&exeCmd_1cmd("muscle -in input.fa -out aln.fa"); 
-	&exeCmd_1cmd("trimal -in aln.fa -out aln_trimal.fa -gt 0.9"); 
+	&exeCmd_1cmd("trimal -in aln.fa -out aln_trimal.fa $opts{'para_trimal'}"); 
 	if ( $opts{'min2max_var'} >= 0 ) {
 		my ($min2, $max2) = &min_max_len_from_fas("aln.fa"); 
 		$max2 <= $min * (1+$opts{'min2max_var'}) or do { chdir($cwd); &fileSunhh::_rmtree($tmp_dir); next; }; 
