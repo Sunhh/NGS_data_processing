@@ -50,8 +50,8 @@ for (keys %cds_h ) { $cds_h{$_}{'seq'}  =~ s!\s!!g; }
 my $ori_dir = &fileSunhh::_abs_path("./"); 
 my $wrk_dir = &fileSunhh::new_tmp_dir( 'create' => 1 ); 
 &fileSunhh::_copy( $opts{'in_tree'}, "$wrk_dir/c.tree"); 
-&fileSunhh::_copy( $opts{'in_ctl0'}, "$wrk_dir/c.0.ctl"); 
-&fileSunhh::_copy( $opts{'in_ctl1'}, "$wrk_dir/c.1.ctl"); 
+&setup_ctl0("$wrk_dir/c.0.ctl", $opts{'in_ctl0'}); 
+&setup_ctl1("$wrk_dir/c.1.ctl", $opts{'in_ctl1'}); 
 
 
 print STDOUT join("\t", qw/OG_ID p_value LRT_delta lnL_1 lnL_0 df Gene_ID tree/)."\n"; 
@@ -186,4 +186,112 @@ sub load_ogs {
 	return(\%back); 
 }# load_ogs () 
 
+
+sub setup_ctl0 {
+	my ($ofn, $ifn) = @_; 
+	my $ofh = &openFH($ofn, '>'); 
+	if ( defined $ifn ) {
+
+my $ifh = &openFH($ifn, '<'); 
+while (<$ifh>) {
+	chomp; 
+	s!^(\s*seqfile\s*=\s*)(\S+)(\s*)(\*|$)!$1c.phy$3$4!; 
+	s!^(\s*treefile\s*=\s*)(\S+)(\s*)(\*|$)!$1c.tree$3$4!; 
+	s!^(\s*outfile\s*=\s*)(\S+)(\s*)(\*|$)!$1c.0.mlc$3$4!; 
+	print {$ofh} "$_\n"; 
+}
+close ($ifh); 
+
+	} else {
+
+print {$ofh} <<CTL0; 
+seqfile  = c.phy              * sequence data file name
+treefile = c.tree       * tree structure file name
+outfile  = c.0.mlc  * main result file name
+
+  noisy = 9     * 0,1,2,3,9: how much rubbish on the screen
+verbose = 1     * 1: detailed output, 0: concise output
+runmode = 0     * 0: user tree;  1: semi-automatic;  2: automatic
+                * 3: StepwiseAddition; (4,5):PerturbationNNI; -2: pairwise
+
+  seqtype = 1   * 1:codons; 2:AAs; 3:codons-->AAs
+CodonFreq = 2   * 0:1/61 each, 1:F1X4, 2:F3X4, 3:codon table
+    clock = 0   * 0: no clock, unrooted tree, 1: clock, rooted tree
+   aaDist = 0   * 0:equal, +:geometric; -:linear, {1-5:G1974,Miyata,c,p,v}
+    model = 2   * models for codons:
+                * 0:one, 1:b, 2:2 or more dN/dS ratios for branches
+  NSsites = 2   * 0:one w; 1:NearlyNeutral; 2:PositiveSelection; 3:discrete;
+                * 4:freqs; 5:gamma;6:2gamma;7:beta;8:beta&w;9:beta&gamma;10:3normal
+    icode = 0   * 0:standard genetic code; 1:mammalian mt; 2-10:see below
+    Mgene = 0   * 0:rates, 1:separate; 2:pi, 3:kappa, 4:all
+
+fix_kappa = 0   * 1: kappa fixed, 0: kappa to be estimated
+    kappa = 2   * initial or fixed kappa
+fix_omega = 1   * 1: omega or omega_1 fixed, 0: estimate
+    omega = 1   * initial or fixed omega, for codons or codon-based AAs
+
+       getSE = 0       * 0: don't want them, 1: want S.E.s of estimates
+RateAncestor = 0       * (0,1,2): rates (alpha>0) or ancestral states (1 or 2)
+  Small_Diff = .45e-6  * Default value.
+   cleandata = 1       * remove sites with ambiguity data (1:yes, 0:no)?
+ fix_blength = 0       * 0: ignore, -1: random, 1: initial, 2: fixed 
+CTL0
+
+	}
+	close ($ofh); 
+}# setup_ctl0() 
+
+sub setup_ctl1 {
+	my ($ofn, $ifn) = @_; 
+	my $ofh = &openFH($ofn, '>'); 
+	if ( defined $ifn ) {
+
+my $ifh = &openFH($ifn, '<'); 
+while (<$ifh>) {
+	chomp; 
+	s!^(\s*seqfile\s*=\s*)(\S+)(\s*)(\*|$)!$1c.phy$3$4!; 
+	s!^(\s*treefile\s*=\s*)(\S+)(\s*)(\*|$)!$1c.tree$3$4!; 
+	s!^(\s*outfile\s*=\s*)(\S+)(\s*)(\*|$)!$1c.1.mlc$3$4!; 
+	print {$ofh} "$_\n"; 
+}
+close ($ifh); 
+
+	} else {
+
+print {$ofh} <<CTL1; 
+seqfile  = c.phy              * sequence data file name
+treefile = c.tree       * tree structure file name
+outfile  = c.1.mlc        * main result file name
+
+  noisy = 9     * 0,1,2,3,9: how much rubbish on the screen
+verbose = 1     * 1: detailed output, 0: concise output
+runmode = 0     * 0: user tree;  1: semi-automatic;  2: automatic
+                * 3: StepwiseAddition; (4,5):PerturbationNNI; -2: pairwise
+
+  seqtype = 1   * 1:codons; 2:AAs; 3:codons-->AAs
+CodonFreq = 2   * 0:1/61 each, 1:F1X4, 2:F3X4, 3:codon table
+    clock = 0   * 0: no clock, unrooted tree, 1: clock, rooted tree
+   aaDist = 0   * 0:equal, +:geometric; -:linear, {1-5:G1974,Miyata,c,p,v}
+    model = 2   * models for codons:
+                * 0:one, 1:b, 2:2 or more dN/dS ratios for branches
+  NSsites = 2   * 0:one w; 1:NearlyNeutral; 2:PositiveSelection; 3:discrete;
+                * 4:freqs; 5:gamma;6:2gamma;7:beta;8:beta&w;9:beta&gamma;10:3normal
+    icode = 0   * 0:standard genetic code; 1:mammalian mt; 2-10:see below
+    Mgene = 0   * 0:rates, 1:separate; 2:pi, 3:kappa, 4:all
+
+fix_kappa = 0   * 1: kappa fixed, 0: kappa to be estimated
+    kappa = 2   * initial or fixed kappa
+fix_omega = 0   * 1: omega or omega_1 fixed, 0: estimate
+    omega = 1   * initial or fixed omega, for codons or codon-based AAs
+
+       getSE = 0       * 0: don't want them, 1: want S.E.s of estimates
+RateAncestor = 0       * (0,1,2): rates (alpha>0) or ancestral states (1 or 2)
+  Small_Diff = .45e-6  * Default value.
+   cleandata = 1       * remove sites with ambiguity data (1:yes, 0:no)?
+ fix_blength = 0       * 0: ignore, -1: random, 1: initial, 2: fixed 
+CTL1
+
+	}
+	close ($ofh); 
+}# setup_ctl1() 
 
