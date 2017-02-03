@@ -25,6 +25,28 @@ my %str2num = qw(
   minus -1
   0     -1
 ); 
+my %IUPAC_b2d; # bases to degenerate;
+my %IUPAC_d2b; # degenerate to bases;
+{
+my @ta = qw(
+AA   CC   GG   TT   UU
+WAT  SCG  MAC  KGT  RAG   YCT
+BCGT DAGT HACT VACG -ACGT NACGT
+);
+	for my $tb (@ta) {
+		my @bb = split(//, $tb);
+		my $dbase = shift(@bb);
+		$IUPAC_b2d{$dbase} = $dbase;
+		for (&mathSunhh::permutations(\@bb, scalar(@bb))) {
+			$IUPAC_b2d{join('', @$_)} = $dbase;
+		}
+		for (&mathSunhh::combinations(\@bb, scalar(@bb))) {
+			$IUPAC_d2b{$dbase} = [sort @$_];
+		}
+	}
+}# End of IUPAC_xxx;
+
+my %codon_tbl; 
 
 
 ##########################################################
@@ -284,6 +306,400 @@ sub chop_seq {
 	}
 	return (\@back); 
 }# chop_seq() 
+
+=head1 _possible_bbb( 'ATB' )
+
+Return    : (@possible_AAAs)
+
+  _possible_bbb( 'ABT' ) returns ( 'ACT', 'AGT', 'ATT' ); 
+
+=cut
+sub _possible_bbb {
+	my ($bbb) = @_; 
+	my @back; 
+	my @bbb_arr = split(//, $bbb); 
+	my @bN; 
+	for (my $i=0; $i<3; $i++) {
+		$bbb_arr[$i] = uc($bbb_arr[$i]); 
+		if ( defined $IUPAC_d2b{$bbb_arr[$i]} ) {
+			$bN[$i] = [ @{$IUPAC_d2b{$bbb_arr[$i]}} ]; 
+		} else {
+			&stopErr("[Err] Unsupported base [$bbb_arr[$i]]\n"); 
+		}
+	}
+	for my $b1 (@{$bN[0]}) {
+		for my $b2 (@{$bN[1]}) {
+			for my $b3 (@{$bN[2]}) {
+				push(@back, "$b1$b2$b3"); 
+			}
+		}
+	}
+	return(@back); 
+}# _possible_bbb() 
+
+=head1 setup_codon_tbl() 
+
+Return : ( \%codon_tbl )
+
+Setup %codon_tbl which is used only in PM; 
+
+$codon_tbl{'src'}{'transl_tbl_\d\d'} : text from NCBI http://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi 
+$codon_tbl{'id2num'}{$some_ID} = $tbl_num_wo0 
+$codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aa'}    = { 'TTT' => F , ... }
+$codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2start'} = { 'ATG' => 1 , ... }
+$codon_tbl{'has_setup'} = 1; 
+
+=cut
+sub setup_codon_tbl {
+	defined $codon_tbl{'has_setup'} and $codon_tbl{'has_setup'} == 1 and return (\%codon_tbl); 
+# &tsmsg("[Msg] Setting codon tables.\n"); 
+$codon_tbl{'src'}{'transl_tbl_01'} = <<'TTT'; 
+    AAs  = FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG
+  Starts = ---M---------------M---------------M----------------------------
+  Base1  = TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG
+  Base2  = TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG
+  Base3  = TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG
+TTT
+
+$codon_tbl{'src'}{'transl_tbl_02'} = <<'TTT'; 
+    AAs  = FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSS**VVVVAAAADDEEGGGG
+  Starts = --------------------------------MMMM---------------M------------
+  Base1  = TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG
+  Base2  = TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG
+  Base3  = TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG
+TTT
+$codon_tbl{'src'}{'transl_tbl_03'} = <<'TTT'; 
+    AAs  = FFLLSSSSYY**CCWWTTTTPPPPHHQQRRRRIIMMTTTTNNKKSSRRVVVVAAAADDEEGGGG
+  Starts = ----------------------------------MM----------------------------
+  Base1  = TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG
+  Base2  = TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG
+  Base3  = TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG
+TTT
+$codon_tbl{'src'}{'transl_tbl_04'} = <<'TTT'; 
+    AAs  = FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG
+  Starts = --MM---------------M------------MMMM---------------M------------
+  Base1  = TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG
+  Base2  = TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG
+  Base3  = TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG
+TTT
+$codon_tbl{'src'}{'transl_tbl_05'} = <<'TTT'; 
+    AAs  = FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSSSSVVVVAAAADDEEGGGG
+  Starts = ---M----------------------------MMMM---------------M------------
+  Base1  = TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG
+  Base2  = TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG
+  Base3  = TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG
+TTT
+$codon_tbl{'src'}{'transl_tbl_06'} = <<'TTT'; 
+    AAs  = FFLLSSSSYYQQCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG
+  Starts = -----------------------------------M----------------------------
+  Base1  = TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG
+  Base2  = TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG
+  Base3  = TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG
+TTT
+$codon_tbl{'src'}{'transl_tbl_07'} = <<'TTT'; 
+TTT
+$codon_tbl{'src'}{'transl_tbl_08'} = <<'TTT'; 
+TTT
+$codon_tbl{'src'}{'transl_tbl_09'} = <<'TTT'; 
+    AAs  = FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNNKSSSSVVVVAAAADDEEGGGG
+  Starts = -----------------------------------M---------------M------------
+  Base1  = TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG
+  Base2  = TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG
+  Base3  = TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG
+TTT
+$codon_tbl{'src'}{'transl_tbl_10'} = <<'TTT'; 
+    AAs  = FFLLSSSSYY**CCCWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG
+  Starts = -----------------------------------M----------------------------
+  Base1  = TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG
+  Base2  = TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG
+  Base3  = TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG
+TTT
+$codon_tbl{'src'}{'transl_tbl_11'} = <<'TTT'; 
+    AAs  = FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG
+  Starts = ---M---------------M------------MMMM---------------M------------
+  Base1  = TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG
+  Base2  = TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG
+  Base3  = TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG
+TTT
+$codon_tbl{'src'}{'transl_tbl_12'} = <<'TTT'; 
+    AAs  = FFLLSSSSYY**CC*WLLLSPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG
+  Starts = -------------------M---------------M----------------------------
+  Base1  = TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG
+  Base2  = TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG
+  Base3  = TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG
+TTT
+$codon_tbl{'src'}{'transl_tbl_13'} = <<'TTT'; 
+    AAs  = FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSSGGVVVVAAAADDEEGGGG
+  Starts = ---M------------------------------MM---------------M------------
+  Base1  = TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG
+  Base2  = TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG
+  Base3  = TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG
+TTT
+$codon_tbl{'src'}{'transl_tbl_14'} = <<'TTT'; 
+    AAs  = FFLLSSSSYYY*CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNNKSSSSVVVVAAAADDEEGGGG
+  Starts = -----------------------------------M----------------------------
+  Base1  = TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG
+  Base2  = TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG
+  Base3  = TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG
+TTT
+$codon_tbl{'src'}{'transl_tbl_15'} = <<'TTT'; 
+TTT
+$codon_tbl{'src'}{'transl_tbl_16'} = <<'TTT'; 
+    AAs  = FFLLSSSSYY*LCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG
+  Starts = -----------------------------------M----------------------------
+  Base1  = TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG
+  Base2  = TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG
+  Base3  = TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG
+TTT
+$codon_tbl{'src'}{'transl_tbl_21'} = <<'TTT'; 
+    AAs  = FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNNKSSSSVVVVAAAADDEEGGGG
+  Starts = -----------------------------------M---------------M------------
+  Base1  = TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG
+  Base2  = TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG
+  Base3  = TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG
+TTT
+$codon_tbl{'src'}{'transl_tbl_22'} = <<'TTT'; 
+    AAs  = FFLLSS*SYY*LCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG
+  Starts = -----------------------------------M----------------------------
+  Base1  = TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG
+  Base2  = TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG
+  Base3  = TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG
+TTT
+$codon_tbl{'src'}{'transl_tbl_23'} = <<'TTT'; 
+    AAs  = FF*LSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG
+  Starts = --------------------------------M--M---------------M------------
+  Base1  = TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG
+  Base2  = TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG
+  Base3  = TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG
+TTT
+$codon_tbl{'src'}{'transl_tbl_24'} = <<'TTT'; 
+    AAs  = FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSSKVVVVAAAADDEEGGGG
+  Starts = ---M---------------M---------------M---------------M------------
+  Base1  = TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG
+  Base2  = TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG
+  Base3  = TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG
+TTT
+$codon_tbl{'src'}{'transl_tbl_25'} = <<'TTT'; 
+    AAs  = FFLLSSSSYY**CCGWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG
+  Starts = ---M-------------------------------M---------------M------------
+  Base1  = TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG
+  Base2  = TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG
+  Base3  = TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG
+TTT
+$codon_tbl{'src'}{'transl_tbl_26'} = <<'TTT'; 
+    AAs  = FFLLSSSSYY**CC*WLLLAPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG
+  Starts = -------------------M---------------M----------------------------
+  Base1  = TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG
+  Base2  = TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG
+  Base3  = TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG
+TTT
+
+	for my $tbl_ID (sort keys %{$codon_tbl{'src'}}) {
+		# &tsmsg("[Msg] Setting codon table '$tbl_ID'\n"); 
+		( defined $codon_tbl{'src'}{$tbl_ID} and $codon_tbl{'src'}{$tbl_ID} !~ m!^\s*$! ) or next; 
+		$tbl_ID =~ m/^transl_tbl_(\d+)$/ or &stopErr("[Err] Bad transl_tbl ID [$tbl_ID]\n"); 
+		my $tbl_num = $1; 
+		my $tbl_num_wo0 = $tbl_num; $tbl_num_wo0 =~ s!^0+!!; 
+		$codon_tbl{'id2num'}{$tbl_ID}      = $tbl_num_wo0; 
+		$codon_tbl{'id2num'}{$tbl_num}     = $tbl_num_wo0; 
+		$codon_tbl{'id2num'}{$tbl_num_wo0} = $tbl_num_wo0; 
+		# $codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aa'}
+		my @ll = split(/\n/, $codon_tbl{'src'}{$tbl_ID}); 
+		@ll == 5 or &stopErr("[Err] Bad transl_tbl text [$codon_tbl{'src'}{$tbl_ID}]\n"); 
+		$ll[0] =~ s!^\s*AAs\s*=\s*!!i    or &stopErr("[Err] Bad line [$ll[0]]\n"); $ll[0] = [split(//, $ll[0])]; 
+		$ll[1] =~ s!^\s*Starts\s*=\s*!!i or &stopErr("[Err] Bad line [$ll[1]]\n"); $ll[1] = [split(//, $ll[1])]; 
+		$ll[2] =~ s!^\s*Base1\s*=\s*!!i  or &stopErr("[Err] Bad line [$ll[2]]\n"); $ll[2] = [split(//, $ll[2])]; 
+		$ll[3] =~ s!^\s*Base2\s*=\s*!!i  or &stopErr("[Err] Bad line [$ll[3]]\n"); $ll[3] = [split(//, $ll[3])]; 
+		$ll[4] =~ s!^\s*Base3\s*=\s*!!i  or &stopErr("[Err] Bad line [$ll[4]]\n"); $ll[4] = [split(//, $ll[4])]; 
+		for (my $i=0; $i<@{$ll[0]}; $i++) {
+			my $bbb = "$ll[2][$i]$ll[3][$i]$ll[4][$i]"; 
+			$codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aa'}{$bbb} = $ll[0][$i]; 
+			$ll[1][$i] eq 'M' and $codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2start'}{$bbb} = 1; 
+		}
+		# Setup with one 'ATGC' codon 
+		for my $i ( 0 .. 2 ) {
+			for my $tb_i (qw/A T G C/) {
+				my @bbb_arr = ('N','N','N'); 
+				$bbb_arr[$i] = $tb_i; 
+				my $bbb = join('', @bbb_arr); 
+				my @all_bbb = &_possible_bbb($bbb); 
+				my %aa; 
+				my @aa_k; 
+				for my $curr_bbb ( @all_bbb ) {
+					defined $codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aa'}{$curr_bbb} or &stopErr("[Err] Unknown bbb [$curr_bbb]\n"); 
+					defined $aa{ $codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aa'}{$curr_bbb} } or push(@aa_k, $codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aa'}{$curr_bbb}); 
+					$aa{ $codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aa'}{$curr_bbb} } ++; 
+					scalar(@aa_k) > 1 and last; 
+				}
+				$codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aa'}{$bbb} = (scalar(@aa_k) == 1) ? $aa_k[0] : 'X' ; 
+			}
+		}
+		# Setup with two 'ATGC' codon 
+		for (my $i=0; $i<3; $i++) {
+			my $bbb = 'NNN'; 
+			substr($bbb, $i, 1) = 'A'; 
+			my @all_bbb = map { substr($_, $i, 1) = 'N'; $_; } &_possible_bbb($bbb); 
+			for my $curr_chk (@all_bbb) {
+				my @all_bbb_chk = &_possible_bbb($curr_chk); 
+				my (%aa, @aa_k); 
+				for my $curr_bbb ( @all_bbb_chk ) {
+					defined $codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aa'}{$curr_bbb} or &stopErr("[Err] Unknown bbb [$curr_bbb]\n"); 
+					defined $aa{ $codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aa'}{$curr_bbb} } or push(@aa_k, $codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aa'}{$curr_bbb}); 
+					$aa{ $codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aa'}{$curr_bbb} } ++; 
+					scalar(@aa_k) > 1 and last; 
+				}
+				$codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aa'}{$curr_chk} = (scalar(@aa_k) == 1) ? $aa_k[0] : 'X' ; 
+			}
+		}
+		# Setup with no 'ATGC' codon 
+		$codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aa'}{'NNN'} = 'X'; 
+	}
+	$codon_tbl{'has_setup'} = 1; 
+	# &tsmsg("[Msg] Codon table setup finished.\n"); 
+
+	return( \%codon_tbl ); 
+}# setup_codon_tbl () 
+
+=head1 bbb2aa ( 'ATG', $tbl_num_wo0 )
+
+Return : ( $aa, $is_start )
+
+=cut
+sub bbb2aa {
+	my ( $bbb, $tbl_num ) = @_; 
+	$tbl_num //= 1; 
+	&setup_codon_tbl(); 
+	defined $codon_tbl{'id2num'}{$tbl_num} or &stopErr("[Err] Bad table number [$tbl_num]\n"); 
+	$tbl_num = $codon_tbl{'id2num'}{$tbl_num}; 
+	defined $codon_tbl{'tbl2inf'}{$tbl_num} or &stopErr("[Err] Failed to find table for [$tbl_num]\n"); 
+	$bbb = uc($bbb); 
+	my $b_start = 0; 
+	if ( $bbb =~ m/^\-\-\-$/ ) {
+		return( '-', 0 ); 
+	}
+	if ( $bbb =~ m/^[ATGC]{3}$/ ) {
+		defined $codon_tbl{'tbl2inf'}{$tbl_num}{'bbb2aa'}{$bbb} or &stopErr("[Err] Failed to find aa for bbb [$bbb]\n"); 
+		defined $codon_tbl{'tbl2inf'}{$tbl_num}{'bbb2start'}{$bbb} and $codon_tbl{'tbl2inf'}{$tbl_num}{'bbb2start'}{$bbb} and $b_start = 1; 
+		return( $codon_tbl{'tbl2inf'}{$tbl_num}{'bbb2aa'}{$bbb} , $b_start ); 
+	}
+	if ( defined $codon_tbl{'tbl2inf'}{$tbl_num}{'bbb2aa'}{$bbb} ) {
+		defined $codon_tbl{'tbl2inf'}{$tbl_num}{'bbb2start'}{$bbb} and $codon_tbl{'tbl2inf'}{$tbl_num}{'bbb2start'}{$bbb} and $b_start = 1; 
+		return( $codon_tbl{'tbl2inf'}{$tbl_num}{'bbb2aa'}{$bbb} , $b_start ); 
+	}
+	
+	&tsmsg("[Wrn] Not able to deal with [$bbb] yet.\n"); 
+	return( 'X' , 0 ); 
+	return; 
+}# bbb2aa
+
+sub aa2cds {
+	my ( $cds_fn, $prot_fn, $trans_tbl ) = @_; 
+	$trans_tbl //= 1; 
+	&setup_codon_tbl(); 
+	my %stop_codon; 
+	for my $tc (qw/TAA TGA TAG/) {
+		$stop_codon{$tc} = 1; 
+	}
+	my %cds_seq; 
+	my $fh_cds = &openFH( $cds_fn , '<' ); 
+	while (<$fh_cds>) {
+		if ( m/^\s*\>\s*(\S+)/ ) {
+			$cds_seq{'tk'} = $1; 
+			$cds_seq{ 'seq' }{ $cds_seq{'tk'} } = ''; 
+		} else {
+			$cds_seq{ 'seq' }{ $cds_seq{'tk'} } .= $_; 
+		}
+	}
+	close($fh_cds); 
+	delete($cds_seq{'tk'}); 
+	for my $tk (keys %{$cds_seq{'seq'}}) {
+		$cds_seq{'seq'}{$tk} =~ s![\s\-]!!g; 
+		$cds_seq{'seq'}{$tk} = uc($cds_seq{'seq'}{$tk}); 
+		$cds_seq{'len'}{$tk} = length($cds_seq{'seq'}{$tk}); 
+	}
+	my %prot_seq; 
+	$prot_seq{'nn'} = 0; 
+	my $fh_prot = &openFH( $prot_fn , '<' ); 
+	while (<$fh_prot>) {
+		if ( m/^\s*\>\s*(\S+)/ ) {
+			$prot_seq{'tk'} = $1; 
+			$prot_seq{'seq'}{$prot_seq{'tk'}} = ''; 
+			$prot_seq{'nn'} ++; 
+			$prot_seq{'ord'}{ $prot_seq{'tk'} } = $prot_seq{'nn'}; 
+		} else {
+			$prot_seq{'seq'}{$prot_seq{'tk'}} .= $_; 
+		}
+	}
+	delete($prot_seq{'tk'}); 
+	delete($prot_seq{'nn'}); 
+
+	for my $tk (sort { $prot_seq{'ord'}{$a} <=> $prot_seq{'ord'}{$b} } keys %{$prot_seq{'seq'}}) {
+		unless ( defined $cds_seq{'seq'}{ $tk } ) {
+			&tsmsg("[Err] Skip prot_seq [$tk] because of lack of cds seq.\n"); 
+			next; 
+		}
+		$prot_seq{'seq'}{$tk} =~ s!\s!!g; 
+		$prot_seq{'seq'}{$tk} = uc($prot_seq{'seq'}{$tk}); 
+
+		my $new_cds_seq = &aa2cds_1seq( $cds_seq{'seq'}{$tk}, $prot_seq{'seq'}{$tk}, $trans_tbl ); 
+		unless ( defined $new_cds_seq ) {
+			&tsmsg("[Err] Skip prot_seq [$tk] because of incompatibility between prot and cds sequences.\n"); 
+			next; 
+		}
+
+		$new_cds_seq =~ s!(.{60})!$1\n!g; 
+		chomp($new_cds_seq); 
+		print STDOUT ">$tk\n$new_cds_seq\n"; 
+	}
+}# aa2cds() 
+
+=head1 aa2cds_1seq( $cds_seq, $prot_seq, $translation_table_number )
+
+Return    : ( $cds_seq_gapped_by_protein_positions )
+
+  If returning "undef()", there must be some error in it. 
+
+=cut
+sub aa2cds_1seq {
+	# Input sequences should be upper case, and no blank or return symbol! 
+	my ( $cseq, $pseq, $tblN ) = @_; 
+	$tblN //= 1; 
+	&setup_codon_tbl(); 
+	my $aa2cds_cseq; 
+
+	my @aa = split(//, $pseq); 
+	my $aa_pos = -1; 
+	for (my $j=0; $j<@aa; $j++) {
+		if ( $aa[$j] eq '-' or $aa[$j] eq ' ' ) {
+			$aa2cds_cseq .= $aa[$j] x 3; 
+		} else {
+			$aa_pos ++; 
+			my $bbb = substr( $cseq, $aa_pos*3, 3 ); 
+			my $bbb_len = length($bbb); 
+			$bbb_len > 0 or do { &tsmsg("[Err] Failed to extract bbb at [" . ($aa_pos*3+1) . "]: $cseq\n"); return(undef()); }; 
+			if ( $bbb_len < 3 ) {
+				my $addN = 'N' x (3-$bbb_len); 
+				$bbb .= $addN; 
+			}
+			my ($curr_bbb2aa) = &bbb2aa( $bbb, $tblN ); 
+			$curr_bbb2aa eq $aa[$j] or do { &tsmsg("[Err] Inconsistency between AA and CDS at seq_pos=$j [aa_pos=$aa_pos] [$aa[$j] vs $curr_bbb2aa vs $bbb]\n"); return(undef()); }; 
+			$aa2cds_cseq .= "$bbb"; 
+		}
+	}
+	my $clen = length($cseq); 
+	if ( ($aa_pos+1)*3 < $clen ) {
+		my $res = $clen % 3; 
+		my $t_seq = $cseq; 
+		$res > 0 and $t_seq .= ( 'N' x (3-$res) ); 
+		my $t_pos = length($t_seq)/3-1; 
+		for (my $ip = $t_pos; $ip > $aa_pos; $ip--) {
+			my $bbb = substr( $t_seq, $ip*3, 3 ); 
+			my ($curr_bbb2aa) = &bbb2aa( $bbb, $tblN ); 
+			$curr_bbb2aa eq '*' or $curr_bbb2aa eq 'X' or do { &tsmsg("[Err] CDS seq is longer than prot seq: $cseq\n"); return(undef()); }; 
+		}
+	}
+	return($aa2cds_cseq); 
+}# aa2cds_1seq() 
 
 
 1; 
