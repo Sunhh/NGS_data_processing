@@ -10,7 +10,10 @@ GetOptions(\%opts,
 	"flank_extend:i", # [0]
 	"inAnnotLis:s", 
 	"inLocLis:s", 
+	"tagLoc_colN:i", # -9999
 ); 
+
+$opts{'tagLoc_colN'} //= -9999; 
 
 sub usage {
 	print <<HH; 
@@ -21,6 +24,7 @@ sub usage {
 # -inLocLis        Required. File with location selected. 
 #                    Format: chr10   30320001        30330000        10000   10000
 #                            chrID   chrS            chrE            lenSpan BpCnt
+#   -tagLoc_colN   [$opts{'tagLoc_colN'}] -9999 means not assigned. 
 # -inAnnotLis      Required. File with annotation of genes. 
 #                    Format: chr10   73429   74098   -          MDP0000184598   "GO:0031072"    predicted with fgenesh_arab   Lg10_Scaffold1:73429..74098-
 #                            chrID   chrS    chrE    chrStrand       ProtID     GO              Note                          Scaffold
@@ -40,6 +44,8 @@ my %chrLoc;
 
 ########### Read in the loc file. 
 
+my %loc2tag; 
+
 while (<$inLocFh>) {
 	chomp; 
 	my @ta = split(/\t/, $_); 
@@ -48,6 +54,12 @@ while (<$inLocFh>) {
 	}
 	my ($chrID, $chrS, $chrE) = @ta; 
 	push(@{$chrLoc{$chrID}}, [$chrS, $chrE]); 
+	my $loc_ID = "$chrID:$chrS-$chrE"; 
+	if ($opts{'tagLoc_colN'} != -9999) {
+		push(@{$loc2tag{$loc_ID}}, $ta[$opts{'tagLoc_colN'}]); 
+	} else {
+		push(@{$loc2tag{$loc_ID}}, $loc_ID); 
+	}
 } 
 for my $chrID (sort keys %chrLoc) {
 	@{$chrLoc{$chrID}} = sort { $a->[0] <=> $b->[0] || $a->[1] <=> $b->[1] } @{$chrLoc{$chrID}} ; 
@@ -68,7 +80,9 @@ while (<$inAnnFh>) {
 		$s - $opts{'flank_extend'} > $chrE and last; 
 		$e + $opts{'flank_extend'} < $chrS and next; 
 		$is_in = 1; 
-		push(@ovl_locs, "$chrID:$s-$e"); 
+		my $loc_ID = "$chrID:$s-$e"; 
+		defined $loc2tag{$loc_ID} or die "|$loc_ID|\n"; 
+		push(@ovl_locs, @{$loc2tag{$loc_ID}}); 
 	}
 	if ($is_in == 1) {
 		print STDOUT join("\t", $_, join(";", @ovl_locs))."\n"; 

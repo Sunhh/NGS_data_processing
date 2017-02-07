@@ -701,5 +701,41 @@ sub aa2cds_1seq {
 	return($aa2cds_cseq); 
 }# aa2cds_1seq() 
 
+=head1 get_4d_codon( $translation_table_number )
+
+Return     : ( \%fourD_codon )
+
+$fourD_codon{'ACA'} = [ 'T', 3 ]; # [ AA_symbol, frame ]
+$fourD_codon{'TCA'} = [ 'S', 3 ]; 
+
+=cut
+sub get_4d_codon {
+	my ($tblN) = @_; 
+	my %back; 
+	for my $b1 (qw/A T G C/) {
+		for my $b2 (qw/A T G C/) {
+			for my $sN (0 .. 2) {
+				my $aa; 
+				my $is_good = 1; 
+				for my $b3 (qw/A T G C/) {
+					my @tb = ($b1, $b2); 
+					splice(@tb, $sN, 0, $b3); 
+					my $bbb = join('', @tb); 
+					my ($aa_t) = &bbb2aa($bbb); 
+					$aa //= $aa_t; 
+					$aa eq $aa_t or do { $is_good = 0; last; }; 
+				}
+				$is_good == 1 or next; 
+				for my $b3 (qw/A T G C/) {
+					my @tb = ($b1, $b2); 
+					splice(@tb, $sN, 0, $b3); 
+					my $bbb = join('', @tb); 
+					$back{$bbb} = [ $aa, $sN+1 ]; 
+				}
+			}
+		}
+	}
+	return(\%back); 
+}# get_4d_codon() 
 
 1; 
