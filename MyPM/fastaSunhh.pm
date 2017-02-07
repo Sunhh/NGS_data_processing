@@ -705,8 +705,8 @@ sub aa2cds_1seq {
 
 Return     : ( \%fourD_codon )
 
-$fourD_codon{'ACA'} = [ 'T', 3 ]; # [ AA_symbol, frame ]
-$fourD_codon{'TCA'} = [ 'S', 3 ]; 
+$fourD_codon{'ACA'} = [ 'T', {3}=>1 ]; # [ AA_symbol, frame ]
+$fourD_codon{'TCA'} = [ 'S', {3}=>1 ]; 
 
 =cut
 sub get_4d_codon {
@@ -730,7 +730,8 @@ sub get_4d_codon {
 					my @tb = ($b1, $b2); 
 					splice(@tb, $sN, 0, $b3); 
 					my $bbb = join('', @tb); 
-					$back{$bbb} = [ $aa, $sN+1 ]; 
+					$back{$bbb}[0] //= $aa; 
+					$back{$bbb}[1]{$sN+1} = 1; 
 				}
 			}
 		}
