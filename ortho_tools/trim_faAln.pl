@@ -82,16 +82,39 @@ for ( my $i=0; $i<$seqL; $i+=$step ) {
 	for my $t_wb (@wb) {
 		$t_wb =~ m![\-]! and $gapN ++; 
 	}
+	my $is_good_4d = 1; 
+	my %frame_4d_p; 
+	if ( $opts{'get_4d'} > 0 ) {
+		$wind == 3 or &stopErr("[Err] wind [$wind] is not 3.\n"); 
+		my %frame_4d; 
+		my $cnt_total = 0; 
+		for my $bbb (@wb) {
+			if ( $bbb =~ m![\-]! ) {
+				next; 
+			}
+			$cnt_total ++; 
+			defined $codon_4d{$bbb} or do { $is_good_4d = 0; last; }; 
+			for my $tp ( keys %{$codon_4d{$bbb}[1]} ) {
+				$frame_4d{$tp} ++; 
+			}
+		}
+		for my $tp (sort { $a <=> $b } keys %frame_4d) {
+			$frame_4d{$tp} == $cnt_total and $frame_4d_p{$tp} = 1; 
+		}
+		scalar( keys %frame_4d_p ) > 0 or $is_good_4d = 0; 
+	}
 	if ( $gapN > $seqN * $opts{'max_gapR'} ) {
 		for (my $j=0; $j<$wind and $j+$i<$seqL; $j++) {
 			$toRM[$j+$i] //= 1; 
 		}
 	} elsif ( $opts{'get_4d'} > 0 ) {
+
 		my $bbb = join('', @wb); 
-		$wind == 3 or &stopErr("[Err] wind [$wind] is not 3.\n"); 
-		if (defined $codon_4d{$bbb}) {
+
+		if ($is_good_4d == 1) {
 			for (my $j=0; $j<$wind and $j+$i<$seqL; $j++) {
-				defined $codon_4d{$bbb}[1]{$j} and next; 
+				my $tj = $j+1; 
+				defined $frame_4d_p{$tj} and next; 
 				$toRM[$j+$i] //= 1; 
 			}
 		} else {
