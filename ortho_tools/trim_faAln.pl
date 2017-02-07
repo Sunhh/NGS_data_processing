@@ -29,7 +29,7 @@ my $help_txt = <<HH;
 #
 # -help
 #
-# -get_4d        [Number] will set -as_coding
+# -get_4d        [translation_table_number] will set -as_coding
 #
 # -as_coding     [Boolean] If given, treated as codons (three bases)
 #   Same to " -wind 3 -step 3 "
