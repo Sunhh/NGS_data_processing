@@ -1,4 +1,6 @@
 #!/usr/bin/perl
+# http://www.ch.embnet.org/CoursEMBnet/PagesPHYL07/Exercises/day2/day2.html
+# https://evosite3d.blogspot.com/2011/09/identifying-positive-selection-in.html
 ### Input tree file '1by1.tree' : ( ( (cucumber.aa.fasta, melon.aa.fasta), watermelon.aa.fasta ), (maxima.aa.fasta, moschata.aa.fasta)#1 );
 ### Input cds fasta file 'all.cds.fa' : 
 ### Input protein fasta file 'all.prot.fa' : 
