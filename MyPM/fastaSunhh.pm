@@ -711,6 +711,7 @@ $fourD_codon{'TCA'} = [ 'S', {3}=>1 ];
 =cut
 sub get_4d_codon {
 	my ($tblN) = @_; 
+	$tblN //= 1; 
 	my %back; 
 	for my $b1 (qw/A T G C/) {
 		for my $b2 (qw/A T G C/) {
@@ -721,7 +722,7 @@ sub get_4d_codon {
 					my @tb = ($b1, $b2); 
 					splice(@tb, $sN, 0, $b3); 
 					my $bbb = join('', @tb); 
-					my ($aa_t) = &bbb2aa($bbb); 
+					my ($aa_t) = &bbb2aa($bbb, $tblN); 
 					$aa //= $aa_t; 
 					$aa eq $aa_t or do { $is_good = 0; last; }; 
 				}
@@ -738,5 +739,85 @@ sub get_4d_codon {
 	}
 	return(\%back); 
 }# get_4d_codon() 
+
+=head1 cnt_4dtv( 'fd_codon' => \%output_of_get_4d_codon, 'cds_1'=> $cds_seq_1, 'cds_2' => $cds_seq_2, 'need_align' => 0, 'id_1'=>$id_1, 'id_2'=>$id_2, 'pep_1'=>$pep_seq_1, 'pep_2' => $pep_seq_2 )
+
+Return    : (%calc)
+
+  $calc{'siteN'} = number of 4d sites. 
+
+        'sameN'  = number of same 4d sites. 
+        'tvN'    = number of 4dtv sites. 
+        'tsN'    = number of 4dts sites.
+        '4dtv|4dts|4ds|4dtvc' : values. 4dtvc is the final corrected 4dtv. 
+
+=cut
+sub cnt_4dtv {
+	my %parm = $mathObj->_setHashFromArr(@_); 
+	$parm{'fd_codon'}   //= &get_4d_codon(1); 
+	$parm{'need_align'} //= 0; 
+	$parm{'id_1'}       //= 'seq_1'; 
+	$parm{'id_2'}       //= 'seq_2'; 
+	my %back; 
+	$back{'id_1'}       = $parm{'id_1'}; 
+	$back{'id_2'}       = $parm{'id_2'}; 
+	if ( $parm{'need_align'} ) {
+		my $tmp_dir = &fileSunhh::new_tmp_dir('create' => 1);
+		&fileSunhh::write2file("$tmp_dir/pep.fa", ">$parm{'id_1'}\n$parm{'pep_1'}\n>$parm{'id_2'}\n$parm{'pep_2'}\n", '>'); 
+		&exeCmd_1cmd("muscle -in $tmp_dir/pep.fa -out $tmp_dir/pep_aln.fa") and do { &fileSunhh::_rmtree($tmp_dir); return(\%back); ; }; 
+		my $fs_obj = fastaSunhh->new(); 
+		my %raw_aln_pep = %{ $fs_obj->save_seq_to_hash( 'faFile'=>"$tmp_dir/pep_aln.fa", 'has_head'=>1 ) }; 
+		&fileSunhh::_rmtree($tmp_dir); 
+		for my $tk (keys %raw_aln_pep) { $raw_aln_pep{$tk}{'seq'} =~ s!\s!!g; } 
+		my $new_cds_1 = &aa2cds_1seq( $parm{'cds_1'}, $raw_aln_pep{$parm{'id_1'}}{'seq'} ); 
+		my $new_cds_2 = &aa2cds_1seq( $parm{'cds_2'}, $raw_aln_pep{$parm{'id_2'}}{'seq'} ); 
+		$parm{'cds_1'} = $new_cds_1; 
+		$parm{'cds_2'} = $new_cds_2; 
+	}
+	my $l1 = length($parm{'cds_1'}); 
+	for (my $i=0; $i<$l1; $i+=3) {
+		my $bbb1 = substr($parm{'cds_1'}, $i, 3); 
+		my $bbb2 = substr($parm{'cds_2'}, $i, 3); 
+		( defined $parm{'fd_codon'}{$bbb1} and defined $parm{'fd_codon'}{$bbb2} ) or next; 
+		my $bb_1 = substr($bbb1, 0, 2); 
+		my $bb_2 = substr($bbb2, 0, 2); 
+		$bb_1 eq $bb_2 or next; 
+		my $__b1 = substr($bbb1, 2, 1); 
+		my $__b2 = substr($bbb2, 2, 1); 
+		( $__b1 ne '' and $__b2 ne '' ) or next; 
+		my $ttb  = "$__b1$__b2"; 
+		$back{'siteN'} ++; 
+		if ($bbb1 eq $bbb2) {
+			$back{'sameN'} ++; 
+		} else {
+			if ( $ttb =~ m!^(AC|CA|AT|TA|GC|CG|GT|TG)$!i ) {
+				$back{'tvN'} ++; 
+			} elsif ( $ttb =~ m!^(AG|GA|CT|TC)$!i ) {
+				$back{'tsN'} ++; 
+			} else {
+				&tsmsg("[Err] Bad input |$bbb1|$bbb2|\n"); 
+				%back = (); 
+				return(\%back); 
+			}
+		}
+	}
+	$back{'siteN'} //= 0; 
+	if ( $back{'siteN'} == 0 ) {
+		$back{'sameN'} = $back{'tvN'} = $back{'tsN'} = 0; 
+		$back{'4dtv'} = $back{'4dts'} = $back{'4ds'} = $back{'4dtvc'} = 999; 
+		return(\%back); 
+	}
+	$back{'tvN'} //= 0; 
+	$back{'tsN'} //= 0; 
+	$back{'4dtv'} = $back{'tvN'} / $back{'siteN'}; 
+	$back{'4dts'} = $back{'tsN'} / $back{'siteN'}; 
+	$back{'4ds'}  = ( $back{'tvN'}+$back{'tsN'} ) / $back{'siteN'}; 
+	if ( $back{'4dtv'} < 0.5 ) {
+		$back{'4dtvc'} = -0.5 * log( 1 - 2 * $back{'4dtv'} ); 
+	} else {
+		$back{'4dtvc'} = 999; 
+	}
+	return(\%back); 
+}# cnt_4dtv() 
 
 1; 
