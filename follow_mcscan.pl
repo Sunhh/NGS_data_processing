@@ -288,7 +288,7 @@ sub sep_tab {
 		chomp; 
 		my @ta = split(/\t/, $_); 
 		if ( $ta[0] eq 'BlkID' ) {
-			print STDOUT join("\t", $ta[0], @ta[@CV])."\n"; 
+			print STDOUT join("\t", @ta[@CV])."\n"; 
 			next; 
 		}
 		my $maxN = -1; 
