@@ -29,6 +29,7 @@ GetOptions(\%opts,
 	"out_test:s", # 
 	"exe_muscle:s", # muscle 
 	"exe_codeml:s", # codeml
+	"keep_tmp!", 
 	"cpuN:i",    # 1
 	"help!", 
 ); 
@@ -46,6 +47,11 @@ my $help_txt = <<HH;
 # -out_test   [filename to replace STDOUT]
 #
 # -repN       [$opts{'repN'}] Times to repeat for each model. Use the maximum lnL among repeats. 
+#
+# -keep_tmp   [Boolean]
+#
+# -exe_muscle [$opts{'exe_muscle'}]
+# -exe_codeml [$opts{'exe_codeml'}]
 #
 ################################################################################
 HH
@@ -215,7 +221,7 @@ for my $sfn (@sub_fn) {
 	close F; 
 }
 
-# &fileSunhh::_rmtree($wrk_dir); 
+&fileSunhh::_rmtree($wrk_dir); 
 
 sub print_std {
 	print STDOUT join("\t", @_)."\n"; 
