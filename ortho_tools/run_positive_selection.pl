@@ -154,7 +154,7 @@ for my $sfn (@sub_fn) {
 				%v_0 = %v_0_t; 
 			}
 		}
-		defined $v_0{'lnL'} or do { $is_err = 0; goto OG_END; }; 
+		defined $v_0{'lnL'} or do { $is_err = 1; goto OG_END; }; 
 		$cnt_success = 0; 
 		for (my $k=0; $k<20; $k++) {
 			$cnt_success >= $opts{'repN'} and last; 
@@ -187,7 +187,7 @@ for my $sfn (@sub_fn) {
 		); 
 			
 		OG_END: 
-		if ( $is_err == 1 ) {
+		if ( $is_err != 0 ) {
 			&add_ofn("$sfn.test", $tr1->[0], ("NA") x 5, join(",",@{$tr1}[1 .. $#$tr1]), 'NA'); 
 		}
 	}
@@ -215,7 +215,7 @@ for my $sfn (@sub_fn) {
 	close F; 
 }
 
-&fileSunhh::_rmtree($wrk_dir); 
+# &fileSunhh::_rmtree($wrk_dir); 
 
 sub print_std {
 	print STDOUT join("\t", @_)."\n"; 
@@ -367,7 +367,7 @@ close ($ifh);
 print {$ofh} <<CTL1; 
 seqfile  = c.phy              * sequence data file name
 treefile = c.tree       * tree structure file name
-outfile  = c.1.mlc        * main result file name
+outfile  = c.1.mlc  * main result file name
 
   noisy = 3     * 0,1,2,3,9: how much rubbish on the screen
 verbose = 0     * 1: detailed output, 0: concise output
@@ -378,8 +378,8 @@ runmode = 0     * 0: user tree;  1: semi-automatic;  2: automatic
 CodonFreq = 2   * 0:1/61 each, 1:F1X4, 2:F3X4, 3:codon table
     clock = 0   * 0: no clock, unrooted tree, 1: clock, rooted tree
    aaDist = 0   * 0:equal, +:geometric; -:linear, {1-5:G1974,Miyata,c,p,v}
-
     model = 2   * models for codons:
+                * 0:one, 1:b, 2:2 or more dN/dS ratios for branches
   NSsites = 2   * 0:one w; 1:NearlyNeutral; 2:PositiveSelection; 3:discrete;
                 * 4:freqs; 5:gamma;6:2gamma;7:beta;8:beta&w;9:beta&gamma;10:3normal
     icode = 0   * 0:standard genetic code; 1:mammalian mt; 2-10:see below
@@ -389,7 +389,6 @@ fix_kappa = 0   * 1: kappa fixed, 0: kappa to be estimated
     kappa = 3   * initial or fixed kappa
 fix_omega = 0   * 1: omega or omega_1 fixed, 0: estimate
     omega = 1   * initial or fixed omega, for codons or codon-based AAs
-                * 0:one, 1:b, 2:2 or more dN/dS ratios for branches
 
     fix_alpha = 1  * 0: estimate gamma shape parameter; 1: fix it at alpha
         alpha = 0  * initial or fixed alpha, 0:infinity (constant rate)
@@ -402,7 +401,7 @@ RateAncestor = 0       * (0,1,2): rates (alpha>0) or ancestral states (1 or 2)
   Small_Diff = .5e-6   * Default value.
 *   cleandata = 1       * remove sites with ambiguity data (1:yes, 0:no)?
 *       method = 1   * 0: simultaneous; 1: one branch at a time
-* fix_blength = 0       * 0: ignore, -1: random, 1: initial, 2: fixed 
+* fix_blength = 0       * 0: ignore, -1: random, 1: initial, 2: fixed
 CTL1
 
 	}
