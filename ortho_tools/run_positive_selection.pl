@@ -221,7 +221,7 @@ for my $sfn (@sub_fn) {
 	close F; 
 }
 
-&fileSunhh::_rmtree($wrk_dir); 
+$opts{'keep_tmp'} or &fileSunhh::_rmtree($wrk_dir); 
 
 sub print_std {
 	print STDOUT join("\t", @_)."\n"; 
