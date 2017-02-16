@@ -133,6 +133,7 @@ command:perl $0 <STDIN|parameters>
     '-spec_loci_minLen:i', # Minimum length of specific region. Default is 0; 
 
   -self_agp_from_keyLen   [Boolean] Input should be output of "deal_fasta.pl -attr key:len"
+                            This could be in format "Key\\tLen\\n" or format "Key\\tLen\\tNew_ID\\n"
 
   -symbol         Defining the symbol to divide data.Default is "\\t";
   -dR2dN          [Boolean] Change \\r to \\n in files. 
@@ -268,10 +269,19 @@ for (@InFp) {
 
 sub kl2agp {
 	for my $fh (@InFp) {
+		my $has_newID = 0; 
+		my $cnt = 0; 
 		while (&wantLineC($fh)) {
 			my @ta = &splitL($symbol, $_); 
 			$ta[0] =~ m/^key$/i and next; 
-			print STDOUT join("\t", $ta[0], 1, $ta[1], 1, "W", $ta[0], 1, $ta[1], '+')."\n"; 
+			my $new_ID = $ta[0]; 
+			$cnt ++; 
+			$cnt == 1 and defined $ta[2] and $has_newID = 1; 
+			if ( $has_newID == 1 ) {
+				defined $ta[2] or &stopErr("[Err] Failed to get new_ID at line : $_\n"); 
+				$new_ID = $ta[2]; 
+			}
+			print STDOUT join("\t", $new_ID, 1, $ta[1], 1, "W", $ta[0], 1, $ta[1], '+')."\n"; 
 		}
 	}
 }# kl2agp () 
