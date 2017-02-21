@@ -10,6 +10,7 @@ GetOptions(\%opts,
 	"help!", 
 	"cpuN:s", "beginLn:i", "endLn:i", "nprocF:s", 
 	"grpLn:i", 
+	"wait_sec:i", 
 	"rmComment!", 
 ); 
 
@@ -26,6 +27,7 @@ sub usage {
 # -grpLn         [1] Do be CAREFUL when using this!!! 
 #
 # -rmComment     [Boolean]
+# -wait_sec      [0]
 ################################################################################
 HH
 	exit 1; 
@@ -37,6 +39,7 @@ $opts{'cpuN'} = $opts{'cpuN'} // 0;
 $opts{'nprocF'} = $opts{'nprocF'} // 'Nproc'; 
 $opts{'grpLn'} //= 1; 
 $opts{'grpLn'} >= 1 or &stopErr("[Err] -grpLn cannot be smaller than 1.\n"); 
+$opts{'wait_sec'} //= 0; 
 
 -t and !@ARGV and &usage(); 
 defined $opts{'help'} and &usage(); 
@@ -61,6 +64,9 @@ my $MAX_PROCESSES = $opts{'cpuN'} ; # Sometimes $parm{'cpuN'} - 1 may be better.
 my $pm = new Parallel::ForkManager($MAX_PROCESSES); 
 for (my $i=$opts{'beginLn'}-1; $i<$opts{'endLn'}; $i+=$opts{'grpLn'}) {
 	$MAX_PROCESSES = &change_procN($pm, $opts{'nprocF'}, $MAX_PROCESSES); 
+	if ($opts{'wait_sec'} > 0) {
+		sleep($opts{'wait_sec'}); 
+	}
 	my $pid = $pm->start and next; 
 	my $i1 = $i+1; 
 	for (my $j=0; $j<$opts{'grpLn'}; $j++) {
