@@ -17,6 +17,14 @@ perl $0 pop1_onP1_mapI_f.csv.LGs.scf2LG pop1_onP1_mapI_f.csv.LGs.scf2LG.chr0 > p
 
 -gapLen      [$opts{'gapLen'}]
 
+# Example of scf2LG : head pop1_onP1_mapI_f.csv.LGs.scf2LG
+# ChrID   ScfID   ScfDirection    LgRange ScfLen
+# Cma_Chr01       Cma_Scf00018    F       0-79.1378754030414:56   4554690
+# Cma_Chr01       Cma_Scf00061    R       83.6316433435473-87.8609115785575:5     721047
+# Cma_Chr01       Cma_Scf00052    U       90.8726789099144-90.8726789099144:2     947832
+# Cma_Chr01       Cma_Scf00006    F       92.1737855205585-203.045084069345:79    6853530
+# Cma_Chr02       Cma_Scf00041    R       0-29.8840864225909:15   1605698
+# Cma_Chr02       Cma_Scf00027    R       33.3607718361044-92.6478114225589:32    3553341
 HH
 !@ARGV and &LogInforSunhh::usage($help_txt); 
 
@@ -85,12 +93,4 @@ sub load_scf2LG_tbl {
 	close($fh); 
 	return (\@back); 
 }
-# [Sunhh@Falcon kept]$ head pop1_onP1_mapI_f.csv.LGs.scf2LG
-# ChrID   ScfID   ScfDirection    LgRange ScfLen
-# Cma_Chr01       Cma_Scf00018    F       0-79.1378754030414:56   4554690
-# Cma_Chr01       Cma_Scf00061    R       83.6316433435473-87.8609115785575:5     721047
-# Cma_Chr01       Cma_Scf00052    U       90.8726789099144-90.8726789099144:2     947832
-# Cma_Chr01       Cma_Scf00006    F       92.1737855205585-203.045084069345:79    6853530
-# Cma_Chr02       Cma_Scf00041    R       0-29.8840864225909:15   1605698
-# Cma_Chr02       Cma_Scf00027    R       33.3607718361044-92.6478114225589:32    3553341
 
