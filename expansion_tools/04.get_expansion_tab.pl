@@ -20,6 +20,10 @@ my $help_txt = <<HH;
 
 perl $0    cafe_input_grp01.report.cafe.sol.tab   -ratio 1   -bigCol 3 -smallCol 4  > cafe_input_grp01.report.cafe.sol.tab.sol_big
 
+# [Sunhh@whale run03_Nov_24]$ head cafe_input_grp01.report.cafe.sol.tab
+# Description     ID      osa     sol     bvu     vvi
+# ORTHOMCL4       ORTHOMCL4       22      49      20      76
+# ORTHOMCL8       ORTHOMCL8       31      25      2       40
 HH
 
 $opts{'help'} and &LogInforSunhh::usage($help_txt); 
@@ -28,10 +32,6 @@ $opts{'help'} and &LogInforSunhh::usage($help_txt);
 my @bigC   = &mathSunhh::_parseCol( $opts{'bigCol'} ); 
 my @smallC = &mathSunhh::_parseCol( $opts{'smallCol'} ); 
 
-# [Sunhh@whale run03_Nov_24]$ head cafe_input_grp01.report.cafe.sol.tab
-# Description     ID      osa     sol     bvu     vvi
-# ORTHOMCL4       ORTHOMCL4       22      49      20      76
-# ORTHOMCL8       ORTHOMCL8       31      25      2       40
 while (<>) {
 	chomp; 
 	my @ta = split(/\t/, $_); 
