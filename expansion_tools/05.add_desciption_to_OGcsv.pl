@@ -11,7 +11,7 @@ use fileSunhh;
 my %opts; 
 GetOptions(\%opts, 
 	"help!", 
-	"tab_desc:s", 
+	"tab_desc:s@", 
 	"noTrim!", 
 ); 
 
@@ -27,8 +27,10 @@ HH
 $opts{'help'} and &LogInforSunhh::usage($help_txt); 
 
 my %g2desc; 
-for my $tr1 (&fileSunhh::load_tabFile($opts{'tab_desc'})) {
-	push(@{$g2desc{$tr1->[0]}}, $tr1->[1]); 
+for my $fn (@{$opts{'tab_desc'}}) {
+	for my $tr1 (&fileSunhh::load_tabFile($fn)) {
+		push(@{$g2desc{$tr1->[0]}}, $tr1->[1]); 
+	}
 }
 sub arr2txt {
 	my ($hr) = @_; 
