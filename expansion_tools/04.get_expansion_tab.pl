@@ -6,8 +6,8 @@ use mathSunhh;
 use LogInforSunhh; 
 my %opts; 
 GetOptions(\%opts, 
-	"bigCol:i", 
-	"smallCol:i", 
+	"bigCol:s", 
+	"smallCol:s", 
 	"ratio:f", 
 	"help!", 
 ); 
