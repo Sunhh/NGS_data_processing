@@ -1,0 +1,24 @@
+# https://github.com/trinityrnaseq/RNASeq_Trinity_Tuxedo_Workshop/wiki/Trinity-De-novo-Transcriptome-Assembly-Workshop
+/data/Sunhh/src/Assemble/trinity/trinityrnaseq-Trinity-v2.4.0/Trinity \
+ --seqType fq \
+ --max_memory 200G \
+ --left  reads/Flower_R1.fq,reads/Fruit_R1.fq,reads/Leaf_R1.fq,reads/Root_R1.fq,reads/Stem_R1.fq \
+ --right reads/Flower_R2.fq,reads/Fruit_R2.fq,reads/Leaf_R2.fq,reads/Root_R2.fq,reads/Stem_R2.fq \
+ --KMER_SIZE 32 \
+ --CPU   24 \
+ --SS_lib_type RF \
+ --min_contig_length 200 \
+ --output trinity_novo01 \
+ --full_cleanup
+/data/Sunhh/src/Assemble/trinity/trinityrnaseq-Trinity-v2.4.0/Trinity \
+ --seqType fq \
+ --max_memory 200G \
+ --left  reads/Flower_R1.fq,reads/Fruit_R1.fq,reads/Leaf_R1.fq,reads/Root_R1.fq,reads/Stem_R1.fq \
+ --right reads/Flower_R2.fq,reads/Fruit_R2.fq,reads/Leaf_R2.fq,reads/Root_R2.fq,reads/Stem_R2.fq \
+ --KMER_SIZE 32 \
+ --CPU   24 \
+ --SS_lib_type RF \
+ --min_contig_length 200 \
+ --normalize_max_read_cov 100 \
+ --output trinity_novo02 \
+ --full_cleanup
