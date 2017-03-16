@@ -1,6 +1,13 @@
 #!/usr/bin/perl
 use strict; 
 use warnings; 
+use Getopt::Long; 
+my %opts; 
+GetOptions(\%opts, 
+	"addTag:s", # 3:, added to the head of each gene. 
+); 
+
+$opts{'addTag'} //= "3:"; 
 
 !@ARGV and die "perl $0 P1denovoAndGG_pasa.pasa_assemblies.named.gff3 > P1denovoAndGG_pasa.pasa_assemblies.named.fmt.gff3\n"; 
 
@@ -12,8 +19,8 @@ while (<F>) {
 	m!^\s*(#|$)! and next; 
 	my @ta = split(/\t/, $_); 
 	$ta[0] =~ s!\s.*$!!; 
-	$ta[8] =~ s!^ID=([^\s;]+);Target=(\S+)!Parent=3:$1;Target=$2! or die "$_\n"; 
-	my $id="3:$1"; 
+	$ta[8] =~ s!^ID=([^\s;]+);Target=(\S+)!Parent=$opts{'addTag'}$1;Target=$2! or die "$_\n"; 
+	my $id="$opts{'addTag'}$1"; 
 	my $tgt = $2; 
 	$se{$id}{tgt} //= $tgt; 
 	$se{$id}{tgt} eq $tgt or die "$_\n"; 
@@ -23,7 +30,7 @@ while (<F>) {
 	$se{$id}{ln} //= $.; 
 	$se{$id}{s} > $ta[3] and $se{$id}{s} = $ta[3]; 
 	$se{$id}{e} < $ta[4] and $se{$id}{e} = $ta[4]; 
-	$ta[1] = "P1denovoAndGG_pasa"; 
+	# $ta[1] = "P1denovoAndGG_pasa"; 
 	$ta[2] = "match_part"; 
 	$ta[8] =~ s!;$!!; $ta[8] = "$ta[8];"; 
 	push(@{$se{$id}{lines}}, [@ta]); 
