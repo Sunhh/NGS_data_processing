@@ -19,7 +19,8 @@ use Statistics::Distributions;
 use Getopt::Long; 
 my %opts; 
 GetOptions(\%opts, 
-	"in_tree:s", # 1by1.tree
+	"in_tree0:s", # 1by1.0.tree
+	"in_tree1:s", # 1by1.1.tree
 	"in_ctl0:s", # 1by1.0.ctl # H0.ctl : fixed .
 	"in_ctl1:s", # 1by1.1.ctl # H1.ctl : alternative 
 	"in_cds:s",  # all.cds.fa
@@ -40,7 +41,7 @@ $opts{'repN'}       //= 3;
 
 my $help_txt = <<HH;
 ################################################################################
-# perl $0 -in_tree 1by1.tree -in_ctl0 1by1.0.ctl -in_ctl1 1by1.1.ctl -in_cds all.cds.fa -in_prot all.prot.fa -in_ogs og_1by1
+# perl $0 -in_tree0 1by1.0.tree -in_tree1 1by1.1.tree -in_ctl0 1by1.0.ctl -in_ctl1 1by1.1.ctl -in_cds all.cds.fa -in_prot all.prot.fa -in_ogs og_1by1
 #
 # -cpuN       [$opts{'cpuN'}]
 #
@@ -64,7 +65,8 @@ defined $opts{'out_test'} and $ofh_test = &openFH($opts{'out_test'}, '>');
 
 my %cds_h  = %{$fs_obj->save_seq_to_hash( 'faFile'=>$opts{'in_cds'} )}; 
 my %prot_h = %{$fs_obj->save_seq_to_hash( 'faFile'=>$opts{'in_prot'} )}; 
-defined $opts{'in_tree'} or die "-in_tree required.\n"; 
+defined $opts{'in_tree0'} or die "-in_tree0 required.\n"; 
+defined $opts{'in_tree1'} or die "-in_tree1 required.\n"; 
 # my %ogs_h  = %{&load_ogs($opts{'in_ogs'})}; 
 for (keys %prot_h) { $prot_h{$_}{'seq'} =~ s!\s!!g; }
 for (keys %cds_h ) { $cds_h{$_}{'seq'}  =~ s!\s!!g; }
@@ -72,7 +74,8 @@ for (keys %cds_h ) { $cds_h{$_}{'seq'}  =~ s!\s!!g; }
 my $ori_dir = &fileSunhh::_abs_path("./"); 
 my $wrk_dir = &fileSunhh::new_tmp_dir( 'create' => 1 ); 
 $wrk_dir    = &fileSunhh::_abs_path($wrk_dir); 
-&fileSunhh::_copy( $opts{'in_tree'}, "$wrk_dir/c.tree"); 
+&fileSunhh::_copy( $opts{'in_tree0'}, "$wrk_dir/c.0.tree"); 
+&fileSunhh::_copy( $opts{'in_tree1'}, "$wrk_dir/c.1.tree"); 
 &setup_ctl0("$wrk_dir/c.0.ctl", $opts{'in_ctl0'}); 
 &setup_ctl1("$wrk_dir/c.1.ctl", $opts{'in_ctl1'}); 
 &tsmsg("[Rec] Go to work dir [$wrk_dir] from [$ori_dir]\n"); 
@@ -88,7 +91,8 @@ for my $sfn (@sub_fn) {
 	&fileSunhh::write2file("$sfn.test", join("\t", qw/OG_ID p_value LRT_delta lnL_1 lnL_0 df Gene_ID tree/)."\n", '>'); 
 	&fileSunhh::_copy("$wrk_dir/c.0.ctl", "$sub_dir/"); 
 	&fileSunhh::_copy("$wrk_dir/c.1.ctl", "$sub_dir/"); 
-	&fileSunhh::_copy("$wrk_dir/c.tree",  "$sub_dir/"); 
+	&fileSunhh::_copy("$wrk_dir/c.0.tree",  "$sub_dir/"); 
+	&fileSunhh::_copy("$wrk_dir/c.1.tree",  "$sub_dir/"); 
 	# goto SUB_END; 
 	
 	chdir($sub_dir); 
@@ -298,7 +302,7 @@ my $ifh = &openFH($ifn, '<');
 while (<$ifh>) {
 	chomp; 
 	s!^(\s*seqfile\s*=\s*)(\S+)(\s*)(\*|$)!$1c.phy$3$4!; 
-	s!^(\s*treefile\s*=\s*)(\S+)(\s*)(\*|$)!$1c.tree$3$4!; 
+	s!^(\s*treefile\s*=\s*)(\S+)(\s*)(\*|$)!$1c.0.tree$3$4!; 
 	s!^(\s*outfile\s*=\s*)(\S+)(\s*)(\*|$)!$1c.0.mlc$3$4!; 
 	print {$ofh} "$_\n"; 
 }
@@ -311,7 +315,7 @@ close ($ifh);
 # This is slightly different from 'https://evosite3d.blogspot.com/2011/09/identifying-positive-selection-in.html'
 print {$ofh} <<CTL0; 
 seqfile  = c.phy              * sequence data file name
-treefile = c.tree       * tree structure file name
+treefile = c.0.tree       * tree structure file name
 outfile  = c.0.mlc  * main result file name
 
   noisy = 3     * 0,1,2,3,9: how much rubbish on the screen
@@ -362,7 +366,7 @@ my $ifh = &openFH($ifn, '<');
 while (<$ifh>) {
 	chomp; 
 	s!^(\s*seqfile\s*=\s*)(\S+)(\s*)(\*|$)!$1c.phy$3$4!; 
-	s!^(\s*treefile\s*=\s*)(\S+)(\s*)(\*|$)!$1c.tree$3$4!; 
+	s!^(\s*treefile\s*=\s*)(\S+)(\s*)(\*|$)!$1c.1.tree$3$4!; 
 	s!^(\s*outfile\s*=\s*)(\S+)(\s*)(\*|$)!$1c.1.mlc$3$4!; 
 	print {$ofh} "$_\n"; 
 }
@@ -372,7 +376,7 @@ close ($ifh);
 
 print {$ofh} <<CTL1; 
 seqfile  = c.phy              * sequence data file name
-treefile = c.tree       * tree structure file name
+treefile = c.1.tree       * tree structure file name
 outfile  = c.1.mlc  * main result file name
 
   noisy = 3     * 0,1,2,3,9: how much rubbish on the screen
