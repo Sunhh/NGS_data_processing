@@ -133,6 +133,7 @@ sub rmShrt($$$$$$) {
 	# Give right boundary of 'protein_match'
 	for (my $i=0; $i<@filtered_gl; $i++) {
 		defined $is_top{$filtered_gl[$i][2]} or next; 
+		defined $gl_min or next; # no '$gl_min' definition means there is no acceptable alignment. 
 		$filtered_gl[$i][3] < $gl_min and $filtered_gl[$i][3] = $gl_min; 
 		$filtered_gl[$i][4] > $gl_max and $filtered_gl[$i][4] = $gl_max; 
 	}
