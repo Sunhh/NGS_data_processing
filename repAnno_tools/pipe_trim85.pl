@@ -5,8 +5,23 @@ use warnings;
 use LogInforSunhh; 
 use Cwd 'abs_path';
 use File::Basename;
+use Getopt::Long;
+my %opts;
+GetOptions(\%opts,
+	'help!',
+	"path_conf:s", # $tool{pathCfg_dir}/path.conf
+);
+my $help_txt = <<HH;
+perl $0 fasfd\n
 
-!@ARGV and die "perl $0 fasdf\n"; 
+-help
+
+-path_conf       [filename] check format of path.conf.
+
+HH
+
+!@ARGV and &LogInforSunhh::usage($help_txt);
+$opts{'help'} and &LogInforSunhh::usage($help_txt);
 
 # 2.2.	Collection of relatively old LTR retrotransposons
 
@@ -15,6 +30,7 @@ my %tool;
 {
 $tool{pathCfg_dir} = dirname( abs_path($0) );
 $tool{pathCfg_file} = "$tool{pathCfg_dir}/path.conf";
+defined $opts{'path_conf'} and $tool{'pathCfg_file'} = $opts{'path_conf'};
 
 &getPath(\%tool, $tool{pathCfg_file});
 
@@ -61,7 +77,7 @@ $input{ref_dbLTR} = $tool{'ref_dbLTR_trim99'} // $tool{'ref_dbLTR'} // "TRIM99_n
 &exeCmd("$tool{exe_gt} ltrharvest -index $input{refIdx} -out $input{hvt_outFa} -outinner $input{hvt_innFa} -gff3 $input{hvt_gff} -minlenltr 70 -maxlenltr 500 -mindistltr 280 -maxdistltr 1500 -mintsd 5 -maxtsd 5 -vic 10  > $input{hvt_res}"); 
 
 # Step 2.2.1.2 Since the terminal sequence motif is not specified, only elements with terminal sequences with patterns that are previously reported are retained.
-&exeCmd("perl $tool{pl_get_LTR_wi_Termi} $input{hvt_gff} $input{hvt_outFa} $input{refFa} $input{ref_hvt_gff} $input{ref_hvt_outFa}"); 
+&exeCmd("perl $tool{pl_get_LTR_wi_Termi} $input{hvt_gff} $input{hvt_outFa} $input{refFa} $input{ref_hvt_gff} $input{ref_hvt_outFa} -path_conf $tool{'pathCfg_file'}"); 
 
 # Step 2.2.2. Using LTRdigest to find elements with PPT (poly purine tract) or PBS (primer binding site)
 &exeCmd("$tool{exe_gt} gff3 -sort $input{hvt_gff}.keptLTR.gff > $input{hvt_gff}.use"); 

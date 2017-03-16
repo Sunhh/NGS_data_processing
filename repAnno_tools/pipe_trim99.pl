@@ -5,14 +5,32 @@ use warnings;
 use LogInforSunhh; 
 use Cwd 'abs_path';
 use File::Basename;
+use Getopt::Long;
+my %opts;
+GetOptions(\%opts,
+	'help!',
+	"path_conf:s", # $tool{pathCfg_dir}/path.conf
+);
+my $help_txt = <<HH;
+perl $0 fasfd\n
 
-!@ARGV and die "perl $0 fasdf\n"; 
+-help
+
+-path_conf       [filename] check format of path.conf.
+
+HH
+
+!@ARGV and &LogInforSunhh::usage($help_txt);
+$opts{'help'} and &LogInforSunhh::usage($help_txt);
+
 
 # tools
 my %tool; 
 {
 $tool{pathCfg_dir} = dirname( abs_path($0) );
 $tool{pathCfg_file} = "$tool{pathCfg_dir}/path.conf";
+defined $opts{'path_conf'} and $tool{'pathCfg_file'} = $opts{'path_conf'};
+
 
 &getPath(\%tool, $tool{pathCfg_file});
 
