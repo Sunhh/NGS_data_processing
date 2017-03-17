@@ -9,6 +9,11 @@ use warnings;
 use LogInforSunhh; 
 use mathSunhh; 
 my $ms = mathSunhh->new(); 
+use Getopt::Long; 
+GetOptions(\%opts, 
+	"help!", 
+	"shortCdsExon_len:i", 
+); 
 
 -t and !@ARGV and die "perl $0 CM_CS_WM97_Arab_SprotPln.spaln_M4.fmt.gff3\n"; 
 
