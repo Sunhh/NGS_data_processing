@@ -13,6 +13,7 @@ GetOptions(\%opts,
 	"dist2left:i", # Max distance allowed to left. 
 	"dist2right:i", # Max distance allowed to right. 
 	"minIdentity:f", # Minimum identity% required to accept an alignment. 
+	"maxSizeDiffR:f", # Maximum size difference between qry and sbj protein length based on the shorter one. 
 	"topNhits:i", 
 	"help!", 
 ); 
@@ -31,6 +32,8 @@ sub usage {
 # -blastp_para    [' -evalue 1e-5 -seg yes -num_threads 10']
 # -dist2left      [2] Max distance allowed to the left end of query / subject. 
 # -dist2right     [2] Max distance allowed to the right end of query / subject. 
+#
+# -maxSizeDiffR   [-1] Maximum size difference between qry and sbj protein length based on the shorter one. 
 # 
 # -minIdentity    [0] 0-100. Min similarity% accepted for a valid alignment. 
 ##########################################################################################
@@ -43,6 +46,7 @@ defined $opts{'prot_qry'} or &usage();
 $opts{'blastp_para'} //= " -evalue 1e-5 -seg yes -num_threads 10"; 
 $opts{'dist2left'} //= 2; 
 $opts{'dist2right'} //= 2; 
+$opts{'maxSizeDiffR'} //= -1; 
 $opts{'minIdentity'} //= 0; 
 $opts{'topNhits'} //= 5; 
 $opts{'opref'} //= 'out'; 
@@ -66,6 +70,12 @@ while (<F>) {
 	$cnt{$qid}{'cnt'} > $opts{'topNhits'} and next; 
 	$cnt{$qid}{'hit'}{$sid} = 1; 
 	$ta[2] >= $opts{'minIdentity'} or next; 
+	unless ( $opts{'maxSizeDiffR'} < 0 ) {
+		my $dlen = $ta[12]; 
+		$ta[13] < $dlen and $dlen = $ta[13]; 
+		my $ddiff = abs($ta[12]-$ta[13]); 
+		$ddiff <= $dlen * $opts{'maxSizeDiffR'} or next; 
+	}
 	@ta[6,7] = sort { $a<=>$b } @ta[6,7]; 
 	@ta[8,9] = sort { $a<=>$b } @ta[8,9]; 
 	$ta[6]-1 <= $opts{'dist2left'} or next; 
