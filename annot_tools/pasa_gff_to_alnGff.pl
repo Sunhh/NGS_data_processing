@@ -9,7 +9,7 @@ GetOptions(\%opts,
 
 $opts{'addTag'} //= "3:"; 
 
-!@ARGV and die "perl $0 P1denovoAndGG_pasa.pasa_assemblies.named.gff3 > P1denovoAndGG_pasa.pasa_assemblies.named.fmt.gff3\n"; 
+!@ARGV and die "perl $0 -addTag $opts{'addTag'} P1denovoAndGG_pasa.pasa_assemblies.named.gff3 > P1denovoAndGG_pasa.pasa_assemblies.named.fmt.gff3\n"; 
 
 my $inF=shift; 
 my %se; 
