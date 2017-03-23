@@ -17,6 +17,7 @@ $usage .= "--silent                   suppress help messages\n";
 $usage .= "--ignore                   don't do anything if species already exists (default: off)\n";
 $usage .= "--prokaryotic              use prokaryotic template instead of eukaryotic template\n";
 $usage .= "\n--from_species=refspecies\n"; 
+$usage .= "--from_trained\n"; 
 
 my $species;
 my $silent;
@@ -24,6 +25,7 @@ my $AUGUSTUS_CONFIG_PATH;
 my $ignore;
 my $prokaryotic;
 my $refSpec; 
+my $hasTrained; 
 
 ##############################################################
 # Check the command line
@@ -35,7 +37,7 @@ if ($#ARGV<0) {
 }
 
 GetOptions( 'species=s' => \$species, 'AUGUSTUS_CONFIG_PATH=s' => \$AUGUSTUS_CONFIG_PATH, 'silent!' => \$silent,
-    'ignore!' => \$ignore, 'prokaryotic!' => \$prokaryotic, 'from_species=s' => \$refSpec);
+    'ignore!' => \$ignore, 'prokaryotic!' => \$prokaryotic, 'from_species=s' => \$refSpec, 'from_trained' => \$hasTrained );
 $refSpec //= 'generic'; 
 
 if (!defined($species) || $species eq ""){
@@ -154,6 +156,12 @@ if(!$prokaryotic){
     system ("cp $configdir/species/${refSpec}/${refSpec}_metapars.cfg $metafilename");
     system ("cp $configdir/species/${refSpec}/${refSpec}_metapars.utr.cfg $metautrfilename");
     system ("cp $configdir/species/${refSpec}/${refSpec}_metapars.cgp.cfg $metacgpfilename");
+    if ($hasTrained) {
+        for my $t1 (qw/_exon_probs.pbl _igenic_probs.pbl _intron_probs.pbl/) {
+            my $ofn = $speciesdir . $species . $t1; 
+            -e "$configdir/species/${refSpec}/${refSpec}$t1" and system("cp $configdir/species/${refSpec}/${refSpec}$t1 $ofn"); 
+        }
+    }
 }else{
     if (stat "$configdir/species/template_prokaryotic/template_prokaryotic_metapars.cfg" == 0){
         die ("$configdir/species/template_prokaryotic/template_prokaryotic_metapars.cfg doesn't exist.");
