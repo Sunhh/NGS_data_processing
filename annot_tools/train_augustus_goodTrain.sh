@@ -9,9 +9,9 @@ function tsmsg {
 	echo "[$(date)]$1"
 }
 
-dir_aug='/data/Sunhh/src/Annot/maker/maker/exe/augustus'
+dir_aug='/data/Sunhh/src/Annot/maker/2.31.9/maker/exe/augustus/'
 
-export PATH="$PATH:$dir_aug/bin/"
+export PATH="$dir_aug/bin/:$PATH"
 
 
 pl_zff2augustus=$HOME/tools/github/NGS_data_processing/annot_tools/zff2augustus_gbk.pl
@@ -20,6 +20,7 @@ para_rmLis=""
 pl_gff2gb=$dir_aug/scripts/gff2gbSmallDNA.pl
 pl_randSplit=$dir_aug/scripts/randomSplit.pl
 pl_newSpec=$dir_aug/scripts/new_species.pl
+pl_copySpec=$HOME/tools/github/NGS_data_processing/annot_tools/copy_species.pl
 pl_filtGene=$dir_aug/scripts/filterGenes.pl
 pl_optPara=$dir_aug/scripts/optimize_augustus.pl
 
@@ -32,15 +33,17 @@ pl_dealFas=$HOME/tools/github/NGS_data_processing/deal_fasta.pl
 exe_etrain=etraining
 exe_augustus=augustus
 
-# Need export.dna and export.ann files. 
-orgName='P1_r5FintrIsl2k'
+# Need export.dna and export.ann files, which come from snap output. 
+#   orgRef should be 'generic' for the first run. 
+orgRef='BGr2Good'
+orgName='BGr3Goods2'
 testNum=200
 in_genom_fa=export.dna
 in_genom_zff=export.ann
 in_genom_pep=export.aa
 # in_raw_gff=r5_maker_good_noFa.gff3
 # in_genom_fa=P1All.scf.fa
-in_raw_gb=P1Genom_r5FintrIsl2k.gb
+in_raw_gb=r2Good.gb
 in_gb=train.gb
 
 
@@ -51,7 +54,8 @@ para_rmLis="-rmLis=${in_genom_pep}.rmR.bp6.redund_list"
 
 ## Section 1
 ## Generate a new species in augustus or copy a previous one to the current orgName. Edit information as needed. 
-exe_cmd "perl $pl_newSpec --species=$orgName"
+exe_cmd "perl $pl_copySpec --species=$orgName --from_species=$orgRef"
+# exe_cmd "perl $pl_copySpec --species=$orgName --from_species=$orgRef --from_trained"
 #### Prepare for augustus and etrain : By zff2augustus_gbk.pl Method. 
 exe_cmd "perl $pl_zff2augustus $para_rmLis > $in_raw_gb.raw"
 #### Prepare for augustus and etrain : By gff2gbSmallDNA.pl Method. 
@@ -68,7 +72,8 @@ exe_cmd "perl $pl_randSplit $in_gb $testNum"
 #exit; 
 
 # Section 2
-### Training without optimize. 
+### Training without optimize. If the new species_model comes from a trained species, this step is not requried. 
+###   And if the training dataset is bad, say redundant or with some other problem, the further training will make the model worse!!! 
 exe_cmd "$exe_etrain --species=$orgName --stopCodonExcludedFromCDS=false ${in_gb}.train 1>etrain_trainRaw.std 2>etrain_trainRaw.err"
 # Test the first model by an ab initial prediction
 exe_cmd "$exe_augustus --species=$orgName ${in_gb}.test > goodTrain_dbGood_firsttest.out"
