@@ -1,0 +1,82 @@
+# bottlegourd.aa.fa
+# bottlegourd.aa.fa.toNr.xml
+# bottlegourd.cc.fa
+# BoG_iprV5_B2G/
+
+##### Blast2GO pipe line : 
+### Required files : 
+###  ./bottlegourd.aa.fa.toNr.xml : From blastp to Nr ; 
+###  ./BoG_iprV5_B2G/             : From InterProScan V4 format ; 
+###  
+
+### Working on WWZ server. 
+###  /share1/src/Blast2GO/b2g4pipe_v2.5/
+###  /usr/lib/jvm/jre-1.6.0-openjdk.x86_64/bin/java
+##### v1 : 
+/usr/lib/jvm/jre-1.6.0-openjdk.x86_64/bin/java -cp /share1/src/Blast2GO/b2g4pipe_v2.5/*:/share1/src/Blast2GO/b2g4pipe_v2.5/ext/*: es.blast2go.prog.B2GAnnotPipe \
+  -in     ./bottlegourd.aa.fa.toNr.xml \
+  -out    ./result_v1_wiIPR/bottlegourd.aa.b2g \
+  -prop   ./b2gPipe.properties \
+  -v -annot -dat -img \
+  -annex -goslim \
+  -ips    ./BoG_iprV5_B2G/ \
+  -wiki   /share1/src/Blast2GO/b2g4pipe_v2.5/html_template.html
+
+cat ./result_v1_wiIPR/bottlegourd.aa.b2g.annot | perl -e 'use fileSunhh; while (<>) { chomp; m/^#/ and next; my @ta=&splitL("\t", $_); $ta[1] =~ m/^EC/ and next; defined $ta[2] and $ta[2] ne "" and print "$_\n"; } ' > ./result_v1_wiIPR/bottlegourd.aa.b2g.annot_desc
+cp -p ./result_v1_wiIPR/bottlegourd.aa.b2g.annot .
+cp -p ./result_v1_wiIPR/bottlegourd.aa.b2g_goslim.annot .
+cp -p ./result_v1_wiIPR/bottlegourd.aa.b2g.annot_desc .
+perl ~/tools/github/NGS_data_processing/deal_iprscan.pl bottlegourd.aa.b2g.annot -task go -go_obo gene_ontology_edit.obo.2017-02-01 -goIDColN 1 -go2ahrd bottlegourd.aa.b2g_wiIPR_ahrd
+
+##### v2 : 
+/usr/lib/jvm/jre-1.6.0-openjdk.x86_64/bin/java -cp /share1/src/Blast2GO/b2g4pipe_v2.5/*:/share1/src/Blast2GO/b2g4pipe_v2.5/ext/*: es.blast2go.prog.B2GAnnotPipe \
+  -in     ./bottlegourd.aa.fa.toNr.xml \
+  -out    ./result_v2_woIPR/bottlegourd.aa.b2g \
+  -prop   ./b2gPipe.properties \
+  -v -annot -dat -img \
+  -annex -goslim \
+  -wiki   /share1/src/Blast2GO/b2g4pipe_v2.5/html_template.html
+
+cat ./result_v2_woIPR/bottlegourd.aa.b2g.annot | perl -e 'use fileSunhh; while (<>) { chomp; m/^#/ and next; my @ta=&splitL("\t", $_); $ta[1] =~ m/^EC/ and next; defined $ta[2] and $ta[2] ne "" and print "$_\n"; } ' > ./result_v2_woIPR/bottlegourd.aa.b2g.annot_desc
+cp -p ./result_v2_woIPR/bottlegourd.aa.b2g.annot .
+cp -p ./result_v2_woIPR/bottlegourd.aa.b2g_goslim.annot .
+cp -p ./result_v2_woIPR/bottlegourd.aa.b2g.annot_desc .
+perl ~/tools/github/NGS_data_processing/deal_iprscan.pl bottlegourd.aa.b2g.annot -task go -go_obo gene_ontology_edit.obo.2017-02-01 -goIDColN 1 -go2ahrd bottlegourd.aa.b2g_woIPR_ahrd
+
+
+##### GOana method (Not used now) : (From Dr. Fei's GOAnalysis/)
+# perl -e 'while (<>) { $. == 1 and next; chomp; my @ta=split(/\t/, $_); $ta[1] eq "" and do { print "$ta[0]\n"; next; }; $ta[1] =~ s!\s+;;\s+!#!g; print join("\t", $ta[0], $ta[1])."\n"; } ' ./NSP306_v3_hc.prot.b2g.perGene > ./NSP306_v3_hc.prot.b2g.GOana_GO
+# perl GOAnalysis/go_generate_associate.pl -i ./NSP306_v3_hc.prot.b2g.GOana_GO -o itf 1> std.go_generate
+# perl GOAnalysis/go_enrichment_editSunhh.pl -i ma_wm.GT.raw.filtered.ma2_to_wm1.list.gID.ma_self.ID -a Cma_associate_file -c FDR -g enable
+
+# [Sunhh@whale enrich]$ head -4 Cma_gene_GO Cma_associate_file
+# ==> Cma_gene_GO <==
+# Cma_000001      GO:0005747      Cma
+# Cma_000001      GO:0005758      Cma
+# Cma_000001      GO:0006007      Cma
+# Cma_000001      GO:0006120      Cma
+#
+# ==> Cma_associate_file <==
+# Cma     Cma_000001                      GO:0005747      UniProt IEA             C       Cma_000001              gene    Taxon:0000      2016-03-18      KNF
+# Cma     Cma_000001                      GO:0005758      UniProt IEA             C       Cma_000001              gene    Taxon:0000      2016-03-18      KNF
+# Cma     Cma_000001                      GO:0006007      UniProt IEA             P       Cma_000001              gene    Taxon:0000      2016-03-18      KNF
+# Cma     Cma_000001                      GO:0006120      UniProt IEA             P       Cma_000001              gene    Taxon:0000      2016-03-18      KNF
+
+
+# [Sunhh@whale 16.blast2GO]$ /usr/lib/jvm/jre-1.6.0-openjdk.x86_64/bin/java -cp /data/share/src/Annot/blast2go/b2g4pipe/*:/data/share/src/Annot/blast2go/b2g4pipe/ext/*: es.blast2go.prog.B2GAnnotPipe 
+# Blast2GO Pipeline Version 2.5.0
+# --------------------------------------
+# 
+# -in <input-file>	XML file with (ncbi-style) blast results
+# -out <outputfile>	Name of output file without extension (optional: default=input-file + extension)
+# -prop <property-file>	file containing the application settings (optional: default=./b2gPipe.properties)
+# -v			show application messages (verbose)
+# -annot			generate annotation (.annot)
+# -dat			generate blast2go project file (NOT recomended with more than 30000 Seqs. or less than 2 GB of memory) (.dat)
+# -fas <fasta-file>	import a fasta file first
+# -img			generate images (statistic charts). Image generation works only in combination with the -dat option)
+# -ips <path to interpro-folder>	parse InterProScan result XML files (provide dir path) and merge GO terms to annotation
+# -wiki <wiki template>	generate a wiki file based on a given template
+# -annex 	runs the Annex step
+# -goslim 	converts the annotations into the GoSlim version
+
