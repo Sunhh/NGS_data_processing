@@ -10,7 +10,7 @@ use LogInforSunhh;
 use mathSunhh; 
 my $ms = mathSunhh->new(); 
 use Getopt::Long; 
-my $opts; 
+my %opts; 
 GetOptions(\%opts, 
 	"help!", 
 	"shortCdsExon_len:i", 
