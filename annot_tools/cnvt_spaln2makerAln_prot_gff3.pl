@@ -182,9 +182,11 @@ sub trim_overflow {
 		}
 		defined $gen_s or $gen_s = $ar->[$i][0][3]; 
 		defined $gen_e or $gen_e = $ar->[$i][0][4]; 
-		$gen_s < $ar->[$i][0][3] and $gen_s = $ar->[$i][0][3]; 
-		$gen_e > $ar->[$i][0][4] and $gen_e = $ar->[$i][0][4]; 
+		$gen_s > $ar->[$i][0][3] and $gen_s = $ar->[$i][0][3]; 
+		$gen_e < $ar->[$i][0][4] and $gen_e = $ar->[$i][0][4]; 
 	}
+	$ar->[0][0][3] < $gen_s and $ar->[0][0][3] = $gen_s; 
+	$ar->[0][0][4] > $gen_e and $ar->[0][0][4] = $gen_e; 
 	return 0; 
 }# trim_overflow
 
