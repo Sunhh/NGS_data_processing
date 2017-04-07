@@ -514,48 +514,61 @@ TTT
 		for (my $i=0; $i<@{$ll[0]}; $i++) {
 			my $bbb = "$ll[2][$i]$ll[3][$i]$ll[4][$i]"; 
 			$codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aa'}{$bbb} = $ll[0][$i]; 
+			$codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aaCnt'}{$bbb} = [ [$ll[0][$i], 100] ]; 
 			$ll[1][$i] eq 'M' and $codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2start'}{$bbb} = 1; 
+			$ll[1][$i] eq 'M' and $codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2startCnt'}{$bbb} = [ [1, 100] ]; 
 		}
-		# Setup with one 'ATGC' codon 
-		for my $i ( 0 .. 2 ) {
-			for my $tb_i (qw/A T G C/) {
-				my @bbb_arr = ('N','N','N'); 
-				$bbb_arr[$i] = $tb_i; 
-				my $bbb = join('', @bbb_arr); 
-				my @all_bbb = &_possible_bbb($bbb); 
-				my %aa; 
-				my @aa_k; 
-				for my $curr_bbb ( @all_bbb ) {
-					defined $codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aa'}{$curr_bbb} or &stopErr("[Err] Unknown bbb [$curr_bbb]\n"); 
-					defined $aa{ $codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aa'}{$curr_bbb} } or push(@aa_k, $codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aa'}{$curr_bbb}); 
-					$aa{ $codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aa'}{$curr_bbb} } ++; 
-					scalar(@aa_k) > 1 and last; 
+
+		# Setup degenerated bases; 
+		$codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aa'}{'NNN'} = 'X'; # Setup with no 'ATGC' codon 
+		my @all_bases = qw/A T G C W S M K R Y B D H V N/; 
+		for my $d1 ( @all_bases ) {
+			my @b1_arr = @{$IUPAC_d2b{$d1}}; 
+			for my $d2 ( @all_bases ) {
+				my @b2_arr = @{$IUPAC_d2b{$d2}};  
+				for my $d3 ( @all_bases ) {
+					my @b3_arr = @{$IUPAC_d2b{$d3}}; 
+					my $ddd = "$d1$d2$d3"; # This is the bbb I want to setup. 
+					defined $codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aa'}{$ddd} and next; 
+					my %ddd2aa_cnt; 
+					my %ddd2start_cnt; 
+					my $sum_cnt = 0; 
+					for my $b1 (@b1_arr) {
+						for my $b2 (@b2_arr) {
+							for my $b3 (@b3_arr) {
+								my $bbb = "$b1$b2$b3"; 
+								defined $codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aa'}{$bbb} or &stopErr("[Err] Unknown bbb [$bbb]\n"); 
+								$ddd2aa_cnt{ $codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aa'}{$bbb} } ++; 
+								$sum_cnt++; 
+								if ( defined $codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2start'}{$bbb} ) {
+									$ddd2start_cnt{ $codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2start'}{$bbb} } ++; 
+								} else {
+									$ddd2start_cnt{'0'} ++; 
+								}
+							}
+						}
+					}
+					my @aa2cnt = map { [ $_, $ddd2aa_cnt{$_}/$sum_cnt*100 ] } sort { $ddd2aa_cnt{$b} <=> $ddd2aa_cnt{$a} || $a cmp $b } keys %ddd2aa_cnt; 
+					$codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aaCnt'}{$ddd} = [@aa2cnt]; 
+					if ( @aa2cnt == 1 ) {
+						$codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aa'}{$ddd} = $aa2cnt[0][0]; 
+					} else {
+						$codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aa'}{$ddd} = 'X'; 
+					}
+					my @start2cnt = map { [ $_, $ddd2start_cnt{$_}/$sum_cnt*100 ] } sort { $ddd2start_cnt{$b} <=> $ddd2start_cnt{$a} || $a <=> $b } keys %ddd2start_cnt; 
+					$codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2startCnt'}{$ddd} = [@start2cnt]; 
+					if ( @start2cnt == 1 and $start2cnt[0][0] == 1 ) {
+						$codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2start'}{$ddd} = $start2cnt[0][0]; 
+					} else {
+						# $codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2start'}{$ddd} = '-1'; 
+					}
 				}
-				$codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aa'}{$bbb} = (scalar(@aa_k) == 1) ? $aa_k[0] : 'X' ; 
 			}
 		}
-		# Setup with two 'ATGC' codon 
-		for (my $i=0; $i<3; $i++) {
-			my $bbb = 'NNN'; 
-			substr($bbb, $i, 1) = 'A'; 
-			my @all_bbb = map { substr($_, $i, 1) = 'N'; $_; } &_possible_bbb($bbb); 
-			for my $curr_chk (@all_bbb) {
-				my @all_bbb_chk = &_possible_bbb($curr_chk); 
-				my (%aa, @aa_k); 
-				for my $curr_bbb ( @all_bbb_chk ) {
-					defined $codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aa'}{$curr_bbb} or &stopErr("[Err] Unknown bbb [$curr_bbb]\n"); 
-					defined $aa{ $codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aa'}{$curr_bbb} } or push(@aa_k, $codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aa'}{$curr_bbb}); 
-					$aa{ $codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aa'}{$curr_bbb} } ++; 
-					scalar(@aa_k) > 1 and last; 
-				}
-				$codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aa'}{$curr_chk} = (scalar(@aa_k) == 1) ? $aa_k[0] : 'X' ; 
-			}
-		}
-		# Setup with no 'ATGC' codon 
-		$codon_tbl{'tbl2inf'}{$tbl_num_wo0}{'bbb2aa'}{'NNN'} = 'X'; 
 	}
 	$codon_tbl{'has_setup'} = 1; 
 	# &tsmsg("[Msg] Codon table setup finished.\n"); 
+# &tsmsg("[Msg] Finish setting codon tables.\n"); 
 
 	return( \%codon_tbl ); 
 }# setup_codon_tbl () 
@@ -567,6 +580,8 @@ Return : ( $aa, $is_start )
 =cut
 sub bbb2aa {
 	my ( $bbb, $tbl_num ) = @_; 
+	$bbb eq '' and do { &tsmsg("[Wrn] Input empty bbb [$bbb] for &bbb2aa()\n"); return('', 0); }; 
+	$bbb =~ m!^\s{3}$! and do { &tsmsg("[Wrn] Input blank bbb [$bbb] for &bbb2aa()\n"); return(' ', 0); }; 
 	$tbl_num //= 1; 
 	&setup_codon_tbl(); 
 	defined $codon_tbl{'id2num'}{$tbl_num} or &stopErr("[Err] Bad table number [$tbl_num]\n"); 
@@ -576,6 +591,10 @@ sub bbb2aa {
 	my $b_start = 0; 
 	if ( $bbb =~ m/^\-\-\-$/ ) {
 		return( '-', 0 ); 
+	}
+	my $bbb_len_toAdd = 3-length($bbb); 
+	if ($bbb_len_toAdd > 0) {
+		$bbb = $bbb . ('N' x $bbb_len_toAdd); 
 	}
 	if ( $bbb =~ m/^[ATGC]{3}$/ ) {
 		defined $codon_tbl{'tbl2inf'}{$tbl_num}{'bbb2aa'}{$bbb} or &stopErr("[Err] Failed to find aa for bbb [$bbb]\n"); 
