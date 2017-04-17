@@ -100,7 +100,8 @@ Usage: $0  <fasta_file | STDIN>
                       transfered to "\\t"; not so useful; 
   -max_num<num>       max record numbers output for every file. No effection to -cut function;At least one.
   
-  -attribute<item>    head:seq:key:len:GC:mask:AG, output atrribution of sequences. 
+  -attribute<item>    head:seq:key:len:GC:mask:AG:GC3:seq_line, output atrribution of sequences. 
+                        seq_line : Similar to 'seq', but all blanks are removed. 
   -GC_excln<num>      when calculating CG content, it will calculate total length excluding runs of <num>
                       Ns or more. Default 25. We only exclude Ns, no dealing with Xs!
   
@@ -1420,7 +1421,7 @@ sub upper_lower{
 #	-attribute<item>    head:seq:key:len:GC:mask:model, output atrribution of sequences
 ####################################################
 sub get_attribute{
-	my %ok_key = ( 'key'=>1, 'head'=>1, 'seq'=>1, 'len'=>1, 'GC'=>1, 'GCnum'=>1, 'AG'=>1, 'AGnum'=>1, 'mask'=>1, 'masknum'=>1, 'GC3'=>1);  # 暂时去掉model功能, 这个功能很不完善; , 'model'=>1 ); 
+	my %ok_key = ( 'key'=>1, 'head'=>1, 'seq'=>1, 'len'=>1, 'GC'=>1, 'GCnum'=>1, 'AG'=>1, 'AGnum'=>1, 'mask'=>1, 'masknum'=>1, 'GC3'=>1, 'seq_line'=>1);  # 暂时去掉model功能, 这个功能很不完善; , 'model'=>1 ); 
 	
 	# define out_code(s); 
 	my $recVar = sub { my $v = shift; return '$relHR->{'.$v.'}'; }; # record Var. 统一形式; 
@@ -1444,6 +1445,15 @@ sub get_attribute{
 		$out_code{len} = '$len'; 
 		my $code = $calc_code{line}->(); 
 		$code .= join('','my ',$out_code{len},' = length( ',$out_code{seq},' ); ',"\n"); 
+		return $code; 
+	}; 
+
+	$calc_code{'seq_line'} = sub {
+		$has{'seq_line'} and return ''; 
+		$has{'seq_line'} = 1; 
+		$out_code{'seq_line'} = '$seq_line'; 
+		my $code = join('', 'my ', $out_code{'seq_line'}, ' = ', $out_code{'seq'}, ";\n"); 
+		$code .= join('', "$out_code{'seq_line'} =~ ", 's!\s+!!g', ";\n"); 
 		return $code; 
 	}; 
 	
