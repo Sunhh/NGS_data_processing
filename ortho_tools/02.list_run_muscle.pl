@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# 20170419 Generate separated alignments instead of concatenated one. 
 use strict; 
 use warnings; 
 use LogInforSunhh; 
@@ -17,7 +18,8 @@ GetOptions(\%opts,
 	"startRowN:i", 
 	"min2max_var:f", 
 	"minProt_len:i", 
-	"para_trimal:s", 
+	"para_trimal:s", "notTrimmed!", 
+	"sepAln!", 
 ); 
 $opts{'startColN'} //= 0; 
 $opts{'startRowN'} //= 1; 
@@ -44,11 +46,14 @@ Format of -tax_list : tax1 \\n tax2 \\n tax3 ...
 -minProt_len    [-1] 
 
 -para_trimal    ['-gt 0.9']
+-notTrimmed     [Boolean] No trimming in trimal. 
 
 -cds_fas        [filename]
 -out_aln_cds    [filename] output .fasta file with cds. 
 
 -out_aln_pep    [filename] Output .fasta file with protein sequences. This has been trimmed with trimal. 
+
+-sepAln         [Boolean] Separate alignments by each gene. 
 
 HH
 
@@ -78,6 +83,7 @@ defined $opts{'tax_list'} and %taxName = %{ &load_tax_list( $opts{'tax_list'} ) 
 
 my %aln_seq; 
 my %aln_cds; 
+my %key_pep; 
 my $used_cnt = 0; 
 GRP:
 for ( my $i=0; $i<@grp_list; $i++ ) {
@@ -97,7 +103,15 @@ for ( my $i=0; $i<@grp_list; $i++ ) {
 	for my $tk (keys %raw_aln_pep) { $raw_aln_pep{$tk}{'seq'} =~ s!\s!!g; } 
 
 
-	&exeCmd_1cmd("trimal -in aln.fa -out aln_trimal.fa $opts{'para_trimal'}"); 
+	my $str_cnum = ''; 
+	$opts{'para_trimal'} =~ m!^\s*$! and $opts{'notTrimmed'} = 1; 
+	if ( $opts{'notTrimmed'} ) {
+		&exeCmd_1cmd("trimal -in aln.fa -out aln_trimal.fa $opts{'para_trimal'}"); 
+	} else {
+		$str_cnum = `trimal -in aln.fa -out aln_trimal.fa -colnumbering $opts{'para_trimal'}`; 
+		chomp($str_cnum); $str_cnum =~ s!\s+!!g; 
+	}
+	my @kept_cnum = split( /,/, $str_cnum ); # These numbers are 0-based. 
 	if ( $opts{'min2max_var'} >= 0 ) {
 		my ($min2, $max2) = &min_max_len_from_fas("aln.fa"); 
 		$max2 <= $min * (1+$opts{'min2max_var'}) or do { chdir($cwd); &fileSunhh::_rmtree($tmp_dir); next GRP; }; 
@@ -123,7 +137,15 @@ for ( my $i=0; $i<@grp_list; $i++ ) {
 				next GRP; 
 			}
 			$cdsByAA =~ s!\s!!g; 
-			$to_add_cds{$j} = $cdsByAA; 
+			my $kept_cdsByAA = ''; 
+			if ($opts{'notTrimmed'}) {
+				$kept_cdsByAA = $cdsByAA; 
+			} else {
+				for my $ik (@kept_cnum) {
+					$kept_cdsByAA .= substr($cdsByAA, $ik*3, 3); 
+				}
+			}
+			$to_add_cds{$j} = $kept_cdsByAA; 
 		}
 		$s2h->{ $seq_k }{'seq'} =~ s/\s//gs; 
 		$taxName{$j} //= "tax$j"; 
@@ -132,23 +154,53 @@ for ( my $i=0; $i<@grp_list; $i++ ) {
 	$used_cnt ++; 
 	for (my $j=0; $j<@$tg; $j++) {
 		my $seq_k = $tg->[$j]; 
-		$aln_seq{$j} .= $to_add_pep{$j}; 
+		push(@{$key_pep{$j}}, $seq_k); 
+		$aln_seq{$j} .= "^^" . $to_add_pep{$j}; 
 		if (defined $opts{'out_aln_cds'}) {
-			$aln_cds{$j} .= $to_add_cds{$j}; 
+			$aln_cds{$j} .= "^^" . $to_add_cds{$j}; 
 		}
 	}
 }
 
 &tsmsg("[Rec] Total [$used_cnt] groups used.\n"); 
 
+KN: 
 for my $kn ( sort {$a<=>$b} keys %aln_seq ) {
+	if ($opts{'sepAln'}) {
+		$aln_seq{$kn} =~ s/\s//g; 
+		$aln_seq{$kn} =~ s!^\^\^!!; 
+		my @sub_pep = split(/\^\^/, $aln_seq{$kn}); 
+		my @sub_cds ; 
+		if ( defined $opts{'out_aln_cds'} ) {
+			$aln_cds{$kn} =~ s!^\^\^!!; 
+			@sub_cds = split(/\^\^/, $aln_cds{$kn});
+		}
+		for (my $i=0; $i<@sub_pep; $i++) {
+			my $len = length( $sub_pep[$i] ); 
+			$len > 0 or next KN; 
+		}
+		for (my $i=0; $i<@sub_pep; $i++) {
+			my $len = length( $sub_pep[$i] ); 
+			my $len_bar = ( $sub_pep[$i] =~ tr/-/-/ ); 
+			my $len_aa  = $len - $len_bar; 
+			$sub_pep[$i] =~ s!(.{60})!$1\n!g; chomp( $sub_pep[$i] ); 
+			print {$ofh_aln_pep} ">$taxName{$kn}.$i $len aa [$len_aa]\n$sub_pep[$i]\n"; 
+			if ( defined $opts{'out_aln_cds'} ) {
+				$sub_cds[$i] =~ s!(.{60})!$1\n!g; chomp( $sub_cds[$i] ); 
+				print {$ofh_aln_cds} ">$taxName{$kn}.$i\n$sub_cds[$i]\n"; 
+			}
+		}
+		next KN; 
+	}
 	$aln_seq{$kn} =~ s/\s//g; 
+	$aln_seq{$kn} =~ s!\^\^!!g; 
 	my $len = length( $aln_seq{$kn} ); 
 	my $len_bar = ( $aln_seq{$kn} =~ tr/-/-/ ); 
 	my $len_aa  = $len-$len_bar; 
 	$aln_seq{$kn} =~ s!(.{60})!$1\n!g; chomp( $aln_seq{$kn} ); 
 	print {$ofh_aln_pep} ">$taxName{$kn} $len aa [$len_aa]\n$aln_seq{$kn}\n"; 
 	if (defined $opts{'out_aln_cds'}) {
+		$aln_cds{$kn} =~ s!\^\^!!g; 
 		$aln_cds{$kn} =~ s!(.{60})!$1\n!g; chomp( $aln_cds{$kn} ); 
 		print {$ofh_aln_cds} ">$taxName{$kn}\n$aln_cds{$kn}\n"; 
 	}

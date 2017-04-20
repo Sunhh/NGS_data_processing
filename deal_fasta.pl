@@ -313,7 +313,7 @@ sub cds2aa {
 		RD:
 		while ( !eof($fh1) ) {
 			for ( my ($relHR1, $get1) = &get_fasta_seq($fh1); defined $relHR1; ($relHR1, $get1) = &get_fasta_seq($fh1) ) {
-				$relHR1->{'seq'} =~ s/[\s\-]//g; 
+				$relHR1->{'seq'} =~ s/[\s]//g; # Keep '-' for position. 
 				my $t_seq = $relHR1->{'seq'}; 
 				if ( $frame > 0 and $frame <= 3 ) {
 					$t_seq = substr($t_seq, $frame - 1); 
