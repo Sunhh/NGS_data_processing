@@ -184,10 +184,10 @@ for my $kn ( sort {$a<=>$b} keys %aln_seq ) {
 			my $len_bar = ( $sub_pep[$i] =~ tr/-/-/ ); 
 			my $len_aa  = $len - $len_bar; 
 			$sub_pep[$i] =~ s!(.{60})!$1\n!g; chomp( $sub_pep[$i] ); 
-			print {$ofh_aln_pep} ">$taxName{$kn}.$i $len aa [$len_aa]\n$sub_pep[$i]\n"; 
+			print {$ofh_aln_pep} ">$taxName{$kn}.$i $len aa [$len_aa] [$key_pep{$kn}[$i]]\n$sub_pep[$i]\n"; 
 			if ( defined $opts{'out_aln_cds'} ) {
 				$sub_cds[$i] =~ s!(.{60})!$1\n!g; chomp( $sub_cds[$i] ); 
-				print {$ofh_aln_cds} ">$taxName{$kn}.$i\n$sub_cds[$i]\n"; 
+				print {$ofh_aln_cds} ">$taxName{$kn}.$i [$key_pep{$kn}[$i]]\n$sub_cds[$i]\n"; 
 			}
 		}
 		next KN; 

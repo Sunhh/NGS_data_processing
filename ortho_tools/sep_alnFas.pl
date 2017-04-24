@@ -1,0 +1,40 @@
+#!/usr/bin/perl
+use strict; 
+use warnings; 
+use fileSunhh; 
+use fastaSunhh; 
+my $fs_obj = fastaSunhh->new(); 
+# >MaximaA.0
+# ATGTTCCTCATTGACTGGTTCTACGGCGTCTTGGCCTCCCTCGGTCTCTGGCAGAAGGAG
+# GCCAAGATCCTCTTTCTCGGCCTCGATAATGCCGGCAAAACTACTCTTCTCCATATGTTG
+# AAGGATGAGAGGCTTGTTCAGCACCAGCCTACACAGTACCCGACGTCTGAGGAGTTGAGT
+# ATTGGAAAAATCAAATTCAAGGCGTTTGATTTGGGTGGGCATCAAATTGCTCGTAGAGTC
+# TGGAAGGATTATTATGCTAAGGTAGATGCTGTCGTGTACCTAGTCGACGCCTTCGACAAA
+# GAAAGGTTTGCAGAATCGAAGAAGGAACTCGACGCTCTTCTCTCTGATGAATCGCTTGCT
+# AATGTGCCATTCCTTATATTGGGCAACAAGATCGACATTCCATATGCAGCCTCAGAGGAC
+# GAATTGCGCTACCATCTTGGCTTGACCAACTTCACCACTGGCAAGGGAAAAGTAAATCTA
+# ACTGATTCAAATGTACGTCCATTAGAGGTATTCATGTGCAGTATCGTTCGCAAAATGGGT
+# TATGGCGACGGTAAGTGGATGTCTCAATACATC
+# >MaximaA.1
+# ATGGCCGGAAGAAGCCATCAGCCGAATGCGTTGAAACGACGCAAACGAAGCCCGAGTGAT
+# GATCGTCGAGCCCATCAACGTCTTTCTTCCGTCGGCGGTTCTTCGAGGGCTCATCAGGCA
+
+!@ARGV and die "perl $0 out_prefix input_aln.fa\n  Accept result from 02.list_run_muscle.pl\n"; 
+
+my $pref = shift; 
+my $fas  = shift; 
+
+my %sh = %{ $fs_obj->save_seq_to_hash('faFile'=>$fas) }; 
+my %o_fn; 
+for my $k1 (sort {$sh{$a}{'Order'} <=> $sh{$b}{'Order'}} keys %sh) {
+	$k1 =~ m!^(\S+)\.(\d+)$! or die "$k1\n"; 
+	my ($sp, $id) = ($1, $2); 
+	my $ofn = "${pref}$id.fa"; 
+	if (!defined $o_fn{$ofn}) {
+		&fileSunhh::write2file($ofn, '','>'); 
+		$o_fn{$ofn} = 1; 
+	}
+	chomp($sh{$k1}{'seq'}); 
+	&fileSunhh::write2file($ofn, ">$sp$sh{$k1}{'definition'}\n$sh{$k1}{'seq'}\n", '>>'); 
+}
+
