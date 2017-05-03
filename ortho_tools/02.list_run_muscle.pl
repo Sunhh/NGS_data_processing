@@ -20,6 +20,7 @@ GetOptions(\%opts,
 	"minProt_len:i", 
 	"para_trimal:s", "notTrimmed!", 
 	"sepAln!", 
+	"keep_tmp!", 
 ); 
 $opts{'startColN'} //= 0; 
 $opts{'startRowN'} //= 1; 
@@ -91,14 +92,14 @@ for ( my $i=0; $i<@grp_list; $i++ ) {
 	my $tg = $grp_list[$i]; 
 	my $tmp_dir = &fileSunhh::new_tmp_file(); 
 	mkdir($tmp_dir); 
-	&grpSeq_to_file( \%in_seq, $tg, "$tmp_dir/input.fa" ) and do { &tsmsg("[Wrn] Bad group skipped.\n"); &fileSunhh::_rmtree($tmp_dir); next GRP; }; 
+	&grpSeq_to_file( \%in_seq, $tg, "$tmp_dir/input.fa" ) and do { &tsmsg("[Wrn] Bad group skipped.\n"); &_rmdir($tmp_dir); next GRP; }; 
 	my ($min,$max) = &min_max_len_from_fas("$tmp_dir/input.fa"); 
-	$min >= $opts{'minProt_len'} or do { &fileSunhh::_rmtree($tmp_dir); next GRP; }; 
+	$min >= $opts{'minProt_len'} or do { &_rmdir($tmp_dir); next GRP; }; 
 	if ( $opts{'min2max_var'} >= 0 ) {
-		$max <= $min * (1+$opts{'min2max_var'}) or do { &fileSunhh::_rmtree($tmp_dir); next GRP; }; 
+		$max <= $min * (1+$opts{'min2max_var'}) or do { &_rmdir($tmp_dir); next GRP; }; 
 	}
 	chdir($tmp_dir); 
-	&exeCmd_1cmd("muscle -in input.fa -out aln.fa") and do { &tsmsg("[Err] Skip bad group [$i]: @$tg\n"); chdir($cwd); &fileSunhh::_rmtree($tmp_dir); next GRP;}; 
+	&exeCmd_1cmd("muscle -in input.fa -out aln.fa") and do { &tsmsg("[Err] Skip bad group [$i]: @$tg\n"); chdir($cwd); &_rmdir($tmp_dir); next GRP;}; 
 	my %raw_aln_pep = %{ $fs_obj->save_seq_to_hash( 'faFile'=>'aln.fa', 'has_head'=>1 ) }; 
 	for my $tk (keys %raw_aln_pep) { $raw_aln_pep{$tk}{'seq'} =~ s!\s!!g; } 
 
@@ -108,22 +109,23 @@ for ( my $i=0; $i<@grp_list; $i++ ) {
 	if ( $opts{'notTrimmed'} ) {
 		&exeCmd_1cmd("trimal -in aln.fa -out aln_trimal.fa $opts{'para_trimal'}"); 
 	} else {
+		&tsmsg("[RUN] trimal -in aln.fa -out aln_trimal.fa -colnumbering $opts{'para_trimal'}\n"); 
 		$str_cnum = `trimal -in aln.fa -out aln_trimal.fa -colnumbering $opts{'para_trimal'}`; 
 		chomp($str_cnum); $str_cnum =~ s!\s+!!g; 
 	}
 	my @kept_cnum = split( /,/, $str_cnum ); # These numbers are 0-based. 
 	if ( $opts{'min2max_var'} >= 0 ) {
 		my ($min2, $max2) = &min_max_len_from_fas("aln.fa"); 
-		$max2 <= $min * (1+$opts{'min2max_var'}) or do { chdir($cwd); &fileSunhh::_rmtree($tmp_dir); next GRP; }; 
+		$max2 <= $min * (1+$opts{'min2max_var'}) or do { chdir($cwd); &_rmdir($tmp_dir); next GRP; }; 
 		my ($min3, $max3) = &min_max_len_from_fas("aln_trimal.fa"); 
 		if ($min3 < $min) {
-			$max2 <= $min3 * (1+$opts{'min2max_var'}) or do { chdir($cwd); &fileSunhh::_rmtree($tmp_dir); next GRP; }; 
+			$max2 <= $min3 * (1+$opts{'min2max_var'}) or do { chdir($cwd); &_rmdir($tmp_dir); next GRP; }; 
 		}
 	}
 
 	my $s2h = $fs_obj->save_seq_to_hash( 'faFile'=>"aln_trimal.fa", 'has_head'=>1 ); 
 	chdir($cwd); 
-	&fileSunhh::_rmtree($tmp_dir); 
+	&_rmdir($tmp_dir); 
 
 	my %to_add_pep; 
 	my %to_add_cds; 
@@ -293,3 +295,8 @@ sub min_max_len_from_fas {
 	return($min, $max); 
 }
 
+sub _rmdir {
+	for my $d (@_) {
+		$opts{'keep_tmp'} or &fileSunhh::_rmtree($d); 
+	}
+}#
