@@ -167,7 +167,7 @@ sub load_grps_fmt_orthofinder {
 		chomp;
 		my @ta = &splitL("\t", $_);
 		if ($. == 1) {
-			$ta[0] eq '' or &stopErr("[Err] Bad 1st line: $_\n");
+			$ta[0] eq '' or $ta[0] eq 'ID' or &stopErr("[Err] Bad 1st line: $_\n");
 			@hh = @ta;
 			push(@back, {}); 
 			$back[-1]{'grpID'} = ''; 
