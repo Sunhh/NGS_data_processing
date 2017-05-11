@@ -43,6 +43,29 @@ sub _initialize {
 	my $self = shift; 
 }
 
+
+=head1 _featType2Num( $type )
+
+Return : ( $number )
+
+Undefined = 99; 
+
+=cut
+sub _featType2Num {
+	my $tt = lc($_[0]); 
+	my %type2n; 
+	$type2n{'gene'} = 0; 
+	$type2n{'mrna'} = 1; 
+	$type2n{'transcript'} = 1.1; 
+	$type2n{'exon'} = 2; 
+	$type2n{'five_prime_utr'} = 3; 
+	$type2n{'cds'} = 4; 
+	$type2n{'three_prime_utr'} = 5; 
+	defined $type2n{$tt} and return ($type2n{$tt}); 
+	return(99); 
+}# _featType2Num() 
+
+
 =head2 write_gff3File ( 'outFH'=>$file_handle // $FH_of_outFile // \*STDOUT, 'outFile'=>$outFileName, 'writeMode'=>'>', 
   'seq_href'=>$out2_of_read_gff3File() , 'seq_width'=>60, 'seqIDs_aref'=>[@seqIDs_to_output], 
   'gff3_href'=>$out1_of_read_gff3File(), 'topIDs_aref'=>[keys %{$gff3_href->{'lineN_group'}}], 
@@ -71,7 +94,7 @@ sub write_gff3File {
 	my $self = shift; 
 	### Step1. Setting parameters
 	my %parm = $self->_setHashFromArr(@_); 
-	
+
 	##  Require {'outFH'} or {'outFile'} defined. 
 	my $fh; 
 	defined $parm{'outFH'} and $fh = $parm{'outFH'}; 
@@ -123,7 +146,8 @@ sub write_gff3File {
 				sort {  
 				     $gff3_href->{'lineN2hash'}{$a->[1]}{'seqID'} cmp $gff3_href->{'lineN2hash'}{$b->[1]}{'seqID'}
 				  || $gff3_href->{'lineN2hash'}{$a->[1]}{'start'} <=> $gff3_href->{'lineN2hash'}{$b->[1]}{'start'}
-				  || $gff3_href->{'lineN2hash'}{$a->[1]}{'end'}   <=> $gff3_href->{'lineN2hash'}{$b->[1]}{'end'}
+				  || $a->[1] <=> $b->[1]
+				  || &_featType2Num( $gff3_href->{'lineN2hash'}{$a->[1]}{'type'} )  <=> &_featType2Num( $gff3_href->{'lineN2hash'}{$b->[1]}{'type'} )
 				  || $gff3_href->{'lineN2hash'}{$a->[1]}{'type'}  cmp $gff3_href->{'lineN2hash'}{$b->[1]}{'type'}
 				} @grp_lines; 
 			} elsif ( $str == -1 ) {
@@ -131,7 +155,8 @@ sub write_gff3File {
 				sort {  
 				     $gff3_href->{'lineN2hash'}{$a->[1]}{'seqID'} cmp $gff3_href->{'lineN2hash'}{$b->[1]}{'seqID'}
 				  || $gff3_href->{'lineN2hash'}{$b->[1]}{'end'}   <=> $gff3_href->{'lineN2hash'}{$a->[1]}{'end'}
-				  || $gff3_href->{'lineN2hash'}{$b->[1]}{'start'} <=> $gff3_href->{'lineN2hash'}{$a->[1]}{'start'}
+				  || $a->[1] <=> $b->[1]
+				  || &_featType2Num( $gff3_href->{'lineN2hash'}{$a->[1]}{'type'} )  <=> &_featType2Num( $gff3_href->{'lineN2hash'}{$b->[1]}{'type'} )
 				  || $gff3_href->{'lineN2hash'}{$b->[1]}{'type'}  cmp $gff3_href->{'lineN2hash'}{$a->[1]}{'type'}
 				} @grp_lines; 
 			} else {
@@ -143,6 +168,8 @@ sub write_gff3File {
 			     $gff3_href->{'lineN2hash'}{$a->[1]}{'seqID'} cmp $gff3_href->{'lineN2hash'}{$b->[1]}{'seqID'}
 			  || $gff3_href->{'lineN2hash'}{$a->[1]}{'start'} <=> $gff3_href->{'lineN2hash'}{$b->[1]}{'start'}
 			  || $gff3_href->{'lineN2hash'}{$a->[1]}{'end'}   <=> $gff3_href->{'lineN2hash'}{$b->[1]}{'end'}
+			  || $a->[1] <=> $b->[1]
+			  || &_featType2Num( $gff3_href->{'lineN2hash'}{$a->[1]}{'type'} )  <=> &_featType2Num( $gff3_href->{'lineN2hash'}{$b->[1]}{'type'} )
 			  || $gff3_href->{'lineN2hash'}{$a->[1]}{'type'}  cmp $gff3_href->{'lineN2hash'}{$b->[1]}{'type'}
 			} @grp_lines; 
 		} else {

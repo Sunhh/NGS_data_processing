@@ -49,7 +49,7 @@ while (<$inFh>) {
 		my @p_pairs = split(/\)\s*,\s*\(/, $ta[3]); 
 		for (my $i=0; $i<@p_pairs; $i++) {
 			$i == $info_hash{'slct_nodeIJ'}[0] or next; 
-			my @pp = split(/\s*,\s*/, $p_pairs[$i]); 
+			my @pp = map { s!\)+$!!; $_; } split(/\s*,\s*/, $p_pairs[$i]); 
 			$pp[0] =~ m/^\-$/ and next; 
 			my $p_slct = $pp[ $info_hash{'slct_nodeIJ'}[1] ]; 
 			$p_slct <= $opts{'pvalue_thres'} or next; 
