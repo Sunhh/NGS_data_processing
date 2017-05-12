@@ -155,6 +155,8 @@ sub usage {
 #
 # -filter_blk   [Boolean] 
 #   -min_blkPair  [Number] Default 2. At least this number of pairs in this block. 
+#
+# -exe_python   [python] Could try '/usr/bin/python'
 ####################################################################################################
 HH
 	exit 1; 
