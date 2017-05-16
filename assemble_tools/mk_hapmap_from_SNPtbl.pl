@@ -11,7 +11,7 @@ while (<>) {
 	my @ta = split(/\t/, $_); 
 	if ($. == 1) {
 		# print STDOUT "$_\n"; 
-		print STDOUT join("\t", "rs#", "Allels", 'chrom', "pos", @ta[3..$#ta])."\n"; 
+		print STDOUT join("\t", "rs#", "alleles", 'chrom', "pos", @ta[3..$#ta])."\n"; 
 		next; 
 	}
 	my @dd; 
