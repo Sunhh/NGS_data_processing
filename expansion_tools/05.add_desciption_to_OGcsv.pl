@@ -35,7 +35,7 @@ for my $fn (@{$opts{'tab_desc'}}) {
 sub arr2txt {
 	my ($hr) = @_; 
 	my %back; 
-	for my $k1 (%$hr) {
+	for my $k1 (sort keys %$hr) {
 		my %cnt; 
 		my $r=0; 
 		for my $d1 (@{$hr->{$k1}}) {
