@@ -51,7 +51,7 @@ sub arr2txt {
 				}
 			}
 		}
-		$back{$k1} = join('_;;;_', map { "${_} ($cnt{$_}{'n'})_" } (sort { $cnt{$b}{'n'}<=>$cnt{$a}{'n'} || $cnt{$a}{'r'} <=> $cnt{$a}{'r'} } keys %cnt)); 
+		$back{$k1} = join('_;;;_', map { "${_} ($cnt{$_}{'n'})_" } (sort { $cnt{$b}{'n'}<=>$cnt{$a}{'n'} || $cnt{$a}{'r'} <=> $cnt{$b}{'r'} } keys %cnt)); 
 	}
 	return(\%back); 
 }# arr2txt() 
