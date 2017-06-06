@@ -11,6 +11,7 @@ my $st = SNP_tbl->new();
 my $is_noSort = 0; 
 
 my %dblist; 
+my %bb2b; 
 {
 my @aa = (
 [qw/W A T/], 
@@ -27,6 +28,8 @@ my @aa = (
 for my $tr (@aa) {
 	my @bb = @$tr; 
 	$dblist{$bb[0]} = [$bb[1], $bb[2]]; 
+	$bb2b{"$bb[1]$bb[2]"} = $bb[0]; 
+	$bb2b{"$bb[2]$bb[1]"} = $bb[0]; 
 }
 }
 
@@ -63,30 +66,65 @@ while (<>) {
 	my $chr = $chr_ori; 
 	$chr =~ s!^(WM97(?i:v\d*)?_)?Chr0*!!i; 
 	$chr eq '' and $chr = 20; 
-	$chr =~ m/^\d+$/ or &stopErr("[Err] chr=$chr not a number\n"); 
+	$chr =~ m/^\d+$/ or $chr = uc($chr); 
+	# $chr =~ m/^\d+$/ or &stopErr("[Err] chr=$chr not a number\n"); 
 
 	my $posi = $ta[1]; 
 
 	my @allele_arr; 
 	my ($refBase, %baseNum, $cntNum); 
+
+	$refBase = $ta[2]; 
+	if ( length($refBase) > 1 ) {
+		if ($refBase =~ m/^([ATGC]+)$/) {
+			my @ta = sort { $a cmp $b } split(//, $refBase); 
+			$refBase = $ta[0]; 
+#		} else {
+#			defined $bb2b{$refBase} or die "refBase [$refBase]\n"; 
+#			$refBase = $bb2b{$refBase}; 
+#			defined $dblist{$refBase} or die "db refBase [$refBase]\n"; 
+#			$refBase = $dblist{$refBase}[0]; 
+		}
+	}
+
 	$cntNum = 1; 
 	for my $bb ( @ta[$snpCol .. $#ta] ) {
 		$bb = uc($bb); 
-		$bb = $st->SingleChar($bb); 
-		defined $dblist{ $bb } or do { push( @allele_arr, ['.', '.'] ); next; }; 
-		push( @allele_arr, [ @{$dblist{ $bb }} ] ); 
-		for my $b2 ( @{$dblist{ $bb }} ) {
+		if ( $bb =~ m!^([ATGC]{1,2})$! ) {
+			$bb = $st->SingleChar($bb); 
+			defined $dblist{ $bb } or do { push( @allele_arr, ['.', '.'] ); next; }; 
+			push( @allele_arr, [ @{$dblist{ $bb }} ] ); 
+		} elsif ( $bb =~ m!^([ATGC])\+([ATGCN]+)$! ) {
+			$bb = "$1$2"; 
+			push( @allele_arr, [ $bb, $bb ] ); 
+		} elsif ( $bb eq '*' ) {
+			push( @allele_arr, [ '*', '*' ] ); 
+		} elsif ( $bb =~ m!^([ATGC])(\*)$! ) {
+			push( @allele_arr, [ $1, $2 ] ); 
+		} elsif ( $bb =~ m!^(\*)([ATGC])$! ) {
+			push( @allele_arr, [ $2, $1 ]); 
+		} elsif ( $bb =~ m!^([ATGC])([ATGC])\+([ATGCN]+)$! ) {
+			push( @allele_arr, [ $1, "$2$3" ] ); 
+		} elsif ( $bb =~ m!^\+([ATGCN]+)$! ) {
+			push( @allele_arr, [ $1, $1 ] ); 
+		} else {
+			push( @allele_arr, [ '.', '.' ] ); 
+		}
+		for my $b2 ( @{$allele_arr[-1]} ) {
+			$b2 eq '.' and next; 
 			defined $baseNum{$b2} and next; 
-			defined $refBase or $refBase = $b2; 
+			# defined $refBase or $refBase = $b2; 
 			$baseNum{$b2} = $cntNum; 
 			$cntNum ++; 
 		}
 	}
-	defined $refBase or next; 
-	$cntNum > 2 or next; 
+	defined $refBase or die "$_\n"; 
+	$cntNum >= 2 or die "2: $_\n"; 
 	$baseNum{$refBase} = 0; 
 	my @allele_base = sort { $baseNum{$a} <=> $baseNum{$b} } keys %baseNum; 
+	@allele_base == 1 and $allele_base[1] = '.'; 
 	for (my $i=0; $i<@allele_base; $i++) {
+		$allele_base[$i] eq '.' and next; 
 		$baseNum{$allele_base[$i]} = $i; 
 	}
 
@@ -100,7 +138,8 @@ while (<>) {
 		}
 	}
 
-	print STDOUT join( "\t", $chr_ori, $posi, "s${chr}_${posi}", $allele_base[0], join(',', @allele_base[1 .. $#allele_base]), qw/. PASS . GT/, @allele_str)."\n"; 
+	# print STDOUT join( "\t", $chr_ori, $posi, "s${chr}_${posi}", $allele_base[0], join(',', @allele_base[1 .. $#allele_base]), qw/. PASS . GT/, @allele_str)."\n"; 
+	print STDOUT join( "\t", $chr_ori, $posi, "s${chr}_${posi}", $refBase, join(',', @allele_base[1 .. $#allele_base]), qw/. PASS . GT/, @allele_str)."\n"; 
 
 }
 
