@@ -68,6 +68,7 @@ my $fh = \*STDOUT;
 
 unless ( defined $opts{'noHeader'} ) {
 	my $l = <$fh>; 
+	$l =~ s!^#CHROM\tPOS\t!chr\tpos\t!i; 
 	print STDOUT $l; 
 }
 
