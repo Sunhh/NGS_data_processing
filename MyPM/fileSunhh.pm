@@ -404,6 +404,7 @@ Function       :
   If 'tmpFile' is not '', at first save input to $tmpFile and delete it after using. 
   Ff 'tmpFile' is '' and 'tmpDir' is not '', then find create $tmpFile under $tmpDir. 
   Using $tmpFile or $tmpDir can help to reduce memory usage. 
+  If 'with_header' >= 1, then the first 'with_header' lines will exist in each sub-file. 
   
 
 Return         : ($sub_filename_1, $sub_filename_2, ...)
