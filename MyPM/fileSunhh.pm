@@ -462,7 +462,10 @@ sub dvd_file {
 		my $ofh_0 = &openFH( $parm{'tmpFile'}, '>' ); 
 		my $all_lineN = 0; 
 		if ( $parm{'with_header'} ) {
-			$header = <$inFh>; 
+			while ( <$inFh> ) {
+				$header .= $_; 
+				$. >= $parm{'with_header'} and last; 
+			}
 		}
 		while ( <$inFh> ) {
 			$all_lineN ++; 
@@ -533,7 +536,11 @@ sub dvd_file {
 		$file_lineN > 0 or do { &tsmsg("[Wrn] No data in the input file [$inFn]\n"); return(); }; 
 		@in_data = ( 1 .. $file_lineN ); 
 	}
-	$parm{'with_header'} and $header = shift(@in_data); 
+	if ( $parm{'with_header'} ) {
+		for (my $i=0; $i<$parm{'with_header'}; $i++) {
+			$header .= shift(@in_data); 
+		}
+	}
 	my @sub_data = @{ &mathSunhh::dvd_array(\@in_data, $grpN, $parm{'keep_order'}) }; 
 	undef(@in_data); 
 	
@@ -560,7 +567,7 @@ sub dvd_file {
 		my $curr_lineN = 0; 
 		while ( <$fh> ) {
 			$curr_lineN ++; 
-			if ( $curr_lineN == 1 and $parm{'with_header'} ) {
+			if ( $parm{'with_header'} and $curr_lineN <= $parm{'with_header'} ) {
 				for my $tfh ( @sub_fh ) {
 					print {$tfh} $_; 
 				}
