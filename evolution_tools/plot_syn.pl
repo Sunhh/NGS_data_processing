@@ -438,7 +438,7 @@ for ( my $xi = 0; $xi < @{$chrLisX{'arr'}} ; $xi ++ ) {
 					'id' => "yAxis_tickTxt:$chrY_ID:$chrY_rI:$i", 
 					'x'  => $txt_xV , 'y' => $txt_yV + $frame_opt{'yAxis_TickFontSize'} , 
 					-cdata => $show_v, 
-					'transform' => join('', "translate($sP_x $sP_y) rotate(-90 $txt_xV $txt_yV)"), 
+					'transform' => join('', "translate($sP_x $sP_y) rotate(-90 $txt_xV $txt_yV) translate(0 -$frame_opt{'yAxis_TickFontSize'})"), 
 					'stroke' => 'none', 
 				); # 'alignment-baseline' doesn't work in groups. 
 			}
@@ -460,7 +460,7 @@ for ( my $xi = 0; $xi < @{$chrLisX{'arr'}} ; $xi ++ ) {
 			$grps{'yAxis_Label'}->text(
 				'x' => $chrID_xV, 'y' => $chrID_yV + $frame_opt{'yAxis_ChrIDFontSize'} , 
 				-cdata=>"$chrY_ID", 
-				'transform' => join('', "rotate(90 $chrID_xV $chrID_yV)"), 
+				'transform' => join('', "rotate(-90 $chrID_xV $chrID_yV) translate(0 -$frame_opt{'yAxis_ChrIDFontSize'})"), 
 				'font-size' => $frame_opt{'yAxis_ChrIDFontSize'} , 
 			); # For chromosome ID text 
 		}
@@ -595,7 +595,7 @@ for ( my $xi = 0; $xi < @{$chrLisX{'arr'}} ; $xi ++ ) {
 						'stroke'             => 'none' , 
 						'font-size'          => $shad_height * 0.8, 
 						'text-anchor'        => 'start', 
-						'transform'          => "rotate(90 $shad_xV $tmp_yV)", 
+						'transform'          => "rotate(-90 $shad_xV $tmp_yV) translate(0 -$shad_height)", 
 					); 
 				}
 				defined $shad_locHR->{$chrY_ID} or next; 
@@ -654,7 +654,7 @@ if ( $img_opt{'yAxisLabel'} ne '' ) {
 	$grps{'yAxis_Label'}->text(
 		'x' => $xV, 'y' => $yV + $frame_opt{'yAxis_LabFontSize'} , 
 		-cdata => $img_opt{'yAxisLabel'}, 
-		'transform' => join('', "rotate(90 $xV $yV)"), 
+		'transform' => join('', "rotate(-90 $xV $yV) translate(0 -$frame_opt{'yAxis_LabFontSize'})"), 
 	); 
 }# Label
 if ( $img_opt{'title'} ne '' ) {
