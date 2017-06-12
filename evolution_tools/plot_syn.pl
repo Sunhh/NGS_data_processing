@@ -438,7 +438,7 @@ for ( my $xi = 0; $xi < @{$chrLisX{'arr'}} ; $xi ++ ) {
 					'id' => "yAxis_tickTxt:$chrY_ID:$chrY_rI:$i", 
 					'x'  => $txt_xV , 'y' => $txt_yV + $frame_opt{'yAxis_TickFontSize'} , 
 					-cdata => $show_v, 
-					'transform' => join('', "translate($sP_x $sP_y) rotate(90 $txt_xV $txt_yV)"), 
+					'transform' => join('', "translate($sP_x $sP_y) rotate(-90 $txt_xV $txt_yV)"), 
 					'stroke' => 'none', 
 				); # 'alignment-baseline' doesn't work in groups. 
 			}
