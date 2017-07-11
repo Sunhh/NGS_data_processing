@@ -618,7 +618,8 @@ sub tbl2seq {
 	} elsif ($parm{'fmt'} =~ m/^meg(?:a)?$/i) {
 		print {$ofh} <<MEGA; 
 #mega
-!Title tbl2meg; 
+!Title tbl2meg;
+!Format DataType=DNA indel=-;
 
 MEGA
 		for (my $i=0; $i<@hh; $i++) {
