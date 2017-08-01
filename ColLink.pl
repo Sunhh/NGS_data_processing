@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/bin/env perl
 
 # file 1 for key, file 2 to srch.
 # 2007-3-21 16:52 add a -sign
