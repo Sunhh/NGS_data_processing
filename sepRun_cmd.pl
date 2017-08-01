@@ -53,7 +53,12 @@ if ($opts{'cpuN'} <= 1) {
 	}
 	close O; 
 	@ARGV and close($fh); 
-	&exeCmd_1cmd( "$opts{'cmd_str'} $wrk_dir/base_0 > $wrk_dir/base_0.o" ); 
+	my $cmd = $opts{'cmd_str'}; 
+	if ( $cmd =~ s!__INPUT__!$wrk_dir/base_0!g ) {
+	} else {
+		$cmd = "$cmd $wrk_dir/base_0"; 
+	}
+	&exeCmd_1cmd("$cmd > $wrk_dir/base_0.o"); 
 	open F,'<',"$wrk_dir/base_0.o" or die; 
 	while (<F>) {
 		print STDOUT $_; 
@@ -67,7 +72,12 @@ my @sub_fn = &fileSunhh::dvd_file( $fh, $opts{'cpuN'}, 'keep_order' => 1, 'with_
 close($fh); 
 for my $sfn (@sub_fn) {
 	my $pid = $pm->start and next;
-	&exeCmd_1cmd( "$opts{'cmd_str'} $sfn > $sfn.o" ); 
+	my $cmd = $opts{'cmd_str'}; 
+	if ( $cmd =~ s!__INPUT__!$sfn!g ) {
+	} else {
+		$cmd = "$cmd $sfn"; 
+	}
+	&exeCmd_1cmd("$cmd > $sfn.o"); 
 	$pm->finish;
 }
 $pm->wait_all_children;
