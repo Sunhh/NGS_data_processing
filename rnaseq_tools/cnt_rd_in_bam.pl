@@ -25,6 +25,7 @@ GetOptions(\%opts,
 	# converters 
 	"loc_1to1:s",       # filename. file format : old_ID \\t old_posi \\t new_ID \\t new_posi
 	"bam_isList!", 
+	"input_sam!",       # The input file is sam instead of bam. 
 
 	# Filters 
 	"max_mismatchN:i",  # -1 . could be [0-...]
@@ -117,7 +118,12 @@ for ( keys %{ &SeqAlnSunhh::mk_flag( 'keep' => '4=1' ) } ) {
 for my $cur (@bam_files) {
 	my ($cur_bam, $cur_opref) = @$cur; 
 
-my $sam_fh = &SeqAlnSunhh::openSam( $cur_bam, undef(), { 'wiH'=>0, 'verbose'=>1, 'exe_samtools'=>$opts{'exe_samtools'} } ); 
+my $sam_fh; 
+if ($opts{'input_sam'}) {
+	$sam_fh = &openFH( $cur_bam ); 
+} else {
+	$sam_fh = &SeqAlnSunhh::openSam( $cur_bam, undef(), { 'wiH'=>0, 'verbose'=>1, 'exe_samtools'=>$opts{'exe_samtools'} } ); 
+}
 
 my %cnt; 
 $cnt{'log_section'} = { 'cntN_base' => 0, 'cntN_step' => 1e5 }; 
