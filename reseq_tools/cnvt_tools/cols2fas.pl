@@ -10,7 +10,6 @@ my %opts;
 GetOptions(\%opts, 
 	"help!", 
 	"startColN:i", # 2 
-	"showTime:i", 
 	"cpuN:i", # 20
 ); 
 use SNP_tbl; 
@@ -28,15 +27,12 @@ Need a headere line.
 -help
 -startColN       [$opts{'startColN'}]
 
--showTime        [0] Will report time when 'showTime' number of lines have been processed. 
-
 -cpuN            [$opts{'cpuN'}]
 
 HH
 
 -t and !@ARGV and &LogInforSunhh::usage($help_txt); 
 $opts{'help'} and &LogInforSunhh::usage($help_txt); 
-$opts{'showTime'} //= 0; 
 
 my $pm; 
 $pm = &LogInforSunhh::get_pm( $opts{'cpuN'} ); 
