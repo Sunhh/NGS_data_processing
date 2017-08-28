@@ -93,7 +93,7 @@ while (<>) {
 	$chrV =~ m/^chr$/i and next; 
 	my $cntV = ( defined $opts{'cnt_colN'}  ) ? $ta[ $opts{'cnt_colN'} ] : 1 ; 
 	my $posV = ( $opts{'pos_colN'} == 999999 ) ? $cntV : $ta[ $opts{'pos_colN'} ] ; 
-	( defined $cntV and $cntV ne '' ) or next; 
+	( defined $cntV and $cntV ne '' and $cntV !~ m!^(\.|NA|NAN|N|U)$!i ) or next; 
 	defined $chr_wind{$chrV} or $chr_wind{$chrV} = $mm->setup_windows(
 	  'ttl_start' => ( defined $glob{'wind_se'}{$chrV} ) ? $glob{'wind_se'}{$chrV}[0] : $opts{'wind_start'}, 
 	  'ttl_end'   => ( defined $glob{'wind_se'}{$chrV} ) ? $glob{'wind_se'}{$chrV}[1] : $opts{'wind_end'}, 
