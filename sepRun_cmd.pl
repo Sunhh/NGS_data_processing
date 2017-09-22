@@ -35,6 +35,8 @@ perl $0 -cmd_str '$opts{'cmd_str'}' input_filename > out_file_name
 -skip_hlineN    [$opts{'skip_hlineN'}] Only when cpuN > 1; Number of lines which will be skipped when merging sub-files. 
 -addOnce_outhl  [value of Number_of_sub_hlineN] Only when cpuN > 1; Add once 'addOnce_outhl' lines to output once. 
 
+"__INPUT__" could be in the cmd_str as a replace of input file in command. 
+
 HH
 
 $opts{'help'} and &LogInforSunhh::usage($help_txt); 

@@ -367,10 +367,23 @@ sub new_tmp_dir {
 	my %parm = @_; 
 	$parm{'maxNum'} //= 999999; 
 	$parm{'create'} //= 0; 
+
 	for (my $i=0; $i<=$parm{'maxNum'}; $i++) {
 		my $fname = "tmp$i"; 
 		-e $fname and next; 
-		$parm{'create'} and do { mkdir($fname) or &stopErr("[Err] Failed to create new_tmp_dir [$fname]\n"); }; 
+		if ( $parm{'create'} ) {
+			if (mkdir($fname)) {
+				return $fname; 
+			} else {
+				while ( !mkdir($fname) ) {
+					$i++; 
+					$i > $parm{'maxNum'} and do { &stopErr("[Err] Failed to create new_tmp_dir\n"); }; 
+					$fname = "tmp$i"; 
+					-e $fname and next; 
+				}
+				return $fname; 
+			}
+		}
 		return $fname; 
 	}
 	&tsmsg("[Wrn] All tmp dir from tmp0 to tmp$parm{'maxNum'} exists!\n"); 

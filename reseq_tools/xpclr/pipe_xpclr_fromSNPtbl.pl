@@ -16,6 +16,7 @@ GetOptions(\%opts,
 	"set_para:s@",  # 'med01_qtCut=0.03;med01_grpLen=5;med01_grpGood=3;med01_grpExt=0;'
 	"firstAsObjPop!", 
 	"chk_scripts!", 
+	"use_sepRunXPCLR!", 
 ); 
 
 my %glob; 
@@ -85,6 +86,9 @@ my $help_txt = <<HH;
 #                    Format : chrID       \\t chrNumber
 #                             PG1         \\t 1
 #                             scf_01      \\t 2
+#
+# -use_sepRunXPCLR [Boolean]  With this parameter, the XPCLR score will be calculated with separated parts. 
+#
 # -set_para        [string] Default is as following: 
 # ==========================================================
 $opts{'set_para_help'}
@@ -155,7 +159,11 @@ for my $d (readdir(DD)) {
 		$glob{'chr_num2id'}{$chrN}  = $chrID; 
 	}
 	my $i_pref = "$wrk_dir/input/input"; 
-	&exeCmd_1cmd("$glob{'sep_run_xpclr.pl'} ${i_pref}.${chrID} ' $glob{'xpclr_w'} $chrN $glob{'xpclr_p'} '   300000   ${i_pref}.${chrID}.snp.out.xpclr.txt | grep -v process") and &stopErr("[Err] Stop sep_run_xpclr.pl\n"); 
+	if ( $opts{'use_sepRunXPCLR'} ) {
+		&exeCmd_1cmd("$glob{'sep_run_xpclr.pl'} ${i_pref}.${chrID} ' $glob{'xpclr_w'} $chrN $glob{'xpclr_p'} '   300000   ${i_pref}.${chrID}.snp.out.xpclr.txt | grep -v process") and &stopErr("[Err] Stop sep_run_xpclr.pl\n"); 
+	} else {
+		&exeCmd_1cmd("XPCLR -xpclr ${i_pref}.${chrID}_g1.geno ${i_pref}.${chrID}_g2.geno ${i_pref}.${chrID}.snp ${i_pref}.${chrID}.snp.out -w1 0.0005 100 100 $chrN -p0 0.7 | grep -v process") and &stopErr("[Err] Failed to run XPCLR\n"); 
+	}
 	&exeCmd_1cmd("$glob{'cluster_xpclrscore.pl'} ${i_pref}.${chrID}.snp.out.xpclr.txt -wind_size $glob{'wind_size'} -wind_step $glob{'wind_step'} -wind_start 1 > ${i_pref}.${chrID}.snp.out.xpclr.txt.$glob{'windTag'}") and &stopErr("[Err] Stop cluster_xpclrscore.pl\n"); 
 	my $fh = &openFH("${i_pref}.${chrID}.snp.out.xpclr.txt.$glob{'windTag'}", '<'); 
 	while (&wantLineC($fh)) {
