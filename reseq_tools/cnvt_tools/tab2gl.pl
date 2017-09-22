@@ -24,14 +24,22 @@ my $header = <$fh>;
 chomp($header); 
 my @hh = &splitL("\t", $header); 
 print join("\t", qw/marker allele1 allele2/); 
-open O1,'>',"$o1f" or die; 
-for (my $i=3; $i<@hh; $i++) {
-	my $iID = $i-3; 
-	print "\tInd$iID\tInd$iID\tInd$iID"; 
-	print O1 "Ind$iID\t$hh[$i]\n"; 
+unless ( -e $o1f ) {
+	open O1,'>',"$o1f" or die; 
+	for (my $i=3; $i<@hh; $i++) {
+		my $iID = $i-3; 
+		print "\tInd$iID\tInd$iID\tInd$iID"; 
+		print O1 "Ind$iID\t$hh[$i]\n"; 
+	}
+	close O1; 
+} else {
+	for (my $i=3; $i<@hh; $i++) {
+		my $iID = $i-3; 
+		print "\tInd$iID\tInd$iID\tInd$iID"; 
+		print STDERR "Ind$iID\t$hh[$i]\n"; 
+	}
 }
 print "\n"; 
-close O1; 
 while (<$fh>) {
 	chomp; 
 	my @ta = &splitL("\t", $_); 
