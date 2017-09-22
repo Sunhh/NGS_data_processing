@@ -86,6 +86,9 @@ my $help_txt = <<HH;
 #                    Format : chrID       \\t chrNumber
 #                             PG1         \\t 1
 #                             scf_01      \\t 2
+#
+# -use_sepRunXPCLR [Boolean]  With this parameter, the XPCLR score will be calculated with separated parts. 
+#
 # -set_para        [string] Default is as following: 
 # ==========================================================
 $opts{'set_para_help'}
