@@ -79,7 +79,7 @@ for (my $i=$opts{'minR'};$i<=$opts{'maxR'};$i++){
 	&exeCmd_1cmd("perl $BinDir/new_mainparams.pl $seed_tag -minK $opts{'minK'} -K $opts{'maxK'} -output $out_Dir -input $BinDir  -loca $location_num  -sample $sample_num");
 
 	# open O,'>', "cmd_list_runStruct" or die; 
-	for (my $j=2; $j<=$opts{'maxK'}; $j++) {
+	for (my $j=$opts{'minK'}; $j<=$opts{'maxK'}; $j++) {
 		my $jj = sprintf("%02d", $j); 
 		my $dd = "$out_Dir/structure_K${jj}"; 
 		print STDOUT "cd $dd; $BinDir/structure 1>stdout 2>stderr ; cd -; \n"; 

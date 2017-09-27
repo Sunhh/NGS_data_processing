@@ -58,7 +58,7 @@ if(defined($help)  || !defined($sample) || !defined($loca))
 }
 
 $K  //= 20 ;
-$minK //= 2; $minK >= 2 or $minK = 2; 
+$minK //= 2; $minK >= 1 or $minK = 1; 
 $numrep //= 15000 ;
 $burn  //=40000;
 $fileout //="result" ;
