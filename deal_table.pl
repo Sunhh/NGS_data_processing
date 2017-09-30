@@ -63,8 +63,6 @@ GetOptions(\%opts,
 	"log_ln:i", 
 	"help!");
 
-$opts{'cpuN'} = 5; 
-
 sub usage {
 
 	my $info=<<INFO;
