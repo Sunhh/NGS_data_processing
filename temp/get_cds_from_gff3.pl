@@ -3,8 +3,25 @@ use strict;
 use warnings; 
 use LogInforSunhh; 
 use gffSunhh; 
+use fastaSunhh; 
+my $fs_obj = fastaSunhh->new(); 
+use Getopt::Long; 
+my %opts; 
+GetOptions(\%opts, 
+	"genome_fas:s", 
+	"genome_gff:s", 
+	"help!", 
+); 
 
-!@ARGV and die "perl $0 fasdfa\n"; 
+my $help_txt = <<HH; 
+
+perl $0 -genome_fas PG1All_v2_Scf.unmsk.fa -genome_gff r9_maker_good.gff3 > out.cds.fa
+
+HH
+
+( defined $opts{'genome_fas'} and defined $opts{'genome_gff'} ) or &LogInforSunhh::usage($help_txt); 
+$opts{'help'} and &LogInforSunhh::usage($help_txt);
+
 
 my %str2num = qw(
  +     1
@@ -16,29 +33,20 @@ my %str2num = qw(
  minus -1
 ); 
 
-my $gffF = 'r9_maker_good.gff3'; 
-my $seqF = 'PG1All_v2_Scf.unmsk.fa'; 
+my $gffF = $opts{'genome_gff'}; 
+my $seqF = $opts{'genome_fas'}; 
 my $oSeqWidth = 0; 
 $oSeqWidth = int($oSeqWidth); 
 my $log_detail = 0; 
 
 &tsmsg("[Rec] Script begins.\n"); 
 
-open FA,'<',"$seqF" or die; 
+my $seqHR = $fs_obj->save_seq_to_hash( 'faFile'=>$seqF ); 
 my %seq_hash; 
-{
-my ($tk)=(''); 
-while (<FA>) {
-	chomp; 
-	if (m/^\s*\>(\S+)/) {
-		$tk = $1; 
-	}else{
-		$seq_hash{$tk} .= $_; 
-	}
+for my $tk (sort keys %$seqHR) {
+	$seq_hash{$tk} = $seqHR->{$tk}{'seq'}; 
+	$seq_hash{$tk} =~ s!\s!!g; 
 }
-$seq_hash{$_} =~ s!!!g foreach (keys %seq_hash); 
-}
-close FA; 
 &tsmsg("[Rec] seqfile [$seqF] read in.\n"); 
 
 my $gs = gffSunhh->new(); 
@@ -70,7 +78,15 @@ for my $topID ( keys %{$gff_hash{'lineN_group'}} ) {
 		$gff_hash{'lineN2hash'}{$offLnNum}{'type'} =~ m/^CDS$/i or next OFFID; 
 		$top_str eq '' and $top_str = $str2num{ lc($gff_hash{'lineN2hash'}{$offLnNum}{'strand'}) } // ''; 
 		$top_chr eq '' and $top_chr = $gff_hash{'lineN2hash'}{$offLnNum}{'seqID'} // ''; 
-		$top_name eq '' and $top_name = $gff_hash{'lineN2hash'}{$offLnNum}{'attrib'}{'parentID'} // ''; 
+		if ( keys %{$gff_hash{'lineN2hash'}{$offLnNum}{'attrib'}{'parentID'}} > 0 ) {
+			my @ta1 = sort keys %{$gff_hash{'lineN2hash'}{$offLnNum}{'attrib'}{'parentID'}}; 
+			my $ta1_txt = join(";", @ta1); 
+			if ($top_name eq '') {
+				$top_name = $ta1_txt; 
+			} else {
+				$top_name eq $ta1_txt or &stopErr("[Err] Unequal top_name : [ $top_name , $ta1_txt]\n"); 
+			}
+		}
 		push( @posi_cds, [ $gff_hash{'lineN2hash'}{$offLnNum}{'start'}, $gff_hash{'lineN2hash'}{$offLnNum}{'end'} ] ); 
 	}
 	$top_str eq '' and do { &tsmsg("[Wrn] No strand information for topID=[$topID]\n"); $top_str = 1; }; 
