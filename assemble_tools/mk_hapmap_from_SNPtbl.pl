@@ -6,6 +6,16 @@ use LogInforSunhh;
 # WM97_Chr01      10      T       T       T       T       N       T       T       T       N       T       T       T       N       N       N       *       N       T
 # WM97_Chr01      11      T       T       T       T       N       T       T       T       N       T       T       T       T       N       N       T       N       T
 
+my %dblist;
+$dblist{'W'} = ['A', 'T'];
+$dblist{'S'} = ['C', 'G'];
+$dblist{'M'} = ['A', 'C'];
+$dblist{'K'} = ['G', 'T'];
+$dblist{'R'} = ['A', 'G'];
+$dblist{'Y'} = ['C', 'T'];
+
+
+
 while (<>) {
 	chomp; s/[^\S\t]+$//; 
 	my @ta = split(/\t/, $_); 
@@ -24,6 +34,9 @@ while (<>) {
 		} elsif ( $ta[$i] =~ m/^([ATGC])([ATGC])$/ ) {
 			$cnt{allele}{$1} ++; 
 			$cnt{allele}{$2} ++; 
+		} elsif ( defined $dblist{$ta[$i]} ) {
+			$cnt{allele}{$dblist{$ta[$i]}[0]} ++; 
+			$cnt{allele}{$dblist{$ta[$i]}[1]} ++; 
 		} else {
 			$ta[$i] = "NN"; 
 			$cnt{N} ++; 
