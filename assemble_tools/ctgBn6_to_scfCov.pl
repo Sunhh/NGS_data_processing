@@ -11,6 +11,7 @@ GetOptions(\%opts,
 	"help!", 
 	"minIdent:f", # 0.9 
 	"log_lineN:i", # -1 
+	"topNsum:i",  # 1 
 ); 
 
 $opts{'minIdent'} //= 0.9; 
@@ -25,11 +26,14 @@ perl $0 Gourd969_pilon_V1.ctg2scf.agp  blastn_100k_ctg.txt
 
 -log_lineN    [-1]
 
+-topNsum      [1]
+
 HH
 
 !@ARGV and &LogInforSunhh::usage($help_txt); 
 $opts{'help'} and &LogInforSunhh::usage($help_txt);
 $opts{'log_lineN'} //= -1; 
+$opts{'topNsum'} //= 1; 
 
 # [Sunhh@Falcon temp]$ head -3 blastn_100k_ctg.txt
 # scaffold36_pilon_1      scaffold36_pilon_1      100.00  10712   0       0       1       10712   1       10712   0.0     19318   10712   10712   plus
@@ -83,9 +87,11 @@ while (<>) {
 }
 
 print STDOUT join("\t", qw/ScfID LenInCtg CovLenInScf CovPercInScf CovByScf CovLenSpan CovPercSpan/)."\n"; 
-for my $tk1 (keys %blk) {
+for my $tk1 (sort keys %blk) {
 	my %maxSum; 
 	my @tb; 
+	
+	my %blkSum; 
 	for my $tk2 (keys %{$blk{$tk1}}) {
 		$blk{$tk1}{$tk2} = $ms_obj->mergeLocBlk( $blk{$tk1}{$tk2}, 'dist2join'=>1 ); 
 		push(@tb, $blk{$tk1}{$tk2}); 
@@ -93,12 +99,7 @@ for my $tk1 (keys %blk) {
 		for my $ar1 ( @{ $blk{$tk1}{$tk2} } ) {
 			$tsum += $ar1->[1]-$ar1->[0]+1; 
 		}
-		$maxSum{'tk2'} //= $tk2; 
-		$maxSum{'sum'} //= $tsum; 
-		if ($maxSum{'sum'} < $tsum) {
-			$maxSum{'tk2'} = $tk2; 
-			$maxSum{'sum'} = $tsum; 
-		}
+		$blkSum{$tk2} = $tsum; 
 	}
 
 	my $tc = $ms_obj->mergeLocBlk( @tb, 'dist2join'=>1 ); 
@@ -107,15 +108,19 @@ for my $tk1 (keys %blk) {
 		$sum_span += $ar2->[1]-$ar2->[0]+1; 
 	}
 
-	print STDOUT join("\t", 
-	  $tk1, 
-	  $info{$tk1}{'noN'}, 
-	  $maxSum{'sum'}, 
-	  sprintf("%0.2f", $maxSum{'sum'}/$info{$tk1}{'noN'}*100), 
-	  $maxSum{'tk2'}, 
-	  $sum_span, 
-	  sprintf("%0.2f", $sum_span / $info{$tk1}{'noN'}*100)
-	)."\n"; 
+	my @srt_tk2 = sort { $blkSum{$b} <=> $blkSum{$a} } sort keys %blkSum; 
+	for (my $i=0; $i<@srt_tk2; $i++) {
+		$opts{'topNsum'} > 0 and $i >= $opts{'topNsum'} and last; 
+		print STDOUT join("\t", 
+			$tk1, 
+			$info{$tk1}{'noN'}, 
+			$blkSum{$srt_tk2[$i]}, 
+			sprintf("%0.2f", $blkSum{$srt_tk2[$i]}/$info{$tk1}{'noN'}*100), 
+			$srt_tk2[$i], 
+			$sum_span, 
+			sprintf("%0.2f", $sum_span / $info{$tk1}{'noN'}*100)
+		)."\n"; 
+	}
 }
 
 sub sep_ctgID {
