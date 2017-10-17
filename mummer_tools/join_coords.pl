@@ -78,6 +78,7 @@ for my $k1 (sort {$len1{$b} <=> $len1{$a} || $a cmp $b } keys %len1) {
 				sprintf("%.2f", $ta1[5]/$ta1[8]*100), 
 				$ta1[1]-$ta1[0]+1, $ta1[3]-$ta1[2]+1, 
 				"+", $len1{$k1}, $len2{$k2}, $k1, $k2, 
+				scalar(@{$ta1[6]}), 
 				join(";", map { "$_->[0]-$_->[1]:$_->[2]-$_->[3]" } @{$ta1[6]})
 			)."\n"; 
 		}
@@ -93,6 +94,7 @@ for my $k1 (sort {$len1{$b} <=> $len1{$a} || $a cmp $b } keys %len1) {
 				sprintf("%.2f", $ta1[5]/$ta1[8]*100), 
 				$ta1[1]-$ta1[0]+1, $ta1[3]-$ta1[2]+1, 
 				"-", $len1{$k1}, $len2{$k2}, $k1, $k2, 
+				scalar(@{$ta1[6]}), 
 				join(";", map { my @bb=@$_; $bb[2]*=-1; $bb[3]*=-1; "$bb[0]-$bb[1]:$bb[3]-$bb[2]"; } @{$ta1[6]})
 			)."\n"; 
 		}
