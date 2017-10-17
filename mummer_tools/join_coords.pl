@@ -7,6 +7,7 @@ my %opts;
 GetOptions(\%opts, 
 	"maxDist1:i", 
 	"maxDist2:i", 
+	"inType:s", 
 	"help!", 
 ); 
 my $help_txt = <<HH; 
@@ -15,14 +16,21 @@ perl $0 pb_ngs.coords > pb_ngs.coords.jn
 
 -maxDist1    [40e3] Distance to join two neighboring blocks. 
 -maxDist2    [40e3] Distance to join two neighboring blocks.
+
+-inType      [coords] Could also be 'joined'
 HH
 
 $opts{'maxDist1'} //= 40e3; 
 $opts{'maxDist2'} //= 40e3; 
+$opts{'inType'}   //= 'coords'; 
+$opts{'inType'}   = lc($opts{'inType'}); 
 
 $opts{'help'} and &LogInforSunhh::usage($help_txt); 
 -t and !@ARGV and &LogInforSunhh::usage($help_txt); 
 
+
+my (%blk_F, %blk_R, %len1, %len2); 
+if ($opts{'inType'} eq 'coords') {
 # /Data/Sunhh/compare_NGS_pb/05_alignByMum/WM97pbV0.ctg.fa /Data/Sunhh/compare_NGS_pb/05_alignByMum/WM97_v1.scf.fa
 # NUCMER
 # 
@@ -33,38 +41,78 @@ $opts{'help'} and &LogInforSunhh::usage($help_txt);
 #   134474   134996  |      524        1  |      523      524  |    99.81  |  8241642      524  |     0.01   100.00  | WM97pbV0_000000F   WM97_scaffold10350
 
 
-
-my (%blk_F, %blk_R, %len1, %len2); 
-while (<>) {
-	$. == 1 and $_ =~ m!^(/|\.)! and next; 
-	$_ =~ m!^NUCMER! and next; 
-	m!^\s*$! and next; 
-	chomp; 
-	s!^\s+!!g; 
-	my @ta = split(/\s+/, $_); 
-	$ta[0] eq '[S1]' and next; 
-	$ta[0] =~ m!^\=! and next; 
-	if ( $ta[3] < $ta[4] ) {
-		push(@{$blk_F{$ta[17]}{$ta[18]}}, [ 
-				@ta[0,1,3,4],                                                           # S1,E1, S2,E2
-				int(($ta[1]-$ta[0]+1)*$ta[9]/100), int(($ta[4]-$ta[3]+1)*$ta[9]/100),   # Match1,Match2
-				[ [@ta[0,1,3,4]] ],                                                     # SE_sets; [S1,E1,S2,E2]...
-				$ta[1]-$ta[0]+1, $ta[4]-$ta[3]+1                                        # BlkLen1,BlkLen2
-			]
-		); 
-	} elsif ( $ta[3] > $ta[4] ) {
-		push(@{$blk_R{$ta[17]}{$ta[18]}}, [ 
-				(@ta[0,1], -$ta[3], -$ta[4]), 
-				int(($ta[1]-$ta[0]+1)*$ta[9]/100), int(($ta[3]-$ta[4]+1)*$ta[9]/100),
-				[ [ @ta[0,1], -$ta[3], -$ta[4] ] ], 
-				$ta[1]-$ta[0]+1, $ta[3]-$ta[4]+1
-		       ]); 
-	} else {
-		die "bad line: $_\n"; 
+	while (<>) {
+		$. == 1 and $_ =~ m!^(/|\.)! and next; 
+		$_ =~ m!^NUCMER! and next; 
+		m!^\s*$! and next; 
+		chomp; 
+		s!^\s+!!g; 
+		my @ta = split(/\s+/, $_); 
+		$ta[0] eq '[S1]' and next; 
+		$ta[0] =~ m!^\=! and next; 
+		if ( $ta[3] < $ta[4] ) {
+			push(@{$blk_F{$ta[17]}{$ta[18]}}, [ 
+					@ta[0,1,3,4],                                                           # S1,E1, S2,E2
+					int(($ta[1]-$ta[0]+1)*$ta[9]/100), int(($ta[4]-$ta[3]+1)*$ta[9]/100),   # Match1,Match2
+					[ [@ta[0,1,3,4]] ],                                                     # SE_sets; [S1,E1,S2,E2]...
+					$ta[1]-$ta[0]+1, $ta[4]-$ta[3]+1                                        # BlkLen1,BlkLen2
+				]
+			); 
+		} elsif ( $ta[3] > $ta[4] ) {
+			push(@{$blk_R{$ta[17]}{$ta[18]}}, [ 
+					(@ta[0,1], -$ta[3], -$ta[4]), 
+					int(($ta[1]-$ta[0]+1)*$ta[9]/100), int(($ta[3]-$ta[4]+1)*$ta[9]/100),
+					[ [ @ta[0,1], -$ta[3], -$ta[4] ] ], 
+					$ta[1]-$ta[0]+1, $ta[3]-$ta[4]+1
+			       ]); 
+		} else {
+			die "bad line: $_\n"; 
+		}
+		$len1{$ta[17]} //= $ta[11]; 
+		$len2{$ta[18]} //= $ta[12]; 
 	}
-	$len1{$ta[17]} //= $ta[11]; 
-	$len2{$ta[18]} //= $ta[12]; 
+
+} elsif ( $opts{'inType'} eq 'joined' ) {
+# [Sunhh@bioinfor01 05_alignByMum]$ head -4 pb_ngs.coords.jn.slct
+# 6732162 6770165 2091655 2129903 20.48   20.43   99.40   99.40   38004   38249   +       8241642 3907078 WM97pbV0_000000F        WM97_scaffold83 2       6732162-
+# 2797595 4964133 4       2183393 88.24   88.06   92.51   92.51   2166539 2183390 +       8241642 2183393 WM97pbV0_000000F        WM97_scaffold12 16      2797595-2999375:4
+# 258247  1989001 8896    1749982 79.53   79.59   86.18   86.22   1730755 1741087 +       8241642 1750186 WM97pbV0_000000F        WM97_scaffold77 20      258247-
+# 2009676 2507300 1       503416  71.85   71.32   85.72   85.76   497625  503416  +       8241642 796929  WM97pbV0_000000F        WM97_scaffold62 10      2009676-2045014:1-34983;2053177-2058999:42593-48251;2066874-2091596:56007-82999;2101027-2110832:92587-102416;2117094-2175048:108925-167172;2186467-2280397:178361-271609;2287864-2289393:283971-285507;2296374-2356802:290350-351140;2368124-2470130:363952-465537;2481723-2507300:477611-503416
+
+	while (<>) {
+		m!^\s*$! and next; 
+		chomp; 
+		my @ta = split(/\t/, $_); 
+		if ( $ta[10] eq '+' ) {
+			push(@{$blk_F{$ta[13]}{$ta[14]}}, [
+					@ta[0,1,2,3], 
+					int(($ta[1]-$ta[0]+1)*$ta[4]/100), int(($ta[3]-$ta[2]+1)*$ta[5]/100), 
+					[ map { [ split(/[:\-]/, $_) ] } split(/;/, $ta[16]) ], 
+					int( ($ta[1]-$ta[0]+1)*$ta[4] / $ta[6] ), int( ($ta[3]-$ta[2]+1)*$ta[5] / $ta[7] ) 
+				]
+			); 
+		} elsif ( $ta[10] eq '-' ) {
+			push(@{$blk_R{$ta[13]}{$ta[14]}}, [
+					@ta[0,1], -$ta[3], -$ta[2], 
+					int(($ta[1]-$ta[0]+1)*$ta[4]/100), int(($ta[3]-$ta[2]+1)*$ta[5]/100), 
+					[ map { my @aa1= split(/[:\-]/, $_); [ $aa1[0], $aa1[1], -$aa1[3], -$aa1[2] ]; } split(/;/, $ta[16]) ], 
+					int( ($ta[1]-$ta[0]+1)*$ta[4] / $ta[6] ), int( ($ta[3]-$ta[2]+1)*$ta[5] / $ta[7] )
+				]
+			); 
+		} else {
+			die "bad line: $_\n"; 
+		}
+	
+	
+		$len1{$ta[13]} //= $ta[11]; 
+		$len2{$ta[14]} //= $ta[12]; 
+	}
+
+} else {
+	die "unknown input type [$opts{'inType'}]\n"; 
 }
+
+
 
 for my $k1 (sort {$len1{$b} <=> $len1{$a} || $a cmp $b } keys %len1) {
 	for my $k2 (sort { $len2{$b} <=> $len2{$a} || $a cmp $b } keys %{$blk_F{$k1}}) {
