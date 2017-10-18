@@ -8,6 +8,7 @@ GetOptions(\%opts,
 	"maxDist1:i", 
 	"maxDist2:i", 
 	"inType:s", 
+	"maxOvl1:i", "maxOvl2:i", 
 	"help!", 
 ); 
 my $help_txt = <<HH; 
@@ -22,6 +23,8 @@ HH
 
 $opts{'maxDist1'} //= 40e3; 
 $opts{'maxDist2'} //= 40e3; 
+$opts{'maxOvl1'}  //= 0; 
+$opts{'maxOvl2'}  //= 0; 
 $opts{'inType'}   //= 'coords'; 
 $opts{'inType'}   = lc($opts{'inType'}); 
 
@@ -163,11 +166,13 @@ sub shortenBlk {
 	my $changed = 0; 
 	for (my $i=1; $i<@$blkR; $i++) {
 		my $j= $i-1; 
-		$blkR->[$i][0] > $blkR->[$j][1] or next; 
-		$blkR->[$i][2] > $blkR->[$j][3] or next; 
+		$blkR->[$i][0] > $blkR->[$j][1]-$opts{'maxOvl1'} or next; 
+		$blkR->[$i][2] > $blkR->[$j][3]-$opts{'maxOvl2'} or next; 
 		$blkR->[$i][0]-$blkR->[$j][1]-1 <= $maxDist1 or next; 
 		$blkR->[$i][2]-$blkR->[$j][3]-1 <= $maxDist2 or next; 
-		$blkR->[$j] = [ $blkR->[$j][0], $blkR->[$i][1], $blkR->[$j][2], $blkR->[$i][3], # S1,E1, S2,E2
+		my $end1 = ( $blkR->[$i][1] > $blkR->[$j][1] ) ? $blkR->[$i][1] : $blkR->[$j][1] ; 
+		my $end2 = ( $blkR->[$i][3] > $blkR->[$i][3] ) ? $blkR->[$i][3] : $blkR->[$i][3] ; 
+		$blkR->[$j] = [ $blkR->[$j][0], $end1, $blkR->[$j][2], $end2, # S1,E1, S2,E2
 			$blkR->[$j][4]+$blkR->[$i][4], $blkR->[$j][5]+$blkR->[$i][5],           # Match1,Match2
 			[ @{$blkR->[$j][6]}, @{$blkR->[$i][6]} ],                               # SE_sets; [S1,E1,S2,E2]...
 			$blkR->[$j][7]+$blkR->[$i][7], $blkR->[$j][8]+$blkR->[$i][8]
