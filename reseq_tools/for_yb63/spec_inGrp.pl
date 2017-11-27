@@ -12,6 +12,7 @@ GetOptions(\%opts,
 	"missR_gIn:f", "missR_gOut:f", 
 	"major_ratio_gIn:f", 
 	"max_ratio_gOut:f", 
+	"allowInDel!", 
 ); 
 
 my $help_txt = <<HH; 
@@ -21,6 +22,7 @@ perl $0 -in_tbl in_snp.tbl -list_gIn colN_list_of_inner_grp   -list_gOut colN_li
 -missR_gOut        [0] missing ratio allowed in outer group 
 -major_ratio_gIn   [1] major genotype allowed in inner group
 -max_ratio_gOut    [0] genotype ratio allowed in outer group
+-allowInDel        [Boolean]
 
 HH
 
@@ -60,7 +62,12 @@ while (<$fh>) {
 		$ta[$i] = uc($ta[$i]); 
 		$ta[$i] = join('', sort split(//, $ta[$i])); 
 		$ta[$i] eq 'N' and do { $cnt{'cntN_in'}++; next; }; 
-		$ta[$i] =~ m/^[ATGC]+$/ or die "|$ta[$i]|\n"; 
+		if ( $opts{'allowInDel'} ) {
+			$ta[$i] =~ m![nN]! and do { $cnt{'cntN_in'}++; next; }; 
+			$ta[$i] =~ m!^(?:\+)?[ATGC*]+$! or die "|$ta[$i]|\n"; 
+		} else {
+			$ta[$i] =~ m/^[ATGC]+$/ or die "|$ta[$i]|\n"; 
+		}
 		$cnt{'g2n_in'}{$ta[$i]} ++; 
 	}
 	$glob{'chk_gIn'} - $cnt{'cntN_in'} > 0 or next SNP; 
@@ -74,7 +81,12 @@ while (<$fh>) {
 		$ta[$i] = uc($ta[$i]); 
 		$ta[$i] = join('', sort split(//, $ta[$i])); 
 		$ta[$i] eq 'N' and do { $cnt{'cntN_out'}++; next; }; 
-		$ta[$i] =~ m/^[ATGC]+$/ or die "|$ta[$i]|\n"; 
+		if ( $opts{'allowInDel'} ) {
+			$ta[$i] =~ m![nN]! and do { $cnt{'cntN_in'}++; next; }; 
+			$ta[$i] =~ m!^(?:\+)?[ATGC*]+$! or die "|$ta[$i]|\n"; 
+		} else {
+			$ta[$i] =~ m/^[ATGC]+$/ or die "|$ta[$i]|\n"; 
+		}
 		$cnt{'g2n_out'}{$ta[$i]} ++; 
 	}
 	$glob{'chk_gOut'} - $cnt{'cntN_out'} > 0 or next SNP; 

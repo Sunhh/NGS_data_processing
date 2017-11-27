@@ -29,7 +29,7 @@ perl $0 -cmd_str '$opts{'cmd_str'}' input_filename > out_file_name
 -help
 
 -cmd_str        [$opts{'cmd_str'}] This will be the command used to process input file. 
--cupN           [$opts{'cpuN'}]    Number of threads to be used. 
+-cpuN           [$opts{'cpuN'}]    Number of threads to be used. 
 
 -sub_hlineN     [$opts{'sub_hlineN'}] Only when cpuN > 1; Number of lines in main file which will be put into each sub-file. 
 -skip_hlineN    [$opts{'skip_hlineN'}] Only when cpuN > 1; Number of lines which will be skipped when merging sub-files. 
