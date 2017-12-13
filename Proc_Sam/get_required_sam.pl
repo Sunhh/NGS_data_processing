@@ -38,7 +38,8 @@ GetOptions(\%opts,
 
 	# Local for 'add_XTi'
 	'bam_wiXTi:s', # The .bam file with 'XT:i:##' tag. 
-	'tag4XTi:s',   # Default 'YT:i:', used to replace 'XT:i:' to avoid conflict with 'XT:A:?' ; 
+	'rawXTitag:s',  # Default 'XT' 
+	'tag4XTi:s',   # Default 'YT', used to replace 'XT:i:' to avoid conflict with 'XT:A:?' ; 
 	
 	# Global filtering 
 	'max_NM_ratio:f', # Default none. Recommend 0.01 for self_mapping. 
@@ -65,6 +66,7 @@ $opts{'min_mapQ'} //= 0;
 
 # Local parameters. 
 $opts{'trimLen'} //= 10; 
+$opts{'rawXTitag'} //= 'XT'; 
 $opts{'tag4XTi'} //= 'YT'; 
 
 
@@ -117,6 +119,7 @@ sub usage {
 #
 # -add_XTi        [Boolean] Add 'XT:i:##' information for adapter information to input sam. 
 #   -bam_wiXTi    [filename] Required with -add_XTi . The raw 'XT:i:##' exists here. 
+#   -rawXTitag    [$opts{'rawXTitag'}]
 #   -tag4XTi      [$opts{'tag4XTi'}] A string to replace 'XT:i:'. 
 # 
 # Global filtering: 
@@ -157,7 +160,7 @@ sub add_XTi {
 		my @ta = split(/\t/, $_); 
 		my $xt_tag = ''; 
 		for (my $i=11; $i<@ta; $i++) {
-			$ta[$i] =~ s!^XT:i:(\S+)$!$opts{'tag4XTi'}:i:$1!o or next; 
+			$ta[$i] =~ s!^$opts{'rawXTitag'}:i:(\S+)$!$opts{'tag4XTi'}:i:$1!o or next; 
 			$xt_tag = $ta[$i]; 
 			last; 
 		}
