@@ -37,7 +37,7 @@ my $is_oSeq=0;
 open F,'<',"$inFaF" or die; 
 while (<F>) {
 	if (m/^>/) {
-		m/^>(\S+) \(dbseq\-nr (\d+)\) \[(\d+),(\d+)\]$/ or die "$_\n"; 
+		m/^>(\S+) .*\(dbseq\-nr (\d+)\) \[(\d+),(\d+)\]$/ or die "$_\n"; 
 		my $seqID = "seq$2";
 		my $scfID = "$1";
 		my ($eleS, $eleE) = ($3,$4); 
