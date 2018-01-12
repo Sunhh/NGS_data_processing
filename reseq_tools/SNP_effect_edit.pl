@@ -36,8 +36,8 @@ my $cdsfile = '/share/app/watermelon/share/V6_WM_20100930/GeneAnnotation/V6_WM_C
 my $gfffile = '/share/app/watermelon/share/V6_WM_20100930/GeneAnnotation/watermelon_v6.scaffold.glean.1015.gff.150_filter.gff_CHRloc'; 
 
 
-$cdsfile = 'WCGV2p1_annot.gff.cds.fa';
-$gfffile = 'WCGV2p1_annot.gff';
+$cdsfile = 'WM97_v1.cds_all.fa'; 
+$gfffile = '/Data/Sunhh/database/db_fasta/watermelon/97103/v2/WM97v2.annot.chr.gff3'; 
 
 open CDS,'<',"$cdsfile" or die; 
 my (%cdsseq, $tkey); 
@@ -305,8 +305,12 @@ sub chk_cds_pos{
 
 		if (!(defined $codon{$newb3}[0] and defined $codon{$rawb3})) {
 			if ($newb3 =~ /N/i or $rawb3 =~ /N/i) {
-				my $rawX = (defined $codon{$rawb3}) ? $codon{$rawb3} : 'X' ; 
-				my $newX = (defined $codon{$newb3}) ? $codon{$newb3} : 'X' ; 
+				my $rawX = (defined $codon{$rawb3} and defined $codon{$rawb3}[1] ) ? $codon{$rawb3}[1] : 'X' ; 
+				my $newX = (defined $codon{$newb3} and defined $codon{$newb3}[1] ) ? $codon{$newb3}[1] : 'X' ; 
+				unless ( defined $rawX and defined $newX ) {
+					warn "!@{$codon{$rawb3}}|@{$codon{$newb3}}!\n"; 
+					die "|$rawb3|$newb3|$rawX|$newX|\n";
+				}
 				return ('3.8', "$rawX${aa_pos}$newX"); 
 			}else{
 				warn "Pos=$p, Mut=$mut, RawBBB=$rawb3, NewBBB=$newb3\n"; 
