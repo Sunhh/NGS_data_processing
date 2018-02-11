@@ -1907,6 +1907,23 @@ sub randSlct_num {
 	return(\@back); 
 }# sub randSlct_num () 
 
+=head1 create_randNum ( $num_digits )
+
+Return      : ( $a_number )
+
+=cut
+sub create_randNum {
+	my $num_digits = shift; 
+	my $nn = ""; 
+	for (1 .. $num_digits) {
+		my $r=int(rand(10));
+		$r == 10 and $r = 9;
+		$nn .= $r;
+	}
+	$nn =~ s!^0!1!;
+	return($nn);
+}# sub create_randNum() 
+
 
 =head1 _sideClose_pathInStruct( \@struct, \@path, 'both|left|right' )
 
