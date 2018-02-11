@@ -34,6 +34,8 @@ $opts{'randSeed'} and $seed_tag = '-randSeed';
 my $individual = $opts{'indv_txt'}; 
 my $snp_number = $opts{'snp_number'}; 
 my $UsePosition = $opts{'geno_tbl'}; 
+my $UsePosition1 = $UsePosition; 
+$UsePosition1 =~ s!^\S+/!!; 
 
 my $OutDir = $opts{'OutDir'};
 
@@ -67,15 +69,15 @@ for (my $i=$opts{'minR'};$i<=$opts{'maxR'};$i++){
 	mkdir($out_Dir) unless (-d $out_Dir); 
 	chdir($out_Dir); 
 	if ($snp_number > 0) {
-		&exeCmd_1cmd("perl $BinDir/rand_small_position.pl $OutDir/$UsePosition  $out_Dir/$UsePosition  $snp_number");
+		&exeCmd_1cmd("perl $BinDir/rand_small_position.pl $OutDir/$UsePosition  $out_Dir/$UsePosition1  $snp_number");
 	} else {
-		&exeCmd_1cmd("cp -p $OutDir/$UsePosition $out_Dir/$UsePosition"); 
+		&exeCmd_1cmd("cp -p $OutDir/$UsePosition $out_Dir/$UsePosition1"); 
 	}
-	my $location_num = `wc -l $out_Dir/$UsePosition  | cut  -f 1 -d " " | tr -d '\n' `;
+	my $location_num = `wc -l $out_Dir/$UsePosition1  | cut  -f 1 -d " " | tr -d '\n' `;
 	my $sample_num   = `wc -l $curr_dir/$individual | cut  -f 1 -d " " | tr -d '\n'`; 
 	
 
-	&exeCmd_1cmd("perl $BinDir/get_structure_input.pl $out_Dir/$UsePosition $curr_dir/$individual $out_Dir/Input.file");
+	&exeCmd_1cmd("perl $BinDir/get_structure_input.pl $out_Dir/$UsePosition1 $curr_dir/$individual $out_Dir/Input.file");
 	&exeCmd_1cmd("perl $BinDir/new_mainparams.pl $seed_tag -minK $opts{'minK'} -K $opts{'maxK'} -output $out_Dir -input $BinDir  -loca $location_num  -sample $sample_num");
 
 	# open O,'>', "cmd_list_runStruct" or die; 

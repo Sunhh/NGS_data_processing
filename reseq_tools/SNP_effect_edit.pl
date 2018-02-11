@@ -36,7 +36,7 @@ my $cdsfile = '/share/app/watermelon/share/V6_WM_20100930/GeneAnnotation/V6_WM_C
 my $gfffile = '/share/app/watermelon/share/V6_WM_20100930/GeneAnnotation/watermelon_v6.scaffold.glean.1015.gff.150_filter.gff_CHRloc'; 
 
 
-$cdsfile = 'WM97_v1.cds_all.fa'; 
+$cdsfile = '/Data/Sunhh/database/db_fasta/watermelon/97103/v2/WM97v1.cds.fa'; 
 $gfffile = '/Data/Sunhh/database/db_fasta/watermelon/97103/v2/WM97v2.annot.chr.gff3'; 
 
 open CDS,'<',"$cdsfile" or die; 
