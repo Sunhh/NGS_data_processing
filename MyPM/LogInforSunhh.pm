@@ -209,6 +209,14 @@ sub get_pm {
 	return( new Parallel::ForkManager($_[0]) ); 
 }# get_pm() 
 
+=head1 get_pid ()
+ Reference: http://perldoc.perl.org/perlvar.html
+ Return the PID number of current process; 
+=cut
+sub get_pid {
+	# use English; 
+	return($$); 
+}#get_pid() 
 
 
 1; 

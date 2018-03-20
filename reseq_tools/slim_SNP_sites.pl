@@ -56,7 +56,7 @@ while (<>) {
 	if ( &fileSunhh::log_section($., \%tmp_cnt) ) {
 		my $grpN = scalar(@g1_snp_line); 
 		my $lN = $.-2; 
-		&tsmsg("[Msg] Processed $lN line in $grpN groups.\n"); 
+		&tsmsg("[Msg][PID=$$] Processed $lN line in $grpN groups.\n"); 
 	}
 	chomp; 
 	my @ta = split(/\t/, $_); 
@@ -144,7 +144,7 @@ while ( $prev_grpN > $curr_grpN ) {
 	# repeatly compress @g1_snp_line; 
 	$prev_grpN = scalar(@g1_snp_line); 
 	$round ++; 
-	&tsmsg("[Msg] Running round $round [$prev_grpN]\n"); 
+	&tsmsg("[Msg][PID=$$] Running round $round [$prev_grpN]\n"); 
 	my @grp2; 
 	for my $g1 (@g1_snp_line) {
 		my $inGrp = 0; 
@@ -173,7 +173,7 @@ while ( $prev_grpN > $curr_grpN ) {
 	@g1_snp_line = (); 
 	@g1_snp_line = @grp2; 
 	$curr_grpN = scalar(@g1_snp_line); 
-	&tsmsg("[Msg] After round $round [$curr_grpN]\n"); 
+	&tsmsg("[Msg][PID=$$]  After round $round [$curr_grpN]\n"); 
 }# End while
 
 # Sort loci in @grp_snp_line
