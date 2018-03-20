@@ -32,8 +32,8 @@ perl $0 -cmd_str '$opts{'cmd_str'}' input_filename > out_file_name
 -cpuN           [$opts{'cpuN'}]    Number of threads to be used. 
 
 -sub_hlineN     [$opts{'sub_hlineN'}] Only when cpuN > 1; Number of lines in main file which will be put into each sub-file. 
--skip_hlineN    [$opts{'skip_hlineN'}] Only when cpuN > 1; Number of lines which will be skipped when merging sub-files. 
--addOnce_outhl  [value of Number_of_sub_hlineN] Only when cpuN > 1; Add once 'addOnce_outhl' lines to output once. 
+-skip_hlineN    [$opts{'skip_hlineN'}] Only when cpuN > 1; Number of lines which will be skipped from sub-output-file when merging. 
+-addOnce_outhl  [value of Number_of_sub_hlineN] Only when cpuN > 1; Add once 'addOnce_outhl' lines from first sub-output to merged_output before any sub-output-files merging. 
 
 "__INPUT__" could be in the cmd_str as a replace of input file in command. 
 
