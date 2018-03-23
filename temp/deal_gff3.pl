@@ -296,7 +296,25 @@ sub action_getJnLoc {
 	close O2; 
 	open I3,'-|', "ColLink.pl $wrk_dir/in.gff.loc_cds -f1 $wrk_dir/in.gff.loc_mrna -keyC1 0 -keyC2 1 -add -COl1 1,3,4,5 | deal_table.pl -column 1,7,2,8,9,10,3,4,0,6" or die; 
 	while (<I3>) {
-		print {$oFh} $_; 
+		chomp($_); 
+		my @ta = &splitL("\t", $_); 
+		if ($. == 1) {
+			$ta[0] eq 'mrnaID' or &stopErr("[Err] Bad first line: $_\n"); 
+			print {$oFh} join("\t", @ta, qw/CDSBlocksNum 5UTR 3UTR/)."\n"; 
+			next; 
+		}
+		my $cdsN = ( $ta[9] =~ tr/;/;/ ) + 1; 
+		my ($utr5, $utr3); 
+		if ($ta[5] eq '-') {
+			$utr5 = $ta[4]-$ta[7]+1; 
+			$utr3 = $ta[6]-$ta[3]+1; 
+		} elsif ($ta[5] =~ m!^(\.|\+)$!) {
+			$utr5 = $ta[6]-$ta[3]+1; 
+			$utr3 = $ta[4]-$ta[7]+1; 
+		} else {
+			&stopErr("[Err] Bad strand character [$ta[5]] in line:\n$_\n"); 
+		}
+		print {$oFh} join("\t", @ta, $cdsN, $utr5, $utr3)."\n"; 
 	}
 	close I3; 
 
