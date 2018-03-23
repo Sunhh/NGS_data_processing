@@ -10,10 +10,12 @@ GetOptions(\%opts,
 	"ibam:s@", 
 	"input_sam!", 
 	"exe_samtools:s",     # samtools_1.3 
+	"log_lineN:i", 
 	"help!", 
 ); 
 
 $opts{'exe_samtools'} //= 'samtools'; 
+$opts{'log_lineN'}    //= 1e6; 
 
 my $help_txt = <<HH; 
 ######################################################################
@@ -21,6 +23,7 @@ my $help_txt = <<HH;
 #
 # -exe_samtools     [$opts{'exe_samtools'}]. 
 # -input_sam        [Boolean]
+# -log_lineN        [$opts{'log_lineN'}]
 #
 HH
 
@@ -50,7 +53,7 @@ for my $cur_bam (@{$opts{'ibam'}}) {
 	}
 
 	my %cnt; 
-	$cnt{'log_section'} = { 'cntN_base' => 0, 'cntN_step' => 1e5 }; 
+	$cnt{'log_section'} = { 'cntN_base' => 0, 'cntN_step' => $opts{'log_lineN'} }; 
 	while (<$sam_fh>) {
 		&fileSunhh::log_section( $. , $cnt{'log_section'} ) and &tsmsg("[Msg][PID=$$] Reading [$cur_bam] $. line.\n");
 		m!^\@! and next; 
