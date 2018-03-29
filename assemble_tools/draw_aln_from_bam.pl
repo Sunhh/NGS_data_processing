@@ -343,12 +343,8 @@ for (my $i=0; $i<=$opts{'scfE'}; $i+=$opts{'tickStep'}) {
 
 # Draw backbone lines. 
 my %has_draw_bb_idx_dep; 
-for ( my $i=1; $i<=$opts{'scfE'}; $i+=$wind_step ) {
-	my $lineS = $i; 
+for ( my $lineS=$opts{'scfS'}; $lineS<=$opts{'scfE'}; $lineS+=$wind_step ) {
 	my $lineE = $lineS+$bp_per_line-1; 
-	$lineE < $opts{'scfS'} and next; 
-	$lineS < $opts{'scfS'} and $lineS = $opts{'scfS'}; 
-	$lineE = $lineS+$bp_per_line-1; 
 	$lineE > $opts{'scfE'} and $lineE = $opts{'scfE'}; 
 	my @si = @{ 
 	 $ms->map_windows( 
@@ -363,7 +359,7 @@ for ( my $i=1; $i<=$opts{'scfE'}; $i+=$wind_step ) {
 		$grps{'backbone'}->line(
 		 'x1' => $base_x, 
 		 'y1' => $base_y+$idx_dep*$step_y, 
-		 'x2' => $base_x+($lineE-$bp_line_wind{'loci'}{$tsi}[0]+1)/$opts{'bp_per_point'}, 
+		 'x2' => $base_x+($lineE-$lineS+1)/$opts{'bp_per_point'}, 
 		 'y2' => $base_y+$idx_dep*$step_y, 
 		); 
 	}
@@ -378,28 +374,28 @@ for my $tr (@add_blks) {
 	$s >= $opts{'scfS'} or $s = $opts{'scfS'}; 
 	$e <= $opts{'scfE'} or $e = $opts{'scfE'}; 
 	# for ( my $i=1; $i<=$e; $i+=($bp_per_line - $opts{'bp_overlap'}) ) {
-	for ( my $i=1; $i<=$e; $i+=$wind_step ) {
-		my $lineE = $i+$bp_per_line-1; 
-		my $lineS = $i; 
-		$lineE < $s and next; 
-		$lineE > $e and $lineE = $e; 
-		$lineS < $s and $lineS = $s; 
+	for ( my $i=$opts{'scfS'}; $i<=$e; $i+=$wind_step ) {
+		my $blkS = $i; 
+		my $blkE = $i+$bp_per_line-1; 
+		$blkE < $s and next; 
+		$blkE > $e and $blkE = $e; 
+		$blkS < $s and $blkS = $s; 
 		my @si = @{ 
 		 $ms->map_windows( 
-		   'position'  => $lineS, 
+		   'position'  => $blkS, 
 		   'wind_hash' => \%bp_line_wind, 
 		 ) 
 		}; 
 		for my $tsi (@si) {
 			my $idx_dep  = $si_to_idx{$tsi}; 
-			my $cur_s    = $lineS-$bp_line_wind{'loci'}{$tsi}[0]+1; 
-			my $cur_e    = $lineE-$bp_line_wind{'loci'}{$tsi}[0]+1; 
+			my $cur_s    = $blkS-$bp_line_wind{'loci'}{$tsi}[0]+1; 
+			my $cur_e    = $blkE-$bp_line_wind{'loci'}{$tsi}[0]+1; 
 			my $cur_x_s  = $base_x + $cur_s/$opts{'bp_per_point'}; 
 			my $cur_x_e  = $base_x + $cur_e/$opts{'bp_per_point'}; 
-			my $tk = "$lineS - $lineE"; 
+			my $tk = "$blkS - $blkE"; 
 			my $n = 0; 
 			while (defined $used_id{$tk}) {
-				$tk = "$lineS - $lineE : $n"; 
+				$tk = "$blkS - $blkE : $n"; 
 				$n++; 
 				$n > 10000 and die "Problem tk=$tk\n"; 
 			}
@@ -424,28 +420,28 @@ for my $tr (@tag_blks) {
 	$s >= $opts{'scfS'} or $s = $opts{'scfS'}; 
 	$e <= $opts{'scfE'} or $e = $opts{'scfE'}; 
 	# for ( my $i=1; $i<=$e; $i+=($bp_per_line - $opts{'bp_overlap'}) ) {
-	for ( my $i=1; $i<=$e; $i+=$wind_step ) {
-		my $lineE = $i+$bp_per_line-1; 
-		my $lineS = $i; 
-		$lineE < $s and next; 
-		$lineE > $e and $lineE = $e; 
-		$lineS < $s and $lineS = $s; 
+	for ( my $i=$opts{'scfS'}; $i<=$e; $i+=$wind_step ) {
+		my $blkE = $i+$bp_per_line-1; 
+		my $blkS = $i; 
+		$blkE < $s and next; 
+		$blkE > $e and $blkE = $e; 
+		$blkS < $s and $blkS = $s; 
 		my @si = @{ 
 		 $ms->map_windows( 
-		   'position'  => $lineS, 
+		   'position'  => $blkS, 
 		   'wind_hash' => \%bp_line_wind, 
 		 ) 
 		}; 
 		for my $tsi (@si) {
 			my $idx_dep  = $si_to_idx{$tsi}; 
-			my $cur_s    = $lineS-$bp_line_wind{'loci'}{$tsi}[0]+1; 
-			my $cur_e    = $lineE-$bp_line_wind{'loci'}{$tsi}[0]+1; 
+			my $cur_s    = $blkS-$bp_line_wind{'loci'}{$tsi}[0]+1; 
+			my $cur_e    = $blkE-$bp_line_wind{'loci'}{$tsi}[0]+1; 
 			my $cur_x_s  = $base_x + $cur_s/$opts{'bp_per_point'}; 
 			my $cur_x_e  = $base_x + $cur_e/$opts{'bp_per_point'}; 
-			my $tk = "tag: $lineS - $lineE"; 
+			my $tk = "tag: $blkS - $blkE"; 
 			my $n = 0; 
 			while (defined $used_id_tag{$tk}) {
-				$tk = "tag: $lineS - $lineE : $n"; 
+				$tk = "tag: $blkS - $blkE : $n"; 
 				$n++; 
 				$n > 10000 and die "Problem tk=$tk\n"; 
 			}
