@@ -344,11 +344,12 @@ for (my $i=0; $i<=$opts{'scfE'}; $i+=$opts{'tickStep'}) {
 # Draw backbone lines. 
 my %has_draw_bb_idx_dep; 
 for ( my $i=1; $i<=$opts{'scfE'}; $i+=$wind_step ) {
-	my $lineE = $i+$bp_per_line-1; 
 	my $lineS = $i; 
+	my $lineE = $lineS+$bp_per_line-1; 
 	$lineE < $opts{'scfS'} and next; 
-	$lineE > $opts{'scfE'} and $lineE = $opts{'scfE'}; 
 	$lineS < $opts{'scfS'} and $lineS = $opts{'scfS'}; 
+	$lineE = $lineS+$bp_per_line-1; 
+	$lineE > $opts{'scfE'} and $lineE = $opts{'scfE'}; 
 	my @si = @{ 
 	 $ms->map_windows( 
 	   'position'  => $lineS, 
