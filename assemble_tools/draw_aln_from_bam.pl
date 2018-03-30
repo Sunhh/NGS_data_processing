@@ -387,6 +387,7 @@ for my $tr (@add_blks) {
 		 ) 
 		}; 
 		for my $tsi (@si) {
+			$i == $tsi or next; 
 			my $idx_dep  = $si_to_idx{$tsi}; 
 			my $cur_s    = $blkS-$bp_line_wind{'loci'}{$tsi}[0]+1; 
 			my $cur_e    = $blkE-$bp_line_wind{'loci'}{$tsi}[0]+1; 
@@ -433,6 +434,7 @@ for my $tr (@tag_blks) {
 		 ) 
 		}; 
 		for my $tsi (@si) {
+			$i == $tsi or next; 
 			my $idx_dep  = $si_to_idx{$tsi}; 
 			my $cur_s    = $blkS-$bp_line_wind{'loci'}{$tsi}[0]+1; 
 			my $cur_e    = $blkE-$bp_line_wind{'loci'}{$tsi}[0]+1; 
