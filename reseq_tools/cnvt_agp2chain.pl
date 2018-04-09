@@ -14,13 +14,13 @@ my $help_info = <<HH;
 #   perl $0 wm97pb_v2ID.scf.fa.kl WM97pbV1.chr.fa.kl WM97pbV1.scf2chr.agp WM97pbV1.scf2chr.agp.chain
 #   java -jar /home/Sunhh/src/align/picard/v2.16.0/picard/build/libs/picard.jar CreateSequenceDictionary  R=WM97pbV1.chr.fa  O=WM97pbV1.chr.dict
 #   java -jar /home/Sunhh/src/align/picard/v2.16.0/picard/build/libs/picard.jar LiftoverVcf \
-#     LIFTOVER_MIN_MATCH=0 \
-#     WARN_ON_MISSING_CONTIG=ture \
-#     WRITE_ORIGINAL_POSITION=ture \
-#     I=refPBv2_pass.vcf \
-#     O=refPBv2_pass_scf2Chr.vcf \
-#     CHAIN=WM97pbV1.scf2chr.agp.chain \
-#     REJECT=refPBv2_pass_scf2Chr_rejected.vcf \
+#     LIFTOVER_MIN_MATCH=0 \\
+#     WARN_ON_MISSING_CONTIG=ture \\
+#     WRITE_ORIGINAL_POSITION=ture \\
+#     I=refPBv2_pass.vcf \\
+#     O=refPBv2_pass_scf2Chr.vcf \\
+#     CHAIN=WM97pbV1.scf2chr.agp.chain \\
+#     REJECT=refPBv2_pass_scf2Chr_rejected.vcf \\
 #     R=WM97pbV1.chr.fa
 #### 
 #  Try sepRun perl for speed and memory concerns. 
