@@ -38,7 +38,33 @@ sub accuracy_calculator{
 	close($ifh); 
 	my $target=(3*$nu_sen+2*$nu_sp+4*$ex_sen+3*$ex_sp+2*$gen_sen+1*$gen_sp)/15;
 	return $target;
-}
+}# accuracy_calculator() 
+
+=head1 setParInConfig( $fn_AUGUSTUS_species_parameters.cfg, $tag_to_change, $value_to_set )
+
+WARNING!!! This will directly change the input file! 
+
+##########################################
+# change a parameter in a config file    #
+# assume the format                      #
+# parName    value   # comment           #
+##########################################
+
+=cut
+sub setParInConfig{
+	my $configFileName = shift;
+	my $parName = shift;
+	my $value = shift;
+	open(CFGFILE, "+<$configFileName") or die ("Could not read config file $configFileName\n");
+	my @lines = <CFGFILE>;
+	foreach my $line (@lines){
+		$line =~ s/(\s*$parName +)(\S+?)(\s|\#|$)/$1$value$3/;
+	}
+	seek(CFGFILE, 0,0);
+	print CFGFILE @lines or die ("Could not write $configFileName");
+	truncate(CFGFILE, tell(CFGFILE));
+	close(CFGFILE);
+}# setParInConfig()
 
 
 1;
