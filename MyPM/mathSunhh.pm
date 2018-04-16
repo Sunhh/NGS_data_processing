@@ -645,7 +645,7 @@ sub transfer_position {
 
 	my @old_ctgInf = $self->switch_position( 'qry2ref' => $parm{'from_ref2qry'} , 'qryID' => $parm{'fromLoc'}[0] , 'qryPos' => $parm{'fromLoc'}[1] , 'qryStr' => $parm{'fromLoc'}[2] ); 
 	if (@old_ctgInf == 1 and @{$old_ctgInf[0]} == 0) {
-		&tsmsg("[Wrn] No defined old location for [@{$parm{'fromLoc'}}] [@{$old_ctgInf[0]}]\n"); 
+		# &tsmsg("[Wrn] No defined old location for [@{$parm{'fromLoc'}}] [@{$old_ctgInf[0]}]\n"); 
 		$old_ctgInf[0] = $parm{'fromLoc'}; 
 	} elsif ( @old_ctgInf == 1 and defined $old_ctgInf[0][0] ) {
 		; 
@@ -654,7 +654,7 @@ sub transfer_position {
 	}
 	my @new_scfInf = $self->switch_position( 'qry2ref' => $parm{'to_qry2ref'} , 'qryID' => $old_ctgInf[0][0] , 'qryPos' => $old_ctgInf[0][1] , 'qryStr' => $old_ctgInf[0][2] );
 	if (@new_scfInf == 1 and @{$new_scfInf[0]} == 0) {
-		&tsmsg("[Wrn] No defined new location for [@{$old_ctgInf[0]}]\n"); 
+		# &tsmsg("[Wrn] No defined new location for [@{$old_ctgInf[0]}]\n"); 
 		$new_scfInf[0] = $old_ctgInf[0]; 
 	} elsif ( @new_scfInf == 1 ) {
 		; 

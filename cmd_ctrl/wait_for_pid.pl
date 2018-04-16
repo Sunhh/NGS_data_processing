@@ -9,6 +9,7 @@ GetOptions(\%opts,
 	"help!", 
 	"pid:i@", 
 	"sleep_seconds:i", # 10
+	"cmd:s@", 
 ); 
 
 my $help_txt = <<HH; 
@@ -19,6 +20,8 @@ my $help_txt = <<HH;
 #
 #  -help
 #
+#  -cmd    [string\@] Excute commands if given. 
+#
 #  -sleep_seconds      [10]
 ################################################################################
 HH
@@ -28,6 +31,8 @@ $opts{'sleep_seconds'} //= 10;
 defined $opts{'pid'} or &LogInforSunhh::usage($help_txt); 
 $opts{'help'} and &LogInforSunhh::usage($help_txt); 
 my %pids = map { $_=>1 } @{$opts{'pid'}}; 
+my @cmd; 
+defined $opts{'cmd'} and @cmd = @{$opts{'cmd'}}; 
 
 while (1) {
 	my $all_done = 1; 
@@ -40,7 +45,12 @@ while (1) {
 			last; 
 		}
 	}
-	$all_done == 1 and last; 
+	if ($all_done == 1) {
+		for my $c (@cmd) {
+			&exeCmd_1cmd($c); 
+		}
+		last; 
+	}
 	sleep $opts{'sleep_seconds'}
 }
 
