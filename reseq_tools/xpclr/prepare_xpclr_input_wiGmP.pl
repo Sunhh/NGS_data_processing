@@ -4,6 +4,7 @@ use fileSunhh;
 use LogInforSunhh; 
 use mathSunhh; 
 use wm97Sunhh; 
+use SNP_tbl; 
 
 !@ARGV and die "perl $0   out_pref   apple.snp_addGmP   idv_list_1_objPop   idv_list_2_refPop\n"; 
 
@@ -80,12 +81,18 @@ while (&wantLineC($fh_snp)) {
 			$is_bad = 1; 
 			last; 
 		} else { 
-			if (!(defined $glob{'bad_geno'}{$ta_1[$i]})) {
-				$glob{'bad_geno'}{$ta_1[$i]} = 1; 
-				&tsmsg("[Wrn] Skip site with bad genotype [$ta_1[$i]]\n"); 
+			my @bb = &SNP_tbl::dna_d2b( $ta_1[$i] ); 
+			if ( @bb == 2 ) {
+				$al_1{$bb[0]} ++; $al_1{$bb[1]} ++; 
+				$al{$bb[0]}   ++; $al{$bb[1]}   ++; 
+			} else {
+				if ( !(defined $glob{'bad_geno'}{$ta_1[$i]}) ) {
+					$glob{'bad_geno'}{$ta_1[$i]} = 1; 
+					&tsmsg("[Wrn] Skip site with bad genotype [$ta_1[$i]]\n"); 
+				}
+				$is_bad = 1; 
+				last; 
 			}
-			$is_bad = 1; 
-			last; 
 		}
 	}
 	delete $al_1{'N'}; 
@@ -101,13 +108,19 @@ while (&wantLineC($fh_snp)) {
 		} elsif ( $ta_2[$i] =~ m/^[ATGC]{3,}$/ ) { 
 			$is_bad = 1; 
 			last; 
-		} else { 
-			if ( !(defined $glob{'bad_geno'}{$ta_2[$i]}) ) {
-				$glob{'bad_geno'}{$ta_2[$i]} = 1; 
-				&tsmsg("[Wrn] Skip site with bad genotype [$ta_2[$i]]\n"); 
+		} else {
+			my @bb &SNP_tbl::dna_d2b( $ta_2[$i] ); 
+			if ( @bb == 2 ) {
+				$al_2{$bb[0]} ++; $al_2{$bb[1]} ++; 
+				$al{$bb[0]}   ++; $al{$bb[1]}   ++; 
+			} else {
+				if ( !(defined $glob{'bad_geno'}{$ta_2[$i]}) ) {
+					$glob{'bad_geno'}{$ta_2[$i]} = 1; 
+					&tsmsg("[Wrn] Skip site with bad genotype [$ta_2[$i]]\n"); 
+				}
+				$is_bad = 1; 
+				last; 
 			}
-			$is_bad = 1; 
-			last; 
 		}
 	}
 	delete $al_2{'N'}; 
