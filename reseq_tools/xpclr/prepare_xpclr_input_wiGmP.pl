@@ -3,6 +3,7 @@ use strict;
 use fileSunhh; 
 use LogInforSunhh; 
 use mathSunhh; 
+use wm97Sunhh; 
 
 !@ARGV and die "perl $0   out_pref   apple.snp_addGmP   idv_list_1_objPop   idv_list_2_refPop\n"; 
 
