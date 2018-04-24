@@ -85,10 +85,11 @@ while (&wantLineC($fh_snp)) {
 			if ( @bb == 2 ) {
 				$al_1{$bb[0]} ++; $al_1{$bb[1]} ++; 
 				$al{$bb[0]}   ++; $al{$bb[1]}   ++; 
+				$ta_1[$i] = "$bb[0]$bb[1]"; 
 			} else {
 				if ( !(defined $glob{'bad_geno'}{$ta_1[$i]}) ) {
 					$glob{'bad_geno'}{$ta_1[$i]} = 1; 
-					&tsmsg("[Wrn] Skip site with bad genotype [$ta_1[$i]]\n"); 
+					&tsmsg("[Wrn] Skip site with bad genotype ta_1 [$ta_1[$i]][@bb]\n"); 
 				}
 				$is_bad = 1; 
 				last; 
@@ -109,14 +110,15 @@ while (&wantLineC($fh_snp)) {
 			$is_bad = 1; 
 			last; 
 		} else {
-			my @bb &SNP_tbl::dna_d2b( $ta_2[$i] ); 
+			my @bb = &SNP_tbl::dna_d2b( $ta_2[$i] ); 
 			if ( @bb == 2 ) {
 				$al_2{$bb[0]} ++; $al_2{$bb[1]} ++; 
 				$al{$bb[0]}   ++; $al{$bb[1]}   ++; 
+				$ta_2[$i] = "$bb[0]$bb[1]"; 
 			} else {
 				if ( !(defined $glob{'bad_geno'}{$ta_2[$i]}) ) {
 					$glob{'bad_geno'}{$ta_2[$i]} = 1; 
-					&tsmsg("[Wrn] Skip site with bad genotype [$ta_2[$i]]\n"); 
+					&tsmsg("[Wrn] Skip site with bad genotype ta_2 [$ta_2[$i]][@bb]\n"); 
 				}
 				$is_bad = 1; 
 				last; 
