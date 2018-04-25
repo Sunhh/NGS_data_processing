@@ -17,6 +17,7 @@ GetOptions(\%opts,
 	"firstAsObjPop!", 
 	"chk_scripts!", 
 	"use_sepRunXPCLR!", 
+	"stopBeforeXPCLR!", "runAfterXPCLR!", "getCmdXPCLR!", 
 ); 
 
 my %glob; 
@@ -51,6 +52,9 @@ for my $a1 (@{$glob{'set_para_default'}}) {
 		my ($k, $v) = ($1, $2); 
 		$glob{$k} //= $v; 
 	}
+}
+if ( $opts{'getCmdXPCLR'} ) {
+	$opts{'stopBeforeXPCLR'} = 1; 
 }
 
 
@@ -88,6 +92,9 @@ my $help_txt = <<HH;
 #                             scf_01      \\t 2
 #
 # -use_sepRunXPCLR [Boolean]  With this parameter, the XPCLR score will be calculated with separated parts. 
+# -stopBeforeXPCLR [Boolean]  With this parameter, I will stop before running XPCLR and print commands to STDOUT; 
+# -runAfterXPCLR   [Boolean]  With this parameter, I will skip the running XPCLR and do the following steps; 
+# -getCmdXPCLR     [Boolean]  Get commands for XPCLR, which will be output to STDOUT; 
 #
 # -set_para        [string] Default is as following: 
 # ==========================================================
@@ -108,9 +115,13 @@ $opts{'help'} and &LogInforSunhh::usage($help_txt);
 
 my $fn_list = shift; 
 my $wrk_dir = shift; 
--e "$wrk_dir" and &stopErr("[Err] Existed $wrk_dir\n"); 
 &tsmsg("[Rec] Begin [$0]\n"); 
-mkdir($wrk_dir) or &stopErr("[Err] Failed to create directory [$wrk_dir]\n"); 
+if ( $opts{'runAfterXPCLR'} or $opts{'getCmdXPCLR'} ) {
+	-e "$wrk_dir" or  &stopErr("[Err] Require $wrk_dir\n"); 
+} else {
+	-e "$wrk_dir" and &stopErr("[Err] Existed $wrk_dir\n"); 
+	mkdir($wrk_dir) or &stopErr("[Err] Failed to create directory [$wrk_dir]\n"); 
+}
 
 my $fn_snp_wiGmP = $opts{'in_snpTbl'}; 
 my $fn_wind      = $opts{'in_wind'}; 
@@ -132,21 +143,24 @@ if ( defined $fn_chrID2num and $fn_chrID2num ne '' ) {
 
 my %lis = %{ &load_comp_list( $fn_list ) }; 
 # Here lis_A relates to genofile1 in XPCLR, which is used as object population. 
-if ( $opts{'firstAsObjPop'} ) {
-	&fileSunhh::write2file( "$wrk_dir/lis_A", join("\n", map { "$_\t$lis{'grpIDs'}[0]"; } @{$lis{'IDs'}{ $lis{'grpIDs'}[0] }})."\n" ); 
-	&fileSunhh::write2file( "$wrk_dir/lis_B", join("\n", map { "$_\t$lis{'grpIDs'}[1]"; } @{$lis{'IDs'}{ $lis{'grpIDs'}[1] }})."\n" ); 
-} else {
-	&fileSunhh::write2file( "$wrk_dir/lis_A", join("\n", map { "$_\t$lis{'grpIDs'}[1]"; } @{$lis{'IDs'}{ $lis{'grpIDs'}[1] }})."\n" ); 
-	&fileSunhh::write2file( "$wrk_dir/lis_B", join("\n", map { "$_\t$lis{'grpIDs'}[0]"; } @{$lis{'IDs'}{ $lis{'grpIDs'}[0] }})."\n" ); 
+if ( !($opts{'runAfterXPCLR'}) and !($opts{'getCmdXPCLR'}) ) {
+	if ( $opts{'firstAsObjPop'} ) {
+		&fileSunhh::write2file( "$wrk_dir/lis_A", join("\n", map { "$_\t$lis{'grpIDs'}[0]"; } @{$lis{'IDs'}{ $lis{'grpIDs'}[0] }})."\n" ); 
+		&fileSunhh::write2file( "$wrk_dir/lis_B", join("\n", map { "$_\t$lis{'grpIDs'}[1]"; } @{$lis{'IDs'}{ $lis{'grpIDs'}[1] }})."\n" ); 
+	} else {
+		&fileSunhh::write2file( "$wrk_dir/lis_A", join("\n", map { "$_\t$lis{'grpIDs'}[1]"; } @{$lis{'IDs'}{ $lis{'grpIDs'}[1] }})."\n" ); 
+		&fileSunhh::write2file( "$wrk_dir/lis_B", join("\n", map { "$_\t$lis{'grpIDs'}[0]"; } @{$lis{'IDs'}{ $lis{'grpIDs'}[0] }})."\n" ); 
+	}
+	mkdir("$wrk_dir/input/"); 
+	&exeCmd_1cmd("$glob{'prepare_xpclr_input_wiGmP.pl'} $wrk_dir/input/input $fn_snp_wiGmP $wrk_dir/lis_A $wrk_dir/lis_B $fn_chrID2num") and &stopErr("[Err] here.\n"); 
 }
 
-mkdir("$wrk_dir/input/"); 
-&exeCmd_1cmd("$glob{'prepare_xpclr_input_wiGmP.pl'} $wrk_dir/input/input $fn_snp_wiGmP $wrk_dir/lis_A $wrk_dir/lis_B $fn_chrID2num") and &stopErr("[Err] here.\n"); 
-$glob{'fh_o_wXPCLR'} = &openFH( "$wrk_dir/xpclr_$glob{'windTag'}" , '>' ); 
+$glob{'fh_o_wXPCLR'} = &openFH( "$wrk_dir/xpclr_$glob{'windTag'}" , '>' ) if ( !($opts{'stopBeforeXPCLR'}) ) ; 
 opendir DD,"$wrk_dir/input/" or &stopErr("[Err] Failed to opendir [$wrk_dir/input/]\n"); 
+INPUT_CHR: 
 for my $d (readdir(DD)) {
-	$d =~ m/^\./ and next; 
-	$d =~ m!^input\.(\S+)\.snp! or next; 
+	$d =~ m/^\./ and next INPUT_CHR; 
+	$d =~ m!^input\.(\S+)\.snp$! or next INPUT_CHR; 
 	my $chrID = $1; 
 	my $chrN; 
 	if ( defined $glob{'chr_id2num'}{$chrID} ) {
@@ -160,9 +174,36 @@ for my $d (readdir(DD)) {
 	}
 	my $i_pref = "$wrk_dir/input/input"; 
 	if ( $opts{'use_sepRunXPCLR'} ) {
-		&exeCmd_1cmd("$glob{'sep_run_xpclr.pl'} ${i_pref}.${chrID} ' $glob{'xpclr_w'} $chrN $glob{'xpclr_p'} '   300000   ${i_pref}.${chrID}.snp.out.xpclr.txt | grep -v process") and &stopErr("[Err] Stop sep_run_xpclr.pl\n"); 
+		my $cmd_xpclr = "$glob{'sep_run_xpclr.pl'} ${i_pref}.${chrID} ' $glob{'xpclr_w'} $chrN $glob{'xpclr_p'} '   300000   ${i_pref}.${chrID}.snp.out.xpclr.txt"; 
+		if ( $opts{'stopBeforeXPCLR'} ) {
+			if ( $opts{'getCmdXPCLR'} ) {
+				print STDOUT "$cmd_xpclr\n"; 
+			} else {
+				&tsmsg("[Rec] toRun XPCLR command: $cmd_xpclr\n"); 
+			}
+			next INPUT_CHR; 
+		} elsif ( $opts{'runAfterXPCLR'} ) {
+			&tsmsg("[Rec] Skipped command: $cmd_xpclr\n"); 
+		} else {
+			&exeCmd_1cmd("$cmd_xpclr | grep -v process") and &stopErr("[Err] Failed command: $cmd_xpclr\n"); 
+		}
 	} else {
-		&exeCmd_1cmd("XPCLR -xpclr ${i_pref}.${chrID}_g1.geno ${i_pref}.${chrID}_g2.geno ${i_pref}.${chrID}.snp ${i_pref}.${chrID}.snp.out -w1 0.0005 100 100 $chrN -p0 0.7 | grep -v process") and &stopErr("[Err] Failed to run XPCLR\n"); 
+		my $cmd_xpclr = "XPCLR -xpclr ${i_pref}.${chrID}_g1.geno ${i_pref}.${chrID}_g2.geno ${i_pref}.${chrID}.snp ${i_pref}.${chrID}.snp.out -w1 0.0005 100 100 $chrN -p0 0.7"; 
+		if ( $opts{'stopBeforeXPCLR'} ) {
+			if ( $opts{'getCmdXPCLR'} ) {
+				print STDOUT "$cmd_xpclr\n"; 
+			} else {
+				&tsmsg("[Rec] toRun XPCLR command: $cmd_xpclr\n"); 
+			}
+			next INPUT_CHR; 
+		} elsif ( $opts{'runAfterXPCLR'} ) {
+			&tsmsg("[Rec] Skipped command: $cmd_xpclr\n"); 
+		} else {
+			&exeCmd_1cmd("$cmd_xpclr | grep -v process") and &stopErr("[Err] Failed command: $cmd_xpclr\n"); 
+		}
+	}
+	if ( $opts{'stopBeforeXPCLR'} ) {
+		next INPUT_CHR; 
 	}
 	&exeCmd_1cmd("$glob{'cluster_xpclrscore.pl'} ${i_pref}.${chrID}.snp.out.xpclr.txt -wind_size $glob{'wind_size'} -wind_step $glob{'wind_step'} -wind_start 1 > ${i_pref}.${chrID}.snp.out.xpclr.txt.$glob{'windTag'}") and &stopErr("[Err] Stop cluster_xpclrscore.pl\n"); 
 	my $fh = &openFH("${i_pref}.${chrID}.snp.out.xpclr.txt.$glob{'windTag'}", '<'); 
@@ -172,12 +213,15 @@ for my $d (readdir(DD)) {
 		defined $glob{'uniq_wind'}{$tk} and next; 
 		$glob{'uniq_wind'}{$tk} = 1; 
 		$ta[0] =~ m!^chrID$!i or do { defined $glob{'chr_num2id'}{$ta[0]} or &stopErr("[Err] Unknown chrN [$ta[0]]\n"); $ta[0] = $glob{'chr_num2id'}{$ta[0]}; }; 
-		print { $glob{'fh_o_wXPCLR'} } join("\t", @ta)."\n"; 
+		print { $glob{'fh_o_wXPCLR'} } join("\t", @ta)."\n" if ( !($opts{'stopBeforeXPCLR'}) ); 
 	}
 	close($fh); 
-}
+}# End INPUT_CHR; 
 closedir(DD); 
-close( $glob{'fh_o_wXPCLR'} ); 
+close( $glob{'fh_o_wXPCLR'} ) if ( !($opts{'stopBeforeXPCLR'}) ); 
+if ( $opts{'stopBeforeXPCLR'} ) {
+	exit(0); 
+}
 &exeCmd_1cmd("$glob{'ColLink.pl'} $fn_wind -f1 $wrk_dir/xpclr_$glob{'windTag'} -keyC1 0,1 -keyC2 0,1 -add -Col1 4 -fill 'NA' > $wrk_dir/wind.xpclr.compare") and &stopErr("[Err] Stop $glob{'ColLink.pl'}\n"); 
 
 # Method 01 
