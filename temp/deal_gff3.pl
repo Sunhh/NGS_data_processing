@@ -20,6 +20,7 @@ GetOptions(\%opts,
 	"outFas:s",    # Output fasta file if defined. 
 	
 	# Actions 
+	"sort!", 
 	"seqret!", # Not added. 
 	
 	"fixTgt!", # 
@@ -226,7 +227,9 @@ my (%in_gff, %in_seq );
 &load_gff_fas( \%in_gff, \%in_seq ); 
 
 # Step2. Different actions. 
-if ( $opts{'addFaToGff'} ) { 
+if ( $opts{'sort'} ) {
+	&action_sort(); 
+} elsif ( $opts{'addFaToGff'} ) { 
 	&action_addFaToGff(); 
 } elsif ( defined $opts{'compare2gffC'} ) {
 	&action_compare2gffC(); 
@@ -584,6 +587,9 @@ sub action_islandGene {
 	$gff_obj->write_gff3File( 'outFH'=>$oFh, 'gff3_href'=>\%in_gff, 'topIDs_aref'=>$kept_topIDs_aref, 'sort_by'=>$opts{'sortGffBy'} ); 
 }# action_islandGene() 
 
+sub action_sort {
+	$gff_obj->write_gff3File( 'outFH'=>$oFh, 'gff3_href'=>\%in_gff, 'sort_by'=>$opts{'sortGffBy'} ); 
+}# action_sort() 
 sub action_gffret {
 	my $kept_topIDs_aref = []; 
 	my $lisFh = &openFH($opts{'gffret'}, '<'); 
