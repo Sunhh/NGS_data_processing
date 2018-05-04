@@ -176,6 +176,7 @@ Usage: $0  <fasta_file | STDIN>
 
   -cds2aa             [Boolean]
     -codon_table        [1] Could be 1,2,3,4,5,6,7,8,9,10
+    -infer_frame        [Boolean] Infer frame from the definition line by '[frame=\\d+]' format information. This will overwrite -frame option; 
     -frame              [1] Could be 1,2,3 (plus strand), -1,-2,-3 (reverse strand)
 
 #******* Instruction of this program *********#
@@ -214,7 +215,7 @@ GetOptions(\%opts,"help!",
 	"jn_byID!", 
 	"aa2cds:s", # filename_cds.fa
 	"cds2aa!", 
-	  "codon_table:i", "frame:i", 
+	  "codon_table:i", "frame:i", "infer_frame!", 
 );
 &usage if ($opts{"help"}); 
 !@ARGV and -t and &usage; 
@@ -315,13 +316,18 @@ sub cds2aa {
 			for ( my ($relHR1, $get1) = &get_fasta_seq($fh1); defined $relHR1; ($relHR1, $get1) = &get_fasta_seq($fh1) ) {
 				$relHR1->{'seq'} =~ s/[\s]//g; # Keep '-' for position. 
 				my $t_seq = $relHR1->{'seq'}; 
-				if ( $frame > 0 and $frame <= 3 ) {
-					$t_seq = substr($t_seq, $frame - 1); 
-				} elsif ( $frame < 0 and $frame >= -3 ) {
+				my $t_frame = $frame; 
+				if ( $opts{'infer_frame'} and $relHR1->{'head'} =~ m!\[frame=([+-]?\d+)\]!i ) {
+					$t_frame = $1; 
+					$t_frame =~ m!^[+-]?(1|2|3)$! or do { &tsmsg("[Wrn] Skip bad frame information [$t_frame]\n"); $t_frame = $frame; }; 
+				}
+				if ( $t_frame > 0 and $t_frame <= 3 ) {
+					$t_seq = substr($t_seq, $t_frame - 1); 
+				} elsif ( $t_frame < 0 and $t_frame >= -3 ) {
 					&rcSeq(\$t_seq, 'rc'); 
-					$t_seq = substr($t_seq,-$frame - 1); 
+					$t_seq = substr($t_seq,-$t_frame - 1); 
 				} else {
-					&stopErr("[Err] Bad frame number [$frame]\n"); 
+					&stopErr("[Err] Bad frame number [$t_frame]\n"); 
 				}
 				my $t_len = length($t_seq); 
 				if ( $t_len > 0 ) {
@@ -335,11 +341,11 @@ sub cds2aa {
 						$aa_seq .= $aa; 
 					}
 					my $dispR = &Disp_seq(\$aa_seq, $opts{'frag_width'}); 
-					print STDOUT ">$relHR1->{'head'} [frame=$frame]\n$$dispR"; 
+					print STDOUT ">$relHR1->{'head'} [frame=$t_frame]\n$$dispR"; 
 					undef($dispR); 
 				} else {
 					&tsmsg("[Wrn] sequence [$relHR1->{'key'}] has zero length.\n"); 
-					print STDOUT ">$relHR1->{'head'} [frame=$frame]\n\n"; 
+					print STDOUT ">$relHR1->{'head'} [frame=$t_frame]\n\n"; 
 				}
 			}
                 }#End while() RD:

@@ -34,7 +34,7 @@ my %str2num = qw(
  minus -1
 ); 
 
-my %topName_to_frame; 
+my %cdsP_to_frame; 
 
 my $gffF = $opts{'genome_gff'}; 
 my $seqF = $opts{'genome_fas'}; 
@@ -86,14 +86,15 @@ for my $topID ( keys %{$gff_hash{'lineN_group'}} ) {
 			my $ta1_txt = join(";", @ta1); 
 			if ($top_name eq '') {
 				$top_name = $ta1_txt; 
-				my @ta = split(/\t/, $gff_hash{'lineN2line'}{$offLnNum}); 
-				$topName_to_frame{$top_name} = $ta[7]; 
-				$topName_to_frame{$top_name} eq '.' and $topName_to_frame{$top_name} = 0; 
-				$topName_to_frame{$top_name}++; 
 			} else {
 				$top_name eq $ta1_txt or &stopErr("[Err] Unequal top_name : [ $top_name , $ta1_txt]\n"); 
 			}
 		}
+		my @ta = split(/\t/, $gff_hash{'lineN2line'}{$offLnNum}); 
+		my $cdsP_k = "$ta[3]:$ta[4]"; 
+		$cdsP_to_frame{$cdsP_k} = $ta[7]; 
+		$cdsP_to_frame{$cdsP_k} eq '.' and $cdsP_to_frame{$cdsP_k} = 0; 
+		$cdsP_to_frame{$cdsP_k}++; 
 		push( @posi_cds, [ $gff_hash{'lineN2hash'}{$offLnNum}{'start'}, $gff_hash{'lineN2hash'}{$offLnNum}{'end'} ] ); 
 	}
 	$top_str eq '' and do { &tsmsg("[Wrn] No strand information for topID=[$topID]\n"); $top_str = 1; }; 
@@ -106,6 +107,8 @@ for my $topID ( keys %{$gff_hash{'lineN_group'}} ) {
 	if ($top_str == -1) {
 		@posi_cds = sort { $b->[0] <=> $a->[0] } @posi_cds; 
 	}
+	my $cdsP_1_k = "$posi_cds[0][0]:$posi_cds[0][1]"; 
+	defined $cdsP_to_frame{$cdsP_1_k} or &stopErr("[Err] Failed to find frame for CDS position [$seq_hash{$top_chr}:$cdsP_1_k]\n"); 
 	
 	# get sequences. 
 	my @sub_seqs; 
@@ -115,7 +118,7 @@ for my $topID ( keys %{$gff_hash{'lineN_group'}} ) {
 	$top_str == -1 and @sub_seqs = &rev_comp(@sub_seqs); 
 	my $final_seq = join('', @sub_seqs); 
 	$oSeqWidth > 0 and do { $final_seq =~ s!(.{$oSeqWidth})!$1\n!og; chomp($final_seq); }; 
-	print STDOUT ">$top_name [frame=$topName_to_frame{$top_name}]\n$final_seq\n"; 
+	print STDOUT ">$top_name [frame=$cdsP_to_frame{$cdsP_1_k}]\n$final_seq\n"; 
 }
 
 sub rev_comp {
