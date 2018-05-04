@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+### 20180504 Add [frame=\d] for futher usage. 
 use strict; 
 use warnings; 
 use LogInforSunhh; 
@@ -32,6 +33,8 @@ my %str2num = qw(
  plus  1
  minus -1
 ); 
+
+my %topName_to_frame; 
 
 my $gffF = $opts{'genome_gff'}; 
 my $seqF = $opts{'genome_fas'}; 
@@ -83,6 +86,10 @@ for my $topID ( keys %{$gff_hash{'lineN_group'}} ) {
 			my $ta1_txt = join(";", @ta1); 
 			if ($top_name eq '') {
 				$top_name = $ta1_txt; 
+				my @ta = split(/\t/, $gff_hash{'lineN2line'}{$offLnNum}); 
+				$topName_to_frame{$top_name} = $ta[7]; 
+				$topName_to_frame{$top_name} eq '.' and $topName_to_frame{$top_name} = 0; 
+				$topName_to_frame{$top_name}++; 
 			} else {
 				$top_name eq $ta1_txt or &stopErr("[Err] Unequal top_name : [ $top_name , $ta1_txt]\n"); 
 			}
@@ -108,7 +115,7 @@ for my $topID ( keys %{$gff_hash{'lineN_group'}} ) {
 	$top_str == -1 and @sub_seqs = &rev_comp(@sub_seqs); 
 	my $final_seq = join('', @sub_seqs); 
 	$oSeqWidth > 0 and do { $final_seq =~ s!(.{$oSeqWidth})!$1\n!og; chomp($final_seq); }; 
-	print STDOUT ">$top_name\n$final_seq\n"; 
+	print STDOUT ">$top_name [frame=$topName_to_frame{$top_name}]\n$final_seq\n"; 
 }
 
 sub rev_comp {
