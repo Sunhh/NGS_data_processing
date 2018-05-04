@@ -45,6 +45,8 @@ GetOptions(\%opts,
 	
 	"ch_makerID:s", # Finished. The input gff must be exactly as maker output. 
 	 "geneID_list:s", # [file], "oldGeneID \t newGeneID"
+	
+	"ch_ID:s",      # Change feature IDs in GFF file; 
 
 	"ch_locByAGP:s", # Finished. I think I should add 'sortTopIDBy' to &write_gff3File() . 
 	 "sortTopIDBy:s", # raw/lineNum/position
@@ -79,6 +81,8 @@ sub usage {
 # -ch_makerID       [oldID_newID] Convert mRNA ID and gene IDs according to file 'oldID_newID'. 
 #                     'oldID_newID' should have two column, old ID and new ID. 
 #   -geneID_list    [oldID_newID] Additionally provide a list to change gene IDs. 
+#----------------------------------------------------------------------------------------------------
+# -ch_ID            [oldID_newID] All the ID/Parent should exist in the input oldID_newID list. 
 #----------------------------------------------------------------------------------------------------
 # -ch_locByAGP      [in_ref.agp] Change IDs and locations according to this agp. Here assume to change agp_ctg to agp_scaff. 
 #   -sortTopIDBy    ['raw'] raw/lineNum/position. In fact, raw should be equal to lineNum. 
@@ -251,6 +255,8 @@ if ( $opts{'sort'} ) {
 	&action_list_intron(); 
 } elsif ( defined $opts{'ch_makerID'} ) {
 	&action_ch_makerID(); 
+} elsif ( defined $opts{'ch_ID'} ) {
+	&action_ch_ID(); 
 } elsif ( defined $opts{'ch_locByAGP'} ) {
 	&action_ch_locByAGP(); 
 } else {
@@ -410,6 +416,36 @@ sub action_ch_locByAGP {
 	
 	return(); 
 }# sub action_ch_locByAGP() 
+sub action_ch_ID {
+	my %o2n = map { $_->[0] => $_->[1] } &fileSunhh::load_tabFile( $opts{'ch_ID'} ); 
+	while (<$iFh>) {
+		chomp; 
+		if (m!^\s*(#|$)!) {
+			print {$oFh} "$_\n"; 
+			next; 
+		}
+		my @ta = split(/\t/, $_); 
+		if ($ta[8] =~ m!ID=([^\s;]+)!) {
+			my $id0=$1; 
+			my @id1 = split(/,/, $id0); 
+			for my $id2 (@id1) {
+				defined $o2n{$id2} and $id2 = $o2n{$id2}; 
+			}
+			$id0=join(',', @id1);
+			$ta[8] =~ s!ID=([^\s;]+)!ID=$id0!; 
+		}
+		if ($ta[8] =~ m!Parent=([\s;]+)!) {
+			my $id0=$1; 
+			my @id1 = split(/,/, $id0); 
+			for my $id2 (@id1) {
+				defined $o2n{$id2} and $id2 = $o2n{$id2}; 
+			}
+			$id0=join(',', @id1);
+			$ta[8] =~ s!Parent=([^\s;]+)!Parent=$id0!; 
+		}
+		print {$oFh} join("\t", @ta)."\n"; 
+	}
+}# action_ch_ID() 
 sub action_ch_makerID {
 	my $fh = &openFH( $opts{'ch_makerID'}, '<' ); 
 	my %o2n_m; 
