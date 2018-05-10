@@ -38,8 +38,12 @@ if ( defined $glob{'fn_old_agp'} ) {
 	%{$glob{'old_s2c'}} = (); 
 }
 
+if ( defined $glob{'fn_new_agp'} ) {
+	%{$glob{'new_c2s'}} = %{ &fileSunhh::load_agpFile( $glob{'fn_new_agp'} ) }; 
+} else {
+	%{$glob{'new_c2s'}} = (); 
+}
 
-%{$glob{'new_c2s'}} = %{ &fileSunhh::load_agpFile( $glob{'fn_new_agp'} ) }; 
 
 
 my $old_locFh = &openFH( $glob{'fn_old_loc'}, '<' ); 
@@ -166,7 +170,7 @@ HH
 	$glob{'fh_new_loc'} = \*STDOUT; 
 	defined $opts{'new_loc'} and $glob{'fh_new_loc'} = &openFH($opts{'new_loc'}, '>'); 
 	defined $opts{'bad_loc'} and $glob{'fh_bad_loc'} = &openFH($opts{'bad_loc'}, '>'); 
-	for my $fn (qw/new_agp old_loc/) {
+	for my $fn (qw/old_loc/) {
 		defined $opts{$fn} or do { &tsmsg("[Err]\n"); &tsmsg("[Err] -$fn needed.\n\n"); &LogInforSunhh::usage($glob{'help_txt'}); }; 
 		$glob{"fn_$fn"} = $opts{$fn}; 
 	}

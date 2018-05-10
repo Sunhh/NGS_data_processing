@@ -47,6 +47,7 @@ while (&wantLineC($fh)) {
 	$rawID =~ m!^(\d+)$! and $rawID = "chr$rawID"; 
 	defined $chrCumS{$rawID} or die "$_\n"; 
 	for my $tb (@ta[1,2]) {
+		$tb =~ m!^NA$!i and next; 
 		$tb = $tb + $chrCumS{$rawID}[0]; 
 	}
 	$ta[0] = $new_id; 

@@ -193,6 +193,9 @@ defined $opts{'outFas'} and $oFasFh = &openFH($opts{'outFas'}, '>');
 if ( $opts{'getJnLoc'} ) {
 	&action_getJnLoc(); 
 	exit(); 
+} elsif ( defined $opts{'ch_ID'} ) {
+	&action_ch_ID(); 
+	exit(); 
 }
 
 
@@ -255,8 +258,6 @@ if ( $opts{'sort'} ) {
 	&action_list_intron(); 
 } elsif ( defined $opts{'ch_makerID'} ) {
 	&action_ch_makerID(); 
-} elsif ( defined $opts{'ch_ID'} ) {
-	&action_ch_ID(); 
 } elsif ( defined $opts{'ch_locByAGP'} ) {
 	&action_ch_locByAGP(); 
 } else {
@@ -434,7 +435,7 @@ sub action_ch_ID {
 			$id0=join(',', @id1);
 			$ta[8] =~ s!ID=([^\s;]+)!ID=$id0!; 
 		}
-		if ($ta[8] =~ m!Parent=([\s;]+)!) {
+		if ($ta[8] =~ m!Parent=([^\s;]+)!) {
 			my $id0=$1; 
 			my @id1 = split(/,/, $id0); 
 			for my $id2 (@id1) {
