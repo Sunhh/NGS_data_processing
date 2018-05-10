@@ -45,7 +45,11 @@ while (&wantLineC($fh)) {
 	}
 	my $rawID = $ta[0]; 
 	$rawID =~ m!^(\d+)$! and $rawID = "chr$rawID"; 
-	defined $chrCumS{$rawID} or die "$_\n"; 
+	if ( ! defined $chrCumS{$rawID} ) {
+		&tsmsg("[Wrn] Skip line : $_\n"); 
+		print STDOUT join("\t", @ta)."\n"; 
+		next; 
+	}
 	for my $tb (@ta[1,2]) {
 		$tb =~ m!^NA$!i and next; 
 		$tb = $tb + $chrCumS{$rawID}[0]; 
