@@ -175,6 +175,7 @@ HH
 		$glob{"fn_$fn"} = $opts{$fn}; 
 	}
 	defined $opts{'old_agp'} and $glob{'fn_old_agp'} = $opts{'old_agp'}; 
+	defined $opts{'new_agp'} and $glob{'fn_new_agp'} = $opts{'new_agp'}; 
 	for my $tk (qw/colN_seqID colN_seqP colN_seqStr/) {
 		defined $opts{$tk} and $glob{$tk} = $opts{$tk}; 
 	}

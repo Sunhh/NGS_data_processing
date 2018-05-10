@@ -9,9 +9,11 @@ GetOptions(\%opts,
 	"help!", 
 	"out_cumLen:s", 
 	"delt_len:i", # 0 
+	"joinedID:s", 
 ); 
 
 $opts{'delt_len'} //= 0; 
+$opts{'joinedID'} //= 'joinedChr'; 
 
 my $help_txt = <<HH; 
 ################################################################################
@@ -21,6 +23,7 @@ my $help_txt = <<HH;
 #
 # -delt_len       [0] Distance between two adjacent chromosomes. 
 # -out_cumLen     [filename] Output a chrLen_cum file for plotting. 
+# -joinedID       [$opts{'joinedID'}] 
 ################################################################################
 HH
 
@@ -32,7 +35,7 @@ defined $opts{'out_cumLen'} and $glob{'fh_oCumLen'} = &openFH( $opts{'out_cumLen
 
 my $fn_chrCL = shift; 
 my $fn_wind  = shift; 
-my $new_id = "joinedChr"; 
+my $new_id = $opts{'joinedID'};  
 
 my %chrCumS = %{ &load_chrCL( $fn_chrCL ) }; 
 
