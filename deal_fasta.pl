@@ -317,6 +317,7 @@ sub cds2aa {
 	if ( $opts{'loc_4d'} ) {
 		my %t = %{ &fastaSunhh::get_4d_codon($opts{'codon_table'}) }; 
 		%bb_4d = map { uc(substr($_, 0, 2)) => $t{$_}[0] } keys %t; 
+		print STDOUT join("\t", qw/geneID cds_posi codon aa_posi aa/)."\n"; 
 	}
 	for (my $i=0; $i<@InFp; $i++) {
 		my $fh1 = $InFp[$i];
