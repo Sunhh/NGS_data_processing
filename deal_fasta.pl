@@ -179,6 +179,8 @@ Usage: $0  <fasta_file | STDIN>
     -infer_frame        [Boolean] Infer frame from the definition line by '[frame=\\d+]' format information. This will overwrite -frame option; 
     -frame              [1] Could be 1,2,3 (plus strand), -1,-2,-3 (reverse strand)
 
+  -loc_4d             [Boolean]
+
 #******* Instruction of this program *********#
 HELP
 	exit (1); 
@@ -216,6 +218,7 @@ GetOptions(\%opts,"help!",
 	"aa2cds:s", # filename_cds.fa
 	"cds2aa!", 
 	  "codon_table:i", "frame:i", "infer_frame!", 
+	"loc_4d!", 
 );
 &usage if ($opts{"help"}); 
 !@ARGV and -t and &usage; 
@@ -292,6 +295,7 @@ $opts{'frame'} //= 1;
 &jn_byID() if ( $opts{'jn_byID'} ); 
 &aa2cds() if ( defined $opts{'aa2cds'} ); 
 &cds2aa() if ( $opts{'cds2aa'} ); 
+&cds2aa() if ( $opts{'loc_4d'} ); 
 
 for (@InFp) {
 	close ($_); 
@@ -309,13 +313,18 @@ for (@InFp) {
 
 sub cds2aa {
 	my $frame = $opts{'frame'}; 
+	my %bb_4d; 
+	if ( $opts{'loc_4d'} ) {
+		my %t = %{ &fastaSunhh::get_4d_codon($opts{'codon_table'}) }; 
+		%bb_4d = map { uc(substr($_, 0, 2)) => $t{$_}[0] } keys %t; 
+	}
 	for (my $i=0; $i<@InFp; $i++) {
 		my $fh1 = $InFp[$i];
 		RD:
 		while ( !eof($fh1) ) {
 			for ( my ($relHR1, $get1) = &get_fasta_seq($fh1); defined $relHR1; ($relHR1, $get1) = &get_fasta_seq($fh1) ) {
 				$relHR1->{'seq'} =~ s/[\s]//g; # Keep '-' for position. 
-				my $t_seq = $relHR1->{'seq'}; 
+				my $t_seq = uc($relHR1->{'seq'}); 
 				my $t_frame = $frame; 
 				if ( $opts{'infer_frame'} and $relHR1->{'head'} =~ m!\[frame=([+-]?\d+)\]!i ) {
 					$t_frame = $1; 
@@ -329,20 +338,32 @@ sub cds2aa {
 				} else {
 					&stopErr("[Err] Bad frame number [$t_frame]\n"); 
 				}
-				my $t_len = length($t_seq); 
-				if ( $t_len > 0 ) {
+				my $t_len_0 = length($t_seq); 
+				if ( $t_len_0 > 0 ) {
 					my $aa_seq = ''; 
-					my $t_res = $t_len % 3; 
+					my $t_len = $t_len_0; 
+					my $t_res = $t_len_0 % 3; 
 					$t_res > 0 and $t_seq .= ( 'N' x (3-$t_res) ); 
 					$t_len = length($t_seq); 
-					for (my $j=0; $j<$t_len; $j+=3) {
-						my $bbb = substr($t_seq, $j, 3); 
-						my ($aa)= &fastaSunhh::bbb2aa($bbb); 
-						$aa_seq .= $aa; 
+					if ( $opts{'loc_4d'} ) {
+						my $aa_idx = 0; 
+						for (my $j=0; $j<$t_len; $j+=3) {
+							$j+3 > $t_len_0 and last; 
+							$aa_idx ++; 
+							my $bb = substr($t_seq, $j, 2); 
+							defined $bb_4d{$bb} or next; 
+							print STDOUT join("\t", $relHR1->{'key'}, $j+3, substr($t_seq, $j, 3), $aa_idx, $bb_4d{$bb})."\n"; 
+						}
+					} else {
+						for (my $j=0; $j<$t_len; $j+=3) {
+							my $bbb = substr($t_seq, $j, 3); 
+							my ($aa)= &fastaSunhh::bbb2aa($bbb, $opts{'codon_table'}); 
+							$aa_seq .= $aa; 
+						}
+						my $dispR = &Disp_seq(\$aa_seq, $opts{'frag_width'}); 
+						print STDOUT ">$relHR1->{'head'} [frame=$t_frame]\n$$dispR"; 
+						undef($dispR); 
 					}
-					my $dispR = &Disp_seq(\$aa_seq, $opts{'frag_width'}); 
-					print STDOUT ">$relHR1->{'head'} [frame=$t_frame]\n$$dispR"; 
-					undef($dispR); 
 				} else {
 					&tsmsg("[Wrn] sequence [$relHR1->{'key'}] has zero length.\n"); 
 					print STDOUT ">$relHR1->{'head'} [frame=$t_frame]\n\n"; 
