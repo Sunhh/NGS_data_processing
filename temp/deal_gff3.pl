@@ -447,11 +447,11 @@ sub action_getJnLoc {
 		my $cdsN = ( $ta[9] =~ tr/;/;/ ) + 1; 
 		my ($utr5, $utr3); 
 		if ($ta[5] eq '-') {
-			$utr5 = $ta[4]-$ta[7]+1; 
-			$utr3 = $ta[6]-$ta[3]+1; 
+			$utr5 = $ta[4]-$ta[7]; 
+			$utr3 = $ta[6]-$ta[3]; 
 		} elsif ($ta[5] =~ m!^(\.|\+)$!) {
-			$utr5 = $ta[6]-$ta[3]+1; 
-			$utr3 = $ta[4]-$ta[7]+1; 
+			$utr5 = $ta[6]-$ta[3]; 
+			$utr3 = $ta[4]-$ta[7]; 
 		} else {
 			&stopErr("[Err] Bad strand character [$ta[5]] in line:\n$_\n"); 
 		}
