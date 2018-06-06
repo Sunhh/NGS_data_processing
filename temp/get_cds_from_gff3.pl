@@ -92,9 +92,15 @@ for my $topID ( keys %{$gff_hash{'lineN_group'}} ) {
 		}
 		my @ta = split(/\t/, $gff_hash{'lineN2line'}{$offLnNum}); 
 		my $cdsP_k = "$ta[3]:$ta[4]"; 
-		$cdsP_to_frame{$cdsP_k} = $ta[7]; 
-		$cdsP_to_frame{$cdsP_k} eq '.' and $cdsP_to_frame{$cdsP_k} = 0; 
-		$cdsP_to_frame{$cdsP_k}++; 
+		if ( $ta[7] eq '.' or $ta[7] eq '0' ) {
+			$cdsP_to_frame{$cdsP_k} = 1; 
+		} elsif ( $ta[7] == 1 ) {
+			$cdsP_to_frame{$cdsP_k} = 3; 
+		} elsif ( $ta[7] == 2 ) {
+			$cdsP_to_frame{$cdsP_k} = 2; 
+		} else {
+			&stopErr("[Err] Don't understand gff3 phase value [$ta[7]]\n"); 
+		}
 		push( @posi_cds, [ $gff_hash{'lineN2hash'}{$offLnNum}{'start'}, $gff_hash{'lineN2hash'}{$offLnNum}{'end'} ] ); 
 	}
 	$top_str eq '' and do { &tsmsg("[Wrn] No strand information for topID=[$topID]\n"); $top_str = 1; }; 
