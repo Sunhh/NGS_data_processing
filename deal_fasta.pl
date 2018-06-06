@@ -325,20 +325,24 @@ sub cds2aa {
 		while ( !eof($fh1) ) {
 			for ( my ($relHR1, $get1) = &get_fasta_seq($fh1); defined $relHR1; ($relHR1, $get1) = &get_fasta_seq($fh1) ) {
 				$relHR1->{'seq'} =~ s/[\s]//g; # Keep '-' for position. 
+				$relHR1->{'len'} = length($relHR1->{'seq'}); 
 				my $t_seq = uc($relHR1->{'seq'}); 
 				my $t_frame = $frame; 
 				if ( $opts{'infer_frame'} and $relHR1->{'head'} =~ m!\[frame=([+-]?\d+)\]!i ) {
 					$t_frame = $1; 
 					$t_frame =~ m!^[+-]?(1|2|3)$! or do { &tsmsg("[Wrn] Skip bad frame information [$t_frame]\n"); $t_frame = $frame; }; 
 				}
-				if ( $t_frame > 0 and $t_frame <= 3 ) {
-					$t_seq = substr($t_seq, $t_frame - 1); 
+				if      ( $t_frame > 0 and $t_frame <= 3 ) {
+					my $addN = 'N' x ($t_frame-1); 
+					$t_seq = $addN . $t_seq; 
 				} elsif ( $t_frame < 0 and $t_frame >= -3 ) {
+					my $addN = 'N' x (-$t_frame-1); 
+					$t_seq = $t_seq . $addN; 
 					&rcSeq(\$t_seq, 'rc'); 
-					$t_seq = substr($t_seq,-$t_frame - 1); 
 				} else {
 					&stopErr("[Err] Bad frame number [$t_frame]\n"); 
 				}
+
 				my $t_len_0 = length($t_seq); 
 				if ( $t_len_0 > 0 ) {
 					my $aa_seq = ''; 
@@ -353,7 +357,7 @@ sub cds2aa {
 							$aa_idx ++; 
 							my $bb = substr($t_seq, $j, 2); 
 							defined $bb_4d{$bb} or next; 
-							print STDOUT join("\t", $relHR1->{'key'}, $j+3, substr($t_seq, $j, 3), $aa_idx, $bb_4d{$bb})."\n"; 
+							print STDOUT join("\t", $relHR1->{'key'}, $j+3-($t_frame-1), substr($t_seq, $j, 3), $aa_idx, $bb_4d{$bb})."\n"; 
 						}
 					} else {
 						for (my $j=0; $j<$t_len; $j+=3) {

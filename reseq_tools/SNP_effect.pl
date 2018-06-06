@@ -49,6 +49,7 @@ GetOptions(\%opts,
 	"outEff:s", # 
 	"upstreamLen:i", 
 	"downstreamLen:i", 
+	"asSnpCol!", 
 	"help!", 
 ); 
 
@@ -179,6 +180,17 @@ while (my $l = &wantLineC($snpFh)) {
 		} elsif ($tb =~ m!\+!) {
 			# In fact, m!^[^+]++! means a heterozygous insertion, but I don't want it too complex. 
 			@tc = ('Ins'); 
+		} elsif ( $tb =~ m!^[ATGCN]{2,}$! ) {
+			if ( $opts{'asSnpCol'} ) {
+				if ( $tb =~ m!^([ATGC])([ATGC])$! ) {
+					@tc = ($1, $2); 
+				} else {
+					&tsmsg("[Wrn] Skip unknown genotype [$tb]\n"); 
+					next; 
+				}
+			} else {
+				@tc = ('InDel', 'InDel'); 
+			}
 		} else {
 			&tsmsg("[Wrn] Skip unknown genotype [$tb]\n"); 
 			next; 
@@ -198,6 +210,7 @@ while (my $l = &wantLineC($snpFh)) {
 		my @t_eff = &snp_eff($ref_allele, $alt_allele[$i], $chr_id, $chr_pos, \%agp_cds2Scf, \%agp_intron2Scf, \%agp_up2Scf, \%agp_down2Scf); 
 		push(@effects, join(",", map { join(":", @$_) } @t_eff)); 
 	}
+	@effects == 0 and push(@effects, "Skipped"); 
 	
 	print {$outFh} join("\t", $effects[0], $l)."\n"; 
 }# End while ()
