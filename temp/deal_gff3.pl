@@ -342,9 +342,16 @@ sub action_seqret {
 				}
 			}
 			my @ta = split(/\t/, $in_gff{'lineN2line'}{$offLnNum}); 
-			my $t_frame = $ta[7]; 
-			$t_frame eq '.' and $t_frame = 0; 
-			$t_frame ++; 
+			my $t_frame; 
+			if ( $ta[7] eq '.' or $ta[7] eq '0' ) {
+				$t_frame = 1; 
+			} elsif ( $ta[7] == 1 ) {
+				$t_frame = 3; 
+			} elsif ( $ta[7] == 2 ) {
+				$t_frame = 2; 
+			} else {
+				&stopErr("[Err] Failed to parse gff phase [$ta[7]]\n"); 
+			}
 			push( @posi_cds, [ $offLnH{'start'}, $offLnH{'end'}, $t_frame] ); 
 		}# End for my $offLnNum 
 		@posi_cds > 0 or next TOPID; 
