@@ -1890,6 +1890,8 @@ sub index_numbers {
 
 Return      : ( \@slct_indice_sorted )
 
+Annotation  : There is no replacement in the randomly selecting; 
+
 =cut
 sub randSlct_num {
 	my ($total_num, $n) = @_; 
