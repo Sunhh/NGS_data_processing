@@ -135,7 +135,7 @@ sub usage {
 #                         If this is not given, the inGff will be output if it is included by gffC. 
 #  
 #   -rmOvlap          [Boolean] Remove 
-#     -rmOvlapLen     [1/-1] bps. 
+#     -rmOvlapLen     [1/-1] bps. Value '-1' means not considering by overlapped length. 
 #     -rmOvlapRatio1  [-1] 0-1 (1 is 100%)
 #     -rmOvlapRatio2  [-1] 0-1 (1 is 100%)
 #     -rmOvlapType    [exon,CDS,mRNA]
