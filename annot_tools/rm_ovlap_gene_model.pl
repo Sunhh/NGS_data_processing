@@ -124,11 +124,11 @@ sub is_notOvl {
 	my $ttl_base = 0; 
 	my $ovl_base = 0; 
 	for my $r1 (@$ar) {
-		if ( defined $bad_AED and $r1->[1] eq 'mRNA' ) {
+		if ( defined $bad_AED and $bad_AED < 1 and $r1->[1] eq 'mRNA' ) {
 			$r1->[0][8] =~ m/;_AED=([\+\-\d.e]+);/ or &stopErr("[Err] No _AED in [$r1->[0][8]]\n"); 
 			$1 < $bad_AED or return 0; 
 		}
-		if ( defined $bad_eAED and $r1->[1] eq 'mRNA' ) {
+		if ( defined $bad_eAED and $bad_eAED < 1 and $r1->[1] eq 'mRNA' ) {
 			$r1->[0][8] =~ m/;_eAED=([\+\-\d.e]+);/ or &stopErr("[Err] No _eAED in [$r1->[0][8]]\n"); 
 			$1 < $bad_eAED or return 0; 
 		}
