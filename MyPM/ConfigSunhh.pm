@@ -78,6 +78,7 @@ sub getConfig {
 			my $pv = $parm{'hash_r'}{$pk}; 
 			$tv =~ s/__${pk}__/$pv/; 
 		}
+		$parm{'hash_r'}{$tk} //= $tv; 
 		$parm{'replace'} and $parm{'hash_r'}{$tk} = $tv; 
 		&tsmsg("[Msg] Setting $tk=$tv\n"); 
 	}
@@ -85,6 +86,26 @@ sub getConfig {
 
 	return $parm{'hash_r'}; 
 }# getConfig() 
+
+=head2 writeConfig( 'cfg_file'=>'path.conf', 'hash_r'=> {} )
+
+Function : 
+  This is a method in object. 
+  Write 'cfg_file' file and store key,val pairs in hash_reference 'hash_r'. 
+
+Return   : ()
+
+=cut
+sub writeConfig {
+	my $self = shift; 
+	my %parm = @_; 
+	open O,'>', "$parm{'cfg_file'}" or &stopErr("[Err] file [$parm{'cfg_file'}] $!\n");
+	for my $k (sort keys %{$parm{'hash_r'}}) {
+		print O join("\t", $k, $parm{'hash_r'}{$k})."\n"; 
+	}
+	close(O); 
+}# writeConfig() 
+
 
 
 1; 
