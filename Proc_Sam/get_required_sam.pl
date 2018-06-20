@@ -12,6 +12,7 @@
 #                 Please note thate in the new sam file, there will be no 'TAG:VALUE' pairs, and the mate-information is not correct ever. 
 #   Purpose 6 : Filter sam alignments with global filtering rules. 
 #   Purpose 7 : Add 'XT:i:##' information from in_picard_illuminaAdapterMarked.bam to input sam file, changing 'XT' to 'YT'; 
+#   Purpose 8 : Change 'XT:i:##' information to 'YT:i:##' in the input sam file; 
 use strict; 
 use warnings; 
 use SeqAlnSunhh; 
@@ -31,6 +32,7 @@ GetOptions(\%opts,
 	'trim_readEnds!', # Purpose 5. 
 	'filter_sam!', # Purpose 6. 
 	'add_XTi!', # Purpose 7. 
+	'cnvt_XTi!', # Purpose 8. 
 	
 	# Local for 'well_pair'
 	# Local for 'trim_readEnd'
@@ -88,6 +90,8 @@ if ( defined $opts{'uniq_pair'} or defined $opts{'well_pair'} or defined $opts{'
 	&filter_sam(); 
 } elsif ( defined $opts{'add_XTi'} ) {
 	&add_XTi(); 
+} elsif ( defined $opts{'cnvt_XTi'} ) {
+	&cnvt_XTi(); 
 }
 
 &tsmsg("[Rec] Finish $0\n"); 
@@ -121,6 +125,8 @@ sub usage {
 #   -bam_wiXTi    [filename] Required with -add_XTi . The raw 'XT:i:##' exists here. 
 #   -rawXTitag    [$opts{'rawXTitag'}]
 #   -tag4XTi      [$opts{'tag4XTi'}] A string to replace 'XT:i:'. 
+#
+# -cnvt_XTi       [Boolean] Change 'XT:' to 'YT:'
 # 
 # Global filtering: 
 # -max_NM_ratio   [-1] Maximum NM/rdLen ratio accepted. 
@@ -135,6 +141,23 @@ HH
 	exit 1; 
 }
 
+sub cnvt_XTi {
+	open(OO, '>', "/dev/stdout") or die "$!\n"; 
+	while (<>) {
+		$. % 1e6 == 1 and &tsmsg("[Msg] Current sam $. line.\n"); 
+		chomp; 
+		my @ta = split(/\t/, $_); 
+		scalar(@ta) >= 11 or do { $ta[0] =~ m/^@/ or &stopErr("[Err] Bad line : $_\n"); print OO "$_\n"; next; }; 
+		my $xt_tag = ''; 
+		for (my $i=11; $i<@ta; $i++) {
+			$ta[$i] =~ s!^$opts{'rawXTitag'}:!$opts{'tag4XTi'}:!o; 
+		}
+		print OO join("\t", @ta)."\n"; 
+
+	}
+	close(OO); 
+	return(); 
+}# cnvt_XTi() 
 sub add_XTi {
 	defined $opts{'bam_wiXTi'} or &stopErr("[Err] -bam_wiXTi needed when using -add_XTi .\n"); 
 	P1_in_add_XTi: 
