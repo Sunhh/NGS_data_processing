@@ -5,11 +5,8 @@ use strict;
 use warnings; 
 use File::Which; 
 # use IO::Zlib; # This package doesn't support bzip2 files. And adding IO::Compress:Bzip2 and IO::Uncompress::Bunzip2 is too many work currently. Not very useful since I am using linux usually. 
-use File::Basename; 
 use File::Copy::Recursive; 
 use File::Copy; 
-use File::Spec::Functions qw( catfile path ); 
-use File::Path; 
 use LogInforSunhh; 
 use mathSunhh; 
 use Cwd; 
@@ -653,6 +650,7 @@ Mainly copy from http://stackoverflow.com/questions/8243189/check-if-file-exists
 Return     : ($first_found_path, [$found_path_1, $found_path_2, ...])
 =cut
 sub _chkExist ($) {
+	use File::Spec::Functions; 
 	my $inFile = shift; 
 	( defined $inFile and $inFile ne '' ) or return (undef(), []); 
 	my @path = File::Spec::Functions::path; 
@@ -702,17 +700,26 @@ sub _move {
 =head1 _rmtree()
 =cut
 sub _rmtree {
+	use File::Path; 
 	return File::Path::rmtree(@_); 
 }#sub _rmtree()
 
 =head1 _basename()
 =cut
 sub _basename {
+	use File::Basename; 
 	return File::Basename::basename(@_); 
 }
 =head1 _dirname()
 =cut
 sub _dirname {
+	use File::Basename; 
 	return File::Basename::dirname(@_); 
+}
+=head1 _catfile()
+=cut
+sub _catfile{
+	use File::Spec::Functions; 
+	return(File::Spec::Functions::catfile(@_)); 
 }
 1; 
