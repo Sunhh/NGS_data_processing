@@ -684,6 +684,17 @@ Invoke Cwd::abs_path()
 sub _abs_path {
 	return Cwd::abs_path(@_); 
 }# sub _abs_path() 
+=head1 _abs_path_4link()
+
+Use absolute path of directory, but input filename.
+This is more friendly for symbol link of filenames.
+
+=cut
+sub _abs_path_4link{
+	my $dir_path = &_abs_path( &fileSunhh::_dirname($_[0]) ); 
+	my $fname    = &_basename( $_[0] );
+	return( &_catfile($dir_path, $fname) );
+}#_abs_path_4link() 
 =head1 _copy()
 Invoke File::Copy::copy()
 =cut
