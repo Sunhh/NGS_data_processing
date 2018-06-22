@@ -97,9 +97,12 @@ while (<$old_locFh>) {
 			$a1->[3] = reverse($a1->[3]); 
 			my @alt_al_a = split(/,/, $alt_al); 
 			for my $alt_al_t (@alt_al_a) {
-				$alt_al_t =~ m!^[ATGCN*]+$! or &stopErr("[Err] Bad alt allele [$alt_al_t] in [$alt_al]\n"); 
-				$alt_al_t =~ tr/ATGCatgc/TACGtacg/; 
-				$alt_al_t = reverse($alt_al_t); 
+				unless ( $alt_al_t eq '<NON_REF>' ) {
+					# For GVCF; 
+					$alt_al_t =~ m!^[ATGCN*]+$! or &stopErr("[Err] Bad alt allele [$alt_al_t] in [$alt_al]\n"); 
+					$alt_al_t =~ tr/ATGCatgc/TACGtacg/; 
+					$alt_al_t = reverse($alt_al_t); 
+				}
 			}
 			$a1->[4] = join(',', @alt_al_a); 
 		}
