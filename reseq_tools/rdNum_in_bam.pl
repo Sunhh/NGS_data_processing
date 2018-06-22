@@ -11,7 +11,7 @@ GetOptions(\%opts,
 	"ibam:s@", 
 	"input_sam!", 
 	"exe_samtools:s",     # samtools_1.3 
-	"revertBam!", "exe_java:s", "jar_picard:s", 
+	"revertBam!", "exe_java:s", "jar_picard:s", "checkReads!", 
 	"log_lineN:i", 
 	"help!", 
 ); 
@@ -35,6 +35,7 @@ my $help_txt = <<HH;
 #                             This is not necessary if the aligned_bam is stored by my merged uBam pipeline. 
 #   -exe_java       [$opts{'exe_java'}]
 #   -jar_picard     [$opts{'jar_picard'}]
+#   -checkReads     [Boolean]
 #
 HH
 
@@ -63,7 +64,11 @@ for my $cur_bam (@{$opts{'ibam'}}) {
 		$openCmd .= "$opts{'exe_java'} -Xmx8G -jar $opts{'jar_picard'} RevertSam "; 
 		$openCmd .= "  I=$cur_bam "; 
 		$openCmd .= "  O=${tmp_dir}/a.bam "; # OUTPUT_BY_READGROUP=true for O=dir 
-		$openCmd .= "  SORT_ORDER=queryname SANITIZE=true MAX_DISCARD_FRACTION=0.001 "; #
+		if ( $opts{'checkReads'} ) {
+			$openCmd .= "  SORT_ORDER=queryname SANITIZE=true MAX_DISCARD_FRACTION=0.001 "; #
+		} else {
+			$openCmd .= "  SORT_ORDER=unsorted "; #
+		}
 		$openCmd .= "  REMOVE_DUPLICATE_INFORMATION=true REMOVE_ALIGNMENT_INFORMATION=true RESTORE_ORIGINAL_QUALITIES=true ";
 		&exeCmd_1cmd( $openCmd ); 
 		$sam_fh = &SeqAlnSunhh::openSam( "$tmp_dir/a.bam", undef(), { 'wiH'=>0, 'verbose'=>1, 'exe_samtools'=>$opts{'exe_samtools'} } ); 
