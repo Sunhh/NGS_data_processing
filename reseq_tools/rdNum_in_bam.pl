@@ -51,7 +51,8 @@ for ( keys %flag_aln_R2 ) {
 	$flag2R{$_} = 'R2'; 
 }
 
-my $tmp_dir = &fileSunhh::new_tmp_dir('create'=>1); 
+my $tmp_dir; 
+$opts{'revertBam'} and $tmp_dir = &fileSunhh::new_tmp_dir('create'=>1); 
 
 print join("\t", qw/InFile  Total_size  Total_Rd_num  Mean_Rd_size  Range_Rd_size  PhredCut  Time/)."\n"; 
 for my $cur_bam (@{$opts{'ibam'}}) {
