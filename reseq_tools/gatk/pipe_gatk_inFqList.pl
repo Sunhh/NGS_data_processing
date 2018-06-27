@@ -65,7 +65,7 @@ perl $0 fasdfasf
                                    Repeat            Repeat                Repeat             Unique           Unique       Unique    [    Rep      Rep      Rep]
                                    GS109             GS109_Time1           GS109_Time1        GS109_Time1      W1_R1.fq.gz  W1_R2.fq.gz    illumina H0V2RADXX.1 NA
                           Example of Others : 
-                                   DS=GS109_WDM_Time1;WDM_L1_I121.R[12].clean.fastq.gz;Len_100_100;;DT=2014-02-01;;CN:BFC2013288
+                                   DS=GS109_WDM_Time1;WDM_L1_I121.R[12].clean.fastq.gz;Len_100_100;;DT=2014-02-01;;CN=BFC2013288
                           'NA' means no input assigned. 
   -prj_ID               [String] Output prefix (default 'outGATK') for the whole project to merge GVCF files. Cannot contain directory; 
 
@@ -333,7 +333,7 @@ sub load_prefList {
 	#          Repeat            Repeat                Repeat             Unique           Unique       Unique    [    Rep      Rep      Rep]
 	#          GS109             GS109_Time1           GS109_Time1        GS109_Time1      W1_R1.fq.gz  W1_R2.fq.gz    illumina H0V2RADXX.1 NA
 	# Example of Others :
-	#          DS=GS109_WDM_Time1;WDM_L1_I121.R[12].clean.fastq.gz;Len_100_100;;DT=2014-02-01;;CN:BFC2013288
+	#          DS=GS109_WDM_Time1;WDM_L1_I121.R[12].clean.fastq.gz;Len_100_100;;DT=2014-02-01;;CN=BFC2013288
 	my @back; 
 	my %good_otherK = (
 		'CN' => 1, 
