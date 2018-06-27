@@ -1,0 +1,35 @@
+pl_getSam             /home/Sunhh/tools/github/NGS_data_processing/Proc_Sam/get_required_sam.pl
+
+exe_perl              /usr/bin/perl
+exe_java              /usr/java/jre1.8.0_144/bin/java
+#exe_java              /usr/lib/jvm/java-1.8.0-openjdk-1.8.0.141-1.b16.fc26.x86_64/jre/bin/java
+#JAVA_HOME             /usr/lib/jvm/java-1.8.0-openjdk-1.8.0.141-1.b16.fc26.x86_64/
+jar_picard            /home/Sunhh/src/align/picard/v2.10.3/picard.jar
+jar_gatk              /Data/Sunhh/src/pipeline/gatk/nightly_20171018/GenomeAnalysisTK.jar
+exe_samtools          /opt/align/samtools/samtools-1.5/samtools
+para_maoPU            -q 17 -Q 0 --ff 3844
+# flag 3844 includes 'unmapped', 'not primary alignment/secondary alignment', 'read fails platform/vendor quality checks', 'read is PCR or optical duplicate', 'supplementary alignment'
+exe_bwa               /opt/align/bwa/bwa-0.7.15/bwa
+para_bwa              -M -t 40
+
+ref_fasta             /Data/Sunhh/wm_trait/powder_mildew/01_work/db/WM97pbV1_fwd.chr.fa
+
+dir_tmp               ./temp
+
+dirMao                /home/Sunhh/tools/github/NGS_data_processing/reseq_tools/mao_exe
+exe_combine2PileFiles __dirMao__/combine2PileFiles
+exe_reSeqPrintRefChr  __dirMao__/reSeqPrintRefChr
+exe_reSeqPrintSample  __dirMao__/reSeqPrintSample.indel.fast.strAssign
+para_reSeqPrintSample 2 2 0.3
+#exe_reSeqPrintSample  __dirMao__/reSeqPrintSample.indel.fast
+#exe_reSeqPrintSample  __dirMao__/reSeqPrintSample.indel.fast.strAssign.moreHeter
+#exe_rmRedunSam2       __dirMao__/rmRedunSam2
+#exe_rmRedunSam3       __dirMao__/rmRedunSam3
+No_combineGVCF         50
+
+exe_bcftools           /opt/align/samtools/bcftools-1.5/bcftools
+grp_sbSampleN          40
+
+dirDbsnp              /data/Sunhh/watermelon/01.source_reseq/01.gatk/independent_snps
+known_dbsnp            -knownSites __dirDbsnp__/WmReseq_sample464_rmClose.sMao_dbsnp.vcf.gz  -knownSites __dirDbsnp__/WmReseq_sample464.sSB_dbsnp.vcf.gz 
+para_bqsr              -nct 40
