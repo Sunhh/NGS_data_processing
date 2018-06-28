@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 # 2014-03-20 A script to deal with fastq format reads. It will be always in processing. 
 # 2014-03-25 Add function to search a pattern in reads, and return different values as defined. 
-#
+# 2018-06-28 Split reads by their RUN information; 
 
 BEGIN {
 	use File::Basename; 
@@ -79,6 +79,14 @@ perl $0 in.fastq
 
 -clean_fq     [Boolean] Sometimes the input fastq file has some line shift problem. Clean those records. 
 
+-sepByRG      ['opref'] Separate reads according the RUN information inferred from their read ID. 
+                'opref' is the output prefix, the resulting file will be 'opref_1.fq.gz', 'opref_2.fq.gz', ...; 
+  -rdIDfmt    ['M1']  Separate reads according the RUN information inferred from their read ID. 
+                'M1' format : EAS139:136:FC706VJ:2:2104:15343:197393 1:Y:18:ATCACG ; RUN infor is 'EAS139:136:FC706VJ:2:' ;
+                'M2' format : HWUSI-EAS100R:6:73:941:1973#0/1 ; RUN infor is 'HWUSI-EAS100R:6:' ;
+  -forceSep   [Boolean] Force to separate the input reads even though the output files will be bigger than 10. 
+  -onlyCheck  [Boolean] Only check the output number, instead of really output files. 
+
 #******* Instruction of this program *********#
 HELP
 	exit(1); 
@@ -101,6 +109,7 @@ GetOptions(\%opts,
 	"get_key!", 
 	"reorder:s", 
 	"clean_fq!", 
+	"sepByRG:s", "rdIDfmt:s", "forceSep!", "onlyCheck!", 
 	"help!", 
 ); 
 
@@ -161,10 +170,47 @@ my %good_str = qw(
 &get_key() if ( $opts{'get_key'} ); 
 &reorder() if ( defined $opts{'reorder'} ); 
 &cleanFq() if ( $opts{'clean_fq'} ); 
+&sepByRG() if ( defined $opts{'sepByRG'} ); 
 
 #****************************************************************#
 #--------------Subprogram------------Start-----------------------#
 #****************************************************************#
+
+sub sepByRG {
+	$opts{'rdIDfmt'} //= 'M1'; 
+	$opts{'rdIDfmt'} =~ m!^(M1|M2)$!i or &stopErr("[Err] -rdIDfmt should be M1 or M1\n"); 
+	my $expr; 
+	$opts{'rdIDfmt'} =~ m!^M1$!i and $expr = qr/^\@((?:[^\s:]+:){4})/; 
+	$opts{'rdIDfmt'} =~ m!^M2$!i and $expr = qr/^\@((?:[^\s:]+:){2})/; 
+	my (%ofh, $ofNum); 
+	for my $fh1 (@InFp) {
+		my ($l1, $l2, $l3, $l4, $k) = ('', '', '', ''); 
+		while ($l1 = <$fh1>) {
+			$l2 = <$fh1>; $l3 = <$fh1>; $l4 = <$fh1>; 
+			$l1 =~ m!$expr!o or &stopErr("[Err] Bad ID : [$l1]\n"); 
+			$k = $1; 
+			unless (defined $ofh{$k}) {
+				$ofNum ++; 
+				unless ( $opts{'onlyCheck'} ) {
+					$ofh{$k} = &openFH("$opts{'sepByRG'}_${ofNum}.fq.gz", '>'); 
+					if ( $ofNum > 10 ) {
+						$opts{'forceSep'} or &stopErr("[Err] The output file will be bigger than 10, please check -rdIDfmt or provide -forceSep \n"); 
+					}
+				}
+			}
+			$opts{'onlyCheck'} or print {$ofh{$k}} "$l1$l2$l3$l4"; 
+		}
+		close($fh1); 
+	}
+	if ($opts{'onlyCheck'}) {
+		print STDOUT join("\t", $opts{'sepByRG'}, scalar(%ofh))."\n"; 
+	} else {
+		for my $t1 (keys %ofh) {
+			close($t1); 
+		}
+	}
+	return; 
+}# sepByRG() 
 
 sub cleanFq {
 	for my $fh1 (@InFp) {
