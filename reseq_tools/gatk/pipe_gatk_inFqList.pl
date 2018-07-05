@@ -1,25 +1,21 @@
 #!/usr/bin/perl -w
 # 2016-02-12 : Pipe GATK step by step for multiple input fastq files; 
+# 2018-07-05 : Update for help; 
 # data processing steps for DNA sequencing I want to use : 
-### Step 1. fastq to uBam 
-### Step 2. mark illumina adapters with picard MarkIlluminaAdapters (markAdapter_bam with XT:i:##); 
-### Step 3. align markAdapter_bam bam to reference fasta with BWA-MEM and merge it with uBAM as aligned_pipe1_bam; 
-### Step 4. Mark duplicates in aligned_pipe1_bam as dedup_bam ; 
-###### No need to realign indels because we are going to use HaplotypeCaller (assembly-based); 
-###### No BQSR step included because it needs additional data and steps; (Maybe I can make one for pumpkin when having time)
+### Step 1. Change input fastq to raw 
+### Step 2. Mark illumina adapters with picard MarkIlluminaAdapters; I change 'XT:' to 'YT:' for bwa information, because 'XT' is used in bwa; 
+### Step 3. Align _mrkAdp.bam to reference fasta with BWA-MEM and merge it with uBam as aligned_pipe1.bam: out file "$gg{'wrk_dir'}/$fqHash{'pref'}_aln_pipe1.bam"; These files have all the reads and read base, and YT is recorded as adapters; 
+### Step 4. Merge RGs into single sample file. 
+### Step 5. Mark duplicates in bam file. out file : ${smID}_bySM_dedup.bam and index; 
+### Step 6. This is reserved for further processing including BQSR , realignment, fix SetNmMdAndUqTags; out file : ${smID}_bySM_fix.bam ;
+### Step 7. Call GVCF files for each sample using 'HaplotypeCaller'. It takes about 2.5-3 hours to process a bam to GVCF, so I don't bother to group CHRs for speed. 
+### Step 8. Combine GVCFs. 
+### Step 9. call_rawV + filter_rawSNP + filter_rawInDel + Combine_filtered_SNP_and_InDel + slct_passed_data; This can be done for each CHR. 
+#
 
-### Step 5. Merge markAdapter_bam into dedup_bam as dedup_pipe2_bam (With 'YT:i:##' tag for adapter free regions)
-### Step 5b. Merge bam files according to SM name. 
-###### Please note that here the 'YT:i:##' corresponds to the original reads orientation, not the one in alignments. 
-###### This dedup_pipe2_bam is the one I want to keep for storing data. 
-### Step 6. Call GVCF files with each dedup_pipe2_bam using 'HaplotypeCaller' ; (prefix.g.vcf)
-### Step 7. Combine GVCF files with each 200 single GVCF files. (*_jnX.g.vcf)
-### Step 8. Call variants in combined GVCFs. (rawV.vcf)
-### Step 9. Select SNP variants and do hard filtering; 
-### Step 10. Select indel variants and do hard filtering; 
+##### The following have not been applied. 
 ### Step 11. Do VQSR with both filtered SNP and indel on rawV.vcf . 
 ### Step 12. .... 
-# 2016-02-15 Add merge sample step (step 5b). 
 # 2018-06-19 Try to run all the processes in one command; 
 
 use strict; 
