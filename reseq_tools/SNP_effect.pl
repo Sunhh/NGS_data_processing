@@ -228,7 +228,6 @@ while (my $l = &wantLineC($snpFh)) {
 	}
 	
 	# Check the effects of alleles; 
-	die "|@alt_allele|\n"; 
 	for (my $i=0; $i<@alt_allele; $i++) {
 		my @t_eff = &snp_eff($ref_allele, $alt_allele[$i], $chr_id, $chr_pos, \%agp_cds2Scf, \%agp_intron2Scf, \%agp_up2Scf, \%agp_down2Scf); 
 		push(@effects, join(",", map { join(":", @$_) } @t_eff)); 
