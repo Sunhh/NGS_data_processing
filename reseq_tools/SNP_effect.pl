@@ -1,4 +1,5 @@
 #!/usr/bin/perl -w 
+# Updated on 2018/07/10 Try to accept 
 # Updated on 2018/05/24
 # Method 1 : 20120110 I don't care about the effect of SNPs combination, so I only compute the changes caused by the independent SNP site; 
 #            Classes of SNPs : Only two alleles considered. 
@@ -161,6 +162,7 @@ while (my $l = &wantLineC($snpFh)) {
 	my @alt_allele; 
 	my @effects; 
 	my %used_allele; 
+	my @pop_allele; 
 	
 	# Process each genotype to store alleles; 
 	for my $tb (@ta[2..$#ta]) {
@@ -170,25 +172,31 @@ while (my $l = &wantLineC($snpFh)) {
 		my @tc; # This stores all alleles in current genotype: A/T/G/C/Del/Ins/InDel
 		if ($tb =~ m!^([ATGC\*N]+)/([ATGC\*N]+)$!) {
 			@tc = ($1, $2); 
+			push(@pop_allele, @tc); 
 			if (length($1) > 1 or length($2) > 1) {
 				@tc = ('InDel', 'InDel'); 
 			}
 		} elsif (defined $glob{'d2b'}{$tb}) {
 			@tc = (@{$glob{'d2b'}{$tb}}); 
+			push(@pop_allele, @tc); 
 		} elsif ($tb eq '*' or $tb eq '-') {
+			push(@pop_allele, $tb); 
 			@tc = ('Del'); 
 		} elsif ($tb =~ m!\+!) {
 			# In fact, m!^[^+]++! means a heterozygous insertion, but I don't want it too complex. 
+			push(@pop_allele, $tb); 
 			@tc = ('Ins'); 
 		} elsif ( $tb =~ m!^[ATGCN]{2,}$! ) {
 			if ( $opts{'asSnpCol'} ) {
 				if ( $tb =~ m!^([ATGC])([ATGC])$! ) {
 					@tc = ($1, $2); 
+					push(@pop_allele, @tc); 
 				} else {
 					&tsmsg("[Wrn] Skip unknown genotype [$tb]\n"); 
 					next; 
 				}
 			} else {
+				push(@pop_allele, $tb); 
 				@tc = ('InDel', 'InDel'); 
 			}
 		} else {
@@ -197,15 +205,30 @@ while (my $l = &wantLineC($snpFh)) {
 		}
 		# Store reference and alternative alleles; 
 		@tc > 0 or next; 
-		defined $ref_allele or do { $ref_allele = $tc[0]; $used_allele{$ref_allele} = 1; }; 
+		unless ( defined $ref_allele ) {
+			for my $tc0 (@tc) {
+				$tc0 =~ m!^[ATGC]$! or next; 
+				$ref_allele = $tc0; 
+				$used_allele{$ref_allele} = 1; 
+			}
+		}
 		for my $td (@tc) {
 			defined $used_allele{$td} and next; 
 			push(@alt_allele, $td); 
 			$used_allele{$td} = 1; 
 		}
 	}# for my $tb (@ta[2..$#ta]) : 
+	unless ( defined $ref_allele ) {
+		for my $tp0 (@pop_allele) {
+			defined $used_allele{$tp0} and next; 
+			$tp0 =~ m!^[ATGC]$! and do { $ref_allele = $tp0; last; }; 
+		}
+		$ref_allele //= 'N'; 
+		$used_allele{$ref_allele} = 1; 
+	}
 	
 	# Check the effects of alleles; 
+	die "|@alt_allele|\n"; 
 	for (my $i=0; $i<@alt_allele; $i++) {
 		my @t_eff = &snp_eff($ref_allele, $alt_allele[$i], $chr_id, $chr_pos, \%agp_cds2Scf, \%agp_intron2Scf, \%agp_up2Scf, \%agp_down2Scf); 
 		push(@effects, join(",", map { join(":", @$_) } @t_eff)); 

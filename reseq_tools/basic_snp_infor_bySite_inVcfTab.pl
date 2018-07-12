@@ -142,6 +142,9 @@ for my $fh ( @InFp ) {
 					unshift(@tb, "$t_rb/$t_rb"); 
 				}
 				my %h = &cnt_type( \@tb ); 
+				for my $tk1 (@out_type) {
+					$h{$tk1} //= ''; 
+				}
 				print O join( "\t", @th, @h{@out_type} )."\n"; 
 				if ( defined $opts{'ret_line'} ) {
 					my $is_ok = 1; 
@@ -187,6 +190,9 @@ for my $fh ( @InFp ) {
 				unshift(@tb, "$t_rb/$t_rb"); 
 			}
 			my %h = &cnt_type( \@tb ); 
+			for my $tk1 (@out_type) {
+				$h{$tk1} //= ''; 
+			}
 			print STDOUT join( "\t", @th, @h{@out_type} )."\n"; 
 			if ( defined $opts{'ret_line'} ) {
 				my $is_ok = 1; 
