@@ -56,6 +56,7 @@ perl $0 fasdfasf
   -conf_file            [filename] Required. Such as 'pipe_gatk_conf'; 
                           This file tells the path information of softwares.
   -in_pref_list         [filename] Required. Not used yet. 
+                          Since the input read depth determines the time cost for Haplotype Caller of GATK, it's better to sort input samples from the deepest to the least. 
                           Format : SAMPLE_NAME <tab> READ_GROUP_NAME <tab> LIBRARY_NAME <tab> dataPrefix <tab> in_fq1 <tab> in_fq2 [ <tab> PL <tab> PU <tab> Others]
                                    SM                RG_ID                 RG_LB              ReadOutPref      filename     filename  [    PL       PU       text]
                                    Repeat            Repeat                Repeat             Unique           Unique       Unique    [    Rep      Rep      Rep]
