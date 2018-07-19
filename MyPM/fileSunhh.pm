@@ -733,4 +733,32 @@ sub _catfile{
 	use File::Spec::Functions; 
 	return(File::Spec::Functions::catfile(@_)); 
 }
+=head1 _which($program_name)
+
+Function   : Similar to linux which command
+Return     : $string
+
+=cut
+sub _which {
+	my ($id, $true_abs) = @_; 
+	$true_abs //= 0; 
+	my ($path_to_id) = File::Which::which($id); 
+	if (defined $path_to_id) {
+		if ($true_abs) {
+			return(&_abs_path( $path_to_id )); 
+		} else {
+			return(&_abs_path_4link( $path_to_id )); 
+		}
+	} elsif ( -x $id ) {
+		if ($true_abs) {
+			return(&_abs_path( $id )); 
+		} else {
+			return(&_abs_path_4link( $id )); 
+		}
+	} else {
+		return(); 
+	}
+	
+}# _which()
+
 1; 
