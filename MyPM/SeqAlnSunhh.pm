@@ -789,6 +789,7 @@ sub trim_cigar_str_bothEnd {
 =head1 parseCigar( $CigarString_inSam )
 
 Return      : (\%type2Number)
+
   {qw/Dlen Elen Hlen Ilen Mlen Nlen Plen RdLen Slen SpanRefLen Xlen/} => number; 
   Plen : Read 'Padded SAM' sectioin in manual. standing for '*'. (silent deletion from padded reference)
   Elen : '=', sequence match 
