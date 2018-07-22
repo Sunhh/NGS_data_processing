@@ -16,6 +16,7 @@ GetOptions(\%opts,
 		"para_samtools_srt:s", 
 	"wrk_dir:s",      # Work dir; 
 	"cpuN:i", 
+	"check_gz!", 
 	"help!", 
 ); 
 
@@ -28,6 +29,16 @@ for my $q ( @{$gg{'fq_infor'}} ) {
 	$gg{'MAX_PROCESSES'} = &LogInforSunhh::change_procN( $gg{'pm'}, $gg{'nprocF'}, $gg{'MAX_PROCESSES'} ); 
 	my $pid = $gg{'pm'}->start and next; 
 	### 
+	
+	if ($opts{'check_gz'}) {
+		for my $qn (qw/fq1 fq2/) {
+			defined $qh{$qn} or next; 
+			$qh{$qn} =~ m!\.gz$! or next; 
+			system("gzip -t $qh{$qn}") and &stopErr("[Err] Incomplete gzip file [$qh{$qn}]\n"); 
+		}
+	}
+	
+
 	my $oriDir = &fileSunhh::_abs_path("./"); 
 	chdir($gg{'wrk_dir'}); 
 	my $tmpDir = &fileSunhh::_abs_path_4link(&fileSunhh::new_tmp_dir('create' => 1)); 
