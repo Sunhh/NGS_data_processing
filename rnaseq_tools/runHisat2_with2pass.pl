@@ -91,7 +91,7 @@ for my $q ( @{$gg{'fq_infor'}} ) {
 	&fileSunhh::_rmtree($tmpDir); 
 
 	chdir($oriDir); 
-	&tsmsg("[Msg] Finished to align $qh{'pref'} and generated $qh{'pref'}_good.bam\n"); 
+	&tsmsg("[Msg] Finished to align $qh{'pref'} and generated $qh{'pref'}_srt.bam\n"); 
 	$gg{'pm'}->finish; 
 }
 $gg{'pm'}->wait_all_children; 
