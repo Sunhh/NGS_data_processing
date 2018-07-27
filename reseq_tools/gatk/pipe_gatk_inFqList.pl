@@ -699,7 +699,7 @@ sub step8_combineGVCF_interval {
 			$cmd .= "1> s8.std.combineGVCF.${opref} 2> s8.err.combineGVCF.${opref}\n"; 
 		}
 		for my $tfP (@subPref_list) {
-			$cmd .= "rm -f ${tfP}.g.vcf.gz ${tfP}.g.vcf.gz.idx\n"; 
+			$cmd .= "rm -f ${tfP}.g.vcf.gz ${tfP}.g.vcf.gz.tbi\n"; 
 		}
 	}
 	
@@ -848,7 +848,7 @@ sub step9_gvcf2var {
 			$cmd .= "1> s9.std.gvcf2var_rawV.${opref} 2> s9.err.gvcf2var_rawV.${opref}\n"; 
 		}
 		for my $tfP (@subPref_list) {
-			$cmd .= "rm -f ${tfP}.vcf.gz ${tfP}.vcf.gz.idx\n"; 
+			$cmd .= "rm -f ${tfP}.vcf.gz ${tfP}.vcf.gz.tbi\n"; 
 		}
 	}
 

@@ -44,12 +44,16 @@ $opts{'help'} and &LogInforSunhh::usage($help_txt);
 
 my %flag_aln_R1 = %{ &SeqAlnSunhh::mk_flag( 'keep' => '6=1,7=0' ) }; 
 my %flag_aln_R2 = %{ &SeqAlnSunhh::mk_flag( 'keep' => '6=0,7=1' ) }; 
+my %flag_aln_RS = %{ &SeqAlnSunhh::mk_flag( 'keep' => '6=0,7=0' ) }; 
 my %flag2R; 
 for ( keys %flag_aln_R1 ) {
 	$flag2R{$_} = 'R1'; 
 }
 for ( keys %flag_aln_R2 ) {
 	$flag2R{$_} = 'R2'; 
+}
+for ( keys %flag_aln_RS ) {
+	$flag2R{$_} = 'RS'; 
 }
 
 my $tmp_dir; 
