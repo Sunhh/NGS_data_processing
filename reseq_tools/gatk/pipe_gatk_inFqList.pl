@@ -14,7 +14,7 @@
 #
 
 ##### The following have not been applied. 
-### Step 11. Do VQSR with both filtered SNP and indel on rawV.vcf . 
+### Step 10. Do VQSR with both filtered SNP and indel on rawV.vcf . 
 ### Step 12. .... 
 # 2018-06-19 Try to run all the processes in one command; 
 
@@ -47,126 +47,12 @@ GetOptions(\%opts,
 ################################################################################
 ##########    Setting basic parameters 
 ################################################################################
-my $usage_txt = <<HH; 
-################################################################################
-perl $0 fasdfasf
-
-  -help                 Show this help. 
-
-  -conf_file            [filename] Required. Such as 'pipe_gatk_conf'; 
-                          This file tells the path information of softwares.
-  -in_pref_list         [filename] Required. Not used yet. 
-                          Since the input read depth determines the time cost for Haplotype Caller of GATK, it's better to sort input samples from the deepest to the least. 
-                          Format : SAMPLE_NAME <tab> READ_GROUP_NAME <tab> LIBRARY_NAME <tab> dataPrefix <tab> in_fq1 <tab> in_fq2 [ <tab> PL <tab> PU <tab> Others]
-                                   SM                RG_ID                 RG_LB              ReadOutPref      filename     filename  [    PL       PU       text]
-                                   Repeat            Repeat                Repeat             Unique           Unique       Unique    [    Rep      Rep      Rep]
-                                   GS109             GS109_Time1           GS109_Time1        GS109_Time1      W1_R1.fq.gz  W1_R2.fq.gz    illumina H0V2RADXX.1 NA
-                          Example of Others : 
-                                   DS=GS109_WDM_Time1;WDM_L1_I121.R[12].clean.fastq.gz;Len_100_100;;DT=2014-02-01;;CN=BFC2013288
-                          'NA' means no input assigned. 
-  -prj_ID               [String] Output prefix (default 'outGATK') for the whole project to merge GVCF files. Cannot contain directory; 
-
-  -doStep               [String] Default is 'cmd', and could be 'cmd/all/1/2/3/1,2,3/3-5'; 
-                                 'cmd' means only output command lines; 
-                                 'all' means run all processes one by one; 
-                                 Others means run the steps designed; 
-
-
-  -wrk_dir              [dirname] Assign temporary directory to work in. 
-  -cpuN                 [1]       Number of samples to be processed in parallel. 
-  -plCatVar             [Boolean] If given, I will use perl instead of 'CombineVariants' to join the interval-called GVCFs. 
-                                  The 'CatVariants' is not available in my GATK version. 
-
-  ### Specific parameters : These parameters will over-write conf_file. 
-  For HaplotypeCaller : 
-    -ERC                [string] Could be 'BP_RESOLUTION' or 'GVCF'; Default BP_RESOLUTION. 
-  For CombineGVCFs
-    -intervalLen        [number] Default -1. If this is bigger than 0, I will combine GVCFs with interval list with multi-threads. 
-  For GenotypeGVCFs     
-    -CallByScf          [Boolean] If given, I'll try to call variants for each scaffold with multi-threads; 
-
-################################################################################
-HH
-
 # check if the input is sufficient to go on. 
 my %gg; # global variates;  
-&input_good() or &LogInforSunhh::usage($usage_txt); 
-if ( defined $opts{'wrk_dir'} ) {
-	$gg{'wrk_dir'} = &fileSunhh::_abs_path($opts{'wrk_dir'}); 
-	-e $gg{'wrk_dir'} or do { mkdir($gg{'wrk_dir'}) or &stopErr("[Err] Failed to create wrk_dir [$gg{'wrk_dir'}]\n"); }; 
-} else {
-	$gg{'wrk_dir'} = &fileSunhh::new_tmp_dir('create' => 1) or &stopErr("[Err] Failed to create tmp dir\n"); 
-	$gg{'wrk_dir'} = &fileSunhh::_abs_path($gg{'wrk_dir'}); 
-}
-$gg{'ori_dir'} = &fileSunhh::_abs_path("./"); 
-$opts{'out_dir'} //= 'gatk_out'; 
-$gg{'out_dir'} = $opts{'out_dir'}; 
-
 my %cfg; 
-&fileSunhh::write2file("$gg{'wrk_dir'}/example.conf", $gg{'example'}{'text_cfg'}, '>'); 
-$cfgs_obj->getConfig('cfg_file'=>"$gg{'wrk_dir'}/example.conf", 'replace'=>0, 'hash_r'=>\%cfg); 
-$cfgs_obj->getConfig('cfg_file'=>$opts{'conf_file'}, 'replace'=>1, 'hash_r'=>\%cfg); 
-$cfgs_obj->writeConfig('cfg_file'=>"$gg{'wrk_dir'}/$opts{'prj_ID'}_gatk.conf", 'hash_r'=>\%cfg); 
-$cfg{'dir_tmp'} = &fileSunhh::_abs_path($cfg{'dir_tmp'}); 
-unless ( -e $cfg{'dir_tmp'} ) {
-	mkdir($cfg{'dir_tmp'}) or &stopErr("[Err] Failed to create dir_tmp [$cfg{'dir_tmp'}]\n"); 
-}
-# Set multi-threads; 
-$gg{'MAX_PROCESSES'} = ( defined $opts{'cpuN'} ) 
-	? $opts{'cpuN'} 
-	: ( defined $cfg{'batchNum'} ) 
-		? $cfg{'batchNum'} 
-		: 1
-; 
-$gg{'nprocF'} = "$opts{'prj_ID'}.Nproc"; # This file will exist in wrk_dir; 
-&fileSunhh::write2file("$gg{'wrk_dir'}/$gg{'nprocF'}", "$gg{'MAX_PROCESSES'}\n", '>'); 
-$gg{'pm'} = &LogInforSunhh::get_pm( $gg{'MAX_PROCESSES'} ); 
-# Set parameter for detailed steps; 
-### For -ERC in HaplotypeCaller : BP_RESOLUTION costs 2-3 times disk size of result file than GVCF, and the time costs are the similar. 
-###  The disk space usage depends on the sequence-depth and nucleotide divergence between the sample and the reference. 
-###  The disk space cost of ERC_BP_RES is approximately fixed for each sample. 
-###  By using BP_RES gvcf, the combined gvcf will also be BP_RES. 
-$gg{'para'}{'ERC'} = 'BP_RESOLUTION'; 
-defined $cfg{'ERC'} and $gg{'para'}{'ERC'} = $cfg{'ERC'}; 
-defined $opts{'ERC'} and $gg{'para'}{'ERC'} = $opts{'ERC'}; 
-$gg{'para'}{'ERC'} =~ m!^(GVCF|BP_RESOLUTION)$! or &stopErr("[Err] ERC ($gg{'para'}{'ERC'}) must be one of !^(GVCF|BP_RESOLUTION)\$!\n"); 
-# Get the path for diction of ref_fasta; 
-$cfg{'ref_fasta'} = &fileSunhh::_abs_path_4link( $cfg{'ref_fasta'} ); # Use the full path of 'ref_fasta'; 
-&generate_ref_idx( $cfg{'ref_fasta'} ) or &stopErr("[Err] Cannot generate enough index files for ref_fasta: $cfg{'ref_fasta'}\n"); 
-sub generate_ref_idx {
-	my $fn = shift;
-	my $pref = $fn;
-	$pref =~ s!\.fasta$|\.fa$|\.fas$!! or &stopErr("[Err] ref_fasta [$fn] should be ended with .fasta/.fa\n");
-	unless (-e "${fn}.fai") {
-		&exeCmd_1cmd("$cfg{'exe_samtools'} faidx $fn") and return 0; # here 'return 0' means this program failed to run correctly.
-		-e "${fn}.fai" or return 0;
-	}
-	unless (-e "${pref}.dict") {
-		&exeCmd_1cmd("$cfg{'exe_java'} -jar $cfg{'jar_picard'} CreateSequenceDictionary   R=$fn   O=${pref}.dict") and return 0;
-		-e "${pref}.dict" or return 0;
-	}
-	$gg{'ref_fai'}  = "${fn}.fai"; 
-	$gg{'ref_dict'} = "${pref}.dict"; 
-	return 1;
-}# generate_ref_idx()
-# Set interval length : 
-$gg{'para'}{'intervalLen'} = -1; 
-defined $cfg{'intervalLen'} and $gg{'para'}{'intervalLen'} = $cfg{'intervalLen'}; 
-defined $opts{'intervalLen'} and $gg{'para'}{'intervalLen'} = $opts{'intervalLen'}; 
-$gg{'para'}{'CallByScf'} = 0; 
-defined $cfg{'CallByScf'} and $gg{'para'}{'CallByScf'} = $cfg{'CallByScf'}; 
-$opts{'CallByScf'} and $gg{'para'}{'CallByScf'} = 1; 
-$gg{'para'}{'CallByScf'} =~ s!^\s*(false|F)\s*$!0!i; # True/False/0/1; 
-$gg{'para'}{'CallByScf'} =~ s!^\s*(true|T)\s*$!1!i; # True/False/0/1; 
-
-$gg{'stepNum'} = [1 .. 100]; 
-
-$gg{'fq_infor'} = &load_prefList( $opts{'in_pref_list'} ); # Read in fastq information for bam output. 
-$gg{'smFq'}     = &groupFqBySM( $gg{'fq_infor'} ); 
-for my $t (split(/,/, $opts{'doStep'})) {
-	$gg{'doStep'}{$t} = 1; 
-}
-defined $gg{'doStep'}{'all'} and do { map { $gg{'doStep'}{$_} = 1; } @{$gg{'stepNum'}} }; 
+&input_good() or &LogInforSunhh::usage($gg{'usage_txt'}); 
+&set_pm(); # Set multi-threads; 
+&set_stepPara(); # Set parameter for detailed steps; 
 
 # Section one   : Process data from fastq to GVCF by grouped sample; per-sample; 
 for my $sm (sort { $gg{'smFq'}{$a}{'in_order'} <=> $gg{'smFq'}{$b}{'in_order'} } keys %{$gg{'smFq'}}) {
@@ -221,32 +107,6 @@ for (my $i=0; $i<$gg{'gvcf_num'}; $i+=$cfg{'No_combineGVCF'}) {
 $gg{'doStep'}{9} and &step9_gvcf2var( $gg{'jnGVCF_list'}, "$opts{'prj_ID'}", '', "step9_cmd.callRawV.$opts{'prj_ID'}", $gg{'wrk_dir'} ); 
 
 
-# sub tt {
-# 	my ($smID, $fn_cmd, $wrk_dir) = @_; 
-# 	my $ori_dir = &fileSunhh::_abs_path("./"); 
-# 	chdir($wrk_dir); 
-# 	my $cmd = ''; 
-# 	$cmd .= ""; # Add command here; 
-#
-# 	&fileSunhh::write2file( $fn_cmd, $cmd, '>' ); 
-# 	if ($gg{'cmd'}) {
-# 		&stdout_file( $fn_cmd, "# Step 2 commands: Mark illumina adapters\n" ); 
-# 		chdir($ori_dir); 
-# 		return; 
-# 	}
-# 	&exeCmd_1cmd("perl $cfg{'pl_batchRun'} $fn_cmd"); 
-# 	chdir($ori_dir); 
-# 	return; 
-# }# tt() 
-
-# &fileSunhh::_rmtree(); 
-
-### Step 8. Call variants in combined GVCFs. (rawV.vcf)
-### Step 9. Select SNP variants and do hard filtering; 
-### Step 10. Select indel variants and do hard filtering; 
-### Step 11. Do VQSR with both filtered SNP and indel on rawV.vcf . 
-### Step 12. .... 
-
 ################################################################################
 ##########    Sub-routines 
 ################################################################################
@@ -256,6 +116,47 @@ $gg{'doStep'}{9} and &step9_gvcf2var( $gg{'jnGVCF_list'}, "$opts{'prj_ID'}", '',
 
 
 sub input_good {
+	$gg{'usage_txt'} = <<'H1'; 
+################################################################################
+perl $0 fasdfasf
+
+  -help                 Show this help. 
+
+  -conf_file            [filename] Required. Such as 'pipe_gatk_conf'; 
+                          This file tells the path information of softwares.
+  -in_pref_list         [filename] Required. Not used yet. 
+                          Since the input read depth determines the time cost for Haplotype Caller of GATK, it's better to sort input samples from the deepest to the least. 
+                          Format : SAMPLE_NAME <tab> READ_GROUP_NAME <tab> LIBRARY_NAME <tab> dataPrefix <tab> in_fq1 <tab> in_fq2 [ <tab> PL <tab> PU <tab> Others]
+                                   SM                RG_ID                 RG_LB              ReadOutPref      filename     filename  [    PL       PU       text]
+                                   Repeat            Repeat                Repeat             Unique           Unique       Unique    [    Rep      Rep      Rep]
+                                   GS109             GS109_Time1           GS109_Time1        GS109_Time1      W1_R1.fq.gz  W1_R2.fq.gz    illumina H0V2RADXX.1 NA
+                          Example of Others : 
+                                   DS=GS109_WDM_Time1;WDM_L1_I121.R[12].clean.fastq.gz;Len_100_100;;DT=2014-02-01;;CN=BFC2013288
+                          'NA' means no input assigned. 
+  -prj_ID               [String] Output prefix (default 'outGATK') for the whole project to merge GVCF files. Cannot contain directory; 
+
+  -doStep               [String] Default is 'cmd', and could be 'cmd/all/1/2/3/1,2,3/3-5'; 
+                                 'cmd' means only output command lines; 
+                                 'all' means run all processes one by one; 
+                                 Others means run the steps designed; 
+
+
+  -wrk_dir              [dirname] Assign temporary directory to work in. 
+  -cpuN                 [1]       Number of samples to be processed in parallel. 
+  -plCatVar             [Boolean] If given, I will use perl instead of 'CombineVariants' to join the interval-called GVCFs. 
+                                  The 'CatVariants' is not available in my GATK version. 
+
+  ### Specific parameters : These parameters will over-write conf_file. 
+  For HaplotypeCaller : 
+    -ERC                [string] Could be 'BP_RESOLUTION' or 'GVCF'; Default BP_RESOLUTION. 
+  For CombineGVCFs
+    -intervalLen        [number] Default -1. If this is bigger than 0, I will combine GVCFs with interval list with multi-threads. 
+  For GenotypeGVCFs     
+    -CallByScf          [Boolean] If given, I'll try to call variants for each scaffold with multi-threads; 
+
+################################################################################
+H1
+
 	defined $opts{'conf_file'} or return 0; 
 	defined $opts{'in_pref_list'} or return 0; 
 	$opts{'prj_ID'} //= 'outGATK'; 
@@ -316,8 +217,96 @@ CFG
 ##########    Example configure file
 ################################################################################
 
+	# Setup directories to be used. 
+	if ( defined $opts{'wrk_dir'} ) {
+		$gg{'wrk_dir'} = &fileSunhh::_abs_path($opts{'wrk_dir'}); 
+		-e $gg{'wrk_dir'} or do { mkdir($gg{'wrk_dir'}) or &stopErr("[Err] Failed to create wrk_dir [$gg{'wrk_dir'}]\n"); }; 
+	} else {
+		$gg{'wrk_dir'} = &fileSunhh::new_tmp_dir('create' => 1) or &stopErr("[Err] Failed to create tmp dir\n"); 
+		$gg{'wrk_dir'} = &fileSunhh::_abs_path($gg{'wrk_dir'}); 
+	}
+	$gg{'ori_dir'} = &fileSunhh::_abs_path("./"); 
+	$opts{'out_dir'} //= 'gatk_out'; 
+	$gg{'out_dir'} = $opts{'out_dir'}; 
+
+	# Setup configuration parameters. 
+	&fileSunhh::write2file("$gg{'wrk_dir'}/example.conf", $gg{'example'}{'text_cfg'}, '>'); 
+	$cfgs_obj->getConfig('cfg_file'=>"$gg{'wrk_dir'}/example.conf", 'replace'=>0, 'hash_r'=>\%cfg); 
+	$cfgs_obj->getConfig('cfg_file'=>$opts{'conf_file'}, 'replace'=>1, 'hash_r'=>\%cfg); 
+	$cfgs_obj->writeConfig('cfg_file'=>"$gg{'wrk_dir'}/$opts{'prj_ID'}_gatk.conf", 'hash_r'=>\%cfg); 
+	$cfg{'dir_tmp'} = &fileSunhh::_abs_path($cfg{'dir_tmp'}); 
+	unless ( -e $cfg{'dir_tmp'} ) {
+		mkdir($cfg{'dir_tmp'}) or &stopErr("[Err] Failed to create dir_tmp [$cfg{'dir_tmp'}]\n"); 
+	}
 	return 1; 
 }# input_good() 
+
+sub set_pm {
+	# Set multi-threads; 
+	$gg{'MAX_PROCESSES'} = ( defined $opts{'cpuN'} ) 
+		? $opts{'cpuN'} 
+		: ( defined $cfg{'batchNum'} ) 
+			? $cfg{'batchNum'} 
+			: 1
+	; 
+	$gg{'nprocF'} = "$opts{'prj_ID'}.Nproc"; # This file will exist in wrk_dir; 
+	&fileSunhh::write2file("$gg{'wrk_dir'}/$gg{'nprocF'}", "$gg{'MAX_PROCESSES'}\n", '>'); 
+	$gg{'pm'} = &LogInforSunhh::get_pm( $gg{'MAX_PROCESSES'} ); 
+}# set_pm() 
+
+sub set_stepPara {
+	# Set parameter for detailed steps; 
+	### For -ERC in HaplotypeCaller : BP_RESOLUTION costs 2-3 times disk size of result file than GVCF, and the time costs are the similar. 
+	###  The disk space usage depends on the sequence-depth and nucleotide divergence between the sample and the reference. 
+	###  The disk space cost of ERC_BP_RES is approximately fixed for each sample. 
+	###  By using BP_RES gvcf, the combined gvcf will also be BP_RES. 
+	$gg{'para'}{'ERC'} = 'BP_RESOLUTION'; 
+	defined $cfg{'ERC'} and $gg{'para'}{'ERC'} = $cfg{'ERC'}; 
+	defined $opts{'ERC'} and $gg{'para'}{'ERC'} = $opts{'ERC'}; 
+	$gg{'para'}{'ERC'} =~ m!^(GVCF|BP_RESOLUTION)$! or &stopErr("[Err] ERC ($gg{'para'}{'ERC'}) must be one of !^(GVCF|BP_RESOLUTION)\$!\n"); 
+	# Get the path for diction of ref_fasta; 
+	$cfg{'ref_fasta'} = &fileSunhh::_abs_path_4link( $cfg{'ref_fasta'} ); # Use the full path of 'ref_fasta'; 
+	&generate_ref_idx( $cfg{'ref_fasta'} ) or &stopErr("[Err] Cannot generate enough index files for ref_fasta: $cfg{'ref_fasta'}\n"); 
+
+	# Set interval length : 
+	$gg{'para'}{'intervalLen'} = -1; 
+	defined $cfg{'intervalLen'} and $gg{'para'}{'intervalLen'} = $cfg{'intervalLen'}; 
+	defined $opts{'intervalLen'} and $gg{'para'}{'intervalLen'} = $opts{'intervalLen'}; 
+	$gg{'para'}{'CallByScf'} = 0; 
+	defined $cfg{'CallByScf'} and $gg{'para'}{'CallByScf'} = $cfg{'CallByScf'}; 
+	$opts{'CallByScf'} and $gg{'para'}{'CallByScf'} = 1; 
+	$gg{'para'}{'CallByScf'} =~ s!^\s*(false|F)\s*$!0!i; # True/False/0/1; 
+	$gg{'para'}{'CallByScf'} =~ s!^\s*(true|T)\s*$!1!i; # True/False/0/1; 
+
+	# Set steps to be run; 
+	$gg{'stepNum'} = [1 .. 100]; 
+
+	# Get fastq related information from in_pref_list; 
+	$gg{'fq_infor'} = &load_prefList( $opts{'in_pref_list'} ); # Read in fastq information for bam output. 
+	$gg{'smFq'}     = &groupFqBySM( $gg{'fq_infor'} ); 
+	for my $t (split(/,/, $opts{'doStep'})) {
+		$gg{'doStep'}{$t} = 1; 
+	}
+	defined $gg{'doStep'}{'all'} and do { map { $gg{'doStep'}{$_} = 1; } @{$gg{'stepNum'}} }; 
+
+}# set_stepPara() 
+
+sub generate_ref_idx {
+	my $fn = shift;
+	my $pref = $fn;
+	$pref =~ s!\.fasta$|\.fa$|\.fas$!! or &stopErr("[Err] ref_fasta [$fn] should be ended with .fasta/.fa\n");
+	unless (-e "${fn}.fai") {
+		&exeCmd_1cmd("$cfg{'exe_samtools'} faidx $fn") and return 0; # here 'return 0' means this program failed to run correctly.
+		-e "${fn}.fai" or return 0;
+	}
+	unless (-e "${pref}.dict") {
+		&exeCmd_1cmd("$cfg{'exe_java'} -jar $cfg{'jar_picard'} CreateSequenceDictionary   R=$fn   O=${pref}.dict") and return 0;
+		-e "${pref}.dict" or return 0;
+	}
+	$gg{'ref_fai'}  = "${fn}.fai"; 
+	$gg{'ref_dict'} = "${pref}.dict"; 
+	return 1;
+}# generate_ref_idx()
 
 # I would ignore lines heading with '#'
 # Return for paired: ([ {'SM'=>SM, 'RG'=>RG, 'LB'=>LB, 'pref'=>pref, 'fq1'=>fq1, 'fq2'=>fq2, 'PL'=>'illumina', 'PU'=>RG}, {}, ... ])
@@ -890,4 +879,22 @@ sub groupFqBySM {
 	}
 	return(\%sm_infor); 
 }# groupFqBySM() 
+
+# sub tt {
+# 	my ($smID, $fn_cmd, $wrk_dir) = @_; 
+# 	my $ori_dir = &fileSunhh::_abs_path("./"); 
+# 	chdir($wrk_dir); 
+# 	my $cmd = ''; 
+# 	$cmd .= ""; # Add command here; 
+#
+# 	&fileSunhh::write2file( $fn_cmd, $cmd, '>' ); 
+# 	if ($gg{'cmd'}) {
+# 		&stdout_file( $fn_cmd, "# Step 2 commands: Mark illumina adapters\n" ); 
+# 		chdir($ori_dir); 
+# 		return; 
+# 	}
+# 	&exeCmd_1cmd("perl $cfg{'pl_batchRun'} $fn_cmd"); 
+# 	chdir($ori_dir); 
+# 	return; 
+# }# tt() 
 
