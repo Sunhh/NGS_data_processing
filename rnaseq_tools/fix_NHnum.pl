@@ -101,3 +101,5 @@ close F;
 
 &fileSunhh::_rmtree($tmpDir); 
 
+&tsmsg("[Rec] Finished $opts{'inBam'}\n"); 
+
