@@ -772,9 +772,10 @@ sub step9_gvcf2var {
 
 	} else {
 		my $ifh = &openFH($gg{'ref_dict'}, '<'); 
-		my (@seqLen); 
+		my (@seqLen, $header_txt); 
 		while (<$ifh>) {
 			chomp; 
+			$header_txt .= "$_\n"; 
 			m!^\@SQ\t! or next; 
 			my @ta = split(/\t/, $_); 
 			$ta[1] =~ m!^SN:(\S+)$! or &stopErr("[Err] Unknown ID [$ta[1]]\n"); 
@@ -783,15 +784,31 @@ sub step9_gvcf2var {
 			$seqLen[-1][1] = $1; 
 		}
 		close($ifh); 
+		@seqLen = sort { $b->[1] <=> $a->[1] } @seqLen; 
 		my @subPref_list; 
+		my @toRun_intervals; # ( [interval_scfIDs, interval_total_length] , [], ... )
 		for (my $i=0; $i<@seqLen; $i++) {
-			my ($id, $len) = @{$seqLen[$i]};
+			my ($id, $len) = @{$seqLen[$i]}; 
+			if (@toRun_intervals == 0) {
+				push(@toRun_intervals, [ [[$id, $len]], $len ]); 
+			} elsif ( $toRun_intervals[-1][1] >= $gg{'para'}{'intervalLen'} ) {
+				push(@toRun_intervals, [ [[$id, $len]], $len ]); 
+			} else {
+				push(@{$toRun_intervals[-1][0]}, [$id, $len]); 
+				$toRun_intervals[-1][1] += $len; 
+			}
+		}
+		&tsmsg("[Rec] Total " . scalar(@toRun_intervals) . " intervals will be processed parallelly.\n"); 
+		for (my $i=0; $i<@toRun_intervals; $i++) {
 			my $sub_gvcf_pref = "${opref}.gvcf2var_sepChr.$i"; 
-			push(@subPref_list, $sub_gvcf_pref); 
-
+			my $ti_fn = "${sub_gvcf_pref}.interval_list"; 
+			&fileSunhh::write2file($ti_fn, "$header_txt", '>'); 
+			for my $iL (@{$toRun_intervals[$i][0]}) {
+				&fileSunhh::write2file($ti_fn, join("\t", $iL->[0], 1, $iL->[1], "+", join("_", $iL->[0], 1, $iL->[1]))."\n", '>>'); 
+			}
 			$gg{'MAX_PROCESSES'} = &LogInforSunhh::change_procN( $gg{'pm'}, "$gg{'nprocF'}", $gg{'MAX_PROCESSES'} ); 
 			my $pid = $gg{'pm'}->start and next; 
-			&step9_gvcf2var( $glist, $sub_gvcf_pref, $id, "${fn_cmd}.gvcf2var_cmd.$i", "./" ); 
+			&step9_gvcf2var( $glist, $sub_gvcf_pref, $ti_fn, "${fn_cmd}.gvcf2var_cmd.$i", "./" ); 
 			$gg{'pm'}->finish; 
 		}
 		$gg{'pm'}->wait_all_children; 

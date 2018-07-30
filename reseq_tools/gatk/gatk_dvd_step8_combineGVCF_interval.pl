@@ -38,7 +38,7 @@ my %cfg;
 ### Method with CombineGVCFs : 
 ###   For most of gatk3 versions, I have to use CombineGVCFs instead of the following GenomicsDBImport to aggregate the GVCF files. 
 ###   Since the speed of combining is too slow, I want to use intervel lists to do it in parallel. 
-$gg{'gvcf_list'} = [ map { $_->[0] } &fileSunhh::load_tabFile( $opts{'in_gvcf_list'} ) ]; 
+$gg{'gvcf_list'} = [ map { &fileSunhh::_abs_path($_->[0]) } &fileSunhh::load_tabFile( $opts{'in_gvcf_list'} ) ]; 
 $gg{'gvcf_num'}  = scalar( @{$gg{'gvcf_list'}} ); 
 $cfg{'No_combineGVCF'} //= 50; 
 &fileSunhh::write2file("$opts{'prj_ID'}_jnVCF.list", '', '>'); 
@@ -60,7 +60,7 @@ for (my $i=0; $i<$gg{'gvcf_num'}; $i+=$cfg{'No_combineGVCF'}) {
 ################################################################################
 
 sub input_good {
-	$gg{'usage_txt'} = <<'H1'; 
+	$gg{'usage_txt'} = <<"H1"; 
 ################################################################################
 perl $0 fasdfasf
 
