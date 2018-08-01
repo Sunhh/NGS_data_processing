@@ -164,7 +164,7 @@ sub setGlob {
 ################################################################################
 HH
 	defined $opts{'help'} and &LogInforSunhh::usage($gg{'help_txt'}); 
-	for my $t1 (qw/inFq outPref db_sortmerna/) {
+	for my $t1 (qw/inFq outPref/) {
 		defined $opts{$t1} or &stopErr("[Err] Parameter -$t1 is required.\n"); 
 	}
 	( defined $opts{'db_sortmerna'} or defined $opts{'db_sortmernaList'} ) or &stopErr("[Err] At least one of -db_sortmerna and -db_sortmernaList is required.\n"); 
