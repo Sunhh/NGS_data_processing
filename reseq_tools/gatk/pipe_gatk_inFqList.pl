@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
-# 2016-02-12 : Pipe GATK step by step for multiple input fastq files; 
+# 2018-08-01 : I don't want to use ' -nt ' parameter any more! This often causes strange I/O errors! 
 # 2018-07-05 : Update for help; 
+# 2016-02-12 : Pipe GATK step by step for multiple input fastq files; 
 # data processing steps for DNA sequencing I want to use : 
 ### Step 1. Change input fastq to raw 
 ### Step 2. Mark illumina adapters with picard MarkIlluminaAdapters; I change 'XT:' to 'YT:' for bwa information, because 'XT' is used in bwa; 
@@ -678,7 +679,7 @@ sub step8_combineGVCF_interval {
 			$cmd .= "$cfg{'exe_tabix'} -p vcf ${opref}.g.vcf.gz\n"; 
 		} else {
 			$cmd .= "$cfg{'exe_java'} -Xmx10G -jar $cfg{'jar_gatk'} -T CombineVariants \\\n"; 
-			$cmd .= "  -nt 20 \\\n"; 
+			# $cmd .= "  -nt 20 \\\n"; 
 			$cmd .= "  --assumeIdenticalSamples -genotypeMergeOptions UNSORTED \\\n"; 
 			$cmd .= "  -R $cfg{'ref_fasta'} \\\n"; 
 			$cmd .= "  -o ${opref}.g.vcf.gz \\\n"; 
@@ -762,7 +763,7 @@ sub step9_gvcf2var {
 		$cmd .= "$cfg{'exe_java'} \\\n"; 
 		$cmd .= "  -Djava.io.tmpdir=$cfg{'dir_tmp'} \\\n"; 
 		$cmd .= "  -jar $cfg{'jar_gatk'} -T CombineVariants \\\n"; 
-		$cmd .= "  -nt 4 \\\n"; 
+		# $cmd .= "  -nt 4 \\\n"; # I drop this parameter because it causes failure sometimes. 
 		$cmd .= "  -R $cfg{'ref_fasta'} \\\n"; 
 		$cmd .= "  -o ${opref}_filtV.vcf.gz \\\n"; 
 		$cmd .= "  --variant:snp    ${opref}_filtV_snps.vcf.gz \\\n"; 
@@ -834,7 +835,7 @@ sub step9_gvcf2var {
 			$cmd .= "$cfg{'exe_tabix'} -p vcf ${opref}_rawV.vcf.gz\n"; 
 		} else {
 			$cmd .= "$cfg{'exe_java'} -Xmx10G -jar $cfg{'jar_gatk'} -T CombineVariants \\\n"; 
-			$cmd .= "  -nt 20 \\\n"; 
+			# $cmd .= "  -nt 20 \\\n"; 
 			$cmd .= "  --assumeIdenticalSamples -genotypeMergeOptions UNSORTED \\\n"; 
 			$cmd .= "  -R $cfg{'ref_fasta'} \\\n"; 
 			$cmd .= "  -o ${opref}_filtV.vcf.gz \\\n"; 
@@ -844,7 +845,7 @@ sub step9_gvcf2var {
 			$cmd .= "1> s9.std.gvcf2var_filtV.${opref} 2> s9.err.gvcf2var_filtV.${opref}\n"; 
 
 			$cmd .= "$cfg{'exe_java'} -Xmx10G -jar $cfg{'jar_gatk'} -T CombineVariants \\\n"; 
-			$cmd .= "  -nt 20 \\\n"; 
+			# $cmd .= "  -nt 20 \\\n"; 
 			$cmd .= "  --assumeIdenticalSamples -genotypeMergeOptions UNSORTED \\\n"; 
 			$cmd .= "  -R $cfg{'ref_fasta'} \\\n"; 
 			$cmd .= "  -o ${opref}_rawV.vcf.gz \\\n"; 

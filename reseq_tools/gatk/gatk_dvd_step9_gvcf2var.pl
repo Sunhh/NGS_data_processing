@@ -1,4 +1,5 @@
 #!/usr/bin/perl -w
+# 2018-08-01 : Drop use of ' -nt '
 # 2018-07-28 : Run GATK step9 separately. 
 ### Step 9. call_rawV + filter_rawSNP + filter_rawInDel + Combine_filtered_SNP_and_InDel + slct_passed_data; This can be done for each CHR. 
 #
@@ -261,7 +262,7 @@ sub step9_gvcf2var {
 		$cmd .= "$cfg{'exe_java'} \\\n"; 
 		$cmd .= "  -Djava.io.tmpdir=$cfg{'dir_tmp'} \\\n"; 
 		$cmd .= "  -jar $cfg{'jar_gatk'} -T CombineVariants \\\n"; 
-		$cmd .= "  -nt 4 \\\n"; 
+		# $cmd .= "  -nt 4 \\\n"; 
 		$cmd .= "  -R $cfg{'ref_fasta'} \\\n"; 
 		$cmd .= "  -o ${opref}_filtV.vcf.gz \\\n"; 
 		$cmd .= "  --variant:snp    ${opref}_filtV_snps.vcf.gz \\\n"; 
@@ -316,7 +317,7 @@ sub step9_gvcf2var {
 			$cmd .= "$cfg{'exe_tabix'} -p vcf ${opref}_rawV.vcf.gz\n"; 
 		} else {
 			$cmd .= "$cfg{'exe_java'} -Xmx10G -jar $cfg{'jar_gatk'} -T CombineVariants \\\n"; 
-			$cmd .= "  -nt 20 \\\n"; 
+			# $cmd .= "  -nt 20 \\\n"; 
 			$cmd .= "  --assumeIdenticalSamples -genotypeMergeOptions UNSORTED \\\n"; 
 			$cmd .= "  -R $cfg{'ref_fasta'} \\\n"; 
 			$cmd .= "  -o ${opref}_filtV.vcf.gz \\\n"; 
@@ -326,7 +327,7 @@ sub step9_gvcf2var {
 			$cmd .= "1> s9.std.gvcf2var_filtV.${opref} 2> s9.err.gvcf2var_filtV.${opref}\n"; 
 
 			$cmd .= "$cfg{'exe_java'} -Xmx10G -jar $cfg{'jar_gatk'} -T CombineVariants \\\n"; 
-			$cmd .= "  -nt 20 \\\n"; 
+			# $cmd .= "  -nt 20 \\\n"; 
 			$cmd .= "  --assumeIdenticalSamples -genotypeMergeOptions UNSORTED \\\n"; 
 			$cmd .= "  -R $cfg{'ref_fasta'} \\\n"; 
 			$cmd .= "  -o ${opref}_rawV.vcf.gz \\\n"; 
