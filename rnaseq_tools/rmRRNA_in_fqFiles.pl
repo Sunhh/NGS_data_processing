@@ -37,6 +37,7 @@ GetOptions(\%opts,
 	"inFq:s@", # Single file means RS, two files means R1/R2, others error; 
 	"outPref:s@", # Output file prefix. 
 	"db_sortmerna:s@", # ref,index_db:ref,index_db
+	"db_sortmernaList:s", 
 	"para_sortmerna:s",# -a 10 -m 8000 -e 1e-5 --otu_map --best 1 --id 0.85 --coverage 0.85 --log -v --blast '1 cigar qcov qstrand'
 	"exe_sortmerna:s", # sortmerna 
 	"help!", 
@@ -153,6 +154,8 @@ sub setGlob {
 #
 #  -help             [Bool]
 #
+#  -db_sortmernaList [filename] Used to shorten multiple -db_sortmerna .
+#
 #  -para_sortmerna   ['$gg{'para_sortmerna'}']
 #  -exe_sortmerna    ['$gg{'exe_sortmerna'}']
 ################################################################################
@@ -161,6 +164,7 @@ HH
 	for my $t1 (qw/inFq outPref db_sortmerna/) {
 		defined $opts{$t1} or &stopErr("[Err] Parameter -$t1 is required.\n"); 
 	}
+	( defined $opts{'db_sortmerna'} or defined $opts{'db_sortmernaList'} ) or &stopErr("[Err] At least one of -db_sortmerna and -db_sortmernaList is required.\n"); 
 	for (my $i=0; $i<@{$opts{'inFq'}}; $i++) {
 		my $t1 = $opts{'inFq'}[$i]; 
 		( defined $opts{'outPref'}[$i] and $opts{'outPref'}[$i] ne '' ) or &stopErr("[Err] -outPref should have the same number of -inFq\n"); 
@@ -168,9 +172,16 @@ HH
 		@ta == 1 or @ta == 2 or &stopErr("[Err] Need one or two files in -inFq option. Now: |$t1|\n"); 
 		push(@{$gg{'inFq'}}, [ &fileSunhh::_abs_path_4link($opts{'outPref'}[$i]) , map { &fileSunhh::_abs_path_4link($_) } @ta]); 
 	}
+	if (defined $opts{'db_sortmernaList'}) {
+		my @tt1 = grep { $_ ne '' } map { $_->[0] } &fileSunhh::load_tabFile($opts{'db_sortmernaList'}); 
+		push(@{$opts{'db_sortmerna'}}, @tt1); 
+	}
+	my %used_db; 
 	for my $t1 (@{$opts{'db_sortmerna'}}) {
 		$t1 =~ m!^\s*([^,\s]+),([^,\s]+)\s*$! or &stopErr("[Err] Bad input of -db_sortmerna [$t1]\n"); 
 		my ($p1, $p2) = ($1, $2); 
+		defined $used_db{"$p1\t$p2"} and next; 
+		$used_db{"$p1\t$p2"} = 1; 
 		$p1 = &fileSunhh::_abs_path_4link($p1); 
 		$p2 = &fileSunhh::_abs_path_4link($p2); 
 		push(@{$gg{'db_sortmerna_arr'}}, "$p1,$p2"); 
