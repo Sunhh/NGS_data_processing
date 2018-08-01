@@ -155,6 +155,9 @@ sub setGlob {
 #  -help             [Bool]
 #
 #  -db_sortmernaList [filename] Used to shorten multiple -db_sortmerna .
+#                      Format : db_fasta_1,db_indexdb_1
+#                               db_fasta_2,db_indexdb_2
+#                               ...
 #
 #  -para_sortmerna   ['$gg{'para_sortmerna'}']
 #  -exe_sortmerna    ['$gg{'exe_sortmerna'}']
