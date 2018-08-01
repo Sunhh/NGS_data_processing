@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 # 2016-07-08 Add function to extract CDS sequence according to gff file. 
 # 2018-05-14 Add function to extract CDS sequence according to gff file. 
+# 2018-07-10 Sort GFF by its inner features. 
 use strict; 
 use warnings; 
 use LogInforSunhh; 
@@ -22,6 +23,7 @@ GetOptions(\%opts,
 	
 	# Actions 
 	"sort!", 
+	"simpleSort!", 
 	"seqret!", # Not added. 
 	  "extractFeat:s", # Not used. 
 
@@ -80,6 +82,8 @@ sub usage {
 # -outFas           [] Not output by default. Not fully supported yet. 
 # 
 # Action options: 
+#----------------------------------------------------------------------------------------------------
+# -simpleSort       [Boolean]
 #----------------------------------------------------------------------------------------------------
 # -ch_makerID       [oldID_newID] Convert mRNA ID and gene IDs according to file 'oldID_newID'. 
 #                     'oldID_newID' should have two column, old ID and new ID. 
@@ -201,7 +205,60 @@ if ( $opts{'getJnLoc'} ) {
 } elsif ( defined $opts{'ch_ID'} ) {
 	&action_ch_ID(); 
 	exit(); 
+} elsif ( defined $opts{'simpleSort'} ) {
+	&action_simpleSort(); 
+	exit(); 
 }
+
+sub action_simpleSort {
+	my %trans_feature = qw(
+		contig             contig
+		gene               gene
+		transcript         mrna
+		mrna               mrna
+		five_prime_utr     five_prime_utr
+		exon               exon
+		cds                cds
+		three_prime_utr    three_prime_utr
+	); 
+	my %good_feature = qw(
+		contig             0.5
+		gene               1
+		mrna               2
+		five_prime_utr     3
+		exon               4 
+		cds                5 
+		three_prime_utr    6
+	); 
+	my (@lines, %info, $lineN); 
+	$lineN = 0; 
+	while (<$iFh>) {
+		$lineN ++; 
+		chomp; 
+		if (m!^\s*#!) {
+			if (@lines > 0) {
+				# Sort and output @lines; 
+				@lines = (); 
+			}
+			print {$oFh} "$_\n"; 
+			next; 
+		}
+		my @ta = split(/\t/, $_); 
+		my $featID = lc($ta[2]); 
+		defined $trans_feature{$featID} or &stopErr("[Err] Unknown feature [$featID]\n"); 
+		$info{'ln2line'}{$lineN} = $_; 
+		$info{'ln2feat'}{$lineN} = $trans_feature{$featID}; 
+		if ($ta[8] =~ m!(?:^|;)\s*Parent\s*=\s*([^\s;]+)\s*(?:$|;)!i) {
+			my $pID = $1; 
+			$pID =~ m!,! and &stopErr("[Err] I don't support multiple parents.\n"); 
+			$info{'ln2parentID'}{$lineN} = $pID; 
+		}
+		if ($ta[8] =~ m!(?:^|;)\s*ID\s*=\s*([^\s;]+)\s*(?:$|;)!i) {
+			my $cID = $1; 
+			$info{'ln2currentID'}{$lineN} = $cID; 
+		}
+	}
+}# action_simpleSort() 
 
 
 
