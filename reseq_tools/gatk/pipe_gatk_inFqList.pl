@@ -802,6 +802,7 @@ sub step9_gvcf2var {
 		&tsmsg("[Rec] Total " . scalar(@toRun_intervals) . " intervals will be processed parallelly.\n"); 
 		for (my $i=0; $i<@toRun_intervals; $i++) {
 			my $sub_gvcf_pref = "${opref}.gvcf2var_sepChr.$i"; 
+			push(@subPref_list, $sub_gvcf_pref); 
 			my $ti_fn = "${sub_gvcf_pref}.interval_list"; 
 			&fileSunhh::write2file($ti_fn, "$header_txt", '>'); 
 			for my $iL (@{$toRun_intervals[$i][0]}) {
