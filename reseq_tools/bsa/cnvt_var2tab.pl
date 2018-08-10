@@ -7,7 +7,7 @@ use Getopt::Long;
 my %opts; 
 GetOptions(\%opts, 
 	"help!", 
-	"highID:s", "lowID:s", 
+	"highID:s@", "lowID:s@", 
 	"minRefAF:f", "maxRefAF:f", # Min/Max reference allele frequency accepted; 
 	"minTotalDepth:i", "maxTotalDepth:i", # Min/Max total depth accepted; 
 	"minSampleDepth:i", # accepted: Minimum depth of each sample compared 
@@ -49,6 +49,14 @@ $opts{'help'} and &LogInforSunhh::usage($help_txt);
 defined $opts{'highID'} or &LogInforSunhh::usage($help_txt); 
 defined $opts{'lowID'} or &LogInforSunhh::usage($help_txt); 
 
+my %gg; 
+&set_Glob(); 
+sub set_Glob {
+	for (@{$opts{'highID'}}) { $gg{'highID'}{$_} = 1; }
+	for (@{$opts{'lowID'}})  { $gg{'lowID'}{$_} = 1; }
+
+}# set_Glob() 
+
 my %colN; 
 SITE: 
 while (<>) {
@@ -57,84 +65,99 @@ while (<>) {
 	if ( $. == 1 ) {
 		for (my $i=0; $i<@ta; $i++) {
 			if      ($ta[$i] =~ m!^(\S+)\.AD$!) {
-				if      ($1 eq $opts{'highID'}) {
-					$colN{'high_AD'} = $i; 
-				} elsif ($1 eq $opts{'lowID'}) {
-					$colN{'low_AD'}  = $i; 
+				if      ( defined $gg{'highID'}{$1} ) {
+					push(@{$colN{'high_AD'}}, $i); 
+				} elsif ( defined $gg{'lowID'}{$1} ) {
+					push(@{$colN{'low_AD'}}, $i); 
 				}
 			} elsif ($ta[$i] =~ m!^(\S+)\.DP$!) {
-				if      ($1 eq $opts{'highID'}) {
-					$colN{'high_DP'} = $i; 
-				} elsif ($1 eq $opts{'lowID'}) {
-					$colN{'low_DP'}  = $i; 
+				if      ( defined $gg{'highID'}{$1} ) {
+					push(@{$colN{'high_DP'}}, $i); 
+				} elsif ( defined $gg{'lowID'}{$1} ) {
+					push(@{$colN{'low_DP'}}, $i); 
 				}
 			} elsif ($ta[$i] =~ m!^(\S+)\.GQ$!) {
-				if      ($1 eq $opts{'highID'}) {
-					$colN{'high_GQ'} = $i; 
-				} elsif ($1 eq $opts{'lowID'}) {
-					$colN{'low_GQ'}  = $i; 
+				if      ( defined $gg{'highID'}{$1} ) {
+					push(@{$colN{'high_GQ'}}, $i); 
+				} elsif ( defined $gg{'lowID'}{$1} ) {
+					push(@{$colN{'low_GQ'}}, $i); 
 				}
 			} elsif ($ta[$i] =~ m!^(\S+)\.PL$!) {
-				if      ($1 eq $opts{'highID'}) {
-					$colN{'high_PL'} = $i; 
-				} elsif ($1 eq $opts{'lowID'}) {
-					$colN{'low_PL'}  = $i; 
+				if      ( defined $gg{'highID'}{$1} ) {
+					push(@{$colN{'high_PL'}}, $i); 
+				} elsif ( defined $gg{'lowID'}{$1} ) {
+					push(@{$colN{'low_PL'}}, $i); 
 				}
 			} elsif ($ta[$i] =~ m!^CHROM$!) {
-				$colN{'CHROM'} = $i; 
+				$colN{'CHROM'} = [$i]; 
 			} elsif ($ta[$i] =~ m!^POS$!) {
-				$colN{'POS'} = $i; 
+				$colN{'POS'} = [$i]; 
 			} else {
 				&tsmsg("[Wrn] Skip col-$i of [$ta[$i]]\n"); 
 			}
 		}
 		for my $k1 (qw/high_AD high_DP low_AD low_DP CHROM POS/) {
-			defined $colN{$k1} or &stopErr("[Err] failed to find column for [$k1]\n"); 
+			( defined $colN{$k1} and @{$colN{$k1}} > 0 ) or &stopErr("[Err] failed to find column for [$k1]\n"); 
 		}
 		print STDOUT join("\t", qw/CHROM POS n2_RefAD_H n4_AltAD_H n1_RefAD_L n3_AltAD_L/)."\n"; 
 		next SITE; 
 	}
-	$ta[ $colN{'high_AD'} ] =~ m!^0(,0)+$!i and next SITE; 
-	$ta[ $colN{'low_AD'} ]  =~ m!^0(,0)+$!i and next SITE; 
 	if ($opts{'onlyBiAllele'}) {
-		$ta[ $colN{'high_AD'} ] =~ m!^\d+,\d+$! or next SITE; 
-		$ta[ $colN{'low_AD'}  ] =~ m!^\d+,\d+$! or next SITE; 
+		$ta[ $colN{'high_AD'}[0] ] =~ m!^\d+,\d+$! or next SITE; 
+		$ta[ $colN{'low_AD'}[0]  ] =~ m!^\d+,\d+$! or next SITE; 
 	}
-	if ( $ta[ $colN{'high_DP'} ] eq 'NA' ) {
-		print STDERR join("\t", qw/high_AD high_DP low_AD low_DP CHROM POS high_GQ low_GQ/)."\n"; 
-		print STDERR join("\t", @ta[ @colN{qw/high_AD high_DP low_AD low_DP CHROM POS high_GQ low_GQ/} ])."\n"; 
-		die "$_\n"; 
+	# Set each value for REF/ALT; 
+	my %curr; 
+	for my $c1 (@{$colN{'high_AD'}}) {
+		my @t1 = split(/,/, $ta[$c1]); 
+		$t1[0] =~ s!^\s+|\s+$!!g; $t1[0] =~ s!^NA$!0!i; 
+		$t1[1] =~ s!^\s+|\s+$!!g; $t1[1] =~ s!^NA$!0!i; 
+		$curr{'ref_AD_H'} += $t1[0]; 
+		$curr{'alt_AD_H'} += $t1[1]; # Originally, I count this by $high_DP - $ref_AD_H ; 
 	}
-	my $ref_AD_H = (split(/,/, $ta[ $colN{'high_AD'} ]))[0]; $ref_AD_H =~ s!^\s+|\s+$!!g; 
-	my $alt_AD_H = $ta[ $colN{'high_DP'} ]-$ref_AD_H; 
-	my $ref_AD_L = (split(/,/, $ta[ $colN{'low_AD'} ]))[0];  $ref_AD_L =~ s!^\s+|\s+$!!g; 
-	my $alt_AD_L = $ta[ $colN{'low_DP'} ]-$ref_AD_L; 
-	my $totalDep = $ref_AD_H+$alt_AD_H+$ref_AD_L+$alt_AD_L; 
-	$totalDep > 0 or next SITE; 
-	$opts{'minTotalDepth'} > 0 and $totalDep < $opts{'minTotalDepth'} and next SITE; 
-	$opts{'maxTotalDepth'} > 0 and $totalDep > $opts{'maxTotalDepth'} and next SITE; 
-	my $refAF = ($ref_AD_H+$ref_AD_L) / $totalDep; 
-	$opts{'minRefAF'} > 0 and $refAF < $opts{'minRefAF'} and next SITE; 
-	$opts{'maxRefAF'} > 0 and $refAF > $opts{'maxRefAF'} and next SITE; 
+	for my $c1 (@{$colN{'low_AD'}}) {
+		my @t1 = split(/,/, $ta[$c1]); 
+		$t1[0] =~ s!^\s+|\s+$!!g; $t1[0] =~ s!^NA$!0!i; 
+		$t1[1] =~ s!^\s+|\s+$!!g; $t1[1] =~ s!^NA$!0!i; 
+		$curr{'ref_AD_L'} += $t1[0]; 
+		$curr{'alt_AD_L'} += $t1[1]; # Originally, I count this by $low_DP - $ref_AD_L ; 
+	}
+	$curr{'totalDep'} = $curr{'ref_AD_H'}+$curr{'alt_AD_H'}+$curr{'ref_AD_L'}+$curr{'alt_AD_L'}; 
+	$curr{'sampleDep_H'} = $curr{'ref_AD_H'}+$curr{'alt_AD_H'}; 
+	$curr{'sampleDep_L'} = $curr{'ref_AD_L'}+$curr{'alt_AD_L'}; 
+	$curr{'sampleDep_H'} > 0 or next SITE; 
+	$curr{'sampleDep_L'} > 0 or next SITE; 
 	if ($opts{'minSampleDepth'} > 0) {
-		$ref_AD_H+$alt_AD_H >= $opts{'minSampleDepth'} or next SITE; 
-		$ref_AD_L+$alt_AD_L >= $opts{'minSampleDepth'} or next SITE; 
+		$curr{'sampleDep_H'} >= $opts{'minSampleDepth'} or next SITE; 
+		$curr{'sampleDep_L'} >= $opts{'minSampleDepth'} or next SITE; 
 	}
+	$curr{'totalDep'} > 0 or next SITE; 
+	$opts{'minTotalDepth'} > 0 and $curr{'totalDep'} < $opts{'minTotalDepth'} and next SITE; 
+	$opts{'maxTotalDepth'} > 0 and $curr{'totalDep'} > $opts{'maxTotalDepth'} and next SITE; 
+	$curr{'refAF'} = ($curr{'ref_AD_H'}+$curr{'ref_AD_L'}) / $curr{'totalDep'}; # Allele frequency of reference allele in both bulks; 
+	$opts{'minRefAF'} > 0 and $curr{'refAF'} < $opts{'minRefAF'} and next SITE; 
+	warn "WW: $_\nrefAF = $curr{'refAF'}\n"; 
+	$opts{'maxRefAF'} > 0 and $curr{'refAF'} > $opts{'maxRefAF'} and next SITE; 
+
 	if ($opts{'minGQ'} > -10) {
-		if (defined $colN{'high_GQ'}) {
-			$ta[ $colN{'high_GQ'} ] eq 'NA' and $ta[ $colN{'high_GQ'} ] = 0; 
-			$ta[$colN{'high_GQ'}] >= $opts{'minGQ'} or next SITE; 
+		if ( defined $colN{'high_GQ'} and @{$colN{'high_GQ'}} == 1 ) {
+			$ta[ $colN{'high_GQ'}[0] ] eq 'NA' and $ta[ $colN{'high_GQ'}[0] ] = 0; 
+			$ta[ $colN{'high_GQ'}[0] ] >= $opts{'minGQ'} or next SITE; 
+		} elsif ( defined $colN{'high_GQ'} and @{$colN{'high_GQ'}} != 1 ) {
+			; 
 		} else {
-			&tsmsg("[Wrn] Failed to find high_GQ for site @ta[ $colN{'CHROM'}, $colN{'POS'} ]\n"); 
+			&tsmsg("[Wrn] Failed to find high_GQ for site @ta[ $colN{'CHROM'}[0], $colN{'POS'}[0] ]\n"); 
 		}
-		if (defined $colN{'low_GQ'}) {
-			$ta[ $colN{'low_GQ'} ] eq 'NA' and $ta[ $colN{'low_GQ'} ] = 0; 
-			$ta[$colN{'low_GQ'}] >= $opts{'minGQ'} or next SITE; 
+		if ( defined $colN{'low_GQ'} and @{$colN{'low_GQ'}} == 1 ) {
+			$ta[ $colN{'low_GQ'}[0] ] eq 'NA' and $ta[ $colN{'low_GQ'}[0] ] = 0; 
+			$ta[ $colN{'low_GQ'}[0] ] >= $opts{'minGQ'} or next SITE; 
+		} elsif ( defined $colN{'low_GQ'} and @{$colN{'low_GQ'}} != 1 ) {
+			; 
 		} else {
-			&tsmsg("[Wrn] Failed to find low_GQ for site @ta[ $colN{'CHROM'}, $colN{'POS'} ]\n"); 
+			&tsmsg("[Wrn] Failed to find low_GQ for site @ta[ $colN{'CHROM'}[0], $colN{'POS'}[0] ]\n"); 
 		}
 	}
-	print STDOUT join("\t", @ta[@colN{qw/CHROM POS/}], $ref_AD_H, $alt_AD_H, $ref_AD_L, $alt_AD_L)."\n"; 
+	print STDOUT join("\t", @ta[ $colN{'CHROM'}[0], $colN{'POS'}[0] ], @curr{qw/ref_AD_H alt_AD_H ref_AD_L alt_AD_L/})."\n"; 
 }
 
 
