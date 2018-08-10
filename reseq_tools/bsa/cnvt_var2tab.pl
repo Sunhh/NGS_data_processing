@@ -12,6 +12,7 @@ GetOptions(\%opts,
 	"minTotalDepth:i", "maxTotalDepth:i", # Min/Max total depth accepted; 
 	"minSampleDepth:i", # accepted: Minimum depth of each sample compared 
 	"minGQ:f", # accepted: min Genotype quality of each sample 
+	"onlyBiAllele!", 
 ); 
 
 $opts{'minRefAF'}       //= -1; 
@@ -33,6 +34,8 @@ my $help_txt = <<HH;
 # -maxTotalDepth   [Num]
 # -minSampleDepth  [Num]
 # -minGQ           [float]
+#
+# -onlyBiAllele    [Boolean] Ignore sites with more than one allele in ALT. 
 ################################################################################
 # Data with NA will be skipped. 
 # Output file format : 
@@ -91,8 +94,17 @@ while (<>) {
 		print STDOUT join("\t", qw/CHROM POS n2_RefAD_H n4_AltAD_H n1_RefAD_L n3_AltAD_L/)."\n"; 
 		next SITE; 
 	}
-	$ta[ $colN{'high_AD'} ] =~ m!^NA$!i and next SITE; 
-	$ta[ $colN{'low_AD'} ]  =~ m!^NA$!i and next SITE; 
+	$ta[ $colN{'high_AD'} ] =~ m!^0(,0)+$!i and next SITE; 
+	$ta[ $colN{'low_AD'} ]  =~ m!^0(,0)+$!i and next SITE; 
+	if ($opts{'onlyBiAllele'}) {
+		$ta[ $colN{'high_AD'} ] =~ m!^\d+,\d+$! or next SITE; 
+		$ta[ $colN{'low_AD'}  ] =~ m!^\d+,\d+$! or next SITE; 
+	}
+	if ( $ta[ $colN{'high_DP'} ] eq 'NA' ) {
+		print STDERR join("\t", qw/high_AD high_DP low_AD low_DP CHROM POS high_GQ low_GQ/)."\n"; 
+		print STDERR join("\t", @ta[ @colN{qw/high_AD high_DP low_AD low_DP CHROM POS high_GQ low_GQ/} ])."\n"; 
+		die "$_\n"; 
+	}
 	my $ref_AD_H = (split(/,/, $ta[ $colN{'high_AD'} ]))[0]; $ref_AD_H =~ s!^\s+|\s+$!!g; 
 	my $alt_AD_H = $ta[ $colN{'high_DP'} ]-$ref_AD_H; 
 	my $ref_AD_L = (split(/,/, $ta[ $colN{'low_AD'} ]))[0];  $ref_AD_L =~ s!^\s+|\s+$!!g; 
@@ -110,11 +122,13 @@ while (<>) {
 	}
 	if ($opts{'minGQ'} > -10) {
 		if (defined $colN{'high_GQ'}) {
+			$ta[ $colN{'high_GQ'} ] eq 'NA' and $ta[ $colN{'high_GQ'} ] = 0; 
 			$ta[$colN{'high_GQ'}] >= $opts{'minGQ'} or next SITE; 
 		} else {
 			&tsmsg("[Wrn] Failed to find high_GQ for site @ta[ $colN{'CHROM'}, $colN{'POS'} ]\n"); 
 		}
 		if (defined $colN{'low_GQ'}) {
+			$ta[ $colN{'low_GQ'} ] eq 'NA' and $ta[ $colN{'low_GQ'} ] = 0; 
 			$ta[$colN{'low_GQ'}] >= $opts{'minGQ'} or next SITE; 
 		} else {
 			&tsmsg("[Wrn] Failed to find low_GQ for site @ta[ $colN{'CHROM'}, $colN{'POS'} ]\n"); 
