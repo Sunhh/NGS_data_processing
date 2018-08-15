@@ -123,7 +123,7 @@ sub load_compareList {
 			}
 			( @i1 >= 2 and @i2 >= 2 ) or &stopErr("[Err] Not enough replicates for $_.\n"); 
 			&tsmsg("[Msg] Loading exactTest between group 1 [$ta[1]] and group 2 [$ta[2]]\n"); 
-			push(@{$gg{'compList'}}, ['exactTest', [$ta[2], [@i1]], [$ta[2], [@i2]]]); # ([testType, [grp1_ID, [grp1_idx]], [grp2_ID, [grp2_idx]] ], [testType, [], []])
+			push(@{$gg{'compList'}}, ['exactTest', [$ta[1], [@i1]], [$ta[2], [@i2]]]); # ([testType, [grp1_ID, [grp1_idx]], [grp2_ID, [grp2_idx]] ], [testType, [], []])
 		} else {
 			&tsmsg("[Wrn] Skip unparsable line : $_\n"); 
 		}
