@@ -136,7 +136,6 @@ while (<>) {
 	$opts{'maxTotalDepth'} > 0 and $curr{'totalDep'} > $opts{'maxTotalDepth'} and next SITE; 
 	$curr{'refAF'} = ($curr{'ref_AD_H'}+$curr{'ref_AD_L'}) / $curr{'totalDep'}; # Allele frequency of reference allele in both bulks; 
 	$opts{'minRefAF'} > 0 and $curr{'refAF'} < $opts{'minRefAF'} and next SITE; 
-	warn "WW: $_\nrefAF = $curr{'refAF'}\n"; 
 	$opts{'maxRefAF'} > 0 and $curr{'refAF'} > $opts{'maxRefAF'} and next SITE; 
 
 	if ($opts{'minGQ'} > -10) {
