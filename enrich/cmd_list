@@ -1,0 +1,15 @@
+# http://owlcollab.github.io/oboformat/doc/GO.format.obo-1_2.html
+# 
+# In file gene_ontology_edit.obo.2018-05-01.gz, m!^(id|alt_id):! assigns all GO_ID existing in this file. 
+
+# https://www.pathwaycommons.org/guide/primers/statistics/fishers_exact_test/
+#  Fisher exact test could be converted to test with hypergeometric distribution equally. 
+#
+perl split_jnGO.pl -skipHlineN 1 -in wm97pbV2ID_feiID_clean.prot.b2g_wiIPR.annot.all_desc > wm97pbV2ID_feiID_clean.prot.b2g_wiIPR.annot.all_desc.2col
+less -S ../wm97pbV2ID_evm_feiID_clean.byChr.gff3.jnLoc | tail -n +2 | deal_table.pl -column 0 | deal_table.pl -kSrch_idx wm97pbV2ID_feiID_clean.prot.b2g_wiIPR.annot.all_desc.2col -kSrch_drop | deal_table.pl -label_mark NA | deal_table.pl -column 1,0,0 > wm97pbV2ID_feiID_clean.prot.b2g_wiIPR.annot.all_desc.2col.addFakeRest
+cat wm97pbV2ID_feiID_clean.prot.b2g_wiIPR.annot.all_desc.2col wm97pbV2ID_feiID_clean.prot.b2g_wiIPR.annot.all_desc.2col.addFakeRest > wm97pbV2ID_feiID_clean.GO_bg.tab
+
+gzip -cd gene_ontology_edit.obo.2018-05-01.gz | perl cnvt_GOobo_to_tab.pl > gene_ontology_edit.obo.2018-05-01.tab
+
+
+
