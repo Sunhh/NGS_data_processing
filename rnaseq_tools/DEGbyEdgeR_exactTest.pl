@@ -40,7 +40,7 @@ sub out_fdr {
 }#out_fdr() 
 
 sub run_exactTest {
-	my ($testType, $g1, $g2) = @_; 
+	my ($testType, $g1, $g2, $cmnDisp) = @_; 
 	my $g1_ID = $g1->[0]; my @g1_idx = @{$g1->[1]}; 
 	my $g2_ID = $g2->[0]; my @g2_idx = @{$g2->[1]}; 
 	my $testID = 'et.' . join("_VS_", $g1_ID, $g2_ID); 
@@ -56,6 +56,15 @@ sub run_exactTest {
 	}
 	close($fh1); 
 	# Generate command R script. 
+	my $code_test = <<"ET_TEST"; 
+y2.et.estD   <- estimateDisp( y2, design=y2.et.design )
+y2.et.et     <- exactTest( y2.et.estD )
+ET_TEST
+	if (@g1_idx == 1 and @g2_idx == 1) {
+		$code_test = <<"ET_TEST_NOREP"; 
+y2.et.et     <- exactTest( y2, dispersion=$cmnDisp )
+ET_TEST_NOREP
+	}
 	my $fh2 = &openFH("$wrkDir/edgeR_exactTest.R", '>'); 
 	print {$fh2} <<"RexactTest"; 
 library(dplyr)
@@ -74,8 +83,7 @@ y2.grp    <- y1.grp
 
 ### Compute FDR. 
 y2.et.design <- model.matrix( ~y2.grp )
-y2.et.estD   <- estimateDisp( y2, design=y2.et.design )
-y2.et.et     <- exactTest( y2.et.estD )
+$code_test
 y2.et.topTag <- topTags( y2.et.et, n=Inf )
 # table( y2.et.topTag\$table\$FDR < 0.01 ) 
 
@@ -121,9 +129,19 @@ sub load_compareList {
 					push(@i2, $gg{'grpInfo'}[$i][2]); 
 				}
 			}
-			( @i1 >= 2 and @i2 >= 2 ) or &stopErr("[Err] Not enough replicates for $_.\n"); 
-			&tsmsg("[Msg] Loading exactTest between group 1 [$ta[1]] and group 2 [$ta[2]]\n"); 
-			push(@{$gg{'compList'}}, ['exactTest', [$ta[1], [@i1]], [$ta[2], [@i2]]]); # ([testType, [grp1_ID, [grp1_idx]], [grp2_ID, [grp2_idx]] ], [testType, [], []])
+			my $repN_1 = scalar(@i1); 
+			my $repN_2 = scalar(@i2); 
+			$repN_1 == 0 and do { &tsmsg("[Wrn] No sample found for group [$ta[1]] in line : $_\n"); next; }; 
+			$repN_2 == 0 and do { &tsmsg("[Wrn] No sample found for group [$ta[2]] in line : $_\n"); next; }; 
+			my $cmnDisp = ''; 
+			defined $ta[3] and $cmnDisp = $ta[3]; 
+			if ( $repN_1 == 1 and $repN_2 == 1 and $cmnDisp eq '') {
+				&tsmsg("[Wrn] I need a common dispersion if there are no replicates in any group. Skip line: $_\n"); 
+				next; 
+			}
+			# ( @i1 >= 2 and @i2 >= 2 ) or &stopErr("[Err] Not enough replicates for $_.\n"); 
+			&tsmsg("[Msg] Loading exactTest between group 1 [$ta[1]] x$repN_1 and group 2 [$ta[2]] x$repN_2\n"); 
+			push(@{$gg{'compList'}}, ['exactTest', [$ta[1], [@i1]], [$ta[2], [@i2]], $cmnDisp]); # ([testType, [grp1_ID, [grp1_idx]], [grp2_ID, [grp2_idx]], commnDisper], [testType, [], [], cD, cD])
 		} else {
 			&tsmsg("[Wrn] Skip unparsable line : $_\n"); 
 		}
