@@ -11,5 +11,5 @@ cat wm97pbV2ID_feiID_clean.prot.b2g_wiIPR.annot.all_desc.2col wm97pbV2ID_feiID_c
 
 gzip -cd gene_ontology_edit.obo.2018-05-01.gz | perl cnvt_GOobo_to_tab.pl > gene_ontology_edit.obo.2018-05-01.tab
 
-
+perl test_enrichGO.pl -bgGOtab wm97pbV2ID_feiID_clean.GO_bg.tab -oboTab gene_ontology_edit.obo.2018-05-01.tab  -inSubList geneset_01 -opref geneset_01.GOenrich
 
