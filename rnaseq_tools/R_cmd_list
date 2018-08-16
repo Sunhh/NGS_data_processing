@@ -1,0 +1,124 @@
+# rdCnt.Both.RPKM
+# rdCnt.Both.TPM
+# rdCnt.Both.use
+library(edgeR)
+
+rdCntFn <- 'rdCnt.Both.use'
+tpmFn   <- 'rdCnt.Both.TPM'
+rpkmFn  <- 'rdCnt.Both.RPKM'
+
+rdCntData <- read.table( rdCntFn, header=T, sep="\t", row.names=1, stringsAsFactors=F )
+tpmData   <- read.table( tpmFn,   header=T, sep="\t", row.names=1, stringsAsFactors=F )
+rpkmData  <- read.table( rpkmFn,  header=T, sep="\t", row.names=1, stringsAsFactors=F )
+identical(colnames(rdCntData), colnames(tpmData)) ; identical(colnames(rdCntData), colnames(rpkmData)) ; 
+identical(rownames(rdCntData), rownames(tpmData)) ; identical(rownames(rdCntData), rownames(rpkmData)) ; 
+ggTbl <- as.data.frame(cbind(groupID=gsub( "_Rep\\d", "", colnames(rdCntData) ), sampleID=colnames(rdCntData)))
+
+### Check relationship between samples and replicates. 
+# Correlation: 
+cc <- cor(rpkmData, method= 'spearman')
+cc <- cbind( Samples=colnames(cc), cc )
+write.table( cc, file=paste0(rpkmFn, ".corr", sep=""), quote=FALSE, sep="\t", row.names=FALSE, col.names=TRUE )
+rm(cc)
+# plotMDS: 
+y0 <- DGEList( counts=rdCntData, group=ggTbl$groupID )
+table( keepRows <- rowSums( tpmData > 0.1 ) >= 2 )
+y0 <- y0[ keepRows, , keep.lib.sizes=FALSE ]
+y0 <- calcNormFactors(y0)
+plotMDS(y0, top=2e3, col=as.numeric(ggTbl$groupID)+2, main="By DGEList")
+dev.copy2pdf( file="rdCnt_plotMDS.pdf", width=14, height=14)
+plotMDS( tpmData, top=2e3, col=as.numeric(ggTbl$groupID)+2, main="By TPM" )
+dev.copy2pdf( file="tpm_plotMDS.pdf", width=14, height=14)
+rm(y0, keepRows)
+# Clustering: 
+
+### Select different groups for comparison; 
+y1.GrpID0 <- 'LeafD30Mock_RY135'
+y1.GrpID1 <- 'LeafD30Loss_RY134'
+y1.rdCnt  <- rdCntData[, c(which(ggTbl$groupID == y1.GrpID0), which(ggTbl$groupID == y1.GrpID1))]
+y1.grp    <- factor( c(rep(1,sum(ggTbl$groupID == y1.GrpID0)), rep(2, sum(ggTbl$groupID == y1.GrpID1))) )
+y1 <- DGEList(y1.rdCnt, group=y1.grp)
+y1 <- calcNormFactors(y1)
+y2.keep   <- rowSums(cpm(y1)>1) >= 2
+y2 <- y1[ y2.keep, , keep.lib.sizes=FALSE ]
+y2 <- calcNormFactors(y2)
+y2.grp <- y1.grp
+# y2.design <- model.matrix( ~y2.grp )
+# y2 <- estimateDisp(y2, design=y2.design)
+
+# To perform classic approach
+y2.et.design <- model.matrix( ~y2.grp )
+y2.et.estD <- estimateDisp(y2, design=y2.et.design)
+y2.et.et <- exactTest(y2.et.estD)
+y2.et.topTag <- topTags( y2.et.et, n=Inf )
+# table( y2.et.topTag$table$FDR < 0.01 ) # 673 DEGs. 
+
+### Output data
+library(dplyr)
+outFDR.ID <- tibble::as_tibble(list(eleID=rownames(rdCntData)))
+toAddTbl  <- tibble::as_tibble( y2.et.topTag$table ) %>% dplyr::select( "FDR" ) %>% dplyr::mutate( eleID=rownames(y2.et.topTag$table) ) 
+outTbl <- dplyr::left_join( x=outFDR.ID, y=toAddTbl, by= "eleID" )
+write.table(outTbl, file='y2.et.FDR', sep="\t", col.names=TRUE, row.names=FALSE, quote=FALSE)
+
+
+# To perform quasi-likelihood F-tests
+y2.qlf.design <- model.matrix(~0+y2.grp, data=y2$samples)
+# rownames(y2.qlf.design) <- colnames(y2) # Not required. 
+y2.qlf.y2     <- estimateDisp(y2, design=y2.qlf.design, robust=TRUE)
+# plotBCV(y2.qlf.y2)
+# dev.copy2pdf( file='y2_qlf_plotBCV.pdf' ) # pdf format is too big for this. 
+y2.qlf.fit <- glmQLFit(y2.qlf.y2, design=y2.qlf.design)
+y2.qlf <- glmQLFTest( y2.fit, coef=2 )
+y2.qlf.topTag <- topTags( y2.qlf, n=Inf )
+# table( y2.qlf.topTag$table$FDR < 0.01 )
+# To perform likelihood ratio tests
+y2.lr.fit <- glmFit(y2.qlf.y2, design=y2.qlf.design) 
+y2.lr.lrt <- glmLRT(y2.lr.fit)
+y2.lr.topTag <- topTags(y2.lr.lrt, n=Inf)
+# table( y2.lr.topTag$table$FDR < 0.01 )
+
+
+
+### 2.9 Pairwise comparisons between two or more groups (classic)
+# et <- exactTest(y1) # Testing for DE genes
+# topTags(et)  # Testing for DE genes
+y1.et.3vs1 <- exactTest(y1, pair=c("3","1"))
+y1.et.3vs1.tbl <- topTags(y1.et.3vs1, n=Inf)
+
+
+### 2.10 More complex experiments (glm functionality)
+### This needs more study. 
+y1.group  <- factor(ggTbl$ggID)
+y1.design <- model.matrix( ~y1.group )
+y1        <- estimateDisp(y1, design=y1.design) # Estimating dispersionsEstimating dispersions
+y1.fit    <- glmQLFit(y1, design=y1.design)
+# > colnames( y1.fit$coefficients )
+# [1] "(Intercept)" "y1.group10"  "y1.group11"  "y1.group12"  "y1.group2"
+# [6] "y1.group3"   "y1.group4"   "y1.group5"   "y1.group6"   "y1.group7"
+# [11] "y1.group8"   "y1.group9"
+y1.qlf.1vs3 <- glmQLFTest( y1.fit, contrast=c(1, rep(0,4),-1,rep(0,6)) )
+y1.qlf.1vs3.tbl <- topTags(y1.qlf.1vs3, n=Inf)
+
+
+y1.qlf.2vs3 <- glmQLFTest( y1.fit, contrast=c(rep(0,4), 1,-1,rep(0,6)) )
+
+### 
+# y <- estimateDisp(y, design) # Estimating dispersions
+# group <- factor(c(1,1,2,2,3,3))
+# design <- model.matrix(~group)
+# fit <- glmQLFit(y, design)
+#
+# qlf.2vs1 <- glmQLFTest(fit, coef=2) # To compare 2 vs 1
+# topTags(qlf.2vs1) # To compare 2 vs 1
+#
+# qlf.3vs1 <- glmQLFTest(fit, coef=3) # To compare 3 vs 1
+#
+# qlf.3vs2 <- glmQLFTest(fit, contrast=c(0,-1,1)) # To compare 3 vs 2
+# 
+# > qlf <- glmQLFTest(fit, coef=2:3) # To find genes different between any of the three groups
+# > topTags(qlf) # To find genes different between any of the three groups
+#
+
+
+
+
