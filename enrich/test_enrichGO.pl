@@ -121,9 +121,12 @@ R1
 	}
 	close($fh_i); 
 	my $fh_o = &openFH("$opts{'opref'}.tab", '>'); 
-	@out_lines > 0 and print {$fh_o} join("\t", qw/GO_ID FDR rawP GO_Type GO_name GO_def GO_eleID_sub sub_goN_totalN_bg_goN_totalN/)."\n"; 
+	# @out_lines > 0 and print {$fh_o} join("\t", qw/GO_ID FDR rawP GO_Type GO_name GO_def GO_eleID_sub sub_goN_totalN_bg_goN_totalN/)."\n"; 
+	@out_lines > 0 and print {$fh_o} join("\t", qw/GO_ID FDR rawP GO_Type GO_name GO_def GO_eleID_sub subsetRatio bgRatio/)."\n"; 
 	for (sort { $a->[3] cmp $b->[3] || $a->[1] <=> $b->[1] || $a->[2] <=> $b->[2] } @out_lines) {
-		print {$fh_o} join("\t", @$_)."\n"; 
+		$_->[7] =~ m!^(\d+)_(\d+)_(\d+)_(\d+)$! or &stopErr("[Err] Bad format of sub_goN_totalN_bg_goN_totalN [$_->[7]]\n"); 
+		my ($goN_sub, $totalN_sub, $goN_bg, $totalN_bg) = ($1,$2,$3,$4); 
+		print {$fh_o} join("\t", @{$_}[0..6], "$goN_sub/$totalN_sub", "$goN_bg/$totalN_bg")."\n"; 
 	}
 	close($fh_o); 
 	&fileSunhh::_rmtree($wrkDir); 

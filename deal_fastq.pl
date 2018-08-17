@@ -196,6 +196,8 @@ sub sepByRG {
 					if ( $ofNum > 10 ) {
 						$opts{'forceSep'} or &stopErr("[Err] The output file will be bigger than 10, please check -rdIDfmt or provide -forceSep \n"); 
 					}
+				}else{
+					$ofh{$k} = 1; 
 				}
 			}
 			$opts{'onlyCheck'} or print {$ofh{$k}} "$l1$l2$l3$l4"; 
@@ -203,7 +205,7 @@ sub sepByRG {
 		close($fh1); 
 	}
 	if ($opts{'onlyCheck'}) {
-		print STDOUT join("\t", $opts{'sepByRG'}, scalar(%ofh))."\n"; 
+		print STDOUT join("\t", $opts{'sepByRG'}, scalar(keys %ofh))."\n"; 
 	} else {
 		for my $t1 (keys %ofh) {
 			close($t1); 
