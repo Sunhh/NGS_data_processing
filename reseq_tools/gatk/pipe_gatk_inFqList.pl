@@ -390,8 +390,8 @@ sub step1_fq2uBam {
 	$cmd .= "  SAMPLE_NAME=$fqHash{'SM'} \\\n"; 
 	$cmd .= "  PLATFORM=$fqHash{'PL'} \\\n"; 
 	$cmd .= "  SORT_ORDER=queryname \\\n"; 
-	$fqHash{'CN'} ne '' and $cmd .= "  SEQUENCING_CENTER=$fqHash{'CN'} \\\n"; 
-	$fqHash{'DS'} ne '' and $cmd .= "  DESCRIPTION=$fqHash{'DS'} \\\n"; 
+	$fqHash{'CN'} ne '' and $cmd .= "  SEQUENCING_CENTER=\"$fqHash{'CN'}\" \\\n"; 
+	$fqHash{'DS'} ne '' and $cmd .= "  DESCRIPTION=\"$fqHash{'DS'}\" \\\n"; 
 	$fqHash{'DT'} ne '' and $cmd .= "  RUN_DATE=$fqHash{'DT'} \\\n"; 
 	$fqHash{'PI'} ne '' and $cmd .= "  PREDICTED_INSERT_SIZE=$fqHash{'PI'} \\\n"; 
 	$fqHash{'PG'} ne '' and $cmd .= "  PROGRAM_GROUP=$fqHash{'PG'} \\\n"; 

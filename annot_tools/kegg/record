@@ -1,0 +1,20 @@
+KO annotation : 
+Use BlastKOALA (Version 2.1, https://www.kegg.jp/blastkoala/) to annotate KO definitions for genes (~5k genes each time/batch). 
+ Enter taxonomy group of your genome              : Using taxonomy ID : 3653  (Citrullus genus)
+ Enter KEGG GENES database file to be searched    : genus_eukaryotes
+ Enter your email address : sunhonghe_1984@163.com (Only one data could be run at the same time with the same email address).
+
+Download KO_definition (details: "View"=>Download) from the resultant web-link. The output table's header is 'Gene_ID \t KO \t Definition \t Score \t Second-KO \t Second-Score'. 
+Save "Reconstruct Pathway" webpage for pathway table construction. 
+
+Reconstruct pathway : 
+Use "KEGG Mapper – Reconstruct Pathway" tool : https://www.kegg.jp/kegg/tool/map_pathway.html
+Different 'KEGG Mapper' version may provides slightly different pathway mapping results, so I would like to recommand re-construct the maps at the same time for each analysis, and to record the 'KEGG Mapper' version used. 
+ Input genelist.txt file : 
+   format example : 
+     geneID \t KO_ID 
+     geneID \t KO_ID
+     ...
+ Click 'Show all objects' to expand all list; 
+
+
