@@ -5,6 +5,7 @@
 # https://www.pathwaycommons.org/guide/primers/statistics/fishers_exact_test/
 #  Fisher exact test could be converted to test with hypergeometric distribution equally. 
 #
+### For GO analysis 
 perl split_jnGO.pl -skipHlineN 1 -in wm97pbV2ID_feiID_clean.prot.b2g_wiIPR.annot.all_desc > wm97pbV2ID_feiID_clean.prot.b2g_wiIPR.annot.all_desc.2col
 less -S ../wm97pbV2ID_evm_feiID_clean.byChr.gff3.jnLoc | tail -n +2 | deal_table.pl -column 0 | deal_table.pl -kSrch_idx wm97pbV2ID_feiID_clean.prot.b2g_wiIPR.annot.all_desc.2col -kSrch_drop | deal_table.pl -label_mark NA | deal_table.pl -column 1,0,0 > wm97pbV2ID_feiID_clean.prot.b2g_wiIPR.annot.all_desc.2col.addFakeRest
 cat wm97pbV2ID_feiID_clean.prot.b2g_wiIPR.annot.all_desc.2col wm97pbV2ID_feiID_clean.prot.b2g_wiIPR.annot.all_desc.2col.addFakeRest > wm97pbV2ID_feiID_clean.GO_bg.tab
@@ -12,4 +13,13 @@ cat wm97pbV2ID_feiID_clean.prot.b2g_wiIPR.annot.all_desc.2col wm97pbV2ID_feiID_c
 gzip -cd gene_ontology_edit.obo.2018-05-01.gz | perl cnvt_GOobo_to_tab.pl > gene_ontology_edit.obo.2018-05-01.tab
 
 perl test_enrichGO.pl -bgGOtab wm97pbV2ID_feiID_clean.GO_bg.tab -oboTab gene_ontology_edit.obo.2018-05-01.tab  -inSubList geneset_01 -opref geneset_01.GOenrich
+perl hs_enrich.pl -enrichType go   -bgGOtab wm97pbV2ID_feiID_clean.GO_bg.tab -oboTab gene_ontology_edit.obo.2018-05-01.tab -inSubList geneset_01 -opref geneset_01.GOenrich
+### For KEGG analyis
+
+perl cnvt_keggPWYReconstruction_to_tab.pl keggPWYByKO.txt > keggPWYByKO.tab
+deal_table.pl ../WM97v2_feiID_clean.annot.definition.annot -column 4 | tail -n +2 > full_geneID
+perl prepare_enrich.pl -bg_geneList full_geneID -in keggPWYByKO.tab -dataType kegg -out keggPWYByKO_enrich_bg
+## Example of enrichment analsyis 
+# perl hs_enrich.pl -enrichType kegg -inSubList tt -bgTab keggPWYByKO_enrich_bg -enrichType kegg -opref abc
+
 
