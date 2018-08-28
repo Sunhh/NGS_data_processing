@@ -21,5 +21,6 @@ deal_table.pl ../WM97v2_feiID_clean.annot.definition.annot -column 4 | tail -n +
 perl prepare_enrich.pl -bg_geneList full_geneID -in keggPWYByKO.tab -dataType kegg -out keggPWYByKO_enrich_bg
 ## Example of enrichment analsyis 
 # perl hs_enrich.pl -enrichType kegg -inSubList tt -bgTab keggPWYByKO_enrich_bg -enrichType kegg -opref abc
-
+## Background of KO groups could not be retrieved from keggPWYByKO.tab file, because some KO_IDs were not included in Pathway MAPs. 
+#
 
