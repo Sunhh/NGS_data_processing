@@ -182,7 +182,7 @@ sub sepByRG {
 	my $expr; 
 	$opts{'rdIDfmt'} =~ m!^M1$!i and $expr = qr/^\@((?:[^\s:]+:){4})/; 
 	$opts{'rdIDfmt'} =~ m!^M2$!i and $expr = qr/^\@((?:[^\s:]+:){2})/; 
-	my (%ofh, $ofNum); 
+	my (%ofh, $ofNum, %ofIdx, %ofFname); 
 	for my $fh1 (@InFp) {
 		my ($l1, $l2, $l3, $l4, $k) = ('', '', '', ''); 
 		while ($l1 = <$fh1>) {
@@ -191,8 +191,10 @@ sub sepByRG {
 			$k = $1; 
 			unless (defined $ofh{$k}) {
 				$ofNum ++; 
+				$ofIdx{$k} = $ofNum; 
 				unless ( $opts{'onlyCheck'} ) {
-					$ofh{$k} = &openFH("$opts{'sepByRG'}_${ofNum}.fq.gz", '>'); 
+					$ofFname{$k} = "$opts{'sepByRG'}_${ofNum}.fq.gz"; 
+					$ofh{$k} = &openFH($ofFname{$k}, '>'); 
 					if ( $ofNum > 10 ) {
 						$opts{'forceSep'} or &stopErr("[Err] The output file will be bigger than 10, please check -rdIDfmt or provide -forceSep \n"); 
 					}
@@ -205,10 +207,19 @@ sub sepByRG {
 		close($fh1); 
 	}
 	if ($opts{'onlyCheck'}) {
-		print STDOUT join("\t", $opts{'sepByRG'}, scalar(keys %ofh))."\n"; 
+		my @fn_arr = sort { $a->[1] <=> $b->[1] } map { [$_, $ofIdx{$_}] } keys %ofh; 
+		print STDOUT join("\t", qw/sepPrefix sepFNum sepFIdx sepRunID/)."\n"; 
+		for my $f1 (@fn_arr) {
+			my $runID = $f1->[0]; $runID =~ s!\:$!!; 
+			print STDOUT join("\t", $opts{'sepByRG'}, scalar(@fn_arr), $f1->[1], $runID)."\n"; 
+		}
 	} else {
-		for my $t1 (keys %ofh) {
-			close($t1); 
+		my @fn_arr = sort { $a->[1] <=> $b->[1] } map { [$_, $ofIdx{$_}, $ofFname{$_}] } keys %ofh; 
+		print STDOUT join("\t", qw/sepPrefix sepFNum sepFIdx sepRunID sepFName/)."\n"; 
+		for my $f1 (@fn_arr) {
+			my $runID = $f1->[0]; $runID =~ s!\:$!!; 
+			print STDOUT join("\t", $opts{'sepByRG'}, scalar(@fn_arr), $f1->[1], $runID, $f1->[2])."\n"; 
+			close($ofh{$f1->[0]}); 
 		}
 	}
 	return; 
