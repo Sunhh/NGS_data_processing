@@ -18,7 +18,7 @@ my %gg;
 &set_glob(); 
 
 $gg{'libInfoFn'} ne '' and &load_libInfo(); 
-$gg{'skipEleID'} ne '' and &load_skipEleID(); 
+&load_skipEleID(); 
 
 &load_eleInfo(); 
 
@@ -101,13 +101,19 @@ sub load_libInfo {
 }# load_libInfo() 
 
 sub load_skipEleID {
-	my $fh = &openFH($gg{'skipEleID'}, '<'); 
-	while (<$fh>) {
-		chomp; 
-		my @ta = &splitL("\t", $_); 
-		$gg{'skipEleID_hash'}{$ta[0]} = 1; 
+	if ($gg{'skipEleID'} ne '') {
+		my $fh = &openFH($gg{'skipEleID'}, '<'); 
+		while (<$fh>) {
+			chomp; 
+			my @ta = &splitL("\t", $_); 
+			$gg{'skipEleID_hash'}{$ta[0]} = 1; 
+		}
+		close($fh); 
+	} else {
+		for my $tag (qw/__no_feature __ambiguous __too_low_aQual __not_aligned __alignment_not_unique/) {
+			$gg{'skipEleID_hash'}{$tag} = 1; 
+		}
 	}
-	close($fh); 
 	return; 
 }# load_skipEleID
 
