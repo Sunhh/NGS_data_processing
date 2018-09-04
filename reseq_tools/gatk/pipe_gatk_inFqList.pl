@@ -43,6 +43,7 @@ GetOptions(\%opts,
 	"ERC:s",          # 
 	"intervalLen:i",  # -1. If this is bigger than 0, I will combine GVCFs with interval list with multi-threads. 
 	"CallByScf!",     # 
+	"help!", 
 ); 
 
 ################################################################################
@@ -117,7 +118,7 @@ $gg{'doStep'}{9} and &step9_gvcf2var( $gg{'jnGVCF_list'}, "$opts{'prj_ID'}", '',
 
 
 sub input_good {
-	$gg{'usage_txt'} = <<'H1'; 
+	$gg{'usage_txt'} = <<"H1"; 
 ################################################################################
 perl $0 fasdfasf
 
@@ -157,6 +158,7 @@ perl $0 fasdfasf
 
 ################################################################################
 H1
+	defined $opts{'help'} and &LogInforSunhh::usage($gg{'usage_txt'}); 
 
 	defined $opts{'conf_file'} or return 0; 
 	defined $opts{'in_pref_list'} or return 0; 
