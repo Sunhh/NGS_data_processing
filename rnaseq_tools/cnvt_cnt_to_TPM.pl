@@ -59,6 +59,7 @@ sub set_glob {
 #
 # -skipEleID         [filename] A file listing the element IDs not to be included in any analysis. 
 #                        For example : __no_feature / __ambiguous that output from htseq-count; 
+#                        By default, skipping qw/__no_feature __ambiguous __too_low_aQual __not_aligned __alignment_not_unique/
 #
 # -libInfoFn         [filename] Used to add/replace information. 
 #                        'lib_tNSum_woRdLen' will replace the result computed from -eleInfoFn; 
