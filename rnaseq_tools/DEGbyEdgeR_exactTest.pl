@@ -118,14 +118,21 @@ sub load_compareList {
 		my @ta = &splitL("\t", $_); 
 		if ($ta[0] =~ m!^\s*exactTest\s*$!i) {
 			# Only two groups; 
-			$ta[1] =~ s!^\s+|\s+$!!g; 
-			$ta[2] =~ s!^\s+|\s+$!!g; 
-			$ta[1] eq $ta[2] and &stopErr("[Err] Same groups $ta[1]\n"); 
+			my (%grp1, %grp2); 
+			for my $a1 (split(/;/, $ta[1])) {
+				$a1 =~ s!^\s+|\s+$!!g; 
+				$grp1{$a1} = 1; 
+			}
+			for my $a2 (split(/;/, $ta[2])) {
+				$a2 =~ s!^\s+|\s+$!!g; 
+				$grp2{$a2} = 1; 
+			}
+			# $ta[1] eq $ta[2] and &stopErr("[Err] Same groups $ta[1]\n"); 
 			my (@i1, @i2); 
 			for (my $i=0; $i<@{$gg{'grpInfo'}}; $i++) {
-				if (     $gg{'grpInfo'}[$i][0] eq $ta[1]) {
+				if      ( defined $grp1{ $gg{'grpInfo'}[$i][0] } ) {
 					push(@i1, $gg{'grpInfo'}[$i][2]); 
-				} elsif ($gg{'grpInfo'}[$i][0] eq $ta[2]) {
+				} elsif ( defined $grp2{ $gg{'grpInfo'}[$i][0] } ) {
 					push(@i2, $gg{'grpInfo'}[$i][2]); 
 				}
 			}
