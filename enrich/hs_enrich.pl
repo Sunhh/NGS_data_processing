@@ -340,14 +340,18 @@ R1
 		for (sort { $a->[3] cmp $b->[3] || $a->[1] <=> $b->[1] || $a->[2] <=> $b->[2] } @out_lines) {
 			$_->[7] =~ m!^(\d+)_(\d+)_(\d+)_(\d+)$! or &stopErr("[Err] Bad format of sub_goN_totalN_bg_goN_totalN [$_->[7]]\n"); 
 			my ($goN_sub, $totalN_sub, $goN_bg, $totalN_bg) = ($1,$2,$3,$4); 
-			print {$fh_o} join("\t", @{$_}[0..6], "${goN_sub}_$totalN_sub", "${goN_bg}_$totalN_bg")."\n"; 
+			my $rate1 = sprintf("%0.2f", 100 * $goN_sub / $totalN_sub); 
+			my $rate2 = sprintf("%0.2f", 100 * $goN_bg  / $totalN_bg ); 
+			print {$fh_o} join("\t", @{$_}[0..6], "${goN_sub}_${totalN_sub}_$rate1", "${goN_bg}_${totalN_bg}_$rate2")."\n"; 
 		}
 	} elsif ( $gg{'enrichType'} eq 'kegg' ) {
 		@out_lines > 0 and print {$fh_o} join("\t", qw/kegg_ID FDR rawP kegg_def eleID_sub subsetRatio backgroundRatio/)."\n"; 
 		for (sort { $a->[1] <=> $b->[1] || $a->[2] <=> $b->[2] || $a->[0] cmp $b->[0]} @out_lines) {
 			$_->[5] =~ m!^(\d+)_(\d+)_(\d+)_(\d+)$! or &stopErr("[Err] Bad format of sub_goN_totalN_bg_goN_totalN [$_->[5]]\n"); 
 			my ($goN_sub, $totalN_sub, $goN_bg, $totalN_bg) = ($1,$2,$3,$4); 
-			print {$fh_o} join("\t", @{$_}[0..4], "${goN_sub}_$totalN_sub", "${goN_bg}_$totalN_bg")."\n"; 
+			my $rate1 = sprintf("%0.2f", 100 * $goN_sub / $totalN_sub); 
+			my $rate2 = sprintf("%0.2f", 100 * $goN_bg  / $totalN_bg ); 
+			print {$fh_o} join("\t", @{$_}[0..4], "${goN_sub}_${totalN_sub}_$rate1", "${goN_bg}_${totalN_bg}_$rate2")."\n"; 
 		}
 	}
 	close($fh_o); 
