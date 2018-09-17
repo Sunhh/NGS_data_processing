@@ -141,7 +141,7 @@ sub load_compareList {
 			$repN_1 == 0 and do { &tsmsg("[Wrn] No sample found for group [$ta[1]] in line : $_\n"); next; }; 
 			$repN_2 == 0 and do { &tsmsg("[Wrn] No sample found for group [$ta[2]] in line : $_\n"); next; }; 
 			my $cmnDisp = ''; 
-			defined $ta[3] and $cmnDisp = $ta[3]; 
+			defined $ta[3] and $ta[3] !~ m!^(NA|\s*)$!i and $cmnDisp = $ta[3]; 
 			if ( $repN_1 == 1 and $repN_2 == 1 and $cmnDisp eq '') {
 				&tsmsg("[Wrn] I need a common dispersion if there are no replicates in any group. Skip line: $_\n"); 
 				next; 

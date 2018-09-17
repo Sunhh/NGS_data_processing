@@ -62,31 +62,32 @@ H1
 	$gg{'grps'} = []; 
 	$gg{'outs'} = []; 
 	for (my $i=0; $i<@{$gg{'hl_arr'}}; $i++) {
+		my $sampleID = $gg{'hl_arr'}[$i]; 
 		my @arr_grpID; 
 		if ( defined $opts{'list_sample2grp'} ) {
-			if ( defined $gg{'lis_s2g'}{$gg{'hl_arr'}[$i]} ) {
-				@arr_grpID = @{ $gg{'lis_s2g'}{$gg{'hl_arr'}[$i]} }; 
-			} elsif ( $i == 0 or $gg{'hl_arr'}[$i] =~ m!^(eleID|geneID|mrnaID)$!i ) {
-				&tsmsg("[Wrn] Keep column of [$gg{'hl_arr'}[$i]]\n"); 
+			if ( defined $gg{'lis_s2g'}{$sampleID} ) {
+				@arr_grpID = @{ $gg{'lis_s2g'}{$sampleID} }; 
+			} elsif ( $i == 0 or $sampleID =~ m!^(eleID|geneID|mrnaID)$!i ) {
+				&tsmsg("[Wrn] Keep column of [$sampleID]\n"); 
 				push(@{$gg{'outs'}}, $i); 
 				next; 
 			} else {
 				next; 
 			}
 		} else {
-			$gg{'hl_arr'}[$i] =~ m!^(\S+)_Rep(\d+)$! or do { &tsmsg("[Wrn] Skip bad ID [$gg{'hl_arr'}[$i]]\n"); push(@{$gg{'outs'}}, $i); next;  }; 
+			$gg{'hl_arr'}[$i] =~ m!^(\S+)_Rep(\d+)$! or do { &tsmsg("[Wrn] Skip bad ID [$sampleID]\n"); push(@{$gg{'outs'}}, $i); next;  }; 
 			@arr_grpID = ($1); 
 		}
 		for my $grpID (@arr_grpID) {
 			if ( @{$gg{'grps'}} == 0 ) {
-				push(@{$gg{'grps'}}, [$grpID, [$i], { $gg{'hl_arr'}[$i]=>1 }]); 
+				push(@{$gg{'grps'}}, [$grpID, [$i], { $sampleID=>1 }]); 
 				next; 
 			}
 			my $is_foundGrp = 0; 
 			for my $g0 (@{$gg{'grps'}}) {
 				if ($g0->[0] eq $grpID) {
 					$is_foundGrp = 1; 
-					if ( defined $g0->[2]{$gg{'hl_arr'}[$i]} ) {
+					if ( defined $g0->[2]{$sampleID} ) {
 						&tsmsg("[Wrn] Skip repeated sample ID [$gg{'hl_arr'}[$i]]\n"); 
 					} else {
 						push(@{$g0->[1]}, $i); 
@@ -94,9 +95,9 @@ H1
 					}
 				}
 			}
-			$is_foundGrp == 1 and last; 
+			$is_foundGrp == 1 and next; 
 			if ($is_foundGrp == 0) {
-				push(@{$gg{'grps'}}, [$grpID, [$i], { $gg{'hl_arr'}[$i]=>1 }]); 
+				push(@{$gg{'grps'}}, [$grpID, [$i], { $sampleID=>1 }]); 
 			}
 		}# End for my $grpID 
 	}
