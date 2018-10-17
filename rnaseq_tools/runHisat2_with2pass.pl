@@ -48,12 +48,12 @@ for my $q ( @{$gg{'fq_infor'}} ) {
 	$rgLine .= " --rg SM:$qh{'SM'}"; 
 	$rgLine .= " --rg LB:$qh{'LB'}"; 
 	$rgLine .= " --rg PL:$qh{'PL'}"; 
-	$qh{'CN'} ne '' and $rgLine .= " --rg $qh{'CN'}"; 
-	$qh{'DS'} ne '' and $rgLine .= " --rg $qh{'DS'}"; 
-	$qh{'DT'} ne '' and $rgLine .= " --rg $qh{'DT'}"; 
-	$qh{'PI'} ne '' and $rgLine .= " --rg $qh{'PI'}"; 
-	$qh{'PG'} ne '' and $rgLine .= " --rg $qh{'PG'}"; 
-	$qh{'PM'} ne '' and $rgLine .= " --rg $qh{'PM'}"; 
+	$qh{'CN'} ne '' and $rgLine .= " --rg \"$qh{'CN'}\""; 
+	$qh{'DS'} ne '' and $rgLine .= " --rg \"$qh{'DS'}\""; 
+	$qh{'DT'} ne '' and $rgLine .= " --rg \"$qh{'DT'}\""; 
+	$qh{'PI'} ne '' and $rgLine .= " --rg \"$qh{'PI'}\""; 
+	$qh{'PG'} ne '' and $rgLine .= " --rg \"$qh{'PG'}\""; 
+	$qh{'PM'} ne '' and $rgLine .= " --rg \"$qh{'PM'}\""; 
 
 	
 
