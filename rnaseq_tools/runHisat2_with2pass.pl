@@ -68,6 +68,7 @@ for my $q ( @{$gg{'fq_infor'}} ) {
 		$cmd .= " -1 $qh{'fq1'} -2 $qh{'fq2'} "; 
 	}
 	$cmd .= " -S /dev/null "; 
+	$cmd .= " 2> $tmpDir/$qh{'pref'}_time1.ht2.log"; 
 	&exeCmd_1cmd($cmd) and &stopErr("[Err] Failed to run CMD: $cmd\n"); 
 	# Second pass : Align reads to db_index with splicesites assigned by '--novel-splicesite-infile'; 
 	$cmd = ''; 
@@ -78,6 +79,7 @@ for my $q ( @{$gg{'fq_infor'}} ) {
 		$cmd .= " -1 $qh{'fq1'} -2 $qh{'fq2'} "; 
 	}
 	$cmd .= " -S $tmpDir/$qh{'pref'}_x2.sam"; 
+	$cmd .= " 2> $tmpDir/$qh{'pref'}_time2.ht2.log"; 
 	&exeCmd_1cmd($cmd) and &stopErr("[Err] Failed to run CMD: $cmd\n"); 
 
 	# Filter bad alignments with high mismatch%; 
@@ -87,6 +89,8 @@ for my $q ( @{$gg{'fq_infor'}} ) {
 	&fileSunhh::_rmtree("$qh{'pref'}_good.bam"); 
 
 	&fileSunhh::_move( "$tmpDir/splicesites.txt", "$qh{'pref'}_splicesites.txt" ); 
+	&fileSunhh::_move( "$tmpDir/$qh{'pref'}_time1.ht2.log", "$qh{'pref'}_time1.ht2.log" ); 
+	&fileSunhh::_move( "$tmpDir/$qh{'pref'}_time2.ht2.log", "$qh{'pref'}_time2.ht2.log" ); 
 	&fileSunhh::_rmtree("$qh{'pref'}_x2.sam"); 
 	&fileSunhh::_rmtree($tmpDir); 
 
