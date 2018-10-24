@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 # 2018-07-30 : Fixing paired-end read pairs' alignments; 
+# 2018-10-24 : Use ta[5] instead of ta[2] to judge aligned or not. 
 use strict; 
 use warnings; 
 use LogInforSunhh; 
@@ -109,15 +110,15 @@ while (<F>) {
 	if ($sameRdPS[0] eq '') {
 		@sameRdPS = ( $rdKey, $rSP, {} ); 
 		push(@{$sameRdPS[2]{$rS12}{'line'}}, [@ta]); 
-		defined $flag_readMap{$ta[1]} and $ta[2] ne '*' and $sameRdPS[2]{$rS12}{'NH'} ++; 
+		defined $flag_readMap{$ta[1]} and $ta[5] ne '*' and $sameRdPS[2]{$rS12}{'NH'} ++; 
 	} elsif ( $sameRdPS[0] eq $rdKey ) {
 		push(@{$sameRdPS[2]{$rS12}{'line'}}, [@ta]); 
-		defined $flag_readMap{$ta[1]} and $ta[2] ne '*' and $sameRdPS[2]{$rS12}{'NH'} ++; 
+		defined $flag_readMap{$ta[1]} and $ta[5] ne '*' and $sameRdPS[2]{$rS12}{'NH'} ++; 
 	} else {
 		&outSameRd(\@sameRdPS); 
 		@sameRdPS = ( $rdKey, $rSP, {} ); 
 		push(@{$sameRdPS[2]{$rS12}{'line'}}, [@ta]); 
-		defined $flag_readMap{$ta[1]} and $ta[2] ne '*' and $sameRdPS[2]{$rS12}{'NH'} ++; 
+		defined $flag_readMap{$ta[1]} and $ta[5] ne '*' and $sameRdPS[2]{$rS12}{'NH'} ++; 
 	}
 }
 &outSameRd(\@sameRdPS); 
