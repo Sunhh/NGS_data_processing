@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# 2018-10-24 I don't want to keep unmapped reads. 
 use strict; 
 use warnings; 
 use fileSunhh; 
@@ -113,6 +114,8 @@ sub clean_sam2bam {
 		m!^\@! and do { print O $_; next; }; 
 		chomp; 
 		my @ta = split(/\t/, $_); 
+		defined $gg{'flag_UN'}{$ta[1]} and next; 
+		$ta[5] eq '*' and next; 
 		my $statH = &stat_aln(\@ta); 
 		if ( $gg{'max_mismat_ratio'} >= 0 ) {
 			$statH->{'whole_mismat'} > $statH->{'read_len'} * $gg{'max_mismat_ratio'} and next; 
@@ -182,6 +185,7 @@ sub setGlob {
 #  -para_hisat2           ['$gg{'para_hisat2'}']
 #  -max_mismat_cnt        [$gg{'max_mismat_cnt'}] Filter out alignments with high mismatch bases. -1 means no filter applied. 
 #  -max_mismat_ratio      [$gg{'max_mismat_ratio'}] Filter out alignments with high mismatch ratio [0-1). -1 means no filter aplied. 
+#  Any unmapped reads will be removed. 
 #
 #  -exe_hisat2            ['$gg{'exe_hisat2'}']
 #  -exe_samtools          ['$gg{'exe_samtools'}']
@@ -209,6 +213,9 @@ HH
 	}
 	$gg{'wrk_dir'} = &fileSunhh::_abs_path_4link( $gg{'wrk_dir'} ); 
 	-d $gg{'wrk_dir'} or do { mkdir($gg{'wrk_dir'}) or &stopErr("[Err] Failed to creat wrk_dir $opts{'wrk_dir'}\n"); }; 
+
+	# Set flag store; 
+	$gg{'flag_UN'} = &SeqAlnSunhh::mk_flag( 'keep' => '2=1' ); 
 
 	# Set multi-threads;
 	$gg{'MAX_PROCESSES'} = $gg{'cpuN'}; 
