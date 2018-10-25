@@ -18,6 +18,11 @@ GetOptions(\%opts,
 	"wrk_dir:s",        # './', Assign a directory to store all resulting bam files, instead of in current folder. 
 	
 	"outBam:s",  # The combined bam file output. This will replace the output file "$gg{'wrk_dir'}/$gg{'pref'}_comb.bam"
+
+	"exe_samtools:s", 
+	"exe_hisat2:s", 
+	"pl_runHisat2_with2pass:s", 
+	"pl_fix_NHnum:s", 
 ); 
 
 my %flag_UN = %{ &SeqAlnSunhh::mk_flag( 'keep' => '2=1' ) }; 
@@ -117,6 +122,11 @@ sub applyOpt {
 			&tsmsg("[Err] -$k is required.\n\n"); 
 			&LogInforSunhh::usage($gg{'help_txt'}); 
 		}
+	}
+
+	# Outer tools
+	for my $k (qw/exe_samtools exe_hisat2 pl_runHisat2_with2pass pl_fix_NHnum/) {
+		defined $opts{$k} and $gg{$k} = $opts{$k}; 
 	}
 
 	for my $k (qw/pref in_fq1 max_mismat_cnt max_mismat_ratio wrk_dir src_fa tgt_fa/) {

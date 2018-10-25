@@ -129,6 +129,11 @@ sub applyOpt {
 		}
 	}
 
+	# For outer tools
+	for my $k (qw/exe_samtools/) {
+		defined $opts{$k} and $gg{$k} = $opts{$k}; 
+	}
+
 	for my $k (qw/pref wrk_dir src_fa tgt_fa/) {
 		defined $opts{$k} and $gg{$k} = $opts{$k}; 
 	}

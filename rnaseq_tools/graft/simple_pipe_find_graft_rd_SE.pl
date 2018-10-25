@@ -18,8 +18,14 @@ GetOptions(\%opts,
 	"wrk_dir:s",        # './', Assign a directory to store all resulting bam files, instead of in current folder. 
 	
 	"doStep:s", 
-	"pl_step1:s", 
+	"pl_step1:s",  # Align rnaseq of target genome to src_fa and tgt_fa; 
 	"pl_step2:s", 
+	"pl_stepX1:s", # 
+
+	"exe_samtools:s", 
+	"exe_hisat2:s", 
+	"pl_runHisat2_with2pass:s", 
+	"pl_fix_NHnum:s", 
 ); 
 
 my %flag_UN = %{ &SeqAlnSunhh::mk_flag( 'keep' => '2=1' ) }; 
@@ -48,7 +54,7 @@ for my $stepID (split(/,/, $gg{'doStep'})) {
 		$cmd .= " -pl_runHisat2_with2pass $gg{'pl_runHisat2_with2pass'} "; 
 		$cmd .= " -pl_fix_NHnum $gg{'pl_fix_NHnum'} "; 
 		$cmd .= " -exe_samtools $gg{'exe_samtools'} "; 
-		$cmd .= " -exe_hisat2 $gg{'exe_hisat2'} "; 
+		$cmd .= " -exe_hisat2   $gg{'exe_hisat2'} "; 
 		&exeCmd_1cmd($cmd) and &stopErr("[Err] Failed at cmd: $cmd\n"); 
 	} elsif ( $stepID eq '2' ) {
 		# Step 2 : Read in src_fa, tgt_fa and pref_comb.bam to count possible transmitted reads from source genome. 
@@ -121,8 +127,13 @@ sub applyOpt {
 			&LogInforSunhh::usage($gg{'help_txt'}); 
 		}
 	}
+	
+	# For outer tools
+	for my $k (qw/exe_samtools exe_hisat2 pl_runHisat2_with2pass pl_fix_NHnum/) {
+		defined $opts{$k} and $gg{$k} = $opts{$k}; 
+	}
 
-	for my $k (qw/pref in_fq1 max_mismat_cnt max_mismat_ratio wrk_dir src_fa tgt_fa doStep pl_step1 pl_step2/) {
+	for my $k (qw/pref in_fq1 max_mismat_cnt max_mismat_ratio wrk_dir src_fa tgt_fa doStep pl_step1 pl_step2 pl_stepX1/) {
 		defined $opts{$k} and $gg{$k} = $opts{$k}; 
 	}
 
