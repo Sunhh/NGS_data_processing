@@ -1,5 +1,6 @@
 #!/usr/bin/perl
-# 2018-10-24 I don't want to keep unmapped reads. 
+# 2018-10-24 : I don't want to keep unmapped reads. 
+# 2018-10-26 : Use --dta instead of --dta-cufflinks for hisat2; 
 use strict; 
 use warnings; 
 use fileSunhh; 
@@ -154,7 +155,8 @@ sub setGlob {
 	$gg{'exe_hisat2'} = 'hisat2'; 
 	$gg{'exe_samtools'} = 'samtools'; 
 	$gg{'para_samtools_srt'} = ' -@ 4 -m 5G '; 
-	$gg{'para_hisat2'} = ' -p 4 --dta-cufflinks -q --phred33 '; 
+	# $gg{'para_hisat2'} = ' -p 4 --dta-cufflinks -q --phred33 '; 
+	$gg{'para_hisat2'} = ' -p 4 --dta -q --phred33 '; 
 	$gg{'max_mismat_ratio'} = -1; 
 	$gg{'max_mismat_cnt'} = -1; 
 	$gg{'oriDir'}     = &fileSunhh::_abs_path_4link("./"); 

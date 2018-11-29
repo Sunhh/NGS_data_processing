@@ -45,7 +45,7 @@ sub step1_run_aln {
 					"${k1}_$i", 
 					"${k1}_$i", 
 					"${k1}_$i", 
-					"${k1}_$i", 
+					"$gg{'pref'}.${k1}_$i", 
 					"$gg{'in_fq1'}", 
 					"NA", 
 					"illumina", 
@@ -54,11 +54,16 @@ sub step1_run_aln {
 				)."\n", 
 				'>'
 			); 
-			$cmd = "perl $gg{'pl_runHisat2_with2pass'} -in_pref_list $gg{'wrk_dir'}/$gg{'pref'}.pref_RS.${k1}_$i -db_hisat2 $gg{$k1}[$i] -wrk_dir $gg{'wrk_dir'} -para_hisat2 \" -p 30 --dta-cufflinks -q --phred33 \" -max_mismat_cnt $gg{'max_mismat_cnt'} -max_mismat_ratio $gg{'max_mismat_ratio'}"; 
+			$cmd = "perl $gg{'pl_runHisat2_with2pass'} -in_pref_list $gg{'wrk_dir'}/$gg{'pref'}.pref_RS.${k1}_$i -db_hisat2 $gg{$k1}[$i] -wrk_dir $gg{'wrk_dir'} -para_hisat2 \" -p 30 --dta -q --phred33 \" -max_mismat_cnt $gg{'max_mismat_cnt'} -max_mismat_ratio $gg{'max_mismat_ratio'}"; 
 			&exeCmd_1cmd($cmd) and &stopErr("[CMD] Failed at cmd: $cmd\n"); 
-			$cmd = "perl $gg{'pl_fix_NHnum'} -inBam $gg{'wrk_dir'}/${k1}_${i}_srt.bam -outBam $gg{'wrk_dir'}/${k1}_${i}_fixNH.bam -exe_samtools $gg{'exe_samtools'} -para_samTsrt \" -\@ 10 -m 4G \""; 
+
+			chdir($gg{'abs_wrk_dir'}); 
+			$cmd = "perl $gg{'pl_fix_NHnum'} -inBam $gg{'pref'}.${k1}_${i}_srt.bam -outBam $gg{'pref'}.${k1}_${i}_fixNH.bam -exe_samtools $gg{'exe_samtools'} -para_samTsrt \" -\@ 10 -m 4G \""; 
 			&exeCmd_1cmd($cmd) and &stopErr("[CMD] Failed at cmd: $cmd\n"); 
-			push(@fixBams, "$gg{'wrk_dir'}/${k1}_${i}_fixNH.bam"); 
+			chdir($gg{'abs_cur_dir'}); 
+
+			push(@fixBams, "$gg{'wrk_dir'}/$gg{'pref'}.${k1}_${i}_fixNH.bam"); 
+			&fileSunhh::_rmtree("$gg{'wrk_dir'}/$gg{'pref'}.${k1}_${i}_srt.bam"); 
 		}
 	}
 	$cmd = "$gg{'exe_samtools'} merge -n $gg{'outBam'} "; 
@@ -69,8 +74,7 @@ sub step1_run_aln {
 	for my $k1 (qw/tgt_fa src_fa/) {
 		for (my $i=0; $i<@{$gg{$k1}}; $i++) {
 			&fileSunhh::_rmtree("$gg{'wrk_dir'}/$gg{'pref'}.pref_RS.${k1}_$i"); 
-			&fileSunhh::_rmtree("$gg{'wrk_dir'}/${k1}_${i}_srt.bam"); 
-			&fileSunhh::_rmtree("$gg{'wrk_dir'}/${k1}_${i}_fixNH.bam"); 
+			&fileSunhh::_rmtree("$gg{'wrk_dir'}/$gg{'pref'}.${k1}_${i}_fixNH.bam"); 
 		}
 	}
 
@@ -89,6 +93,9 @@ sub setGlob {
 	$gg{'max_mismat_cnt'}   = -1; 
 	$gg{'max_mismat_ratio'} = -1; 
 	$gg{'wrk_dir'}          = './'; 
+
+	$gg{'abs_cur_dir'}     = &fileSunhh::_abs_path("./"); 
+	$gg{'abs_wrk_dir'}     = &fileSunhh::_abs_path($gg{'wrk_dir'}); 
 
 $gg{'help_txt'} = <<"HH"; 
 ################################################################################
@@ -135,6 +142,8 @@ sub applyOpt {
 
 	$gg{'outBam'}           = "$gg{'wrk_dir'}/$gg{'pref'}_comb.bam"; 
 	defined $opts{'outBam'} and $gg{'outBam'} = $opts{'outBam'}; 
+
+	$gg{'abs_wrk_dir'} = &fileSunhh::_abs_path($gg{'wrk_dir'}); 
 
 	return; 
 }# applyOpt() 

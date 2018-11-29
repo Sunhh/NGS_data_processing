@@ -2,6 +2,7 @@
 # 2014-03-20 A script to deal with fastq format reads. It will be always in processing. 
 # 2014-03-25 Add function to search a pattern in reads, and return different values as defined. 
 # 2018-06-28 Split reads by their RUN information; 
+# 2018-10-28 Stat barcode tag; 
 
 BEGIN {
 	use File::Basename; 
@@ -87,6 +88,10 @@ perl $0 in.fastq
   -forceSep   [Boolean] Force to separate the input reads even though the output files will be bigger than 10. 
   -onlyCheck  [Boolean] Only check the output number, instead of really output files. 
 
+
+-statBarc     [Number] Count barcode frequency in read ID line. 
+  -statBarcID [pref]
+
 #******* Instruction of this program *********#
 HELP
 	exit(1); 
@@ -110,6 +115,7 @@ GetOptions(\%opts,
 	"reorder:s", 
 	"clean_fq!", 
 	"sepByRG:s", "rdIDfmt:s", "forceSep!", "onlyCheck!", 
+	"statBarc:i", "statBarcID:s", 
 	"help!", 
 ); 
 
@@ -171,10 +177,37 @@ my %good_str = qw(
 &reorder() if ( defined $opts{'reorder'} ); 
 &cleanFq() if ( $opts{'clean_fq'} ); 
 &sepByRG() if ( defined $opts{'sepByRG'} ); 
+&statBarcode() if ( defined $opts{'statBarc'} ); 
 
 #****************************************************************#
 #--------------Subprogram------------Start-----------------------#
 #****************************************************************#
+
+sub statBarcode {
+	$opts{'statBarc'} <= 0 and $opts{'statBarc'} = 10000; 
+	$opts{'statBarcID'} //= 'pref'; 
+	my %hh; 
+	for my $fh1 (@InFp) {
+		my $nn = 0; 
+		while (my $l1 = <$fh1>) {
+			<$fh1>; <$fh1>; <$fh1>; 
+			$nn++; 
+			$l1 =~ m!^\@\S+\s+[12]:[YN]:\d+:([ATGCN]+)\s*$! or &stopErr("[Err] Bad foramt of read ID line: $_\n"); # 1:N:0:TGCGTAAC
+			$hh{$1} ++; 
+			$nn >= $opts{'statBarc'} and last; 
+		}
+	}
+	my @bb = sort {$hh{$b} <=> $hh{$a} || $a cmp $b} keys %hh; 
+	if (scalar(@bb) == 1 or $hh{$bb[0]} > $hh{$bb[1]}*10) {
+		print STDOUT join("\t", $opts{'statBarcID'}, $bb[0], $hh{$bb[0]})."\n"; 
+	} else {
+		print STDOUT join("\t", $opts{'statBarcID'}, qw/NOT_SURE 0/)."\n"; 
+	}
+	for my $bc (@bb) {
+		&tsmsg("[Msg] $opts{'statBarcID'}\t$bc\t$hh{$bc}\n"); 
+	}
+	return; 
+}# statBarcode() 
 
 sub sepByRG {
 	$opts{'rdIDfmt'} //= 'M1'; 

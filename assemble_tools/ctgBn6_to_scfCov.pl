@@ -101,9 +101,17 @@ while (<>) {
 	}
 
 	$ident >= 100 * $opts{'minIdent'} or next; 
-	defined $ctg2scf{$qid} or &stopErr("[Err] No contig_ID [$qid] found.\n"); 
+	# defined $ctg2scf{$qid} or &stopErr("[Err] No contig_ID [$qid] found.\n"); 
 	my @r1s = $ms_obj->switch_position( 'qry2ref'=>\%ctg2scf , 'qryID'=>$qid, 'qryPos'=>$qs ); 
 	my @r1e = $ms_obj->switch_position( 'qry2ref'=>\%ctg2scf , 'qryID'=>$qid, 'qryPos'=>$qe ); 
+	unless (@{$r1s[0]} > 0) {
+		@r1s = ([$qid, $qs, '+']); 
+		$info{$qid}{'noN'} //= $ql; 
+	}
+	unless (@{$r1e[0]} > 0) {
+		@r1e = ([$qid, $qe, '+']); 
+		$info{$qid}{'noN'} //= $ql; 
+	}
 	$r1s[0][0] eq $r1e[0][0] or &stopErr("[Err] Bad scaffold found [$r1s[0][0]] and [$r1e[0][0]] : $_\n"); 
 	my (@r2s, @r2e); 
 	if (defined $ctg2scf{$tid}) {

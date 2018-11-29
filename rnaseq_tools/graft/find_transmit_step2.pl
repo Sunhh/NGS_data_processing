@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# 2018-10-25 : Retrieve alignments of possible transmitted reads. 
 use strict; 
 use warnings; 
 use LogInforSunhh; 
@@ -15,6 +16,7 @@ GetOptions(\%opts,
 	"wrk_dir:s",        # './', Assign a directory to store all resulting bam files, instead of in current folder. 
 	
 	"exe_samtools:s", 
+	"pl_getAln:s",  # get_alnBam_by_src2tgt_rdList.pl
 ); 
 
 my %flag_UN = %{ &SeqAlnSunhh::mk_flag( 'keep' => '2=1' ) }; 
@@ -27,8 +29,9 @@ my %gg;
 sub step2_filter_mismat {
 	# %{$gg{'src_fa_rdMisMat'}{$rdID}}; 
 	# Produce : 
-	#   $gg{'inBam'}.src2tgt_rdList.1 ; 
-	#   $gg{'inBam'}.stat    ; 
+	#   $gg{'wrk_dir'}/$gg{'pref'}.src2tgt_rdList ; 
+	#   $gg{'wrk_dir'}/$gg{'pref'}.src2tgt_rdStat ; 
+	#   $gg{'wrk_dir'}/$gg{'pref'}.src2tgt_rd.bam ; 
 	
 	-e $gg{'inBam'} or &stopErr("[Err] Failed to find input _comb.bam file [$gg{'inBam'}]\n"); 
 
@@ -60,10 +63,12 @@ sub step2_filter_mismat {
 				&process_prevH( \%prevH ); 
 				$prevH{'rdID'} = $rdID; 
 				$prevH{'min_mismat'}{$refClass} = $statH->{'whole_mismat'}; 
+				$prevH{'rdLen'} = $statH->{'read_len'}; 
 			}
 		} else {
 			$prevH{'rdID'} = $rdID; 
 			$prevH{'min_mismat'}{$refClass} = $statH->{'whole_mismat'}; 
+			$prevH{'rdLen'} = $statH->{'read_len'}; 
 		}
 	}
 	close F; 
@@ -75,33 +80,52 @@ sub step2_filter_mismat {
 	}
 
 	# Output potential transmitted reads list. 
-	my $ofh_1 = &openFH("$gg{'inBam'}.src2tgt_rdList", '>'); 
-	print {$ofh_1} join("\t", qw/readID src_misN tgt_misN/)."\n"; 
+	my $listFile = "$gg{'wrk_dir'}/$gg{'pref'}.src2tgt_rdList"; 
+	my $ofh_1 = &openFH("$listFile", '>'); 
+	print {$ofh_1} join("\t", qw/readID src_misN tgt_misN rdLen/)."\n"; 
 	for my $t1 (@{$gg{'list_src2tgt'}}) {
 		print {$ofh_1} join("\t", @$t1)."\n"; 
 	}
 	for my $t0 (qw/mismat_tgtOnly mismat_srcHigh mismat_same mismat_tgtHigh mismat_srcOnly/) {
 		$gg{'rdCnt'}{$t0} //= 0; 
 	}
-	&fileSunhh::write2file("$gg{'inBam'}.stat", "", '>'); 
-	&fileSunhh::write2file("$gg{'inBam'}.stat", join("\t", "target_only",   $gg{'rdCnt'}{'mismat_tgtOnly'})."\n", '>>'); 
-	&fileSunhh::write2file("$gg{'inBam'}.stat", join("\t", "target_better", $gg{'rdCnt'}{'mismat_srcHigh'})."\n", '>>'); 
-	&fileSunhh::write2file("$gg{'inBam'}.stat", join("\t", "same_mismatch", $gg{'rdCnt'}{'mismat_same'})."\n",    '>>'); 
-	&fileSunhh::write2file("$gg{'inBam'}.stat", join("\t", "source_better", $gg{'rdCnt'}{'mismat_tgtHigh'})."\n", '>>'); 
-	&fileSunhh::write2file("$gg{'inBam'}.stat", join("\t", "source_only",   $gg{'rdCnt'}{'mismat_srcOnly'})."\n", '>>'); 
+	my $statFile = "$gg{'wrk_dir'}/$gg{'pref'}.src2tgt_rdStat"; 
+	&fileSunhh::write2file("$statFile", "", '>'); 
+	&fileSunhh::write2file("$statFile", join("\t", "target_only",   $gg{'rdCnt'}{'mismat_tgtOnly'})."\n", '>>'); 
+	&fileSunhh::write2file("$statFile", join("\t", "target_better", $gg{'rdCnt'}{'mismat_srcHigh'})."\n", '>>'); 
+	&fileSunhh::write2file("$statFile", join("\t", "same_mismatch", $gg{'rdCnt'}{'mismat_same'})."\n",    '>>'); 
+	&fileSunhh::write2file("$statFile", join("\t", "source_better", $gg{'rdCnt'}{'mismat_tgtHigh'})."\n", '>>'); 
+	&fileSunhh::write2file("$statFile", join("\t", "source_only",   $gg{'rdCnt'}{'mismat_srcOnly'})."\n", '>>'); 
+
+	# Retrive possible transmitted reads alignment. Produce : $gg{'wrk_dir'}/$gg{'pref'}.src2tgt_rd.bam
+	my $cmd = ''; 
+	$cmd .= "perl $gg{'pl_getAln'} "; 
+	$cmd .= " -pref      $gg{'pref'} "; 
+	$cmd .= " -wrk_dir   $gg{'wrk_dir'} "; 
+	$cmd .= " -inBam     $gg{'inBam'} "; 
+	$cmd .= " -inRdList  $gg{'wrk_dir'}/$gg{'pref'}.src2tgt_rdList "; 
+	$cmd .= " -exe_samtools $gg{'exe_samtools'} "; 
+	&exeCmd_1cmd($cmd) and &stopErr("[Err] Failed at cmd: $cmd\n"); 
 	
 	return; 
 }# step2_filter_mismat() 
 
 
 sub setGlob {
+	$gg{'dir_abs'}      = &fileSunhh::_dirname( &fileSunhh::_abs_path($0) ); 
+	$gg{'dir_link'}     = &fileSunhh::_dirname( &fileSunhh::_abs_path_4link($0) ); 
 	$gg{'pref'}         = 'out'; 
+	$gg{'wrk_dir'}          = './'; 
+	$gg{'inBam'}        = "$gg{'wrk_dir'}/$gg{'pref'}_comb.bam"; 
 
 	$gg{'exe_samtools'} = 'samtools'; 
-	$gg{'wrk_dir'}          = './'; 
+
+	$gg{'pl_getAln'}    = (-e "$gg{'dir_abs'}/") ? "$gg{'dir_abs'}/get_alnBam_by_src2tgt_rdList.pl" : "$gg{'dir_link'}/get_alnBam_by_src2tgt_rdList.pl"; 
 
 $gg{'help_txt'} = <<"HH"; 
 ################################################################################
+#   Retrieve alignments of possible transmitted reads. 
+#
 # perl $0   -pref $gg{'pref'}   -src_fa fa   -tgt_fa fa  
 #
 #   -pref       [$gg{'pref'}] Output prefix 
@@ -110,10 +134,15 @@ $gg{'help_txt'} = <<"HH";
 #   -src_fa     [faFile] \@ Indexed fasta files for source taxa where transmitted reads come from. 
 #   -tgt_fa     [faFile] \@ Indexed fasta files for target taxa where transmitted reads go to. 
 #   
-#
-#
-#
 #   -exe_samtools      [$gg{'exe_samtools'}] 
+#
+#   -pl_getAln         [$gg{'pl_getAln'}]
+#
+#
+# Produce:  
+#   $gg{'wrk_dir'}/$gg{'pref'}.src2tgt_rdList
+#   $gg{'wrk_dir'}/$gg{'pref'}.src2tgt_rdStat
+#   $gg{'wrk_dir'}/$gg{'pref'}.src2tgt_rd.bam
 ################################################################################
 HH
 
@@ -213,7 +242,7 @@ sub process_prevH {
 	if ($hr->{'min_mismat'}{'tgt'} < 0) {
 		# This read may come from source. 
 		$gg{'rdCnt'}{'mismat_srcOnly'} ++; 
-		push(@{$gg{'list_src2tgt'}}, [ $hr->{'rdID'}, $hr->{'min_mismat'}{'src'}, $hr->{'min_mismat'}{'tgt'} ]); 
+		push(@{$gg{'list_src2tgt'}}, [ $hr->{'rdID'}, $hr->{'min_mismat'}{'src'}, $hr->{'min_mismat'}{'tgt'}, $hr->{'rdLen'} ]); 
 	} elsif ($hr->{'min_mismat'}{'src'} < 0) {
 		# There is no alignment in source, so I dont want this read. 
 		$gg{'rdCnt'}{'mismat_tgtOnly'} ++; 
@@ -224,7 +253,7 @@ sub process_prevH {
 	} else {
 		# This read may come from source. 
 		$gg{'rdCnt'}{'mismat_tgtHigh'} ++; 
-		push(@{$gg{'list_src2tgt'}}, [ $hr->{'rdID'}, $hr->{'min_mismat'}{'src'}, $hr->{'min_mismat'}{'tgt'} ]); 
+		push(@{$gg{'list_src2tgt'}}, [ $hr->{'rdID'}, $hr->{'min_mismat'}{'src'}, $hr->{'min_mismat'}{'tgt'}, $hr->{'rdLen'} ]); 
 	}
 	%{$hr} = (); 
 	return; 
