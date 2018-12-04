@@ -19,6 +19,9 @@ GetOptions(\%opts,
 	"wrk_dir:s",      # Work dir; 
 	"cpuN:i", 
 	"check_gz!", 
+
+	"runStringtie!", "exe_stringtie:s", "para_stringtie:s", 
+
 	"help!", 
 ); 
 
@@ -90,6 +93,11 @@ for my $q ( @{$gg{'fq_infor'}} ) {
 	&exeCmd_1cmd("$gg{'exe_samtools'} sort $gg{'para_samtools_srt'} -o $qh{'pref'}_srt.bam $qh{'pref'}_good.bam") and &stopErr("[Err] Failed to sort bam file.\n"); 
 	&fileSunhh::_rmtree("$qh{'pref'}_good.bam"); 
 
+	# Run stringtie if required. 
+	if ( $opts{'runStringtie'} ) {
+		&exeCmd_1cmd("$gg{'exe_stringtie'} $gg{'para_stringtie'} -o $qh{'pref'}_srt.asm.gtf -l $qh{'pref'}   $qh{'pref'}_srt.bam") and &stopErr("[Err] Failed to sort bam file.\n"); 
+	}
+
 	&fileSunhh::_move( "$tmpDir/splicesites.txt", "$qh{'pref'}_splicesites.txt" ); 
 	&fileSunhh::_move( "$tmpDir/$qh{'pref'}_time1.ht2.log", "$qh{'pref'}_time1.ht2.log" ); 
 	&fileSunhh::_move( "$tmpDir/$qh{'pref'}_time2.ht2.log", "$qh{'pref'}_time2.ht2.log" ); 
@@ -152,11 +160,13 @@ sub stat_aln {
 # Return for single: ([ {'SM'=>SM, 'RG'=>RG, 'LB'=>LB, 'pref'=>pref, 'fq1'=>fq1, 'fq2'=>'' , 'PL'=>'illumina', 'PU'=>RG}, {}, ... ])
 
 sub setGlob {
-	$gg{'exe_hisat2'} = 'hisat2'; 
-	$gg{'exe_samtools'} = 'samtools'; 
+	$gg{'exe_hisat2'}        = 'hisat2'; 
+	$gg{'exe_samtools'}      = 'samtools'; 
+	$gg{'exe_stringtie'}     = '/Data/Sunhh/src/assemble/stringtie/stringtie-1.3.3b.Linux_x86_64/stringtie'; 
 	$gg{'para_samtools_srt'} = ' -@ 4 -m 5G '; 
 	# $gg{'para_hisat2'} = ' -p 4 --dta-cufflinks -q --phred33 '; 
 	$gg{'para_hisat2'} = ' -p 4 --dta -q --phred33 '; 
+	$gg{'para_stringtie'}    = ' -p 4 '; # Could be ' -p 10 -G CmaCmoWM97scf.genome.gtf '
 	$gg{'max_mismat_ratio'} = -1; 
 	$gg{'max_mismat_cnt'} = -1; 
 	$gg{'oriDir'}     = &fileSunhh::_abs_path_4link("./"); 
@@ -194,6 +204,11 @@ sub setGlob {
 #
 #    -para_samtools_srt   ['$gg{'para_samtools_srt'}']
 #
+#
+#  -runStringtie          [Boolean]
+#    -exe_stringtie       ['$gg{'exe_stringtie'}']
+#    -para_stringtie      ['$gg{'para_stringtie'}'] Could be ' -p 10 -G CmaCmoWM97scf.genome.gtf '
+#
 ################################################################################
 HH
 	defined $opts{'help'} and &LogInforSunhh::usage($gg{'help_txt'}); 
@@ -204,13 +219,13 @@ HH
 	$gg{'db_hisat2'} = &fileSunhh::_abs_path_4link( $opts{'db_hisat2'} ); 
 
 	# replace default executable tools; 
-	for my $exeTool (qw/exe_hisat2 exe_samtools/) {
+	for my $exeTool (qw/exe_hisat2 exe_samtools exe_stringtie/) {
 		defined $opts{$exeTool} and $gg{$exeTool} = $opts{$exeTool}; 
 		$gg{$exeTool} = &fileSunhh::_which( $gg{$exeTool} ); 
 		defined $gg{$exeTool} or &stopErr("[Err] Failed to find -$exeTool [$opts{$exeTool}]\n"); 
 	}
 	# replace default parameters. 
-	for my $pp (qw/para_hisat2 max_mismat_ratio max_mismat_cnt wrk_dir cpuN para_samtools_srt/) {
+	for my $pp (qw/para_hisat2 max_mismat_ratio max_mismat_cnt wrk_dir cpuN para_samtools_srt para_stringtie/) {
 		defined $opts{$pp} and $gg{$pp} = $opts{$pp}; 
 	}
 	$gg{'wrk_dir'} = &fileSunhh::_abs_path_4link( $gg{'wrk_dir'} ); 
