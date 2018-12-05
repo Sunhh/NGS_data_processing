@@ -1,0 +1,2 @@
+run_TMM_scale_matrix.pl : This script comes from Trinity, and converts raw counts matrix (not nomalized) to TMM scaled. The input could also be TPM without normalization across samples. 
+
