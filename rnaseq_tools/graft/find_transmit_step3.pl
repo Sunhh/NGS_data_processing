@@ -28,6 +28,8 @@ GetOptions(\%opts,
 
 	"exe_samtools:s", 
 	"pl_getAln:s",   # $gg{'dir_abs'}/get_alnBam_by_src2tgt_rdList.pl 
+	
+	"testChk!", 
 ); 
 
 my %flag_UN = %{ &SeqAlnSunhh::mk_flag( 'keep' => '2=1' ) };
@@ -52,6 +54,8 @@ sub step3_cleanByTgtRd {
 	# Format bam files. 
 	my $bamlist = "$gg{'wrk_dir'}/$gg{'pref'}.step3.iBamList"; 
 	my $bamlistSrc = "$gg{'wrk_dir'}/$gg{'pref'}.step3.iBamListSrc"; 
+	my $cmd = ""; 
+if (!$opts{'testChk'}) {
 	&fileSunhh::write2file($bamlist,'','>'); 
 	&fileSunhh::write2file($bamlistSrc, '', '>'); 
 	for (my $i=0; $i<@{$gg{'transRdBam'}}; $i++) {
@@ -69,7 +73,6 @@ sub step3_cleanByTgtRd {
 	}
 	push(@toRM, $bamlist, $bamlistSrc); 
 	# Combine bam files. 
-	my $cmd = ""; 
 	$cmd .= "$gg{'exe_samtools'} merge -c -f "; 
 	$cmd .= " -\@ 10 "; 
 	$cmd .= " -b $bamlist "; 
@@ -87,15 +90,18 @@ sub step3_cleanByTgtRd {
 	$cmd = ""; 
 	push(@toRM, "$gg{'wrk_dir'}/$gg{'pref'}.step3.jnSrt.bam"); 
 
+}
 	# Check reads by sliding window; 
 	my %curH; 
 	my @notTgtRd; 
 	open F,'-|', "$gg{'exe_samtools'} view $gg{'wrk_dir'}/$gg{'pref'}.step3.jnSrt.bam" or &stopErr("[Err] Failed to read bam file [$gg{'wrk_dir'}/$gg{'pref'}.step3.jnSrt.bam]\n"); 
+	my %tmp_cnt = ( 'cntN_base'=>0 , 'cntN_step'=>1e5); 
 	while (<F>) {
 		chomp; 
 		my @ta = split(/\t/, $_); 
 		defined $flag_UN{$ta[1]} and next; 
 		$ta[5] eq '*' and next; 
+		&fileSunhh::log_section( $. , \%tmp_cnt ) and &tsmsg("[Msg] Processing $. line.\n"); 
 		if (defined $curH{'refID'}) {
 			if ($curH{'refID'} ne $ta[2]) {
 				my ($notTgtRd_ar) = &process_curH(\%curH, 'end'); 
@@ -132,7 +138,8 @@ sub step3_cleanByTgtRd {
 	$cmd .= " -wrk_dir  $gg{'wrk_dir'} -pref $gg{'pref'}.step3 "; 
 	$cmd .= " -inBam    $gg{'wrk_dir'}/$gg{'pref'}.step3.jnSrc.bam "; 
 	$cmd .= " -inRdList $gg{'wrk_dir'}/$gg{'pref'}.step3.notTgtRd.list "; 
-	$cmd .= " -outBam   $gg{'wrk_dir'}/$gg{'pref'}.step3.notTgtRd.bam "; 
+	# $cmd .= " -outBam   $gg{'wrk_dir'}/$gg{'pref'}.step3.notTgtRd.bam "; 
+	$cmd .= " -outBam   $gg{'outBam'}  "; 
 	$cmd .= " -exe_samtools $gg{'exe_samtools'} "; 
 	&exeCmd_1cmd($cmd) and &stopErr("[Err] Failed at cmd: $cmd\n"); 
 	$cmd = ""; 
@@ -152,7 +159,10 @@ sub process_curH {
 	my $max_span = 200e3; 
 
 	my $stopChkS = $cH->{'startP'} + $gg{'windSize'} - $max_span; 
+	$stopChkS < $cH->{'startP'} and &stopErr("[Err] StopChkS [$stopChkS] smaller than start [$cH->{'startP'}]\n"); 
 	$all eq 'n' or $stopChkS = $cH->{'aln'}[-1][3]+$max_span; 
+	# $opts{'testChk'} and &tsmsg("[Msg] Processing $cH->{'refID'} $cH->{'startP'} to $stopChkS\n"); 
+	&tsmsg("[Msg] Processing $cH->{'refID'} $cH->{'startP'} to $stopChkS\n"); 
 	my (@newAln); 
 	for (my $i=0; $i<@{$cH->{'aln'}}; $i++) {
 		if ( $cH->{'aln'}[$i][3] > $stopChkS ) {
@@ -205,6 +215,7 @@ sub add2curH {
 
 sub fmtBamRG {
 	my ($iBam, $oBam, $rgID) = @_; 
+	&tsmsg("[Msg] Reformatting bam file [$iBam]\n"); 
 	open F,'-|', "$gg{'exe_samtools'} view -h $iBam " or &stopErr("[Err] Failed to read bam file [$iBam]\n");
 	open O,'|-', "$gg{'exe_samtools'} view -o $oBam - " or &stopErr("[Err] Failed to write bam file [$oBam]\n"); 
 	my $has_RG = 0; 

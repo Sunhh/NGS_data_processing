@@ -56,9 +56,23 @@ HH
 #
 
 my %glob; 
+## Setup windows. 
+my $mm = mathSunhh->new(); 
+my %chr_wind; 
 if ( defined $opts{'wind_se_file'} ) {
 	$glob{'wind_se'} = {}; 
 	%{$glob{'wind_se'}} = map { $_->[0] => [ $_->[1], $_->[2] ] }&fileSunhh::load_tabFile( $opts{'wind_se_file'}, 0 ); 
+	if ($opts{'showAll'}) {
+		for my $chrV (keys %{$glob{'wind_se'}}) {
+			$chr_wind{$chrV} = $mm->setup_windows(
+			  'ttl_start' => ( defined $glob{'wind_se'}{$chrV} ) ? $glob{'wind_se'}{$chrV}[0] : $opts{'wind_start'}, 
+			  'ttl_end'   => ( defined $glob{'wind_se'}{$chrV} ) ? $glob{'wind_se'}{$chrV}[1] : $opts{'wind_end'}, 
+			  'wind_size' => $opts{'wind_length'}, 
+			  'wind_step' => $opts{'wind_step'}, 
+			  'minRatio'  => 0 
+			); 
+		}
+	}
 }
 
 $opts{'wind_length'} = $opts{'wind_length'} // 1; 
@@ -74,14 +88,11 @@ my $symbol = "\t";
 defined $opts{'symbol'} and $symbol = $opts{'symbol'}; 
 # $opts{'cnt_colN'} = $opts{'cnt_colN'} ;
 
-## Setup windows. 
-my $mm = mathSunhh->new(); 
 
 #  CHR_A         BP_A        SNP_A  CHR_B         BP_B        SNP_B           R2
 #      1         1284      s1_1284      1         1906      s1_1906    0.0801282
 &tsmsg("[Rec] Reading file.\n"); 
 my $inLine = 0; 
-my %chr_wind; 
 my $ln_cnt = 0; 
 while (<>) {
 	$ln_cnt ++; 

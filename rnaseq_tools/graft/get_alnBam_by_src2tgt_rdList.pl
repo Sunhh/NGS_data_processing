@@ -119,7 +119,7 @@ sub applyOpt {
 	$gg{'inRdList'}         = "$gg{'wrk_dir'}/$gg{'pref'}.src2tgt_rdList"; 
 	defined $opts{'inRdList'} and $gg{'inRdList'} = $opts{'inRdList'}; 
 	$gg{'outBam'}           = "$gg{'wrk_dir'}/$gg{'pref'}.src2tgt_rd.bam"; 
-	defined $opts{'outBa,'} and $gg{'outBam'} = $opts{'outBam'}; 
+	defined $opts{'outBam'} and $gg{'outBam'} = $opts{'outBam'}; 
 
 	return; 
 }# applyOpt() 

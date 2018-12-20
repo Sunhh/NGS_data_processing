@@ -109,7 +109,7 @@ for my $stepID (split(/,/, $gg{'doStep'})) {
 		# Output : -outBam wrk_dir/pref.src2tgt_cleanRd.bam
 		#           Here I add .step3 to avoid repeat. 
 		$cmd = "perl $gg{'pl_step3'} "; 
-		$cmd .= " -pref $gg{'pref'}.step3 -wrk_dir $gg{'wrk_dir'} "; 
+		$cmd .= " -pref $gg{'pref'} -wrk_dir $gg{'wrk_dir'} "; 
 		$cmd .= join(" ", " ", map { "-bgRdBam $_" } @{$gg{'bgRdBam'}}); 
 		&exeCmd_1cmd($cmd) and &stopErr("[Err] Failed at cmd: $cmd\n"); 
 	} elsif ( $stepID eq 'X1' ) {
@@ -195,6 +195,7 @@ $gg{'help_txt'} = <<"HH";
 #
 #   -pl_step1                  [$gg{'pl_step1'}]
 #   -pl_step2                  [$gg{'pl_step2'}]
+#   -pl_step3                  [$gg{'pl_step3'}]
 #   -pl_stepX1                 [$gg{'pl_stepX1'}]
 #   -pl_stepX2                 [$gg{'pl_stepX2'}]
 ################################################################################
