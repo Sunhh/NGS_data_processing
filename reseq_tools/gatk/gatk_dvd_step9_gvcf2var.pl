@@ -24,6 +24,7 @@ GetOptions(\%opts,
 
 	# Detail parameters 
 	"CallByScf!",     # 
+	"intervalLen:i",  # -1. Used in step8, and I want to use this in step9. 
 ); 
 
 ################################################################################
@@ -68,6 +69,7 @@ perl $0 fasdfasf
   ### Specific parameters : These parameters will over-write conf_file. 
   For GenotypeGVCFs     
     -CallByScf          [Boolean] If given, I'll try to call variants for each scaffold with multi-threads; 
+    -intervalLen        [number] Default -1. If this is bigger than 0, I will run genotyping with intervals when not breaking scaffolds. 
 
 ################################################################################
 H1
@@ -180,6 +182,9 @@ sub set_stepPara {
 	$opts{'CallByScf'} and $gg{'para'}{'CallByScf'} = 1; 
 	$gg{'para'}{'CallByScf'} =~ s!^\s*(false|F)\s*$!0!i; # True/False/0/1; 
 	$gg{'para'}{'CallByScf'} =~ s!^\s*(true|T)\s*$!1!i; # True/False/0/1; 
+	$gg{'para'}{'intervalLen'} = -1; 
+	defined $cfg{'intervalLen'}  and $gg{'para'}{'intervalLen'} = $cfg{'intervalLen'}; 
+	defined $opts{'intervalLen'} and $gg{'para'}{'intervalLen'} = $opts{'intervalLen'}; 
 
 	# Get GVCF list from in_gvcf_list; 
 	$gg{'jnGVCF_list'} = [ map { $_->[0] } &fileSunhh::load_tabFile( $opts{'in_gvcf_list'} ) ]; 

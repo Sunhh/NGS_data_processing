@@ -22,6 +22,7 @@ GetOptions(\%opts,
 
 	"runStringtie!", "exe_stringtie:s", "para_stringtie:s", 
 
+	"exe_perl:s", "pl_fix_NHnum:s", 
 	"help!", 
 ); 
 
@@ -92,6 +93,9 @@ for my $q ( @{$gg{'fq_infor'}} ) {
 	&clean_sam2bam( "$tmpDir/$qh{'pref'}_x2.sam", "$qh{'pref'}_good.bam" ); 
 	&exeCmd_1cmd("$gg{'exe_samtools'} sort $gg{'para_samtools_srt'} -o $qh{'pref'}_srt.bam $qh{'pref'}_good.bam") and &stopErr("[Err] Failed to sort bam file.\n"); 
 	&fileSunhh::_rmtree("$qh{'pref'}_good.bam"); 
+	
+	# Fix NH number after removing bad alignments. 
+	&exeCmd_1cmd("$gg{'exe_perl'} $gg{'pl_fix_NHnum'}   -inBam $qh{'pref'}_srt.bam   -outBam $qh{'pref'}_fixNH.bam") and &stopErr("[Err] Failed to run "); 
 
 	# Run stringtie if required. 
 	if ( $opts{'runStringtie'} ) {
@@ -163,6 +167,8 @@ sub setGlob {
 	$gg{'exe_hisat2'}        = 'hisat2'; 
 	$gg{'exe_samtools'}      = 'samtools'; 
 	$gg{'exe_stringtie'}     = '/Data/Sunhh/src/assemble/stringtie/stringtie-1.3.3b.Linux_x86_64/stringtie'; 
+	$gg{'exe_perl'}          = 'perl'; 
+	$gg{'pl_fix_NHnum'}      = '/home/Sunhh/tools/github/NGS_data_processing/rnaseq_tools/fix_NHnum.pl'; 
 	$gg{'para_samtools_srt'} = ' -@ 4 -m 5G '; 
 	# $gg{'para_hisat2'} = ' -p 4 --dta-cufflinks -q --phred33 '; 
 	$gg{'para_hisat2'} = ' -p 4 --dta -q --phred33 '; 
@@ -204,6 +210,8 @@ sub setGlob {
 #
 #    -para_samtools_srt   ['$gg{'para_samtools_srt'}']
 #
+#  -exe_perl              ['$gg{'exe_perl'}']
+#  -pl_fix_NHnum          ['$gg{'pl_fix_NHnum'}']
 #
 #  -runStringtie          [Boolean]
 #    -exe_stringtie       ['$gg{'exe_stringtie'}']
@@ -219,13 +227,13 @@ HH
 	$gg{'db_hisat2'} = &fileSunhh::_abs_path_4link( $opts{'db_hisat2'} ); 
 
 	# replace default executable tools; 
-	for my $exeTool (qw/exe_hisat2 exe_samtools exe_stringtie/) {
+	for my $exeTool (qw/exe_hisat2 exe_samtools exe_stringtie exe_perl/) {
 		defined $opts{$exeTool} and $gg{$exeTool} = $opts{$exeTool}; 
 		$gg{$exeTool} = &fileSunhh::_which( $gg{$exeTool} ); 
 		defined $gg{$exeTool} or &stopErr("[Err] Failed to find -$exeTool [$opts{$exeTool}]\n"); 
 	}
 	# replace default parameters. 
-	for my $pp (qw/para_hisat2 max_mismat_ratio max_mismat_cnt wrk_dir cpuN para_samtools_srt para_stringtie/) {
+	for my $pp (qw/para_hisat2 max_mismat_ratio max_mismat_cnt wrk_dir cpuN para_samtools_srt para_stringtie pl_fix_NHnum/) {
 		defined $opts{$pp} and $gg{$pp} = $opts{$pp}; 
 	}
 	$gg{'wrk_dir'} = &fileSunhh::_abs_path_4link( $gg{'wrk_dir'} ); 
