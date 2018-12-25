@@ -654,8 +654,8 @@ sub step8_combineGVCF_interval {
 		my @toRun_intervals; # ( [[[id,start,end],[],...], interval_total_length], [], ... )
 		for (my $i=0; $i<@seqLen; $i++) {
 			my ($id, $len) = @{$seqLen[$i]}; 
-			for (my $sP=1; $sP<$gg{'para'}{'intervalLen'}; $sP+=$gg{'para'}{'intervalLen'}) {
-				my $eP = $sP + $gg{'para'}{'intervalLen'}; 
+			for (my $sP=1; $sP<$len; $sP+=$gg{'para'}{'intervalLen'}) {
+				my $eP = $sP + $gg{'para'}{'intervalLen'} - 1; 
 				$eP > $len and $eP = $len; 
 				if (@toRun_intervals == 0) {
 					push(@toRun_intervals, [ [[$id,$sP, $eP]], $eP-$sP+1 ]); 
