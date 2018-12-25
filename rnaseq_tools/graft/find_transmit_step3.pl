@@ -28,14 +28,17 @@ GetOptions(\%opts,
 
 	"exe_samtools:s", 
 	"pl_getAln:s",   # $gg{'dir_abs'}/get_alnBam_by_src2tgt_rdList.pl 
-	
-	"testChk!", 
+
+	"startStep:i", 
 ); 
 
 my %flag_UN = %{ &SeqAlnSunhh::mk_flag( 'keep' => '2=1' ) };
 
 my %gg; 
 $gg{'windSize'} = 1e6; 
+$gg{'isSrcRdID'}   = {}; # Read here has been checked. 1-src, 0-tgt; 
+$gg{'isSrcSeq'}   = {}; # Read sequence here has been checked. 1-src, 0-tgt; 
+
 &setGlob(); 
 &applyOpt(); 
 &step3_cleanByTgtRd(); 
@@ -45,9 +48,9 @@ sub step3_cleanByTgtRd {
 	# Step 3 : Clean possbile transmitted reads by reads from target-only samples. 
 	# Produce : pref.src2tgt_cleanRd.bam : $gg{'wrk_dir'}/$gg{'pref'}.src2tgt_cleanRd.bam
 	
-	scalar(@{$gg{'transRdBam'}}) > 0 or &stopErr("[Err] At least one -transRdBam is required.\n"); 
+	$gg{'startStep'} <= 0 and do { scalar(@{$gg{'transRdBam'}}) > 0 or &stopErr("[Err] At least one -transRdBam is required.\n") }; 
 	for my $fn (@{$gg{'transRdBam'}}) {
-		-e $fn or &stopErr("[Err] Failed to find file -transRdBam [$fn]\n"); 
+		$gg{'startStep'} <= 0 and do { -e $fn or &stopErr("[Err] Failed to find file -transRdBam [$fn]\n"); }; 
 	}
 	my @toRM; 
 	
@@ -55,45 +58,44 @@ sub step3_cleanByTgtRd {
 	my $bamlist = "$gg{'wrk_dir'}/$gg{'pref'}.step3.iBamList"; 
 	my $bamlistSrc = "$gg{'wrk_dir'}/$gg{'pref'}.step3.iBamListSrc"; 
 	my $cmd = ""; 
-if (!$opts{'testChk'}) {
-	&fileSunhh::write2file($bamlist,'','>'); 
-	&fileSunhh::write2file($bamlistSrc, '', '>'); 
+	$gg{'startStep'} <= 0 and &fileSunhh::write2file($bamlist,'','>'); 
+	$gg{'startStep'} <= 0 and &fileSunhh::write2file($bamlistSrc, '', '>'); 
 	for (my $i=0; $i<@{$gg{'transRdBam'}}; $i++) {
 		my $newFn = "$gg{'wrk_dir'}/$gg{'pref'}.src_$i.bam"; 
-		&fmtBamRG( $gg{'transRdBam'}[$i], $newFn, "src" ); 
-		&fileSunhh::write2file($bamlist, "$newFn\n",'>>'); 
-		&fileSunhh::write2file($bamlistSrc, "$gg{'transRdBam'}[$i]", '>>'); 
-		push(@toRM, $newFn); 
+		$gg{'startStep'} <= 0 and &fmtBamRG( $gg{'transRdBam'}[$i], $newFn, "src" ); 
+		$gg{'startStep'} <= 0 and &fileSunhh::write2file($bamlist, "$newFn\n",'>>'); 
+		$gg{'startStep'} <= 0 and &fileSunhh::write2file($bamlistSrc, "$gg{'transRdBam'}[$i]", '>>'); 
+		$gg{'startStep'} <= 0 and push(@toRM, $newFn); 
 	}
 	for (my $i=0; $i<@{$gg{'bgRdBam'}}; $i++) {
 		my $newFn = "$gg{'wrk_dir'}/$gg{'pref'}.tgt_$i.bam"; 
-		&fmtBamRG( $gg{'bgRdBam'}[$i], $newFn, "tgt" ); 
-		&fileSunhh::write2file($bamlist, "$newFn\n",'>>'); 
-		push(@toRM, $newFn); 
+		$gg{'startStep'} <= 0 and &fmtBamRG( $gg{'bgRdBam'}[$i], $newFn, "tgt" ); 
+		$gg{'startStep'} <= 0 and &fileSunhh::write2file($bamlist, "$newFn\n",'>>'); 
+		$gg{'startStep'} <= 0 and push(@toRM, $newFn); 
 	}
-	push(@toRM, $bamlist, $bamlistSrc); 
+	$gg{'startStep'} <= 0 and push(@toRM, $bamlist, $bamlistSrc); 
 	# Combine bam files. 
-	$cmd .= "$gg{'exe_samtools'} merge -c -f "; 
-	$cmd .= " -\@ 10 "; 
-	$cmd .= " -b $bamlist "; 
-	$cmd .= " $gg{'wrk_dir'}/$gg{'pref'}.step3.jn.bam "; 
-	&exeCmd_1cmd($cmd) and &stopErr("[Err] Failed at cmd: $cmd\n"); 
-	$cmd = ""; 
-	push(@toRM, "$gg{'wrk_dir'}/$gg{'pref'}.step3.jn.bam"); 
+	$gg{'startStep'} <= 0 and $cmd .= "$gg{'exe_samtools'} merge -c -f "; 
+	$gg{'startStep'} <= 0 and $cmd .= " -\@ 10 "; 
+	$gg{'startStep'} <= 0 and $cmd .= " -b $bamlist "; 
+	$gg{'startStep'} <= 0 and $cmd .= " $gg{'wrk_dir'}/$gg{'pref'}.step3.jn.bam "; 
+	$gg{'startStep'} <= 0 and &exeCmd_1cmd($cmd) and &stopErr("[Err] Failed at cmd: $cmd\n"); 
+	$gg{'startStep'} <= 0 and $cmd = ""; 
+	$gg{'startStep'} <= 0 and push(@toRM, "$gg{'wrk_dir'}/$gg{'pref'}.step3.jn.bam"); 
 
 	# Sort joined bam file. 
-	$cmd .= "$gg{'exe_samtools'} sort "; 
-	$cmd .= " -\@ 10 -m 5G "; 
-	$cmd .= " -o $gg{'wrk_dir'}/$gg{'pref'}.step3.jnSrt.bam "; 
-	$cmd .= " $gg{'wrk_dir'}/$gg{'pref'}.step3.jn.bam "; 
-	&exeCmd_1cmd($cmd) and &stopErr("[Err] Failed at cmd: $cmd\n"); 
-	$cmd = ""; 
-	push(@toRM, "$gg{'wrk_dir'}/$gg{'pref'}.step3.jnSrt.bam"); 
+	$gg{'startStep'} <= 1 and $cmd .= "$gg{'exe_samtools'} sort "; 
+	$gg{'startStep'} <= 1 and $cmd .= " -\@ 10 -m 5G "; 
+	$gg{'startStep'} <= 1 and $cmd .= " -o $gg{'wrk_dir'}/$gg{'pref'}.step3.jnSrt.bam "; 
+	$gg{'startStep'} <= 1 and $cmd .= " $gg{'wrk_dir'}/$gg{'pref'}.step3.jn.bam "; 
+	$gg{'startStep'} <= 1 and &exeCmd_1cmd($cmd) and &stopErr("[Err] Failed at cmd: $cmd\n"); 
+	$gg{'startStep'} <= 1 and $cmd = ""; 
+	$gg{'startStep'} <= 1 and push(@toRM, "$gg{'wrk_dir'}/$gg{'pref'}.step3.jnSrt.bam"); 
 
-}
 	# Check reads by sliding window; 
 	my %curH; 
 	my @notTgtRd; 
+if ( $gg{'startStep'} <= 2 ) {
 	open F,'-|', "$gg{'exe_samtools'} view $gg{'wrk_dir'}/$gg{'pref'}.step3.jnSrt.bam" or &stopErr("[Err] Failed to read bam file [$gg{'wrk_dir'}/$gg{'pref'}.step3.jnSrt.bam]\n"); 
 	my %tmp_cnt = ( 'cntN_base'=>0 , 'cntN_step'=>1e5); 
 	while (<F>) {
@@ -101,7 +103,7 @@ if (!$opts{'testChk'}) {
 		my @ta = split(/\t/, $_); 
 		defined $flag_UN{$ta[1]} and next; 
 		$ta[5] eq '*' and next; 
-		&fileSunhh::log_section( $. , \%tmp_cnt ) and &tsmsg("[Msg] Processing $. line.\n"); 
+		&fileSunhh::log_section( $. , \%tmp_cnt ) and &tsmsg("[Msg] Processing $. line for $gg{'pref'}.\n"); 
 		if (defined $curH{'refID'}) {
 			if ($curH{'refID'} ne $ta[2]) {
 				my ($notTgtRd_ar) = &process_curH(\%curH, 'end'); 
@@ -122,30 +124,34 @@ if (!$opts{'testChk'}) {
 	my ($notTgtRd_ar) = &process_curH(\%curH, 'end'); 
 	push(@notTgtRd, @$notTgtRd_ar); 
 	my $ofhRd = &openFH("$gg{'wrk_dir'}/$gg{'pref'}.step3.notTgtRd.list", '>'); 
+	my %hasOutRdID; 
 	for (@notTgtRd) {
+		$gg{'isSrcRdID'}{$_} == 1 or next; 
+		defined $hasOutRdID{$_} and next; 
+		$hasOutRdID{$_} = 1; 
 		print {$ofhRd} "$_\n"; 
 	}
 	close ($ofhRd); 
-	$cmd = ""; 
-	$cmd .= "$gg{'exe_samtools'} merge -c -f "; 
-	$cmd .= " -\@ 10 "; 
-	$cmd .= " -b $bamlistSrc "; 
-	$cmd .= " $gg{'wrk_dir'}/$gg{'pref'}.step3.jnSrc.bam "; 
-	&exeCmd_1cmd($cmd) and &stopErr("[Err] Failed at cmd: $cmd\n"); 
-	$cmd = ""; 
-	push(@toRM, "$gg{'wrk_dir'}/$gg{'pref'}.step3.jnSrc.bam"); 
-	$cmd .= "perl $gg{'pl_getAln'} "; 
-	$cmd .= " -wrk_dir  $gg{'wrk_dir'} -pref $gg{'pref'}.step3 "; 
-	$cmd .= " -inBam    $gg{'wrk_dir'}/$gg{'pref'}.step3.jnSrc.bam "; 
-	$cmd .= " -inRdList $gg{'wrk_dir'}/$gg{'pref'}.step3.notTgtRd.list "; 
-	# $cmd .= " -outBam   $gg{'wrk_dir'}/$gg{'pref'}.step3.notTgtRd.bam "; 
-	$cmd .= " -outBam   $gg{'outBam'}  "; 
-	$cmd .= " -exe_samtools $gg{'exe_samtools'} "; 
-	&exeCmd_1cmd($cmd) and &stopErr("[Err] Failed at cmd: $cmd\n"); 
-	$cmd = ""; 
+}# End if ($gg{'startStep'} <= 2)
+	$gg{'startStep'} <= 3 and $cmd = ""; 
+	$gg{'startStep'} <= 3 and $cmd .= "$gg{'exe_samtools'} merge -c -f "; 
+	$gg{'startStep'} <= 3 and $cmd .= " -\@ 10 "; 
+	$gg{'startStep'} <= 3 and $cmd .= " -b $bamlistSrc "; 
+	$gg{'startStep'} <= 3 and $cmd .= " $gg{'wrk_dir'}/$gg{'pref'}.step3.jnSrc.bam "; 
+	$gg{'startStep'} <= 3 and &exeCmd_1cmd($cmd) and &stopErr("[Err] Failed at cmd: $cmd\n"); 
+	$gg{'startStep'} <= 3 and $cmd = ""; 
+	$gg{'startStep'} <= 3 and push(@toRM, "$gg{'wrk_dir'}/$gg{'pref'}.step3.jnSrc.bam"); # Commended temp; 
+	$gg{'startStep'} <= 4 and $cmd .= "perl $gg{'pl_getAln'} "; 
+	$gg{'startStep'} <= 4 and $cmd .= " -wrk_dir  $gg{'wrk_dir'} -pref $gg{'pref'}.step3 "; 
+	$gg{'startStep'} <= 4 and $cmd .= " -inBam    $gg{'wrk_dir'}/$gg{'pref'}.step3.jnSrc.bam "; 
+	$gg{'startStep'} <= 4 and $cmd .= " -inRdList $gg{'wrk_dir'}/$gg{'pref'}.step3.notTgtRd.list "; 
+	$gg{'startStep'} <= 4 and $cmd .= " -outBam   $gg{'outBam'}  "; 
+	$gg{'startStep'} <= 4 and $cmd .= " -exe_samtools $gg{'exe_samtools'} "; 
+	$gg{'startStep'} <= 4 and &exeCmd_1cmd($cmd) and &stopErr("[Err] Failed at cmd: $cmd\n"); 
+	$gg{'startStep'} <= 4 and $cmd = ""; 
 
 	for (@toRM) {
-		&fileSunhh::_rmtree($_); 
+		$gg{'startStep'} <= 4 and &fileSunhh::_rmtree($_); 
 	}
 
 	return; 
@@ -154,51 +160,158 @@ sub process_curH {
 	my ($cH, $all) = @_; 
 	$all //= 'n'; # If $all eq 'n', this is not the end of the chromosome, or else this %curH has all the alignments at the end of this CHR. 
 
-	my (@notTgtRd, %h); 
-	scalar($cH->{'aln'}) > 0 or return(\@notTgtRd); 
 	my $max_span = 200e3; 
-
+	my (@notTgtRd); 
+	my @allAln = @{$cH->{'aln'}}; 
+	my $cntAln = scalar(@allAln); 
 	my $stopChkS = $cH->{'startP'} + $gg{'windSize'} - $max_span; 
 	$stopChkS < $cH->{'startP'} and &stopErr("[Err] StopChkS [$stopChkS] smaller than start [$cH->{'startP'}]\n"); 
-	$all eq 'n' or $stopChkS = $cH->{'aln'}[-1][3]+$max_span; 
-	# $opts{'testChk'} and &tsmsg("[Msg] Processing $cH->{'refID'} $cH->{'startP'} to $stopChkS\n"); 
-	&tsmsg("[Msg] Processing $cH->{'refID'} $cH->{'startP'} to $stopChkS\n"); 
+	$all eq 'n' or $stopChkS = $allAln[-1][2]+$max_span; 
+	&tsmsg("[Msg] Processing $cH->{'refID'} $cH->{'startP'} to $stopChkS with $cntAln alignments for $gg{'pref'}\n"); 
+	$cntAln > 0 or return(\@notTgtRd); 
+	my @tgtAlnIdx; 
+	my %srcAlnIdx2tgtIdx; 
+	for (my $i=0; $i<@allAln; $i++) {
+		if ( $allAln[$i][3] == 1 ) {
+			# This read comes from src; 
+			if ( $#tgtAlnIdx > -1 ) {
+				$srcAlnIdx2tgtIdx{$i} = [$#tgtAlnIdx, $#tgtAlnIdx+1]; 
+			} else {
+				$srcAlnIdx2tgtIdx{$i} = [-1, 0]; 
+			}
+		} else {
+			push(@tgtAlnIdx, $i); 
+		}
+	}
+	&tsmsg("[Msg]   There are " . scalar(@tgtAlnIdx) . " TGT-alignments for $gg{'pref'}\n"); 
+	&tsmsg("[Msg]   There are " . scalar(keys %srcAlnIdx2tgtIdx) . " SRC-alignments for $gg{'pref'}\n"); 
+
 	my (@newAln); 
-	for (my $i=0; $i<@{$cH->{'aln'}}; $i++) {
-		if ( $cH->{'aln'}[$i][3] > $stopChkS ) {
-			push(@newAln, [ @{$cH->{'aln'}[$i]} ]); 
+	my $i=-1; 
+	for my $cH_curAln (@allAln) {
+		$i++; 
+		$i % 1000 == 0 and &tsmsg("[Msg]   Processing $i -th alignment for $gg{'pref'} within [$cH->{'refID'} $cH->{'startP'} to $stopChkS]\n"); 
+		if ( $cH_curAln->[1] > $stopChkS ) {
+			push(@newAln, $cH_curAln); 
 			next; 
 		}
-		# $cH->{'aln'}[$i][3] >= $beginNew and push(@newAln, [ @{$cH->{'aln'}[$i]} ]); 
-		# $cH->{'aln'}[$i][3] > $stopChkS or next; 
-		$cH->{'aln'}[$i][11] eq 'RG:Z:src' or next; 
-		defined $cH->{'chked'}{ $cH->{'aln'}[$i][0] } and next; 
-		$cH->{'chked'}{ $cH->{'aln'}[$i][0] } = 1; 
+		# $cH_curAln->[1] >= $beginNew and push(@newAln, $cH_curAln); 
+		# $cH_curAln->[1] > $stopChkS or next; 
+		$cH_curAln->[3] == 1 or next; # Only SRC read is considered. 
+		my $tk_h_seq = "$cH_curAln->[1]\t$cH_curAln->[4]"; # "startPos\trdSeq\n"; 
+		my $tk_h_subseq = $tk_h_seq; 
+		if ( defined $gg{'isSrcSeq'}{$cH->{'refID'}}{$tk_h_seq} ) {
+			if ( $gg{'isSrcSeq'}{$cH->{'refID'}}{$tk_h_seq} == 1 ) {
+				# Value '1' means this sequence mapping here is a real src2tgt read. 
+				if (defined $gg{'isSrcRdID'}{ $cH_curAln->[0] }) {
+					if ( $gg{'isSrcRdID'}{ $cH_curAln->[0] } == 1 ) {
+						; 
+					} else {
+						# $gg{'isSrcRdID'}{ $cH_curAln->[0] } == 0 
+						# I should correct the bad classification of $gg{'hasChkSeq'}{$cH->{'refID'}}{$tk_h_seq}; 
+						$gg{'hasChkSeq'}{$cH->{'refID'}}{$tk_h_seq} = 0; 
+					}
+				} else {
+					# This read has not been checked. 
+					push(@notTgtRd, $cH_curAln->[0]); 
+					$gg{'isSrcRdID'}{ $cH_curAln->[0] } = 1; 
+				}
+			} else {
+				# $gg{'isSrcSeq'}{$cH->{'refID'}}{$tk_h_seq} == 0, should be included by TGT read. 
+				$gg{'isSrcRdID'}{ $cH_curAln->[0] } = 0; 
+			}
+			next; 
+		}
+		if ( defined $gg{'isSrcRdID'}{ $cH_curAln->[0] } and $gg{'isSrcRdID'}{ $cH_curAln->[0] } == 0 ) {
+			# Should be included by TGT read. 
+			$gg{'isSrcSeq'}{$cH->{'refID'}}{$tk_h_seq} = 0; 
+			next; 
+		}
+		# This read might be 'isSrcRdID'==1, or not checked yet. 
+		# I am thinking if a read is 'isSrcRdID'==1, is it possible it could be changed to 'isSrcRdID'=0 by another alignment. 
+		# defined $gg{'isSrcRdID'}{ $cH_curAln->[0] } and next; 
 		my $is_tgt = 0; 
-		my $subseq = $cH->{'aln'}[$i][9]; 
-		$gg{'transRdMaxLen'} > 1 and length($subseq) > $gg{'transRdMaxLen'} and $subseq = substr( $subseq, 0, $gg{'transRdMaxLen'} ); 
-		for (my $j=$i-1; $j>=0; $j--) {
-			$cH->{'aln'}[$j][11] eq 'RG:Z:src' and next; 
-			$cH->{'aln'}[$j][3]+$max_span < $cH->{'aln'}[$i][3] and last; 
-			$cH->{'aln'}[$j][12] < $cH->{'aln'}[$i][3] and next; 
-			index($cH->{'aln'}[$j][9], $subseq) != -1 and do { $is_tgt = 1; last; }; 
+		my $subseq = $cH_curAln->[4]; 
+		my $subseqL = $cH_curAln->[5]; 
+		if ( $gg{'transRdMaxLen'} > 1 and $gg{'transRdMaxLen'} < $subseqL ) {
+			$subseq  = substr( $subseq, 0, $gg{'transRdMaxLen'} ); 
+			$subseqL = length( $subseq ); 
+			$tk_h_subseq = "$cH_curAln->[1]\t$subseq"; # "startPos\trdSeq\n"; 
+			if ( defined $gg{'isSrcSeq'}{$cH->{'refID'}}{$tk_h_subseq} ) {
+				if ( $gg{'isSrcSeq'}{$cH->{'refID'}}{$tk_h_subseq} == 1 ) {
+					# Value '1' means this sequence mapping here is a real src2tgt read. 
+					if (defined $gg{'isSrcRdID'}{ $cH_curAln->[0] }) {
+						if ( $gg{'isSrcRdID'}{ $cH_curAln->[0] } == 1 ) {
+							; 
+						} else {
+							# $gg{'isSrcRdID'}{ $cH_curAln->[0] } == 0 
+							# I should correct the bad classification of $gg{'hasChkSeq'}{$cH->{'refID'}}{$tk_h_subseq}; 
+							$gg{'hasChkSeq'}{$cH->{'refID'}}{$tk_h_subseq} = 0; 
+						}
+					} else {
+						# This read has not been checked. 
+						push(@notTgtRd, $cH_curAln->[0]); 
+						$gg{'isSrcRdID'}{ $cH_curAln->[0] } = 1; 
+					}
+				} else {
+					# $gg{'isSrcSeq'}{$cH->{'refID'}}{$tk_h_subseq} == 0, should be included by TGT read. 
+					$gg{'isSrcRdID'}{ $cH_curAln->[0] } = 0; 
+				}
+				next; 
+			}
+			if ( defined $gg{'isSrcRdID'}{ $cH_curAln->[0] } and $gg{'isSrcRdID'}{ $cH_curAln->[0] } == 0 ) {
+				# Should be included by TGT read. 
+				$gg{'isSrcSeq'}{$cH->{'refID'}}{$tk_h_subseq} = 0; 
+				next; 
+			}
 		}
-		$is_tgt == 1 and next; 
-		for (my $j=$i+1; $j<@{$cH->{'aln'}}; $j++) {
-			$cH->{'aln'}[$j][11] eq 'RG:Z:src' and next; 
-			$cH->{'aln'}[$j][3] > $cH->{'aln'}[$i][3] and last; 
-			index($cH->{'aln'}[$j][9], $subseq) != -1 and do { $is_tgt = 1; last; }; 
+
+		for (my $j0=$srcAlnIdx2tgtIdx{$i}[0]; $j0>=0; $j0--) {
+			my $t = $allAln[ $tgtAlnIdx[$j0] ]; 
+			# $t->[3] == 0 or next; # Only 0-tgt is used to check TGT; 
+			$t->[1] + $max_span < $cH_curAln->[1] and last; 
+			$t->[2] < $cH_curAln->[1] and next; 
+			$t->[5] < $subseqL and next; 
+			index($t->[4], $subseq) != -1 and do { $is_tgt = 1; last; }; 
 		}
-		$is_tgt == 1 and next; 
-		defined $h{ $cH->{'aln'}[$i][0] } or push(@notTgtRd, $cH->{'aln'}[$i][0]); 
-		$cH->{'cntNotTgtRd'} ++; 
-		$h{ $cH->{'aln'}[$i][0] } = 1; 
+		if ($is_tgt == 1) {
+			$gg{'isSrcSeq'}{$cH->{'refID'}}{$tk_h_seq}    = 0; # Value '0' means this sequence mapping here is included by a TGT read. 
+			$gg{'isSrcSeq'}{$cH->{'refID'}}{$tk_h_subseq} = 0; 
+			$gg{'isSrcRdID'}{ $cH_curAln->[0] } = 0; 
+			next; 
+		}
+		for (my $j0=$srcAlnIdx2tgtIdx{$i}[1]; $j0<@tgtAlnIdx; $j0++) {
+			my $t = $allAln[ $tgtAlnIdx[$j0] ]; 
+			$t->[3] == 0 or next; # Only 0-tgt is used to check TGT; 
+			$t->[1] > $cH_curAln->[1] and last; 
+			$t->[5] < $subseqL and next; 
+			index($t->[4], $subseq) != -1 and do { $is_tgt = 1; last; }; 
+		}
+		if ($is_tgt == 1) {
+			$gg{'isSrcSeq'}{$cH->{'refID'}}{$tk_h_seq}    = 0; # Value '0' means this sequence mapping here is included by a TGT read. 
+			$gg{'isSrcSeq'}{$cH->{'refID'}}{$tk_h_subseq} = 0; 
+			$gg{'isSrcRdID'}{ $cH_curAln->[0] } = 0; 
+			next; 
+		}
+		if ( defined $gg{'isSrcRdID'}{ $cH_curAln->[0] } ) {
+			# This read has been checked, and classified as 'isSrcRdID'==1; 
+			next; 
+		} else {
+			push(@notTgtRd, $cH_curAln->[0]); 
+			$gg{'isSrcRdID'}{ $cH_curAln->[0] } = 1; 
+			$gg{'isSrcSeq'}{$cH->{'refID'}}{$tk_h_seq}    = 1; # Value '1' means this sequence mapping here is not included by a TGT read. 
+			$gg{'isSrcSeq'}{$cH->{'refID'}}{$tk_h_subseq} = 1; 
+		}
 	}
 
 	@{$cH->{'aln'}} = @newAln; 
 	$cH->{'startP'} = $stopChkS+1; 
+	my @back_notTgtRd; 
+	for my $t (@notTgtRd) {
+		$gg{'isSrcRdID'}{$t} == 1 and push(@back_notTgtRd, $t); 
+	}
 
-	return(\@notTgtRd); 
+	return(\@back_notTgtRd); 
 }# process_curH() 
 
 sub add2curH {
@@ -210,8 +323,34 @@ sub add2curH {
 	}
 	# $taR->[11] eq 'RG:Z:src' and $cH->{'srcN'} ++; 
 	my ($rdLen, $ref_span) = &SeqAlnSunhh::cigar_array2len( &SeqAlnSunhh::cigar_str2array( $taR->[5] ) ); 
-	push(@{$cH->{'aln'}}, [@$taR, $taR->[3]+$ref_span-1]); 
+	my @o = ('', '', '', '', '', ''); 
+	# 0          1          2                      3            4          5
+	# rdID     , startPos , endPos               , Src_1/Tgt_0, rdSeq    , rdLength
+	if      ( $taR->[11] eq 'RG:Z:tgt' ) {
+		@o = ('',        $taR->[3], $taR->[3]+$ref_span-1, 0,           $taR->[9], length($taR->[9])); 
+	} elsif ( $taR->[11] eq 'RG:Z:src' ) {
+		@o = ($taR->[0], $taR->[3], $taR->[3]+$ref_span-1, 1,           $taR->[9], length($taR->[9])); 
+		#     0          1          2                      3            4          5
+		#     rdID     , startPos , endPos               , Src_1/Tgt_0, rdSeq    , rdLength
+	} else {
+		&stopErr("[Err] Bad input aln line with [$taR->[11]]: @$taR\n"); 
+	}
+	push(@{$cH->{'aln'}}, \@o); 
+	return; 
 }# add2curH()
+
+sub add2curH_0 {
+	# Deprecated. 
+	my ($cH, $taR, $first) = @_; 
+	$first //= 'n'; 
+	if ($first ne 'n') {
+		$cH->{'refID'}  = $taR->[2]; 
+		$cH->{'startP'} = $taR->[3]; 
+	}
+	# $taR->[11] eq 'RG:Z:src' and $cH->{'srcN'} ++; 
+	my ($rdLen, $ref_span) = &SeqAlnSunhh::cigar_array2len( &SeqAlnSunhh::cigar_str2array( $taR->[5] ) ); 
+	push(@{$cH->{'aln'}}, [@$taR, $taR->[3]+$ref_span-1]); 
+}# add2curH_0()
 
 sub fmtBamRG {
 	my ($iBam, $oBam, $rgID) = @_; 
@@ -243,7 +382,7 @@ sub applyOpt {
 		defined $opts{$k} and $gg{$k} = $opts{$k}; 
 	}
 
-	for my $k (qw/pref wrk_dir transRdBam bgRdBam tgt_fa outBam transRdMaxLen/) {
+	for my $k (qw/pref wrk_dir transRdBam bgRdBam tgt_fa outBam transRdMaxLen startStep/) {
 		defined $opts{$k} and $gg{$k} = $opts{$k}; 
 	}
 
@@ -273,6 +412,8 @@ sub setGlob {
 	$gg{'transRdMaxLen'}   = -1; 
 
 	$gg{'pl_getAln'}  = ( -e "$gg{'abs_dir_basePL'}/get_alnBam_by_src2tgt_rdList.pl" ) ? "$gg{'abs_dir_basePL'}/get_alnBam_by_src2tgt_rdList.pl" : "$gg{'link_dir_basePL'}/get_alnBam_by_src2tgt_rdList.pl" ; 
+
+	$gg{'startStep'}  = 0; 
 
 $gg{'help_txt'} = <<"HH"; 
 ################################################################################
