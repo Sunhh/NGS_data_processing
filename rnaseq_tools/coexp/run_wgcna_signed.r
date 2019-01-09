@@ -37,9 +37,9 @@ v_minModuleSize   <- 30 ;    # Minimum gene number required in a module.
 v_mergeCutHeight  <- 0.25 ;  # Cutoff for merging modules. The lower this value is, the fewer modules we get. 
 v_networkType     <- 'signed'
 if ( v_networkType == 'unsigned' || v_networkType == 'signed hybrid' ) {
-	powers <- c(1:30);
+	powers <- c(1:15);
 } else {
-	powers <- c(1:15); 
+	powers <- c(1:30); 
 }
 
 ### Start working; 
@@ -121,7 +121,7 @@ if ( is.null(sft_power) ) {
       for ( v1 in test_RsquaredCut ) {
         for ( v2 in 1:length(sft$fitIndices$Power) ) {
           if ( sft$fitIndices$SFT.R.sq[v2] >= v1 ) {
-            message("Soft power determined by threshold: ", v1, " as ", sft$fitIndices$Power[v2]); 
+            message("Soft power determined by threshold: ", sft$fitIndices$SFT.R.sq[v2], " as ", sft$fitIndices$Power[v2]); 
             sft_power <- sft$fitIndices$Power[v2]; 
             break; 
           }
@@ -163,7 +163,7 @@ if ( is.null(sft_power) ) {
   );
   text(sft$fitIndices[,1], -sign(sft$fitIndices[,3])*sft$fitIndices[,2], labels=powers,cex=cex1,col="red"); 
   abline(h=0.90,col="red")
-  abline(h=0.85,col="blue")
+  abline(h=0.80,col="blue")
   legend("bottomright", legend=c(paste0("threshold0=", sft$powerEstimate), paste0('threshold1=', sft_power)))
   plot(
     sft$fitIndices[,1], sft$fitIndices[,5], 
