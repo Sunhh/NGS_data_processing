@@ -35,9 +35,9 @@ sub price {
 	$add_discountR   = 0.2; 
 	$add_discountCut = 1; 
 	my ($costWoAdd, $costWiAdd); 
-	if ($prevCumCost < 150) {
+	if      ($prevCumCost < 100) {
 		; 
-	} elsif ($prevCumCost < 200) {
+	} elsif ($prevCumCost < 150) {
 		$baseCost *= 0.8; 
 	} elsif ($prevCumCost < 400) {
 		$baseCost *= 0.5; 
