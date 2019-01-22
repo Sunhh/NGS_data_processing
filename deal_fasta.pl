@@ -45,6 +45,7 @@
 ### 2016-05-02 Add '-scf2ctg out_prefix' to separate scaffolds into contigs. 
 ### 2016-08-30 Add '-jn_byID' to join sequences from different files with the same IDs. 
 ### 2016-08-30 Replace AA seq with corresponding Nucl sequences. 
+### 2019-01-16 Change the definition of -frame; It means the first base's frame (+|-(1/2/3)) before, but now it means the first base position of the first frame, which is same to blastx and transeq. 
 
 use strict;
 use warnings; 
@@ -177,7 +178,7 @@ Usage: $0  <fasta_file | STDIN>
   -cds2aa             [Boolean]
     -codon_table        [1] Could be 1,2,3,4,5,6,7,8,9,10
     -infer_frame        [Boolean] Infer frame from the definition line by '[frame=\\d+]' format information. This will overwrite -frame option; 
-    -frame              [1] Could be 1,2,3 (plus strand), -1,-2,-3 (reverse strand)
+    -frame              [1] Could be 1,2,3 (plus strand), -1,-2,-3 (reverse strand). Same meaning of blastx and transeq; 
 
   -loc_4d             [Boolean]
 
@@ -327,18 +328,17 @@ sub cds2aa {
 				$relHR1->{'seq'} =~ s/[\s]//g; # Keep '-' for position. 
 				$relHR1->{'len'} = length($relHR1->{'seq'}); 
 				my $t_seq = uc($relHR1->{'seq'}); 
+				$t_seq =~ tr!X!N!; 
 				my $t_frame = $frame; 
 				if ( $opts{'infer_frame'} and $relHR1->{'head'} =~ m!\[frame=([+-]?\d+)\]!i ) {
 					$t_frame = $1; 
 					$t_frame =~ m!^[+-]?(1|2|3)$! or do { &tsmsg("[Wrn] Skip bad frame information [$t_frame]\n"); $t_frame = $frame; }; 
 				}
-				if      ( $t_frame > 0 and $t_frame <= 3 ) {
-					my $addN = 'N' x ($t_frame-1); 
-					$t_seq = $addN . $t_seq; 
-				} elsif ( $t_frame < 0 and $t_frame >= -3 ) {
-					my $addN = 'N' x (-$t_frame-1); 
-					$t_seq = $t_seq . $addN; 
+				if ($t_frame > 0) {
+					$t_frame > 1 and $t_seq = substr($t_seq, $t_frame-1); 
+				} elsif ($t_frame < 0) {
 					&rcSeq(\$t_seq, 'rc'); 
+					$t_frame < -1 and $t_seq = substr($t_seq, -$t_frame-1); 
 				} else {
 					&stopErr("[Err] Bad frame number [$t_frame]\n"); 
 				}
@@ -357,7 +357,12 @@ sub cds2aa {
 							$aa_idx ++; 
 							my $bb = substr($t_seq, $j, 2); 
 							defined $bb_4d{$bb} or next; 
-							print STDOUT join("\t", $relHR1->{'key'}, $j+3-($t_frame-1), substr($t_seq, $j, 3), $aa_idx, $bb_4d{$bb})."\n"; 
+							if ($t_frame > 0) {
+								print STDOUT join("\t", $relHR1->{'key'}, ($t_frame-1)+$j+3, substr($t_seq, $j, 3), $aa_idx, $bb_4d{$bb})."\n"; 
+							} else {
+								# $t_frame < 0
+								print STDOUT join("\t", $relHR1->{'key'}, $t_len_0-($j+3)-1, substr($t_seq, $j, 3), $aa_idx, $bb_4d{$bb})."\n"; 
+							}
 						}
 					} else {
 						for (my $j=0; $j<$t_len; $j+=3) {

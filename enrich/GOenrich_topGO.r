@@ -99,7 +99,8 @@ for ( topTerm in c('BP', 'MF', 'CC') ) {
   )
   toShowN <- v_toShowN
   if ( nodeN < toShowN ) { toShowN <- nodeN }
-  write.table( allRes, file= paste0(opref, ".GO_", topTerm, ".txt", sep=''), sep="\t", quote=F, col.names=T, row.names=F )
+  v1 <- apply(as.matrix(allRes$GO.ID), MARGIN=1, FUN=function(x) { paste0(unlist(genesInTerm(sampleGOdata, whichGO=x[1])), collapse=",") } )
+  write.table( cbind(allRes, Gene.IDs=v1), file= paste0(opref, ".GO_", topTerm, ".txt", sep=''), sep="\t", quote=F, col.names=T, row.names=F )
   pdf( file=paste0(opref, ".GO_", topTerm, ".topNodes.pdf"), width=10, height=10 )
   showSigOfNodes(sampleGOdata, score(resultKS.elim), firstSigNodes = toShowN, useInfo = "all")
   legend('topleft', legend=c( paste0(opref, ".GO_", topTerm, ".elimKS.top", toShowN, "nodes" ) ) )
