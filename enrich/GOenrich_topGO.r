@@ -15,7 +15,8 @@ v_toShowN <- 10
 argvs <- commandArgs( trailingOnly=TRUE ); 
 if ( is.na(argvs[1]) ) { 
   message("Rscript this.R   <sepTbl.genID_GOIDorNA>   <DEG.genID_FDR>   <out_prefix>   [special_GO.list]");
-  message("\n\nOutput : \n  opref.GO_BP/MF/CC.txt/pdf\n"); 
+  # message("\n\nOutput : \n  opref.GO_BP/MF/CC.txt/pdf\n"); 
+  message("\n\nOutput : \n  opref.txt\n  opref.GO_BP/MF/CC.pdf\n"); 
   q();
 }
 
@@ -100,7 +101,12 @@ for ( topTerm in c('BP', 'MF', 'CC') ) {
   toShowN <- v_toShowN
   if ( nodeN < toShowN ) { toShowN <- nodeN }
   v1 <- apply(as.matrix(allRes$GO.ID), MARGIN=1, FUN=function(x) { paste0(unlist(genesInTerm(sampleGOdata, whichGO=x[1])), collapse=",") } )
-  write.table( cbind(allRes, Gene.IDs=v1), file= paste0(opref, ".GO_", topTerm, ".txt", sep=''), sep="\t", quote=F, col.names=T, row.names=F )
+  v2 <- rep(topTerm, length(allRes$GO.ID))
+  if ( topTerm == 'BP' ) {
+  	write.table( cbind(topTerm=v2, allRes, Gene.IDs=v1), file= paste0(opref, ".txt", sep=''), sep="\t", quote=F, col.names=T, row.names=F, append=F )
+  } else {
+  	write.table( cbind(topTerm=v2, allRes, Gene.IDs=v1), file= paste0(opref, ".txt", sep=''), sep="\t", quote=F, col.names=F, row.names=F, append=T )
+  }
   pdf( file=paste0(opref, ".GO_", topTerm, ".topNodes.pdf"), width=10, height=10 )
   showSigOfNodes(sampleGOdata, score(resultKS.elim), firstSigNodes = toShowN, useInfo = "all")
   legend('topleft', legend=c( paste0(opref, ".GO_", topTerm, ".elimKS.top", toShowN, "nodes" ) ) )
