@@ -649,7 +649,7 @@ sub step8_combineGVCF_interval {
 			$seqLen[-1][1] = $1; 
 		}
 		close($ifh); 
-		@seqLen = sort { $b->[1] <=> $a->[1] } @seqLen; 
+		# @seqLen = sort { $b->[1] <=> $a->[1] } @seqLen; # I can't sort sequences because the order matters in picard and GATK. 
 		my @subPref_list; 
 		my @toRun_intervals; # ( [[[id,start,end],[],...], interval_total_length], [], ... )
 		for (my $i=0; $i<@seqLen; $i++) {
@@ -801,7 +801,7 @@ sub step9_gvcf2var {
 			$seqLen[-1][1] = $1; 
 		}
 		close($ifh); 
-		@seqLen = sort { $b->[1] <=> $a->[1] } @seqLen; 
+		# @seqLen = sort { $b->[1] <=> $a->[1] } @seqLen; 
 		my @subPref_list; 
 		my @toRun_intervals; # ( [[[id, len],[],..], interval_total_length] , [], ... )
 		for (my $i=0; $i<@seqLen; $i++) {

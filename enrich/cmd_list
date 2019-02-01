@@ -14,6 +14,8 @@ gzip -cd gene_ontology_edit.obo.2018-05-01.gz | perl cnvt_GOobo_to_tab.pl > gene
 
 perl test_enrichGO.pl -bgGOtab wm97pbV2ID_feiID_clean.GO_bg.tab -oboTab gene_ontology_edit.obo.2018-05-01.tab  -inSubList geneset_01 -opref geneset_01.GOenrich
 perl hs_enrich.pl -enrichType go   -bgGOtab wm97pbV2ID_feiID_clean.GO_bg.tab -oboTab gene_ontology_edit.obo.2018-05-01.tab -inSubList geneset_01 -opref geneset_01.GOenrich
+
+perl cnvt_GOobo_to_tab.pl goslim_plant.obo.20181129 > goslim_plant.obo.20181129.tab
 ### For KEGG analyis
 
 perl cnvt_keggPWYReconstruction_to_tab.pl keggPWYByKO.txt > keggPWYByKO.tab

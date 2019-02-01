@@ -98,14 +98,21 @@ for ( topTerm in c('BP', 'MF', 'CC') ) {
                          ranksOf       = 'classicFisher', 
                          topNodes      = nodeN
   )
+  k1 <- allRes$Term != 'molecular_function' | allRes$Term != 'biological_process' | allRes$Term != 'cellular_component'
+  allRes <- allRes[k1, ]
+  rm(k1)
   toShowN <- v_toShowN
   if ( nodeN < toShowN ) { toShowN <- nodeN }
-  v1 <- apply(as.matrix(allRes$GO.ID), MARGIN=1, FUN=function(x) { paste0(unlist(genesInTerm(sampleGOdata, whichGO=x[1])), collapse=",") } )
+  v1 <- apply(as.matrix(allRes$GO.ID), MARGIN=1, FUN=function(x) { y1=unlist(genesInTerm(sampleGOdata, whichGO=x[1])); paste0(y1[y1 %in% data_subset[,1]], collapse=",") } )
   v2 <- rep(topTerm, length(allRes$GO.ID))
+  k1 <- allRes$classicFisher < 0.05
+  padj.Fis <- p.adjust( p= allRes$classicFisher, method= 'BH' ) # BH - Benjamini & Hochberg, alias 'fdr'
   if ( topTerm == 'BP' ) {
-  	write.table( cbind(topTerm=v2, allRes, Gene.IDs=v1), file= paste0(opref, ".txt", sep=''), sep="\t", quote=F, col.names=T, row.names=F, append=F )
+  	write.table( cbind(topTerm=v2,     allRes,      fdr.classicFisher=padj.Fis,     Gene.IDs=v1),     file= paste0(opref, ".txt",   sep=''), sep="\t", quote=F, col.names=T, row.names=F, append=F )
+  	write.table( cbind(topTerm=v2[k1], allRes[k1,], fdr.classicFisher=padj.Fis[k1], Gene.IDs=v1[k1]), file= paste0(opref, ".txt.1", sep=''), sep="\t", quote=F, col.names=T, row.names=F, append=F )
   } else {
-  	write.table( cbind(topTerm=v2, allRes, Gene.IDs=v1), file= paste0(opref, ".txt", sep=''), sep="\t", quote=F, col.names=F, row.names=F, append=T )
+  	write.table( cbind(topTerm=v2,     allRes,      fdr.classicFisher=padj.Fis,     Gene.IDs=v1),     file= paste0(opref, ".txt",   sep=''), sep="\t", quote=F, col.names=F, row.names=F, append=T )
+  	write.table( cbind(topTerm=v2[k1], allRes[k1,], fdr.classicFisher=padj.Fis[k1], Gene.IDs=v1[k1]), file= paste0(opref, ".txt.1", sep=''), sep="\t", quote=F, col.names=F, row.names=F, append=T )
   }
   pdf( file=paste0(opref, ".GO_", topTerm, ".topNodes.pdf"), width=10, height=10 )
   showSigOfNodes(sampleGOdata, score(resultKS.elim), firstSigNodes = toShowN, useInfo = "all")
