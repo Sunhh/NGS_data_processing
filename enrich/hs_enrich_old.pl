@@ -1,5 +1,4 @@
 #!/usr/bin/perl
-# 2019-02-27 Edit to fit new oboTab format and include ancestor chains' information. 
 use strict; 
 use warnings; 
 use LogInforSunhh; 
@@ -115,15 +114,12 @@ H1
 }# set_Glob() 
 
 sub load_oboTab {
-	# File example : gene_ontology_edit.obo.2018-05-01.info
-	#  GO_ID   ALT_ID  namespace       GO_name GO_def  Obsolete        MinR2N  AncestorIDs     AncestorChains
-	# Fill %oboInfo: goid2name, goid2def, goid2type, altid2id, gotype2id, ancestorIDs; 
+	# Fill %oboInfo: goid2name, goid2def, goid2type, altid2id, gotype2id; 
 	my $fh = &openFH($gg{'oboTab'}, '<'); # Output of : gzip -cd gene_ontology_edit.obo.2018-05-01.gz | perl cnvt_GOobo_to_tab.pl > gene_ontology_edit.obo.2018-05-01.tab
 	while (<$fh>) {
 		chomp; 
 		my @ta = &splitL("\t", $_); 
-		my ($goid, $altid, $type, $goname, $godef) = @ta[0, 1, 2, 3, 4]; 
-		my ($ancestorIDs) = $ta[7]; 
+		my ($goid, $altid, $type, $goname, $godef) = @ta; 
 		$goid eq 'GO_ID' and next; 
 		$type eq 'ET' and next; 
 		$oboInfo{'goid2name'}{$goid} = $goname; 
@@ -131,15 +127,10 @@ sub load_oboTab {
 		$oboInfo{'goid2type'}{$goid} = $type; 
 		$oboInfo{'altid2id'}{$goid}  = $goid; 
 		push(@{$oboInfo{'gotype2id'}{$type}}, $goid); 
-		unless ($altid =~ m!^(\s*NA\s*|\s*)$!i) {
+		unless ($ta[1] =~ m!^\s*NA\s*$!i) {
 			for my $t1 (split(/;/, $altid)) {
 				$oboInfo{'altid2id'}{$t1} = $goid; 
 			}
-		}
-		unless ($ancestorIDs =~ m!^\s*(NA)?\s*$!i) {
-			$oboInfo{'ancestorIDs'}{$goid} = [split(/;/, $ancestorIDs)]; 
-		} else {
-			$oboInfo{'ancestorIDs'}{$goid} = []; 
 		}
 	}
 	close($fh); 
@@ -147,18 +138,13 @@ sub load_oboTab {
 }# load_oboTab
 
 sub load_goBg {
-	# File example: wm97pbV2ID_feiID_clean.GO_bg.tab
-	#   eleID                   GO_ID           GO_descTxt
-	#   Cla97C01G000010.1       GO:0016021      integral component of membrane
-	#   Cla97C01G000030.1       GO:0004222      metalloendopeptidase activity
-	#
 	# I want to change goBg to a general structure of %grpBg
 	#   $grpBg{'ele2grpID'} = { eleID=>[grpID1, grpID2, ...], ... } 
 	#   $grpBg{'grpID2ele'} = { grpID=>[eleID1, eleID2, ...], ... }
 	#   $grpBg{'eleID'}     = { eleID=>1 }
 	#   $grpBg{'eleNum'}    = scalar(keys %{$grpBg{'ele2grpID'}}) 
 	#   $grpBg{'grpSize_inGenome'} = { grpID1=>NumberOfEleInGrpInGenomeBg, grpID2=> , ... }
-	#   $grpBg{'grpID2name'} = { grpID=>'group_description' }
+	#   $grpBg{'grpID2def'} = { grpID=>'group_description' }
 	my $fh; 
 	if ($gg{'enrichType'} eq 'go') {
 		$fh = &openFH($gg{'bgGOtab'}, '<'); # Storing GO background information 
@@ -188,32 +174,22 @@ sub load_goBg {
 				}
 				$oboInfo{'altid2id'}{$goid} = $goid; 
 			} else {
-				$goid    = $oboInfo{'altid2id'}{$goid}; 
-				$go_desc = $oboInfo{'goid2name'}{$goid}; 
+				$goid = $oboInfo{'altid2id'}{$goid}; 
 			}
 		} elsif ( $gg{'enrichType'} eq 'kegg' ) {
 			; 
 		} else {
 			&tsmsg("[Err] Unsupported -enrichType '$gg{'enrichType'}'\n"); 
 		}
+		# Record group ID and its definition. 
+		$grpBg{'grpID2def'}{$goid} //= $go_desc; 
+		$grpBg{'grpID2def'}{$goid} eq $go_desc or &stopErr("[Err] Different definitions for grpID [$goid]: '$grpBg{'grpID2def'}{$goid}' VS. '$go_desc'\n"); 
 		# Skip repeated GO ID; 
 		my $tk = "$eleID\t$goid"; 
 		defined $pair_ele_go{$tk} and next; 
+		$pair_ele_go{$tk} = 1; 
 		# Element ID to group ID; 
 		push(@{$grpBg{'ele2grpID'}{$eleID}}, $goid); 
-		$pair_ele_go{$tk} = 1; 
-		# Record group ID and its definition. 
-		$grpBg{'grpID2name'}{$goid} //= $go_desc; 
-		$grpBg{'grpID2name'}{$goid} eq $go_desc or &stopErr("[Err] Different definitions for grpID [$goid]: '$grpBg{'grpID2name'}{$goid}' VS. '$go_desc'\n$_\ngoid:$goid\n"); 
-		if ( $gg{'enrichType'} eq 'go' ) {
-			for my $anID (@{$oboInfo{'ancestorIDs'}{$goid}}) {
-				my $tk_an = "$eleID\t$anID"; 
-				defined $pair_ele_go{$tk_an} and next; 
-				push(@{$grpBg{'ele2grpID'}{$eleID}}, $anID); 
-				$pair_ele_go{$tk_an} = 1; 
-				$grpBg{'grpID2name'}{$anID} //= $oboInfo{'goid2name'}{$anID}; 
-			}
-		}
 	}
 	close($fh); 
 	$grpBg{'eleNum'} = scalar(keys %{$grpBg{'eleID'}}); 
@@ -345,7 +321,7 @@ R1
 			push(@out_lines, 
 			[
 				$grpID, $fdr, $rawP, 
-				$grpBg{'grpID2name'}{$grpID}, 
+				$grpBg{'grpID2def'}{$grpID}, 
 				join(";", @{$grpSub{'grpID2ele'}{$grpID}}),
 				join("_", 
 					$grpSub{'grpSize_inSubset'}{$grpID}, 
