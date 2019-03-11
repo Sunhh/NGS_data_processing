@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# 20190311
 use strict; 
 use warnings; 
 use fileSunhh; 
@@ -10,7 +11,18 @@ GetOptions(\%opts,
 	"gene_list:s", 
 ); 
 
--t and !@ARGV and die "perl $0 -gene_list gene_id_V1p7 b2g.final.annot > b2g.final.annot.perGene\n"; 
+my $htxt = <<HH; 
+######################################################################
+# perl $0 -gene_list gene_id_V1p7 b2g.final.annot > b2g.final.annot.perGene
+#
+# Format of b2g.final.annot : 
+#   ClaChr01G000230.1 \\t GO:0020037 \\t cytochrome b5-like
+#   ClaChr01G000230.1 \\t GO:0016021
+#   ClaChr09G007320.1 \\t GO:0000166 \\t rna-binding protein brn1-like
+# 
+HH
+
+-t and !@ARGV and &LogInforSunhh::usage($htxt); 
 
 my %hash; 
 if (defined $opts{'gene_list'}) {
@@ -41,7 +53,8 @@ while (<>) {
 	}
 }
 
-print join("\t", qw/GeneID GO GO_Num EC EC_Num Description Desc_Num/)."\n"; 
+# print join("\t", qw/GeneID GO GO_Num EC EC_Num Description Desc_Num/)."\n"; 
+print join("\t", qw/GeneID GO_Num EC_Num Desc_Num Description GO EC/)."\n"; 
 for my $tk (sort { $hash{$a}[0] <=> $hash{$b}[0] } keys %hash) {
 	$hash{$tk}[1] //= []; 
 	$hash{$tk}[2] //= []; 
@@ -52,13 +65,13 @@ for my $tk (sort { $hash{$a}[0] <=> $hash{$b}[0] } keys %hash) {
 	my $n_go = scalar(@$rmR_go); 
 	my $n_ec = scalar(@$rmR_ec); 
 	my $n_desc = scalar(@$rmR_desc); 
-	print join("\t", $tk, join(' ;; ', @$rmR_go), $n_go, join(' ;; ', @$rmR_ec), $n_ec, join(' ;; ', @$rmR_desc), $n_desc)."\n"; 
+	print join("\t", $tk, $n_go, $n_ec, $n_desc, join(" ;; ", @$rmR_desc), join(" ;; ", @$rmR_go), join(" ;; ", @$rmR_ec))."\n"; 
 }
 
 sub rm_redund {
 	my @back; 
 	my %h; 
-	for (@{$_[0]}) {
+	for (sort @{$_[0]}) {
 		defined $h{$_} and next; 
 		$h{$_} = 1; 
 		push(@back, $_); 

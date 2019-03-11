@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# 2019-03-08 Don't translate geno_tbl to struct. 
 use strict; 
 use warnings; 
 use LogInforSunhh; 
@@ -11,6 +12,7 @@ GetOptions(\%opts,
 	"minR:i", # minimum K : 2
 	"maxR:i", # maximum K : 7
 	"geno_tbl:s", # No header line. 
+	"isStructTbl!", 
 	"OutDir:s", # pwd
 	"BinDir:s", 
 	"maxK:i", # 20 
@@ -77,7 +79,11 @@ for (my $i=$opts{'minR'};$i<=$opts{'maxR'};$i++){
 	my $sample_num   = `wc -l $curr_dir/$individual | cut  -f 1 -d " " | tr -d '\n'`; 
 	
 
-	&exeCmd_1cmd("perl $BinDir/get_structure_input.pl $out_Dir/$UsePosition1 $curr_dir/$individual $out_Dir/Input.file");
+	if ($opts{'isStructTbl'}) {
+		&exeCmd_1cmd("cp -p $out_Dir/$UsePosition1 $out_Dir/Input.file"); 
+	} else {
+		&exeCmd_1cmd("perl $BinDir/get_structure_input.pl $out_Dir/$UsePosition1 $curr_dir/$individual $out_Dir/Input.file");
+	}
 	&exeCmd_1cmd("perl $BinDir/new_mainparams.pl $seed_tag -minK $opts{'minK'} -K $opts{'maxK'} -output $out_Dir -input $BinDir  -loca $location_num  -sample $sample_num");
 
 	# open O,'>', "cmd_list_runStruct" or die; 
