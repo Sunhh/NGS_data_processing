@@ -52,7 +52,7 @@ sub set_Glob {
 	$gg{'enrichType'}            = 'GO'; 
 	$gg{'htxt'}                  = <<"H1"; 
 ################################################################################
-# perl $0  -inSubList  subset_geneList  -bgGOtab wm97pbV2ID_feiID_clean.GO_bg.tab  -oboTab gene_ontology_edit.obo.2018-05-01.tab 
+# perl $0  -inSubList  subset_geneList  -bgGOtab wm97pbV2ID_feiID_clean.GO_bg.tab  -oboTab gene_ontology_edit.obo.2018-05-01.tab_info
 #
 # -help 
 # 
@@ -81,7 +81,6 @@ sub set_Glob {
 #
 #
 #    -oboTab      [filename] Required. Come from command : 
-#                   gzip -cd gene_ontology_edit.obo.2018-05-01.gz | perl cnvt_GOobo_to_tab.pl > gene_ontology_edit.obo.2018-05-01.tab
 #   enrichType = KEGG : 
 #    -bgTab       [filename] Required. 
 ################################################################################

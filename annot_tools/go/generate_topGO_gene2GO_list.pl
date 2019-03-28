@@ -9,7 +9,11 @@ use fileSunhh;
 use Getopt::Long; 
 my %opts; 
 GetOptions(\%opts, 
-	"sepTbl!", 
+	"help!", 
+	"fn_geneList:s", 
+	"noAddBasic!", 
+	"forBinGO!", 
+	"BinGO_speciesID:s", 
 ); 
 
 # ==> wm97pbV2ID_feiID_clean.prot.b2g_wiIPR.annot.all_desc.sepTbl <==
@@ -24,10 +28,21 @@ GetOptions(\%opts,
 # Cla97C00G000020.1
 # Cla97C00G000030.1
 
-!@ARGV and die "perl $0 wm97pbV2ID_feiID_clean.prot.b2g_wiIPR.annot.all_desc.sepTbl ordered_feiID > ordered_feiID.gene2GO_topGO\n"; 
+$opts{'BinGO_speciesID'} //= 'watermelon'; 
+
+my $htxt = <<HH; 
+################################################################################
+# perl $0 -fn_geneList ordered_feiID  wm97pbV2ID_feiID_clean.prot.b2g_wiIPR.annot.all_desc.sepTbl > ordered_feiID.gene2GO_topGO
+#
+# -noAddBasic         [Boolean] Add CC/BP/MF roots if not given. 
+# -forBinGO           [Boolean] Output data for BinGO input. 
+#  -BinGO_speciesID   [string] species name to be used. [$opts{'BinGO_speciesID'}]
+HH
+
+!@ARGV and &LogInforSunhh::usage($htxt); 
+$opts{'help'} and &LogInforSunhh::usage($htxt); 
 
 my $fn_gene2go_sep = shift; 
-my $fn_geneList    = shift; 
 
 my %gene2go; 
 for ( &fileSunhh::load_tabFile($fn_gene2go_sep, 0) ) {
@@ -36,17 +51,29 @@ for ( &fileSunhh::load_tabFile($fn_gene2go_sep, 0) ) {
 	$gene2go{$geneID}{'h'}{$goID} = 1; 
 	push(@{$gene2go{$geneID}{'a'}}, $goID); 
 }
-for ( &fileSunhh::load_tabFile($fn_geneList, 0) ) {
-	my $geneID = $_->[0]; 
+my @geneList; 
+if (defined $opts{'fn_geneList'}) {
+	@geneList = map { $_->[0] } &fileSunhh::load_tabFile($opts{'fn_geneList'}, 0); 
+} else {
+	@geneList = sort keys %gene2go; 
+}
+
+if ( $opts{'forBinGO'} ) {
+	print STDOUT "(species=$opts{'BinGO_speciesID'})(type=go)(curator=GO)\n"; 
+}
+
+for my $geneID ( @geneList ) {
 	$geneID =~ m!^mrnaID$!i and next; 
+	unless ($opts{'noAddBasic'}) {
+		for my $topGOID (qw/GO:0003674 GO:0005575 GO:0008150/) {
+			defined $gene2go{$geneID}{'h'}{$topGOID} or unshift(@{$gene2go{$geneID}{'a'}}, $topGOID); 
+			$gene2go{$geneID}{'h'}{$topGOID} = 1; 
+		}
+	}
 	unless ( defined $gene2go{$geneID}{'h'} ) {
 		$gene2go{$geneID}{'a'} = ['NA']; 
 	}
-	# for my $topGOID (qw/GO:0003674 GO:0005575 GO:0008150/) {
-	# 	defined $gene2go{$geneID}{'h'}{$topGOID} or unshift(@{$gene2go{$geneID}{'a'}}, $topGOID); 
-	# 	$gene2go{$geneID}{'h'}{$topGOID} = 1; 
-	# }
-	if ( $opts{'sepTbl'} ) {
+	if ( $opts{'forBinGO'} ) {
 		for my $goid (@{$gene2go{$geneID}{'a'}}) {
 			print join("\t", $geneID, $goid)."\n"; 
 		}

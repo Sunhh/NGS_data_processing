@@ -13,6 +13,7 @@ GetOptions(\%opts,
 	"exe_samtools:s", 
 	"inBam:s", 
 	"outBam:s", 
+	"outFq:s", 
 ); 
 $opts{'exe_java'}   //= '/usr/java/jre1.8.0_144/bin/java'; 
 $opts{'jar_picard'} //= "/home/Sunhh/src/align/picard/v2.10.3/picard.jar"; 
@@ -54,7 +55,8 @@ $openCmd .= "  SORT_ORDER=queryname SANITIZE=true MAX_DISCARD_FRACTION=$opts{'ma
 $openCmd .= "  REMOVE_DUPLICATE_INFORMATION=true REMOVE_ALIGNMENT_INFORMATION=true RESTORE_ORIGINAL_QUALITIES=true "; 
 # $openCmd .= "  ATTRIBUTE_TO_CLEAR=XS ATTRIBUTE_TO_CLEAR=XA ATTRIBUTE_TO_CLEAR=XT ATTRIBUTE_TO_CLEAR=XN ATTRIBUTE_TO_CLEAR=X0 "; 
 # $openCmd .= "  ATTRIBUTE_TO_CLEAR=AS ATTRIBUTE_TO_CLEAR=OC ATTRIBUTE_TO_CLEAR=OP "; 
-&exeCmd_1cmd( $openCmd ); 
+&runCmd( $openCmd ); 
+
 my $outCmd = ''; 
 $outCmd .= "$opts{'exe_samtools'} view -o $outBam -"; 
 # open F,'-|', "$openCmd" or die "Failed to run input CMD: $openCmd\n"; 
@@ -76,7 +78,22 @@ while (<F>) {
 close(F); 
 close(O); 
 
+
+if (defined $opts{'outFq'} and $opts{'outFq'} ne '') {
+	$outCmd = ''; 
+	$outCmd .= "$opts{'exe_java'} -Xmx8G -jar $opts{'jar_picard'} SamToFastq "; 
+	$outCmd .= " NON_PF=true "; 
+	$outCmd .= " I=$outBam "; 
+	$outCmd .= " F=$opts{'outFq'}_R1.fq "; 
+	$outCmd .= " F2=$opts{'outFq'}_R2.fq"; 
+	&runCmd( $outCmd ); 
+}
+
 &fileSunhh::_rmtree($tmp_dir); 
 &tsmsg("[Msg] Finish to convert $alnBam to $outBam\n"); 
 
+sub runCmd {
+	&exeCmd_1cmd( $_[0] ) and &stopErr("[Err] Failed at CMD: $_[0]\n"); 
+	return; 
+}# runCmd 
 
