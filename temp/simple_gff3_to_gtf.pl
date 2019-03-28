@@ -41,6 +41,7 @@ for my $gid (sort {$l1_gene{$a}[0] cmp $l1_gene{$b}[0] || $l1_gene{$a}[3] <=> $l
 	defined $gene_to_mRNA{$gid} or next; 
 	for my $mid (sort { $l2_mRNA{$a}[3] <=> $l2_mRNA{$b}[3] || $l2_mRNA{$a}[4] <=> $l2_mRNA{$b}[4] } @{$gene_to_mRNA{$gid}}) {
 		# print STDOUT join("\t", @{$l2_mRNA{$mid}})."\n"; 
+		$l2_mRNA{$mid}[2] = 'transcript'; 
 		print STDOUT join("\t", @{$l2_mRNA{$mid}}[0..7], "transcript_id \"$mid\"; transcript_type \"protein_coding\"; gene_id \"$gid\"; gene_type \"protein_coding\";")."\n"; 
 		defined $l3_CDS{$mid} or next; 
 		if ($l2_mRNA{$mid}[6] eq '+') {
