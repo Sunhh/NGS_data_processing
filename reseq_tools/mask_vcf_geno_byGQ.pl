@@ -1,0 +1,1 @@
+/Data/Sunhh/watermelon/trait/powder_mildew/01_work/tools/mask_vcf_geno_byGQ.pl
