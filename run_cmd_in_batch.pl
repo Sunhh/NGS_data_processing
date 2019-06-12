@@ -1,6 +1,9 @@
 #!/usr/bin/env perl
 use strict; 
 use warnings; 
+BEGIN {
+	use lib "/Data/Sunhh/src/general/conda/pkgs/perl-parallel-forkmanager-1.17-0/lib/perl5/site_perl/5.22.0/"; 
+}
 use LogInforSunhh; 
 use Parallel::ForkManager; 
 

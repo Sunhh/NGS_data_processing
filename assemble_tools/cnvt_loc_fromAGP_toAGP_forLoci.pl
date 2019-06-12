@@ -69,8 +69,14 @@ while (<$old_locFh>) {
 #		}
 		$new_scfID  //= $new_scfInf[0]; 
 		$new_scfStr //= $new_scfInf[2]; 
-		$new_scfID  eq $new_scfInf[0] or &stopErr("[Err] Different new_scfID  for [$old_scfID, $old_scfPos, $old_scfStr]\n"); 
-		$new_scfStr eq $new_scfInf[2] or &stopErr("[Err] Different new_strStr for [$old_scfID, $old_scfPos, $old_scfStr]\n"); 
+		unless ( $new_scfID  eq $new_scfInf[0] ) {
+			&tsmsg("[Err] Different new_scfID  for [$old_scfID, $old_scfPos, $old_scfStr] [$new_scfInf[0] VS. $new_scfID]. SKip line: $_\n"); 
+			next LOC; 
+		}
+		unless ( $new_scfStr eq $new_scfInf[2] ) {
+			&tsmsg("[Err] Different new_strStr for [$old_scfID, $old_scfPos, $old_scfStr]. Skip line: $_\n"); 
+			next LOC; 
+		}
 		$new_scfPos = $new_scfInf[1]; 
 		$new_value[ $glob{'colN_seqID'}[0] ] //= $new_scfID; 
 		@{$glob{'colN_seqStr'}} > 0 and $new_value[ $glob{'colN_seqStr'}[0] ] //= $new_scfStr; 
@@ -82,7 +88,10 @@ while (<$old_locFh>) {
 	}
 	if ( $glob{'for_gff3'} ) {
 		if ( $a1->[3] > $a1->[4] ) {
-			$old_scfStr ne $new_scfStr or &stopErr("[Err] Strings line:\nNew:@$a1\n"); 
+			unless ( $old_scfStr ne $new_scfStr ) {
+				&tsmsg("[Err] Strings line. New: @$a1 ; Skip line: $_\n"); 
+				next LOC; 
+			}
 			$a1->[3] > $a1->[4] and @{$a1}[3,4] = @{$a1}[4,3]; 
 		}
 	} elsif ( $glob{'for_vcf'} ) {
