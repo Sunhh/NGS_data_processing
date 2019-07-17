@@ -2,6 +2,10 @@
 # 20180411 Use kill() to monitor PID. 
 use strict; 
 use warnings; 
+BEGIN {
+	use lib "/Data/Sunhh/src/general/conda/pkgs/perl-parallel-forkmanager-1.17-0/lib/perl5/site_perl/5.22.0/";
+}
+
 use Getopt::Long; 
 use LogInforSunhh; 
 my %opts; 
