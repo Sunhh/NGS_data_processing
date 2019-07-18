@@ -231,7 +231,14 @@ sub get_TriCube {
 	my @back_tricV; 
 	my %chk_rawIdx = map { $_=>1 } ( 0 .. $#$aref); 
 	for (@srt_tricV) {
-		defined $chk_rawIdx{$_->[1]} or &stopErr("[Err] Unknown raw index [$_->[1] : @$_]\n"); 
+		defined $_ or next; 
+		unless (defined $chk_rawIdx{$_->[1]}) {
+			warn "[www] v=$#srt_tricV\n"; 
+			for (my $x=0; $x<@srt_tricV; $x++) {
+				warn "[wrn] x=$x : $srt_tricV[$x]\n"; 
+			}
+			&stopErr("[Err] Unknown raw index [$_->[1] : @$_]\n"); 
+		}
 		$chk_rawIdx{$_->[1]} == 1 or &stopErr("[Err] Repeat raw index [$_->[1] : @$_]\n"); 
 		$chk_rawIdx{$_->[1]} ++; 
 		$back_tricV[$_->[1]] = [$_->[0], $_->[2]]; 
