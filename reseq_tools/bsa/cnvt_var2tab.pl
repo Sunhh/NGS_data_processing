@@ -8,6 +8,8 @@ my %opts;
 GetOptions(\%opts, 
 	"help!", 
 	"highID:s@", "lowID:s@", 
+	"highParentID:s", 
+	"lowParentID:s", 
 	"minRefAF:f", "maxRefAF:f", # Min/Max reference allele frequency accepted; 
 	"minTotalDepth:i", "maxTotalDepth:i", # Min/Max total depth accepted; 
 	"minSampleDepth:i", # accepted: Minimum depth of each sample compared 
@@ -27,6 +29,9 @@ my $help_txt = <<HH;
 # perl $0 input.VariantsToTable.table -highID F2BMut -lowID F2H > input.bsaTab
 #
 # -help 
+#
+# -highParentID    [sampleID] homozygous high parent; I always assume highParent is REF; 
+# -lowParentID     [sampleID] homozygous low parent;  I always assume lowParent is ALT; 
 #
 # -minRefAF        [0-1]
 # -maxRefAF        [0-1]
@@ -54,7 +59,12 @@ my %gg;
 sub set_Glob {
 	for (@{$opts{'highID'}}) { $gg{'highID'}{$_} = 1; }
 	for (@{$opts{'lowID'}})  { $gg{'lowID'}{$_} = 1; }
-
+	if ( defined $opts{'highParentID'} ) {
+		$gg{'highParentID'}{$opts{'highParentID'}} = 1; 
+	}
+	if ( defined $opts{'lowParentID'} ) {
+		$gg{'lowParentID'}{$opts{'lowParentID'}} = 1; 
+	}
 }# set_Glob() 
 
 my %colN; 
@@ -69,24 +79,40 @@ while (<>) {
 					push(@{$colN{'high_AD'}}, $i); 
 				} elsif ( defined $gg{'lowID'}{$1} ) {
 					push(@{$colN{'low_AD'}}, $i); 
+				} elsif ( defined $gg{'highParentID'}{$1} ) {
+					push(@{$colN{'highParent_AD'}}, $i); 
+				} elsif ( defined $gg{'lowParentID'}{$1} ) {
+					push(@{$colN{'lowParent_AD'}}, $i); 
 				}
 			} elsif ($ta[$i] =~ m!^(\S+)\.DP$!) {
 				if      ( defined $gg{'highID'}{$1} ) {
 					push(@{$colN{'high_DP'}}, $i); 
 				} elsif ( defined $gg{'lowID'}{$1} ) {
 					push(@{$colN{'low_DP'}}, $i); 
+				} elsif ( defined $gg{'highParentID'}{$1} ) {
+					push(@{$colN{'highParent_DP'}}, $i); 
+				} elsif ( defined $gg{'lowParentID'}{$1} ) {
+					push(@{$colN{'lowParent_DP'}}, $i); 
 				}
 			} elsif ($ta[$i] =~ m!^(\S+)\.GQ$!) {
 				if      ( defined $gg{'highID'}{$1} ) {
 					push(@{$colN{'high_GQ'}}, $i); 
 				} elsif ( defined $gg{'lowID'}{$1} ) {
 					push(@{$colN{'low_GQ'}}, $i); 
+				} elsif ( defined $gg{'highParentID'}{$1} ) {
+					push(@{$colN{'highParent_GQ'}}, $i); 
+				} elsif ( defined $gg{'lowParentID'}{$1} ) {
+					push(@{$colN{'lowParent_GQ'}}, $i); 
 				}
 			} elsif ($ta[$i] =~ m!^(\S+)\.PL$!) {
 				if      ( defined $gg{'highID'}{$1} ) {
 					push(@{$colN{'high_PL'}}, $i); 
 				} elsif ( defined $gg{'lowID'}{$1} ) {
 					push(@{$colN{'low_PL'}}, $i); 
+				} elsif ( defined $gg{'highParentID'}{$1} ) {
+					push(@{$colN{'highParent_PL'}}, $i); 
+				} elsif ( defined $gg{'lowParentID'}{$1} ) {
+					push(@{$colN{'lowParent_PL'}}, $i); 
 				}
 			} elsif ($ta[$i] =~ m!^CHROM$!) {
 				$colN{'CHROM'} = [$i]; 
@@ -99,6 +125,12 @@ while (<>) {
 		for my $k1 (qw/high_AD high_DP low_AD low_DP CHROM POS/) {
 			( defined $colN{$k1} and @{$colN{$k1}} > 0 ) or &stopErr("[Err] failed to find column for [$k1]\n"); 
 		}
+		if (defined $opts{'highParentID'}) {
+			defined $colN{'highParent_AD'} or &stopErr("[Err] Failed to find column for highParent_AD\n"); 
+		}
+		if (defined $opts{'lowParentID'}) {
+			defined $colN{'lowParent_AD'} or &stopErr("[Err] Failed to find column for lowParent_AD\n"); 
+		}
 		print STDOUT join("\t", qw/CHROM POS n2_RefAD_H n4_AltAD_H n1_RefAD_L n3_AltAD_L/)."\n"; 
 		next SITE; 
 	}
@@ -108,19 +140,77 @@ while (<>) {
 	}
 	# Set each value for REF/ALT; 
 	my %curr; 
+	### Set ref-high and alt-low column in AD list; 
+	my ($refHighC, $altLowC) = (0,1); 
+	if ( defined $opts{'highParentID'} ) {
+		my @t1 = split(/,/, $ta[ $colN{'highParent_AD'}[0] ]); 
+		my ($max_i, $max_v); 
+		for (my $i1 = 0; $i1<@t1; $i1++) {
+			$t1[$i1] > 0 or next; 
+			$max_i //= $i1; 
+			$max_v //= $t1[$i1]; 
+			if ($max_v < $t1[$i1]) {
+				$max_i = $i1; 
+				$max_v = $t1[$i1]; 
+			}
+		}
+		defined $max_i or do { &tsmsg("[Wrn] Skip line with bad highParent_AD [$ta[ $colN{'highParent_AD'}[0] ]] at [@ta[0,1]]\n"); next SITE; }; 
+		$refHighC = $max_i; 
+	}
+	if ( defined $opts{'lowParentID'} ) {
+		my @t2 = split(/,/, $ta[ $colN{'lowParent_AD'}[0] ]); 
+		my ($max_i2, $max_v2); 
+		for (my $i2=0; $i2<@t2; $i2++) {
+			$t2[$i2] > 0 or next; 
+			$max_i2 //= $i2; 
+			$max_v2 //= $t2[$i2]; 
+			if ($max_v2 < $t2[$i2]) {
+				$max_i2 = $i2; 
+				$max_v2 = $t2[$i2]; 
+			}
+		}
+		defined $max_i2 or do { &tsmsg("[Wrn] Skip line with bad lowParent_AD [$ta[ $colN{'lowParent_AD'}[0] ]] at [@ta[0,1]]\n"); next SITE; }; 
+		$altLowC = $max_i2; 
+	}
+	if ( defined $opts{'highParentID'} ) {
+		if ( defined $opts{'lowParentID'} ) {
+			if ($refHighC == $altLowC) {
+				&tsmsg("[Err] highP_AD=[$ta[ $colN{'highParent_AD'}[0] ]];\n"); 
+				&tsmsg("[Err] lowP_AD =[$ta[ $colN{'lowParent_AD'}[0] ]];\n"); 
+				&stopErr("[Err] Bad line for high and low parent IDs' genome type: $_\n"); 
+			}
+		} else {
+			my @t1 = split(/,/, $ta[ $colN{'highParent_AD'}[0] ]); 
+			for (my $i1=0; $i1<@t1; $i1++) {
+				$i1 == $refHighC and next; 
+				$altLowC = $i1; 
+				last; 
+			}
+		}
+	} elsif ( defined $opts{'lowParentID'} ) {
+		my @t2 = split(/,/, $ta[ $colN{'lowParent_AD'}[0] ]); 
+		for (my $i2=0; $i2<@t2; $i2++) {
+			$i2 == $altLowC and next; 
+			$refHighC = $i2; 
+			last; 
+		}
+	} else {
+		; 
+	}
+	### count AD for ref-high and alt-low; 
 	for my $c1 (@{$colN{'high_AD'}}) {
 		my @t1 = split(/,/, $ta[$c1]); 
-		$t1[0] =~ s!^\s+|\s+$!!g; $t1[0] =~ s!^NA$!0!i; 
-		$t1[1] =~ s!^\s+|\s+$!!g; $t1[1] =~ s!^NA$!0!i; 
-		$curr{'ref_AD_H'} += $t1[0]; 
-		$curr{'alt_AD_H'} += $t1[1]; # Originally, I count this by $high_DP - $ref_AD_H ; 
+		$t1[ $refHighC ] =~ s!^\s+|\s+$!!g; $t1[ $refHighC ] =~ s!^NA$!0!i; 
+		$t1[ $altLowC ]  =~ s!^\s+|\s+$!!g; $t1[ $altLowC ]  =~ s!^NA$!0!i; 
+		$curr{'ref_AD_H'} += $t1[$refHighC]; 
+		$curr{'alt_AD_H'} += $t1[$altLowC]; # Originally, I count this by $high_DP - $ref_AD_H ; 
 	}
 	for my $c1 (@{$colN{'low_AD'}}) {
 		my @t1 = split(/,/, $ta[$c1]); 
-		$t1[0] =~ s!^\s+|\s+$!!g; $t1[0] =~ s!^NA$!0!i; 
-		$t1[1] =~ s!^\s+|\s+$!!g; $t1[1] =~ s!^NA$!0!i; 
-		$curr{'ref_AD_L'} += $t1[0]; 
-		$curr{'alt_AD_L'} += $t1[1]; # Originally, I count this by $low_DP - $ref_AD_L ; 
+		$t1[$refHighC] =~ s!^\s+|\s+$!!g; $t1[$refHighC] =~ s!^NA$!0!i; 
+		$t1[$altLowC] =~ s!^\s+|\s+$!!g; $t1[$altLowC] =~ s!^NA$!0!i; 
+		$curr{'ref_AD_L'} += $t1[$refHighC]; 
+		$curr{'alt_AD_L'} += $t1[$altLowC]; # Originally, I count this by $low_DP - $ref_AD_L ; 
 	}
 	$curr{'totalDep'} = $curr{'ref_AD_H'}+$curr{'alt_AD_H'}+$curr{'ref_AD_L'}+$curr{'alt_AD_L'}; 
 	$curr{'sampleDep_H'} = $curr{'ref_AD_H'}+$curr{'alt_AD_H'}; 
@@ -138,7 +228,7 @@ while (<>) {
 	$opts{'minRefAF'} > 0 and $curr{'refAF'} < $opts{'minRefAF'} and next SITE; 
 	$opts{'maxRefAF'} > 0 and $curr{'refAF'} > $opts{'maxRefAF'} and next SITE; 
 
-	if ($opts{'minGQ'} > -10) {
+	if ($opts{'minGQ'} > -1) {
 		if ( defined $colN{'high_GQ'} and @{$colN{'high_GQ'}} == 1 ) {
 			$ta[ $colN{'high_GQ'}[0] ] eq 'NA' and $ta[ $colN{'high_GQ'}[0] ] = 0; 
 			$ta[ $colN{'high_GQ'}[0] ] >= $opts{'minGQ'} or next SITE; 
