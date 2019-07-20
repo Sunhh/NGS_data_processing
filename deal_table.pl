@@ -513,7 +513,7 @@ sub chRowColName {
 				} else {
 					$cur_n ++; 
 				}
-				if ( m!^\s*(#|$)! ) {
+				if ( m!^\s*(##|$)! ) {
 					print STDOUT "$_\n"; 
 					next; 
 				}
