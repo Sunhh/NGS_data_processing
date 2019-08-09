@@ -46,6 +46,7 @@
 ### 2016-08-30 Add '-jn_byID' to join sequences from different files with the same IDs. 
 ### 2016-08-30 Replace AA seq with corresponding Nucl sequences. 
 ### 2019-01-16 Change the definition of -frame; It means the first base's frame (+|-(1/2/3)) before, but now it means the first base position of the first frame, which is same to blastx and transeq. 
+### 2019-08-09 Add -chop_agp to mask -chop_info 
 
 use strict;
 use warnings; 
@@ -160,6 +161,7 @@ Usage: $0  <fasta_file | STDIN>
   -chop_min           [0] Minimum length of pieces. 
   -chop_noPos         [Boolean] Default add raw position of pieces. 
   -chop_info          [Boolean] If given, the output is a table instead of a sequence file. 
+  -chop_agp           [Boolean] If given, the output is an AGP file. This overwrites -chop_info option. 
 
   -joinR12            [Boolean] Input files as paired, and join R1/R2 reads in a same stream. 
 
@@ -208,7 +210,7 @@ GetOptions(\%opts,"help!",
 	"fa2fq!", "fa2fqQChar:s", "fq2fa!", 
 	"replaceID!", "replaceIDlist:s", "replaceIDcol:s", "replaceIDadd!", 
 	"reorderByList:s", 
-	"chop_seq!", "chop_len:i", "chop_step:i", "chop_min:i", "chop_noPos!", "chop_info!", 
+	"chop_seq!", "chop_len:i", "chop_step:i", "chop_min:i", "chop_noPos!", "chop_info!", "chop_agp!", 
 	"joinR12!", 
 	"rna2dna!", 
 	"rmTailXN!", 
@@ -631,7 +633,9 @@ sub chop_seq {
 	$opts{'chop_step'} //= $opts{'chop_len'}; 
 	$opts{'chop_min'}  //= 0; 
 
-	if ($opts{'chop_info'}) {
+	if ( $opts{'chop_agp'} ) {
+		; 
+	} elsif ($opts{'chop_info'}) {
 		print STDOUT join("\t", qw/key WI WS WE GC AG Wkey len N wN/)."\n"; 
 	}
 	
@@ -641,7 +645,9 @@ sub chop_seq {
 			my $seqLen = length( $relHR->{'seq'} ); 
 			my $tkey = $relHR->{'key'} ; 
 			my %cnt; 
-			if ( $opts{'chop_info'} ) {
+			if ( $opts{'chop_agp'} ) {
+				; 
+			} elsif ( $opts{'chop_info'} ) {
 				$cnt{'N'} = ( $relHR->{'seq'} =~ tr/nN/nN/ ); 
 			}
 			for (my $i=1; ($i-1) * $opts{'chop_step'} + 1 < $seqLen ; $i++) {
@@ -652,7 +658,9 @@ sub chop_seq {
 				my $sub_seq = substr( $relHR->{'seq'}, $s-1, $e-$s+1 ); 
 				my $tag = " [${s}-${e}]"; 
 				$opts{'chop_noPos'} and $tag = ''; 
-				if ( $opts{'chop_info'} ) {
+				if ( $opts{'chop_agp'} ) {
+					print STDOUT join("\t", $tkey, $s, $e, $i, "W", "${tkey}_$i", 1, $e-$s+1, "+")."\n"; 
+				} elsif ( $opts{'chop_info'} ) {
 					my $c_a = ( $sub_seq =~ tr/aA/aA/ ); 
 					my $c_t = ( $sub_seq =~ tr/tT/tT/ ); 
 					my $c_g = ( $sub_seq =~ tr/gG/gG/ ); 
