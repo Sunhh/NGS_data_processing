@@ -14,6 +14,7 @@ GetOptions(\%opts,
 	"inBam:s", 
 	"outBam:s", 
 	"outFq:s", 
+	"onlyFq!", 
 ); 
 $opts{'exe_java'}   //= '/usr/java/jre1.8.0_144/bin/java'; 
 $opts{'jar_picard'} //= "/home/Sunhh/src/align/picard/v2.10.3/picard.jar"; 
@@ -26,6 +27,9 @@ my $help_txt = <<HH;
 # perl $0 -inBam  BF80d2_H3C7HCCXY_aln_pipe1.bam -outBam BF80d2_H3C7HCCXY_u.bam
 #
 # -help 
+#
+# -outFq               [outFq_prefix] Output outFq_R1.fq and outFq_R2.fq ; 
+# -onlyFq              [Boolean] Only output fastq files if given. 
 #
 # -exe_java            [$opts{'exe_java'}] 
 # -jar_picard          [$opts{'jar_picard'}] 
@@ -58,32 +62,35 @@ $openCmd .= "  REMOVE_DUPLICATE_INFORMATION=true REMOVE_ALIGNMENT_INFORMATION=tr
 &runCmd( $openCmd ); 
 
 my $outCmd = ''; 
-$outCmd .= "$opts{'exe_samtools'} view -o $outBam -"; 
-# open F,'-|', "$openCmd" or die "Failed to run input CMD: $openCmd\n"; 
-open F,'-|', "$opts{'exe_samtools'} view -h $tmp_dir/a.bam" or die "Failed to open file $tmp_dir/a.bam\n"; 
-open O,'|-', "$outCmd" or die "Failed to run output CMD: $outCmd\n"; 
-while (<F>) {
-	chomp; 
-	if (m!^\@!) {
-		print O "$_\n"; 
-		next; 
+unless ( $opts{'onlyFq'} ) {
+	$outCmd = ''; 
+	$outCmd .= "$opts{'exe_samtools'} view -o $outBam -"; 
+	# open F,'-|', "$openCmd" or die "Failed to run input CMD: $openCmd\n"; 
+	open F,'-|', "$opts{'exe_samtools'} view -h $tmp_dir/a.bam" or die "Failed to open file $tmp_dir/a.bam\n"; 
+	open O,'|-', "$outCmd" or die "Failed to run output CMD: $outCmd\n"; 
+	while (<F>) {
+		chomp; 
+		if (m!^\@!) {
+			print O "$_\n"; 
+			next; 
+		}
+		my @ta = split(/\t/, $_); 
+		my @o = @ta[0 .. 10]; 
+		for (my $i=11; $i<@ta; $i++) {
+			$ta[$i] =~ m!^RG:! and push(@o, $ta[$i]); 
+		}
+		print O join("\t", @o)."\n"; 
 	}
-	my @ta = split(/\t/, $_); 
-	my @o = @ta[0 .. 10]; 
-	for (my $i=11; $i<@ta; $i++) {
-		$ta[$i] =~ m!^RG:! and push(@o, $ta[$i]); 
-	}
-	print O join("\t", @o)."\n"; 
+	close(F); 
+	close(O); 
 }
-close(F); 
-close(O); 
 
 
 if (defined $opts{'outFq'} and $opts{'outFq'} ne '') {
 	$outCmd = ''; 
 	$outCmd .= "$opts{'exe_java'} -Xmx8G -jar $opts{'jar_picard'} SamToFastq "; 
 	$outCmd .= " NON_PF=true "; 
-	$outCmd .= " I=$outBam "; 
+	$outCmd .= " I=$tmp_dir/a.bam "; 
 	$outCmd .= " F=$opts{'outFq'}_R1.fq "; 
 	$outCmd .= " F2=$opts{'outFq'}_R2.fq"; 
 	&runCmd( $outCmd ); 
