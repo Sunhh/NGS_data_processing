@@ -231,27 +231,26 @@ sub sepByRG {
 					if ( $ofNum > 10 ) {
 						$opts{'forceSep'} or &stopErr("[Err] The output file will be bigger than 10, please check -rdIDfmt or provide -forceSep \n"); 
 					}
-				}else{
-					$ofh{$k} = 1; 
 				}
 			}
+			$ofh{$k} ++; 
 			$opts{'onlyCheck'} or print {$ofh{$k}} "$l1$l2$l3$l4"; 
 		}
 		close($fh1); 
 	}
 	if ($opts{'onlyCheck'}) {
 		my @fn_arr = sort { $a->[1] <=> $b->[1] } map { [$_, $ofIdx{$_}] } keys %ofh; 
-		print STDOUT join("\t", qw/sepPrefix sepFNum sepFIdx sepRunID/)."\n"; 
+		print STDOUT join("\t", qw/sepPrefix sepFNum sepFIdx sepRunID sepFRdNum/)."\n"; 
 		for my $f1 (@fn_arr) {
 			my $runID = $f1->[0]; $runID =~ s!\:$!!; 
-			print STDOUT join("\t", $opts{'sepByRG'}, scalar(@fn_arr), $f1->[1], $runID)."\n"; 
+			print STDOUT join("\t", $opts{'sepByRG'}, scalar(@fn_arr), $f1->[1], $runID, $ofh{ $f1->[0] })."\n"; 
 		}
 	} else {
 		my @fn_arr = sort { $a->[1] <=> $b->[1] } map { [$_, $ofIdx{$_}, $ofFname{$_}] } keys %ofh; 
-		print STDOUT join("\t", qw/sepPrefix sepFNum sepFIdx sepRunID sepFName/)."\n"; 
+		print STDOUT join("\t", qw/sepPrefix sepFNum sepFIdx sepRunID sepFRdNum sepFName/)."\n"; 
 		for my $f1 (@fn_arr) {
 			my $runID = $f1->[0]; $runID =~ s!\:$!!; 
-			print STDOUT join("\t", $opts{'sepByRG'}, scalar(@fn_arr), $f1->[1], $runID, $f1->[2])."\n"; 
+			print STDOUT join("\t", $opts{'sepByRG'}, scalar(@fn_arr), $f1->[1], $runID, $ofh{$f1->[0]}, $f1->[2])."\n"; 
 			close($ofh{$f1->[0]}); 
 		}
 	}
