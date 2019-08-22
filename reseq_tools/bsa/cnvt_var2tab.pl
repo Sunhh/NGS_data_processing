@@ -177,7 +177,8 @@ while (<>) {
 			if ($refLowC == $altHighC) {
 				&tsmsg("[Err] lowP_AD =[$ta[ $colN{'lowParent_AD'}[0] ]];\n"); 
 				&tsmsg("[Err] highP_AD=[$ta[ $colN{'highParent_AD'}[0] ]];\n"); 
-				&stopErr("[Err] Bad line for high and low parent IDs' genome type: $_\n"); 
+				&tsmsg("[Err] Skip bad line for high and low parent IDs genotype: $_\n"); 
+				next SITE; 
 			}
 		} else {
 			my @t1 = split(/,/, $ta[ $colN{'lowParent_AD'}[0] ]); 
