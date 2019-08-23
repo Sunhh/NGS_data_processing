@@ -203,15 +203,15 @@ while (<>) {
 		my @t1 = split(/,/, $ta[$c1]); 
 		$t1[ $refLowC  ] =~ s!^\s+|\s+$!!g; $t1[ $refLowC ]  =~ s!^NA$!0!i; 
 		$t1[ $altHighC ] =~ s!^\s+|\s+$!!g; $t1[ $altHighC ] =~ s!^NA$!0!i; 
-		$curr{'ref_AD_H'} += $t1[$refLowC]; 
-		$curr{'alt_AD_H'} += $t1[$altHighC]; # Originally, I count this by $high_DP - $ref_AD_H ; 
+		$curr{'ref_AD_L'} += $t1[$refLowC]; # previous ref_AD_H; 
+		$curr{'alt_AD_L'} += $t1[$altHighC]; 
 	}
 	for my $c1 (@{$colN{'high_AD'}}) {
 		my @t1 = split(/,/, $ta[$c1]); 
 		$t1[$refLowC]  =~ s!^\s+|\s+$!!g; $t1[$refLowC]  =~ s!^NA$!0!i; 
 		$t1[$altHighC] =~ s!^\s+|\s+$!!g; $t1[$altHighC] =~ s!^NA$!0!i; 
-		$curr{'ref_AD_L'} += $t1[$refLowC]; 
-		$curr{'alt_AD_L'} += $t1[$altHighC]; # Originally, I count this by $low_DP - $ref_AD_L ; 
+		$curr{'ref_AD_H'} += $t1[$refLowC]; 
+		$curr{'alt_AD_H'} += $t1[$altHighC]; 
 	}
 	$curr{'totalDep'} = $curr{'ref_AD_H'}+$curr{'alt_AD_H'}+$curr{'ref_AD_L'}+$curr{'alt_AD_L'}; 
 	$curr{'sampleDep_H'} = $curr{'ref_AD_H'}+$curr{'alt_AD_H'}; 
