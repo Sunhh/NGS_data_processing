@@ -14,19 +14,11 @@ GetOptions(\%opts,
 	"exeRscript:s", # Rscript 
 	"cpuN:i",       # 20
 	"log_time!", 
+	"no_prime!", 
 ); 
 $opts{'windSize'} //= 100e3; 
 $opts{'exeRscript'} //= 'Rscript'; 
 $opts{'cpuN'}       //= 1; 
-my $absDir     = &fileSunhh::_dirname( &fileSunhh::_abs_path($0) ); 
-my $absProgram = &fileSunhh::_basename( &fileSunhh::_abs_path($0) ); 
-my $absCurDir  = &fileSunhh::_abs_path( "./" ); 
-unless (defined $opts{'r_pval'}) {
-	# get_pval_for_Gprime.R
-	$opts{'r_pval'} = "${absDir}/get_pval_for_Gprime.R"; 
-}
-
--e $opts{'r_pval'} or &stopErr("[Err] The Rscript (-r_pval) [$opts{'r_pval'}] is required.\n"); 
 
 my $help_txt = <<HH; 
 ####################################################################################################
@@ -38,6 +30,21 @@ my $help_txt = <<HH;
 #  -r_pval       []
 ####################################################################################################
 HH
+
+my $absDir     = &fileSunhh::_dirname( &fileSunhh::_abs_path($0) ); 
+my $absProgram = &fileSunhh::_basename( &fileSunhh::_abs_path($0) ); 
+my $absCurDir  = &fileSunhh::_abs_path( "./" ); 
+unless (defined $opts{'r_pval'}) {
+	# get_pval_for_Gprime.R
+	$opts{'r_pval'} = "${absDir}/get_pval_for_Gprime.R"; 
+}
+
+unless ($opts{'no_prime'}) {
+	unless (-e $opts{'r_pval'}) {
+		&tsmsg("[Err] The Rscript (-r_pval) [$opts{'r_pval'}] is required.\n"); 
+		&LogInforSunhh::usage($help_txt); 
+	}
+}
 
 $opts{'help'} and &LogInforSunhh::usage($help_txt); 
 -t and !@ARGV and &LogInforSunhh::usage($help_txt); 
@@ -65,88 +72,99 @@ while (<>) {
 	my ($iH, $iL, $iD) = &getHLDIdx( $n1, $n2, $n3, $n4 ); 
 	my $G = &getG( $n1, $n2, $n3, $n4 ); 
 	push(@outTbl, [ $order{'num'}, \@ta, $iH, $iL, $iD, $G ]); 
-	push(@{$forTriCube{'iDprime'}{$ta[0]}}, [ $order{'num'}, $ta[1], $iD ]); 
-	push(@{$forTriCube{'Gprime'}{$ta[0]}},  [ $order{'num'}, $ta[1], $G  ]); 
+	unless ($opts{'no_prime'}) {
+		push(@{$forTriCube{'iDprime'}{$ta[0]}}, [ $order{'num'}, $ta[1], $iD ]); 
+		push(@{$forTriCube{'Gprime'}{$ta[0]}},  [ $order{'num'}, $ta[1], $G  ]); 
+	}
 	$order{'chr'}{$ta[0]} //= $order{'num'}; 
 }
 
 my %num2val; 
-for my $dataType (qw/iDprime Gprime/) {
-	my @smoothV; 
-	my %idx_smoothV_to_num; 
-	if ( $opts{'cpuN'} > 1 ) {
-		my $pm  = &LogInforSunhh::get_pm( $opts{'cpuN'} ); 
-		my $wd0 = &fileSunhh::new_tmp_dir( 'create'=>1 ); 
-		my $sN  = 0; 
-		for my $chrID (sort keys %{$forTriCube{$dataType}}) {
-			if ( @{$forTriCube{$dataType}{$chrID}} < 5e3 ) {
-				# If there are less than 5k sites, I don't need to use mult-threading; 
+unless ($opts{'no_prime'}) {
+	for my $dataType (qw/iDprime Gprime/) {
+		my @smoothV; 
+		my %idx_smoothV_to_num; 
+		if ( $opts{'cpuN'} > 1 ) {
+			my $pm  = &LogInforSunhh::get_pm( $opts{'cpuN'} ); 
+			my $wd0 = &fileSunhh::new_tmp_dir( 'create'=>1 ); 
+			my $sN  = 0; 
+			for my $chrID (sort keys %{$forTriCube{$dataType}}) {
+				if ( @{$forTriCube{$dataType}{$chrID}} < 5e3 ) {
+					# If there are less than 5k sites, I don't need to use mult-threading; 
+					$opts{'log_time'} and &tsmsg("[Msg] Getting tri-cube smoothing data for chr[$chrID] of data[$dataType]\n"); 
+					my ($v_aref) = &get_TriCube( $forTriCube{$dataType}{$chrID}, $opts{'windSize'} ); 
+					my $i_s = scalar(@smoothV) - 1; 
+					push(@smoothV, @$v_aref); 
+					for (my $i_v=0; $i_v < @$v_aref; $i_v++) {
+						$i_s++; 
+						$idx_smoothV_to_num{$i_s} = $forTriCube{$dataType}{$chrID}[$i_v][0]; 
+					}
+					$opts{'log_time'} and &tsmsg("[Msg]   Done for getting tri-cube smoothing data for chr[$chrID] of data[$dataType]\n"); 
+					next; 
+				}
+				$sN ++; 
+				my $pid = $pm->start and next; 
+				$opts{'log_time'} and &tsmsg("[Msg] Getting tri-cube smoothing data for chr[$chrID] (sN=$sN) of data[$dataType]\n"); 
+				my ($v_aref) = &get_TriCube( $forTriCube{$dataType}{$chrID}, $opts{'windSize'} ); 
+				my $ofht = &openFH("$wd0/sub_$sN", '>'); 
+				for (my $i_v=0; $i_v < @$v_aref; $i_v++) {
+					print {$ofht} join("\t", $forTriCube{$dataType}{$chrID}[$i_v][0], @{$v_aref->[$i_v]})."\n"; 
+				}
+				close($ofht); 
+				$opts{'log_time'} and &tsmsg("[Msg]   Done for getting tri-cube smoothing data for chr[$chrID] (sN=$sN) of data[$dataType]\n"); 
+				$pm->finish; 
+			}
+			$pm->wait_all_children; 
+			$opts{'log_time'} and &tsmsg("[Msg] Combine sub_files for data[$dataType]\n"); 
+			for (my $i=1; $i<=$sN; $i++) {
+				my $ifht = &openFH("$wd0/sub_$i", '<'); 
+				while (<$ifht>) {
+					chomp; 
+					my @ta = &splitL("\t", $_); 
+					push(@smoothV, [ @ta[1..$#ta] ]); 
+					$idx_smoothV_to_num{$#smoothV} = $ta[0]; 
+				}
+				close($ifht); 
+			}
+			&fileSunhh::_rmtree($wd0); 
+			$opts{'log_time'} and &tsmsg("[Msg]   Done for combining sub_files for data[$dataType]\n"); 
+		} else {
+			for my $chrID (sort keys %{$forTriCube{$dataType}}) {
 				$opts{'log_time'} and &tsmsg("[Msg] Getting tri-cube smoothing data for chr[$chrID] of data[$dataType]\n"); 
 				my ($v_aref) = &get_TriCube( $forTriCube{$dataType}{$chrID}, $opts{'windSize'} ); 
-				my $i_s = scalar(@smoothV) - 1; 
+				my $i_s = scalar(@smoothV)-1; 
 				push(@smoothV, @$v_aref); 
 				for (my $i_v=0; $i_v < @$v_aref; $i_v++) {
 					$i_s++; 
 					$idx_smoothV_to_num{$i_s} = $forTriCube{$dataType}{$chrID}[$i_v][0]; 
 				}
-				$opts{'log_time'} and &tsmsg("[Msg]   Done for getting tri-cube smoothing data for chr[$chrID] of data[$dataType]\n"); 
-				next; 
+				$opts{'log_time'} and  &tsmsg("[Msg]   Done for getting tri-cube smoothing data for chr[$chrID] of data[$dataType]\n"); 
 			}
-			$sN ++; 
-			my $pid = $pm->start and next; 
-			$opts{'log_time'} and &tsmsg("[Msg] Getting tri-cube smoothing data for chr[$chrID] (sN=$sN) of data[$dataType]\n"); 
-			my ($v_aref) = &get_TriCube( $forTriCube{$dataType}{$chrID}, $opts{'windSize'} ); 
-			my $ofht = &openFH("$wd0/sub_$sN", '>'); 
-			for (my $i_v=0; $i_v < @$v_aref; $i_v++) {
-				print {$ofht} join("\t", $forTriCube{$dataType}{$chrID}[$i_v][0], @{$v_aref->[$i_v]})."\n"; 
-			}
-			close($ofht); 
-			$opts{'log_time'} and &tsmsg("[Msg]   Done for getting tri-cube smoothing data for chr[$chrID] (sN=$sN) of data[$dataType]\n"); 
-			$pm->finish; 
 		}
-		$pm->wait_all_children; 
-		$opts{'log_time'} and &tsmsg("[Msg] Combine sub_files for data[$dataType]\n"); 
-		for (my $i=1; $i<=$sN; $i++) {
-			my $ifht = &openFH("$wd0/sub_$i", '<'); 
-			while (<$ifht>) {
-				chomp; 
-				my @ta = &splitL("\t", $_); 
-				push(@smoothV, [ @ta[1..$#ta] ]); 
-				$idx_smoothV_to_num{$#smoothV} = $ta[0]; 
-			}
-			close($ifht); 
+		if ( $dataType eq 'Gprime' ) {
+			&add_pval( \@smoothV ); 
 		}
-		&fileSunhh::_rmtree($wd0); 
-		$opts{'log_time'} and &tsmsg("[Msg]   Done for combining sub_files for data[$dataType]\n"); 
-	} else {
-		for my $chrID (sort keys %{$forTriCube{$dataType}}) {
-			$opts{'log_time'} and &tsmsg("[Msg] Getting tri-cube smoothing data for chr[$chrID] of data[$dataType]\n"); 
-			my ($v_aref) = &get_TriCube( $forTriCube{$dataType}{$chrID}, $opts{'windSize'} ); 
-			my $i_s = scalar(@smoothV)-1; 
-			push(@smoothV, @$v_aref); 
-			for (my $i_v=0; $i_v < @$v_aref; $i_v++) {
-				$i_s++; 
-				$idx_smoothV_to_num{$i_s} = $forTriCube{$dataType}{$chrID}[$i_v][0]; 
-			}
-			$opts{'log_time'} and  &tsmsg("[Msg]   Done for getting tri-cube smoothing data for chr[$chrID] of data[$dataType]\n"); 
+		for (my $i=0; $i<@smoothV; $i++) {
+			my $t1 = $smoothV[$i]; 
+			my $num = $idx_smoothV_to_num{$i}; 
+			$num2val{$dataType}{$num} = [@$t1]; 
 		}
-	}
-	if ( $dataType eq 'Gprime' ) {
-		&add_pval( \@smoothV ); 
-	}
-	for (my $i=0; $i<@smoothV; $i++) {
-		my $t1 = $smoothV[$i]; 
-		my $num = $idx_smoothV_to_num{$i}; 
-		$num2val{$dataType}{$num} = [@$t1]; 
 	}
 }
 
 
 # Output all results; 
 $opts{'log_time'} and &tsmsg("[Msg] Output results.\n"); 
-for my $t1 (@outTbl) {
-	my $num = $t1->[0]; 
-	print STDOUT join( "\t", @{$t1->[1]}, @{$t1}[2,3,4], $num2val{'iDprime'}{$num}[0], $t1->[5], @{$num2val{'Gprime'}{$num}} )."\n"; 
+if ($opts{'no_prime'}) {
+	for my $t1 (@outTbl) {
+		my $num = $t1->[0]; 
+		print STDOUT join( "\t", @{$t1->[1]}, @{$t1}[2,3,4], 'NA', $t1->[5], qw/NA NA NA NA NA NA/ )."\n"; 
+	}
+} else {
+	for my $t1 (@outTbl) {
+		my $num = $t1->[0]; 
+		print STDOUT join( "\t", @{$t1->[1]}, @{$t1}[2,3,4], $num2val{'iDprime'}{$num}[0], $t1->[5], @{$num2val{'Gprime'}{$num}} )."\n"; 
+	}
 }
 
 # Input  : @{$forTriCube{'iDprime'}{$chrID}}, in which each element is [ order_num, pos, data_value ]; 
