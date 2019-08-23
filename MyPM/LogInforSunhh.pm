@@ -1,6 +1,10 @@
 package LogInforSunhh; 
 # Change output of exeCmd; 
 
+BEGIN {
+	use lib "/Data/Sunhh/src/general/conda/pkgs/perl-parallel-forkmanager-1.17-0/lib/perl5/site_perl/5.22.0/";
+}
+
 use strict; 
 use warnings; 
 use IPC::Open3; 
