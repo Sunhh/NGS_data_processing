@@ -1,6 +1,10 @@
 package fileSunhh; 
 # 2014-11-22
 
+BEGIN {
+	use lib "/usr/local/share/perl5/"; 
+}
+
 use strict; 
 use warnings; 
 use File::Which; 
