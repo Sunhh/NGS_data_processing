@@ -38,6 +38,16 @@ format_genomic <- function(...) {
 # Input data : 
 aa <- read.table( tblF, header=T, stringsAsFactors=F )
 cc <- read.table( chrF, header=F, stringsAsFactors=F )
+if ( sum(colnames(aa) == "CHROM") == 1 ) {
+	; 
+} else if ( colnames(aa)[1] == "ChromID" ) {
+	colnames(aa)[1] = "CHROM"
+}
+if ( sum(colnames(aa) == "POS") == 1 ) {
+	; 
+} else if ( colnames(aa)[2] == "WindS" ) {
+	colnames(aa)[2] = "POS"
+}
 ds <- aa %>% tibble::as_tibble() %>% dplyr::filter( CHROM %in% cc[,1] )
 
 # Prepare data for plotting; 'vUse' is the data to be plotted; 
