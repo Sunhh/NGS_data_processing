@@ -176,9 +176,10 @@ for my $t1 (@{$gg{'tgt'}{'loc'}}) {
 			$r_3p = $r_5p - $rsl[1] + 1; 
 			my $product_seq = substr($t2->{'SEQUENCE_TEMPLATE'}, $lsl[0]-1, $rsl[0]-$lsl[0]+1); 
 
+			my $mrkID = "$t1->[0]_" . ($pv+1); 
 			print STDOUT join("\t", 
 				$t1->[0],         # locID
-				"$t1->[0]_${pv}", # locID_primerNum
+				$mrkID,           # locID_primerNum
 				$t3_seq{'LEFT'},  # left seq
 				$t3_seq{'RIGHT'}, # right seq
 				$t3_tm{'LEFT'},   # left TM
