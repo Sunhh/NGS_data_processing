@@ -37,7 +37,7 @@ GetOptions(\%opts,
 	"param_numrep:i",   # BBBBBBB; NUMREPS 15000
 
 	"param_infile:s",   # CCCCCCC; INFILE  $opts{'outfile_struct'}
-	"param_outfile:s",  # DDDDDDD; OUTFILE $opts{'outfile_struct'}.result
+	"param_outfile:s",  # DDDDDDD; OUTFILE $opts{'param_infile'}.result
 
 	"param_sampleN:i",  # EEEEEEE; NUMINDS From $opts{'outfile_struct'}
 	"param_lociN:i",    # FFFFFFF; NUMLOCI From $opts{'outfile_struct'}
@@ -93,6 +93,9 @@ defined $opts{'tmpDir'} and &fileSunhh::_rmtree($opts{'tmpDir'});
 sub run_get_param_1 {
 	defined $opts{'basic_mainparam'} or $opts{'basic_mainparam'} = &_get_basic_mainparam(); 
 	defined $opts{'basic_extraparam'} or $opts{'basic_extraparam'} = &_get_basic_extraparam(); 
+	if (defined $opts{'param_cmdLis'} and $opts{'task'} eq 'GET_PARAM_1') {
+		&fileSunhh::write2file($opts{'param_cmdLis'}, '', '>'); 
+	}
 	$opts{'param_exe'}    //= '/home/Sunhh/tools/github/NGS_data_processing/structure/structure'; 
 	$opts{'param_K'}      //= 4; 
 	$opts{'param_burn'}   //= 40000; 
@@ -131,6 +134,9 @@ sub run_get_param_1 {
 	close($ofh_extr); 
 	close($ifh_extr); 
 	my $cmd = "$opts{'param_exe'} -m $opts{'outfile_mainparam'} -e $opts{'outfile_extraparam'}"; 
+	if (defined $opts{'param_cmdLis'} and $opts{'task'} eq 'GET_PARAM_1') {
+		&fileSunhh::write2file($opts{'param_cmdLis'}, "$cmd 1>stdout 2>stderr\n", '>>'); 
+	}
 	&tsmsg("[Msg] to run cmd: $cmd 1>stdout 2>stderr\n"); 
 	return($cmd); 
 }# run_get_param_1() 
@@ -303,6 +309,31 @@ sub set_glob {
 	$globV{'htxt'} = <<HH; 
 ################################################################################
 # perl $0     -task [cnvt_SNP/cnvt_vcfTab]   -inFmt [SNP/vcfTab]   -infile_SNP in.snp   -outfile_struct in.snp.struct
+#
+#
+#  -task     get_param_1 
+#    Required : -param_infile / -outfile_struct / -infile_SNP ; 
+#    Required : -outfile_mainparam ; 
+#    Required : -outfile_extraparam ; 
+#    -param_infile   [filename] This is the file -outfile_struct ; 
+#    -param_K        [4]
+#    -param_burn     [40000]
+#    -param_numrep   [15000]
+#    -param_outfile  [filename] param_infile.result
+#    -param_sampleN  [num] from param_infile / outfile_struct ; 
+#    -param_lociN    [num] from param_infile / outfile_struct ; 
+#    -param_seedN    [-1] -1 means to randomly select one. 
+#    -param_exe      [/home/Sunhh/tools/github/NGS_data_processing/structure/structure]
+#    -param_cmdLis   [path_to/cmd_list] generate a command list file. 
+#  
+#  -task     get_param_n
+#    Comment: Including get_param_1; 
+#    Required : -param_outDir ; 
+#    -param_outDir   [txt] name of output dir; 
+#    -param_minK     [1] 
+#    -param_maxK     [20]
+#
+#
 ################################################################################
 HH
 	$opts{'help'} and &LogInforSunhh::usage($globV{'htxt'}); 
