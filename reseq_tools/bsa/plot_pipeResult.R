@@ -60,6 +60,9 @@ pdf( file= outPdf, width=21, height=3.5 )
 p <- ggplot2::ggplot( data= toPlot )
 if (usePoint == 'point') {
 	p <- p + ggplot2::geom_point( mapping= ggplot2::aes(x= POS, y= vUse) )
+} else if (usePoint == 'both') {
+	p <- p + ggplot2::geom_point( mapping= ggplot2::aes(x= POS, y= vUse) )
+	p <- p + ggplot2::geom_line( mapping= ggplot2::aes(x= POS, y= vUse) )
 } else {
 	p <- p + ggplot2::geom_line( mapping= ggplot2::aes(x= POS, y= vUse) )
 }
