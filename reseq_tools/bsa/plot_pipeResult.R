@@ -8,6 +8,7 @@ tblF <- as.character( argvs[1] ) ;
 chrF <- as.character( argvs[2] )
 vv   <- as.character( argvs[3] )
 outPdf <- as.character( argvs[4] )
+usePoint <- as.character( argvs[5] )
 
 library(dplyr)
 library(ggplot2)
@@ -57,8 +58,12 @@ colnames(toPlot)[ colnames(toPlot) %in% vv ] <- 'vUse'
 # Plot 
 pdf( file= outPdf, width=21, height=3.5 )
 p <- ggplot2::ggplot( data= toPlot )
+if (usePoint == 'point') {
+	p <- p + ggplot2::geom_point( mapping= ggplot2::aes(x= POS, y= vUse) )
+} else {
+	p <- p + ggplot2::geom_line( mapping= ggplot2::aes(x= POS, y= vUse) )
+}
 p <- p + 
-	ggplot2::geom_line( mapping= ggplot2::aes(x= POS, y= vUse) ) +
 	ggplot2::labs( y= vv ) +
 	ggplot2::facet_grid(
 		. ~ CHROM ,
