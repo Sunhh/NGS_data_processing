@@ -8,7 +8,13 @@ tblF <- as.character( argvs[1] ) ;
 chrF <- as.character( argvs[2] )
 vv   <- as.character( argvs[3] )
 outPdf <- as.character( argvs[4] )
-usePoint <- as.character( argvs[5] )
+
+if (length(argvs) >= 5) {
+	usePoint <- as.character( argvs[5] )
+} else {
+	usePoint <- 'point'
+}
+
 
 library(dplyr)
 library(ggplot2)

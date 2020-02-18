@@ -15,8 +15,8 @@ my $help_txt = <<HH;
 
 perl $0 pb_ngs.coords > pb_ngs.coords.jn
 
--maxDist1    [40e3] Distance to join two neighboring blocks. 
--maxDist2    [40e3] Distance to join two neighboring blocks.
+-maxDist1    [40e3] Distance to join two neighboring blocks in Ref seq. 
+-maxDist2    [40e3] Distance to join two neighboring blocks in Qry seq.
 
 -inType      [coords] Could also be 'joined'
 HH

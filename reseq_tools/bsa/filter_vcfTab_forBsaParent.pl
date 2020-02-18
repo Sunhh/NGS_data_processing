@@ -18,7 +18,7 @@ GetOptions(\%opts,
 
 unless ($opts{'noHeader'}) {
 	my $hh = <>; 
-	print $hh; 
+	print STDOUT $hh; 
 }
 
 my ($chk_noN, $chk_homo, $chk_diffP, $chk_sameP, $chk_diff2Ref) = (0,0,0,0,0); 
@@ -81,7 +81,7 @@ while (<>) {
 			$ta[$cn1] eq $ta[$cn2] or next LINE; 
 		}
 	}
-
+	print STDOUT "$_\n"; 
 }
 
 
