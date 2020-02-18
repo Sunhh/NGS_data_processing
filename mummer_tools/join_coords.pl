@@ -116,12 +116,16 @@ if ($opts{'inType'} eq 'coords') {
 }
 
 
-
+my $oHtxt = join("\t", 
+	qw/R_S R_E Q_S Q_E R_idBySpan Q_idBySpan R_idByBlk Q_idByBlk R_SpanLen Q_SpanLen Str R_Len Q_Len R_ID Q_ID BlkNum BlkLoci/
+)."\n"; 
+my $has_oH = 0; 
 for my $k1 (sort {$len1{$b} <=> $len1{$a} || $a cmp $b } keys %len1) {
 	for my $k2 (sort { $len2{$b} <=> $len2{$a} || $a cmp $b } keys %{$blk_F{$k1}}) {
 		&merge_blks($blk_F{$k1}{$k2}, $opts{'maxDist1'}, $opts{'maxDist2'}); 
 		for my $t1 (@{$blk_F{$k1}{$k2}}) {
 			my @ta1 = @$t1; 
+			$has_oH == 0 and do { print STDOUT $oHtxt."\n"; $has_oH=1; }; 
 			print STDOUT join("\t", @ta1[0..3], 
 				sprintf("%.2f", $ta1[4]/($ta1[1]-$ta1[0]+1)*100), 
 				sprintf("%.2f", $ta1[5]/($ta1[3]-$ta1[2]+1)*100), 
@@ -138,6 +142,7 @@ for my $k1 (sort {$len1{$b} <=> $len1{$a} || $a cmp $b } keys %len1) {
 		&merge_blks($blk_R{$k1}{$k2}, $opts{'maxDist1'}, $opts{'maxDist2'}); 
 		for my $t1 (@{$blk_R{$k1}{$k2}}) {
 			my @ta1 = @$t1; 
+			$has_oH == 0 and do { print STDOUT $oHtxt."\n"; $has_oH=1; }; 
 			print STDOUT join("\t", ( @ta1[0,1], -$ta1[3], -$ta1[2] ), 
 				sprintf("%.2f", $ta1[4]/($ta1[1]-$ta1[0]+1)*100), 
 				sprintf("%.2f", $ta1[5]/($ta1[3]-$ta1[2]+1)*100), 
