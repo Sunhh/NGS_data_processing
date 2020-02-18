@@ -118,7 +118,7 @@ if ($opts{'inType'} eq 'coords') {
 
 my $oHtxt = join("\t", 
 	qw/R_S R_E Q_S Q_E R_idBySpan Q_idBySpan R_idByBlk Q_idByBlk R_SpanLen Q_SpanLen Str R_Len Q_Len R_ID Q_ID BlkNum BlkLoci/
-)."\n"; 
+); 
 my $has_oH = 0; 
 for my $k1 (sort {$len1{$b} <=> $len1{$a} || $a cmp $b } keys %len1) {
 	for my $k2 (sort { $len2{$b} <=> $len2{$a} || $a cmp $b } keys %{$blk_F{$k1}}) {
