@@ -16,6 +16,7 @@ while (<>) {
 	chomp; 
 	my @ta = split(/\t/, $_); 
 	$ta[0] eq 'S1' and next; 
+	$ta[0] eq 'R_S' and next; 
 	push(@{$blk1{$ta[13]}}, [@ta[0,1]]); 
 	push(@{$blk2{$ta[14]}}, [@ta[2,3]]); 
 	$len1{$ta[13]} //= $ta[11]; 

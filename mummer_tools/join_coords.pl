@@ -45,7 +45,7 @@ if ($opts{'inType'} eq 'coords') {
 
 
 	while (<>) {
-		$. == 1 and $_ =~ m!^(/|\.)! and next; 
+		$_ =~ m!^(/|\.+/)! and next; 
 		$_ =~ m!^NUCMER! and next; 
 		m!^\s*$! and next; 
 		chomp; 
@@ -69,6 +69,7 @@ if ($opts{'inType'} eq 'coords') {
 					$ta[1]-$ta[0]+1, $ta[3]-$ta[4]+1
 			       ]); 
 		} else {
+			$ta[3] eq 'Q_E' and next; 
 			die "bad line: $_\n"; 
 		}
 		$len1{$ta[17]} //= $ta[11]; 
@@ -103,6 +104,7 @@ if ($opts{'inType'} eq 'coords') {
 				]
 			); 
 		} else {
+			$ta[10] eq 'Str' and next; 
 			die "bad line: $_\n"; 
 		}
 	
