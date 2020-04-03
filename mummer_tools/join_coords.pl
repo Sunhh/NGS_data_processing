@@ -18,7 +18,10 @@ perl $0 pb_ngs.coords > pb_ngs.coords.jn
 -maxDist1    [40e3] Distance to join two neighboring blocks in Ref seq. 
 -maxDist2    [40e3] Distance to join two neighboring blocks in Qry seq.
 
--inType      [coords] Could also be 'joined'
+-maxOvl1     [0] Max overlaps of two neighboring blocks in Ref seq. 
+-maxOvl2     [0] Max overlaps of two neighboring blocks in Qry seq. 
+
+-inType      [coords] Could also be 'joined', 'coordsTab'
 HH
 
 $opts{'maxDist1'} //= 40e3; 
@@ -33,7 +36,6 @@ $opts{'help'} and &LogInforSunhh::usage($help_txt);
 
 
 my (%blk_F, %blk_R, %len1, %len2); 
-if ($opts{'inType'} eq 'coords') {
 # /Data/Sunhh/compare_NGS_pb/05_alignByMum/WM97pbV0.ctg.fa /Data/Sunhh/compare_NGS_pb/05_alignByMum/WM97_v1.scf.fa
 # NUCMER
 # 
@@ -42,8 +44,13 @@ if ($opts{'inType'} eq 'coords') {
 #    16657   113511  |        1    95242  |    96855    95242  |    73.81  |  8241642    96975  |     1.18    98.21  | WM97pbV0_000000F   WM97_scaffold1452
 #   128093   129621  |        1     1552  |     1529     1552  |    96.14  |  8241642    10579  |     0.02    14.67  | WM97pbV0_000000F   WM97_scaffold16934
 #   134474   134996  |      524        1  |      523      524  |    99.81  |  8241642      524  |     0.01   100.00  | WM97pbV0_000000F   WM97_scaffold10350
-
-
+# /Data/Sunhh/siploid/by_mummer/../../db/itf_chrV3.fa /Data/Sunhh/swd/by_mummer/../../db/brgd.asm.r_utg.fa
+# NUCMER
+#
+# [S1]    [E1]    [S2]    [E2]    [LEN 1] [LEN 2] [% IDY] [LEN R] [LEN Q] [COV R] [COV Q] [TAGS]
+# 34023   41353   913108  905833  7331    7276    96.89   118493717       1242447 0.01    0.59    itf_Chr00       utg000776l
+# 34023   41353   233390  240734  7331    7345    97.82   118493717       276891  0.01    2.65    itf_Chr00       utg008896l
+if ( $opts{'inType'} eq 'coordstab' or $opts{'inType'} eq 'coords' ) {
 	while (<>) {
 		$_ =~ m!^(/|\.+/)! and next; 
 		$_ =~ m!^NUCMER! and next; 
@@ -52,28 +59,38 @@ if ($opts{'inType'} eq 'coords') {
 		s!^\s+!!g; 
 		my @ta = split(/\s+/, $_); 
 		$ta[0] eq '[S1]' and next; 
-		$ta[0] =~ m!^\=! and next; 
-		if ( $ta[3] < $ta[4] ) {
-			push(@{$blk_F{$ta[17]}{$ta[18]}}, [ 
-					@ta[0,1,3,4],                                                           # S1,E1, S2,E2
-					int(($ta[1]-$ta[0]+1)*$ta[9]/100), int(($ta[4]-$ta[3]+1)*$ta[9]/100),   # Match1,Match2
-					[ [@ta[0,1,3,4]] ],                                                     # SE_sets; [S1,E1,S2,E2]...
-					$ta[1]-$ta[0]+1, $ta[4]-$ta[3]+1                                        # BlkLen1,BlkLen2
+		my ($s1,$e1,$s2,$e2,$len1,$len2,$idy,$ttlLen1,$ttlLen2,$cov1,$cov2,$id1,$id2); 
+		if ( $opts{'inType'} eq 'coords' ) {
+			($s1,$e1,$s2,$e2,$len1,$len2,$idy,$ttlLen1,$ttlLen2,$cov1,$cov2,$id1,$id2) 
+			= 
+			@ta[0,  1,  3,  4,  6,    7,    9,   11,      12,      14,   15,    17, 18]; 
+			$ta[0] =~ m!^\=! and next; 
+		} elsif ( $opts{'inType'} eq 'coordstab' ) {
+			($s1,$e1,$s2,$e2,$len1,$len2,$idy,$ttlLen1,$ttlLen2,$cov1,$cov2,$id1,$id2) = @ta; 
+		} else {
+			die; 
+		}
+		if ( $s2 < $e2 ) {
+			push(@{$blk_F{$id1}{$id2}}, [ 
+					$s1,$e1,$s2,$e2,                                        # S1,E1, S2,E2
+					int(($e1-$s1+1)*$idy/100), int(($e2-$s2+1)*$idy/100),   # Match1,Match2
+					[ [$s1,$e1,$s2,$e2] ],                                  # SE_sets; [S1,E1,S2,E2]...
+					$e1-$s1+1, $e2-$s2+1                                    # BlkLen1,BlkLen2
 				]
 			); 
-		} elsif ( $ta[3] > $ta[4] ) {
-			push(@{$blk_R{$ta[17]}{$ta[18]}}, [ 
-					(@ta[0,1], -$ta[3], -$ta[4]), 
-					int(($ta[1]-$ta[0]+1)*$ta[9]/100), int(($ta[3]-$ta[4]+1)*$ta[9]/100),
-					[ [ @ta[0,1], -$ta[3], -$ta[4] ] ], 
-					$ta[1]-$ta[0]+1, $ta[3]-$ta[4]+1
+		} elsif ( $s2 > $e2 ) {
+			push(@{$blk_R{$id1}{$id2}}, [ 
+					($s1,$e1, -$s2,-$e2),
+					int(($e1-$s1+1)*$idy/100), int(($s2-$e2+1)*$idy/100),
+					[ [ $s1,$e1, -$s2,-$e2] ], 
+					$e1-$s1+1, $s2-$e2+1
 			       ]); 
 		} else {
-			$ta[3] eq 'Q_E' and next; 
-			die "bad line: $_\n"; 
+			$s2 eq 'Q_E' and next; 
+			die "bad line: $_\ns2=$s2;e2=$e2\n"; 
 		}
-		$len1{$ta[17]} //= $ta[11]; 
-		$len2{$ta[18]} //= $ta[12]; 
+		$len1{$id1} //= $ttlLen1; 
+		$len2{$id2} //= $ttlLen2; 
 	}
 
 } elsif ( $opts{'inType'} eq 'joined' ) {
