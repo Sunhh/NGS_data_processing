@@ -1151,17 +1151,29 @@ sub extreme{
 
 sub col_sort {
 	no strict; 
-	&_prep_cSort_ruls(); 
 	my @tempa = &splitL($symbol, $a); 
 	my @tempb = &splitL($symbol, $b); 
 	no warnings; 
 	foreach my $rul (@{$opts{'col_sort_ruls'}}) {
-		if ( my $result=( ($tempa[$rul->[0]]<=>$tempb[$rul->[0]]) || ($tempa[$rul->[0]] cmp $tempb[$rul->[0]]) ) * $rul->[1] ) {
-			return $result;
+		my $result = 0; 
+		if ( &is_digital($tempa[$rul->[0]]) and &is_digital($tempb[$rul->[0]]) ) {
+			$result = $tempa[$rul->[0]] <=> $tempb[$rul->[0]]; 
+		} else {
+			$result = $tempa[$rul->[0]] cmp $tempb[$rul->[0]]; 
 		}
+		$result != 0 and return( $result * $rul->[1] ); 
 	}
 	0;
 }#end col_sort
+
+sub is_digital {
+	if      ($_[0] =~ m!^[+-]?\d+(\.?\d*)?([eE][+-]?\d+)?$!) {
+		return 1; 
+	} elsif ($_[0] =~ m!^[+-]?(\.\d+)?([eE][+-]?\d+)?$!) {
+		return 1; 
+	}
+	return 0; 
+}# is_digital()
 
 sub _prep_cSort_ruls {
 	defined $opts{'col_sort_ruls'} and @{$opts{'col_sort_ruls'}} > 0 and return; 
