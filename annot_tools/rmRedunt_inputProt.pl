@@ -12,6 +12,7 @@ use Getopt::Long;
 my %opts; 
 GetOptions(\%opts, 
 	"prot_qry:s", # required. 
+	"prot_db:s",  # This is prot_qry if not given; 
 	"opref:s", # self
 	"blastp_para:s", # Do not include -outfmt
 	"minIdentity:f", # Minimum identity% required to accept an alignment. 
@@ -29,6 +30,8 @@ sub usage {
 # -blastp_para    [' -evalue 1e-5 -seg yes -num_threads 10']
 # 
 # -minIdentity    [80] 0-100. Min similarity% accepted for a valid alignment. 
+#
+# -prot_db        [-prot_qry if not given] 
 ##########################################################################################
 HH
 	exit 1; 
@@ -38,13 +41,14 @@ defined $opts{'prot_qry'} or &usage();
 $opts{'blastp_para'} //= " -evalue 1e-5 -seg yes -num_threads 10"; 
 $opts{'minIdentity'} //= 80; 
 $opts{'opref'} //= 'self'; 
+$opts{'prot_db'} //= $opts{'prot_qry'}; 
 $opts{'help'} and &usage(); 
 
 my $outfmt = "-outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen frames stitle'"; 
 
-&exeCmd_1cmd("makeblastdb -dbtype prot -in $opts{'prot_qry'}"); 
-&exeCmd_1cmd("blastp -query $opts{'prot_qry'} -db $opts{'prot_qry'} -out $opts{'opref'}.bp6 $opts{'blastp_para'} $outfmt"); 
-&exeCmd_1cmd("rm $opts{'prot_qry'}.phr $opts{'prot_qry'}.pin $opts{'prot_qry'}.psq"); 
+&exeCmd_1cmd("makeblastdb -dbtype prot -in $opts{'prot_db'}"); 
+&exeCmd_1cmd("blastp -query $opts{'prot_qry'} -db $opts{'prot_db'} -out $opts{'opref'}.bp6 $opts{'blastp_para'} $outfmt"); 
+&exeCmd_1cmd("rm $opts{'prot_db'}.phr $opts{'prot_db'}.pin $opts{'prot_db'}.psq"); 
 
 # Find good, redundant alignments. 
 open F,'<',"$opts{'opref'}.bp6" or &stopErr("[Err] [$opts{'opref'}.bp6]: $!\n"); 
@@ -74,14 +78,20 @@ for my $tk ( sort { $cnt{$a}[2] <=> $cnt{$b}[2] || $cnt{$b}[3] <=> $cnt{$a}[3] |
 	my ($id1, $id2) = split(/\t/, $tk); 
 	my ($len1, $len2, $evalue, $score) = @{$cnt{$tk}}; 
 	defined $skip{$tk} and next; 
-	if ( $len2 > $len1 ) {
-		if ( !defined $rm{$id2} ) {
-			$rm{$id1} = $cnt{$tk}[0]; 
+	defined $skip{$id1} and next; 
+	if ( $opts{'prot_qry'} eq $opts{'prot_db'} ) {
+		if ( $len2 > $len1 ) {
+			if ( !defined $rm{$id2} ) {
+				$rm{$id1} = $cnt{$tk}[0]; 
+			}
+		} else {
+			if ( !defined $rm{$id1} ) {
+				$rm{$id2} = $cnt{$tk}[1]; 
+			}
 		}
 	} else {
-		if ( !defined $rm{$id1} ) {
-			$rm{$id2} = $cnt{$tk}[1]; 
-		}
+		$skip{$id1} = 1; 
+		$rm{$id1} = $cnt{$tk}[0]; 
 	}
 	$skip{$tk} = 1; 
 	$skip{"$id2\t$id1"} = 1; 
