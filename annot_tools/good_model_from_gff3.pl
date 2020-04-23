@@ -15,6 +15,7 @@ GetOptions(\%opts,
 	"flankSize:i@", # flanking sizes which is used to find models as islands
 	"flankName:s@", # Tag name of different flanking sizes. Will use flanking size if not given. 
 	"pl_dg:s", # Path to deal_gff3.pl script. 
+	"opref:s", 
 ); 
 sub usage {
 	print <<HH;
@@ -29,6 +30,8 @@ sub usage {
 #  
 #  -pl_dg        [/home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl]
 #                  Path to deal_gff3.pl 
+#
+#  -opref        ['']
 ###############################################################################
 HH
 	exit 1; 
@@ -36,6 +39,7 @@ HH
 
 $opts{'help'} and &usage(); 
 defined $opts{'seedGff'} or &usage(); 
+$opts{'opref'} //= ''; 
 my (@bgGffs, @fl_sizes, @fl_names); 
 @bgGffs = @{$opts{'bgGff'}}; 
 @fl_sizes = (defined $opts{'flankSize'}) ? @{$opts{'flankSize'}} : (2000) ; 
@@ -60,10 +64,10 @@ my $call_dg = ( -e $pl_dg ) ? "perl $pl_dg" : "$pl_dg" ;
 &tsmsg("[Rec] All begin.\n"); 
 # Make non-overlap gene model files. 
 my @out_files; 
-my $nonOvl_file = 'non_ovl.combined'; 
+my $nonOvl_file = "$opts{'opref'}non_ovl.combined"; 
 for (my $i=0; $i<@bgGffs; $i++) {
 	my $bg_gff = $bgGffs[$i]; 
-	my $out_file = "non_ovl.$i"; 
+	my $out_file = "$opts{'opref'}non_ovl.$i"; 
 	&exeCmd_1cmd("$call_dg -inGff $bg_gff -compare2gffC $opts{'seedGff'} -rmOvlap -rmOvlapLen 1 -rmOvlapType 'CDS,match_part' -rmOvlapStrand Single -out $out_file"); 
 	push(@out_files, $out_file); 
 }# End for 
@@ -73,8 +77,8 @@ for (my $i=0; $i<@bgGffs; $i++) {
 for (my $i=0; $i<@fl_sizes; $i++) {
 	my $fl_len = $fl_sizes[$i]; 
 	my $fl_tag = $fl_names[$i]; 
-	my $island_file = "island.$i"; 
-	my $good_file = "good.$i.$fl_tag"; 
+	my $island_file = "$opts{'opref'}island.$i"; 
+	my $good_file = "$opts{'opref'}good.$i.$fl_tag"; 
 	&exeCmd_1cmd("$call_dg -inGff $nonOvl_file -islandGene $fl_len -out $island_file -islandFeatType 'CDS,match_part' -islandStrand 'Both'"); 
 	&exeCmd_1cmd("$call_dg -inGff $opts{seedGff} -compare2gffC $island_file -out $good_file -sameIntron -sameSingleExon"); 
 	&exeCmd_1cmd("$call_dg -inGff $good_file -listTopID -out ${good_file}.ID"); 
