@@ -58,7 +58,9 @@ while (<F>) {
 	chomp; 
 	my @ta = split(/\t/, $_); 
 	my ($qid, $sid) = @ta[0,1]; 
-	$qid eq $sid and next; 
+	if ( $opts{'prot_qry'} eq $opts{'prot_db'} ) {
+		$qid eq $sid and next; 
+	}
 	# This is recommended by Augustus somewhere. 
 	# http://www.molecularevolution.org/molevolfiles/exercises/augustus/training.html
 	$ta[2] >= $opts{'minIdentity'} or next; 

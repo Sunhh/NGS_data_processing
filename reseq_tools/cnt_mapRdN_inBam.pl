@@ -9,16 +9,16 @@ use LogInforSunhh;
 my %flag_unmap = %{ &SeqAlnSunhh::mk_flag( 'keep' => '2=1' ) }; 
 my %flag_r1    = %{ &SeqAlnSunhh::mk_flag( 'keep' => '6=1,7=0' ) };
 my %flag_r2    = %{ &SeqAlnSunhh::mk_flag( 'keep' => '6=0,7=1' ) }; 
-my %flag_goodPair = %{ &SeqAlnSunhh::mk_flag( 'keep' => '1=1,2=0,3=0,8=0,11=0' ) }; 
-my %flag_errPair  = %{ &SeqAlnSunhh::mk_flag( 'keep' => '1=0,2=0,3=0,8=0,11=0' ) }; 
-my %flag_1map     = %{ &SeqAlnSunhh::mk_flag( 'keep' => '1=0,2=0,3=1,8=0,11=0' ) }; 
+my %flag_goodPair = %{ &SeqAlnSunhh::mk_flag( 'keep' => '0=1,1=1,2=0,3=0,8=0,11=0' ) }; 
+my %flag_errPair  = %{ &SeqAlnSunhh::mk_flag( 'keep' => '0=1,1=0,2=0,3=0,8=0,11=0' ) }; 
+my %flag_1map     = %{ &SeqAlnSunhh::mk_flag( 'keep' => '0=1,1=0,2=0,3=1,8=0,11=0' ) }; 
 
 # Setup values; 
 my %scores; 
-for (keys %flag_goodPair) { $scores{$_} = 'a'; }
-for (keys %flag_errPair)  { $scores{$_} = 'b'; }
-for (keys %flag_1map)     { $scores{$_} = 'c'; }
-for (keys %flag_unmap)    { $scores{$_} = 'd'; }
+for (keys %flag_goodPair) { $scores{$_} = 1; }
+for (keys %flag_errPair)  { $scores{$_} = 2; }
+for (keys %flag_1map)     { $scores{$_} = 3; }
+for (keys %flag_unmap)    { $scores{$_} = 4; }
 
 my (%rd1,%rd2); 
 
@@ -31,7 +31,8 @@ while (<F>) {
 	chomp; 
 	m!^(\S+)\t(\d+)\t! or die "$_\n"; 
 	my ($rdid, $ff) = ($1, $2); 
-	defined $scores{$ff} or next; 
+	# defined $scores{$ff} or next; 
+	defined $scores{$ff} or $scores{$ff} = 5; 
 	if (defined $flag_r1{$ff}) {
 		if (defined $rd1{$rdid}) {
 			if ($rd1{$rdid} > $scores{$ff}) {
@@ -54,6 +55,8 @@ while (<F>) {
 }
 close F; 
 
+warn "a1\n"; 
+
 my %cnt; 
 for my $rdid (keys %rd1) {
 	( defined $rd1{$rdid} and defined $rd2{$rdid} ) or die "rdid=$rdid\n"; 
@@ -64,11 +67,13 @@ for my $rdid (keys %rd1) {
 		$cnt{ $rd2{$rdid} } += 1; 
 	}
 }
-for (qw/a b c d/) {
+warn "a2\n"; 
+for (qw/1 2 3 4 5/) {
+	$cnt{$_} //= 0; 
 	$cnt{'total'} += $cnt{$_}; 
 }
 
-print join("\t", qw/Filename  All ProperPairedRdN  PairedRdN  SingleRdN  UnmappedRdN/)."\n"; 
-print join("\t", $fn, @cnt{qw/total a b c d/})."\n"; 
+print join("\t", qw/Filename  All ProperPairedRdN  PairedRdN  SingleRdN  UnmappedRdN OtherRdN/)."\n"; 
+print join("\t", $fn, @cnt{qw/total 1 2 3 4 5/})."\n"; 
 
 
