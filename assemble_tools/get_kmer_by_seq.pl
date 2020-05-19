@@ -10,6 +10,7 @@ GetOptions(\%opts,
 	"jf_exe:s", # Default jellyfish
 	"step:i", # Default 1 
 	"onlyATGCN!", 
+	"outQual!", 
 ); 
 
 &_prepare_para(); 
@@ -29,6 +30,8 @@ perl $0   -jf_db  in.jf_database
 -step         [$opts{'step'}]
 
 -onlyATGCN
+
+-outQual      
 
 HH
 
@@ -84,9 +87,10 @@ for (@IDs) {
 	$seqs{$_} =~ s/\s//g; 
 }
 for my $tk (@IDs) {
-print STDOUT ">$tk\n"; 
+	print STDOUT ">$tk\n"; 
 	$opts{'onlyATGCN'} and $seqs{$tk} =~ s![^ATGCN]!!gi; 
 	my $len = length($seqs{$tk}); 
+	my $outQualCnt = 0; 
 	if ($len > 0) {
 		for (my $i=0; $i+$db_km<=$len; $i+=$step) {
 			my $kseq = substr($seqs{$tk}, $i, $db_km); 
@@ -98,7 +102,17 @@ print STDOUT ">$tk\n";
 				my $rc_kseq = &rc($kseq); 
 				uc($rc_kseq) eq uc($res_seq) or $res_c = -1; 
 			}
-			print STDOUT join("\t", $i+1, $kseq, $res_c)."\n"; 
+			if ($opts{'outQual'}) {
+				$outQualCnt ++; 
+				if ($outQualCnt % 80 == 1) {
+					print STDOUT "$res_c"; 
+				} else {
+					print STDOUT " $res_c"; 
+				}
+				$outQualCnt % 80 == 0 and print STDOUT "\n"; 
+			} else {
+				print STDOUT join("\t", $i+1, $kseq, $res_c)."\n"; 
+			}
 		}
 	}
 }
