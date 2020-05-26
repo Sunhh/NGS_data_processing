@@ -28,6 +28,7 @@ for my $k1 (@klist) {
 	$seqs{$k} =~ s!\s+!\n!g; 
 	&fileSunhh::write2file("$wdir/nn", "$seqs{$k}\n",'>'); 
 	my %vstat = map { 
+		chomp($_); 
 		split(/\t/, $_); 
 	} `deal_table.pl $wdir/nn -col_stat 0 -col_stat_AsINS | deal_table.pl -transpose `; 
 	print STDOUT join("\t", $k, @vstat{@ostat})."\n"; 
