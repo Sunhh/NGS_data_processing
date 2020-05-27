@@ -42,9 +42,16 @@ for my $f (@ARGV) {
 		my $seq = <$fh>; 
 		<$fh>; <$fh>; 
 		if ( $opts{'byHeader'} ) {
-			$id =~ m!^\@\S+\s+\d+:[NY]:\d+:([ATGCN]+)\s*$! or do { &tsmsg("[Wrn] Failed to parse ID line: $id"); next; }; 
-			$cnt_barc{$1} ++; 
-			$cnt_found ++; 
+			if ( $id =~ m!^\@\S+\s+\d+:[NY]:\d+:([ATGCN]+)\s*$! ) {
+				$cnt_barc{$1} ++; 
+				$cnt_found ++; 
+			} elsif ( $id =~ m!^\@\S+\s+\d+:[NY]:\d+:([ATGCN]+\+[ATGCN]+)\s*$! ) {
+				$cnt_barc{$1} ++; 
+				$cnt_found ++; 
+			} else {
+				&tsmsg("[Wrn] Failed to parse ID line: $id"); 
+				next; 
+			}
 		} else {
 			if ( $seq =~ m/$r1pat_set3/o ) {
 				my $is = 0; 

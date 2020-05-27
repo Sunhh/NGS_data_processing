@@ -2,6 +2,7 @@
 use strict; 
 use warnings; 
 use fileSunhh; 
+use LogInforSunhh; 
 
 -t and !@ARGV and die "perl $0 R01/ct_R01.scafSeq.k27.counts > R01/ct_R01.scafSeq.k27.counts.tbl\n"; 
 
@@ -23,15 +24,16 @@ my $wdir = &fileSunhh::new_tmp_dir('create'=>1);
 
 my @ostat = qw/interval_mean interval_median interval_stdev MEAN MEDIAN MIN MAX NoNull/; 
 print STDOUT join("\t", qw/SeqID/, @ostat)."\n"; 
-for my $k1 (@klist) {
-	$seqs{$k} =~ s!^\s+!!; 
-	$seqs{$k} =~ s!\s+!\n!g; 
-	&fileSunhh::write2file("$wdir/nn", "$seqs{$k}\n",'>'); 
+for my $v1 (@klist) {
+	# &tsmsg("[Msg] Calculating for [$v1]\n"); 
+	$seqs{$v1} =~ s!^\s+!!; 
+	$seqs{$v1} =~ s!\s+!\n!g; 
+	&fileSunhh::write2file("$wdir/nn", "$seqs{$v1}\n",'>'); 
 	my %vstat = map { 
 		chomp($_); 
 		split(/\t/, $_); 
 	} `deal_table.pl $wdir/nn -col_stat 0 -col_stat_AsINS | deal_table.pl -transpose `; 
-	print STDOUT join("\t", $k, @vstat{@ostat})."\n"; 
+	print STDOUT join("\t", $v1, @vstat{@ostat})."\n"; 
 }
 
 &fileSunhh::_rmtree($wdir); 

@@ -114,6 +114,9 @@ for my $tk (@IDs) {
 				print STDOUT join("\t", $i+1, $kseq, $res_c)."\n"; 
 			}
 		}
+		if ($opts{'outQual'}) {
+			$outQualCnt % 80 != 0 and print STDOUT "\n"; 
+		}
 	}
 }
 
