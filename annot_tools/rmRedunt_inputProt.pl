@@ -63,6 +63,7 @@ while (<F>) {
 	}
 	# This is recommended by Augustus somewhere. 
 	# http://www.molecularevolution.org/molevolfiles/exercises/augustus/training.html
+	# https://vcru.wisc.edu/simonlab/bioinformatics/programs/augustus/docs/tutorial2015/training.html 
 	$ta[2] >= $opts{'minIdentity'} or next; 
 	if ( $ta[3] * $ta[2] >= $ta[12] * $opts{'minIdentity'} 
 		or $ta[3] * $ta[2] >= $ta[13] * $opts{'minIdentity'} 
