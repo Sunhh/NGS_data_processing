@@ -124,10 +124,16 @@ sub run_sortmerna {
 	my ($inFq, $resultPref, $cleanFqPref) = @_; 
 	my $back_cleanFqName; 
 	if      ( $inFq =~ m!\.gz$! ) {
-		&exeCmd_1cmd("gzip -cd $inFq > ${resultPref}.fq") and &stopErr("[Err] Failed to gunzip $inFq\n"); 
+		if ( &exeCmd_1cmd("gzip -cd $inFq > ${resultPref}.fq") ) {
+			&fileSunhh::_rmtree("${resultPref}.fq"); 
+			&stopErr("[Err] Failed to gunzip $inFq\n"); 
+		}
 		$back_cleanFqName = "${cleanFqPref}.fq.gz"; 
 	} elsif ( $inFq =~ m!\.bz2$! ) {
-		&exeCmd_1cmd("bzip2 -cd $inFq > ${resultPref}.fq") and &stopErr("[Err] Failed to bunzip2 $inFq\n"); 
+		if ( &exeCmd_1cmd("bzip2 -cd $inFq > ${resultPref}.fq") ) {
+			&fileSunhh::_rmtree("${resultPref}.fq"); 
+			&stopErr("[Err] Failed to bunzip2 $inFq\n"); 
+		}
 		$back_cleanFqName = "${cleanFqPref}.fq.bz2"; 
 	} else {
 		&exeCmd_1cmd("ln -s $inFq ${resultPref}.fq") and &stopErr("[Err] Failed to link $inFq\n"); 
