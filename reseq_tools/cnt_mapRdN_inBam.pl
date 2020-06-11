@@ -4,7 +4,19 @@ use warnings;
 use SeqAlnSunhh; 
 use LogInforSunhh; 
 
-!@ARGV and die "perl $0 in.bam > in.bam.map_stat\n"; 
+my $htxt = <<HHH; 
+################################################################################
+perl $0 in.bam > in.bam.map_stat
+
+Result (in.bam.map_stat) example: 
+Filename                  All          ProperPairedRdN   PairedRdN    SingleRdN     UnmappedRdN    OtherRdN
+F582R1_bySM_fix.bam       57827298     55968230          1542390      108379        208296         3
+F582R2HG_bySM_fix.bam     56482040     54124958          1905874      141387        309792         29
+SQ026_bySM_fix.bam        285572114    276544304         4574622      397791        4055112        285
+################################################################################
+HHH
+
+!@ARGV and die "$htxt\n"; 
 
 my %flag_unmap = %{ &SeqAlnSunhh::mk_flag( 'keep' => '2=1' ) }; 
 my %flag_r1    = %{ &SeqAlnSunhh::mk_flag( 'keep' => '6=1,7=0' ) };

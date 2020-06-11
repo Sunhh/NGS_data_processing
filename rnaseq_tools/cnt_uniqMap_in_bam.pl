@@ -20,6 +20,13 @@ $gg{'help_txt'} = <<"H1";
 # -help
 #
 # -exe_samtools       ['samtools']
+#
+#######
+# Result file (in.bam.uniq_multi_hits_number) example: 
+# InBam                    RS_all  RS_unique    RS_multiple   RS_unmapped    RP_all       RP_unique       RP_multiple    RP_unmapped
+# F582R1_bySM_fix.bam      0       0            0             0              28913649     28740150        123542         49957
+# F582R2HG_bySM_fix.bam    0       0            0             0              28241020     27822134        334698         84188
+# SQ026_bySM_fix.bam       0       0            0             0              142786057    140123579       833960         1828518
 ################################################################################
 H1
 $gg{'exe_samtools'} = 'samtools'; 
