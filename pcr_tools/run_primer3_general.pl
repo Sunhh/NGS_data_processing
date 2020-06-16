@@ -116,7 +116,7 @@ $gg{'inconf'}{'PRIMER_THERMODYNAMIC_PARAMETERS_PATH'} //= '/Data/Sunhh/src/genet
 # $gg{'inconf'}{'PRIMER_FIRST_BASE_INDEX'} = 1; 
 
 ### Run primer3 one by one and output results; 
-print STDOUT join("\t", qw/locID markerID l_seq r_seq l_tm r_tm l_penalty r_penalty l_5pPos l_3pPos r_3pPos r_5pPos l_gc r_gc product_size product_seq/)."\n"; 
+print STDOUT join("\t", qw/locID markerID l_seq r_seq l_tm r_tm l_penalty r_penalty chrID l_5pPos l_3pPos r_3pPos r_5pPos l_gc r_gc product_size product_seq/)."\n"; 
 my $wdir = &fileSunhh::new_tmp_dir('create' => 1); 
 for my $t1 (@{$gg{'tgt'}{'loc'}}) {
 	my $ofh1 = &openFH("$wdir/input", '>'); 
@@ -186,6 +186,7 @@ for my $t1 (@{$gg{'tgt'}{'loc'}}) {
 				$t3_tm{'RIGHT'},  # right TM
 				$t3_pen{'LEFT'},  # left penalty
 				$t3_pen{'RIGHT'}, # right penalty
+				$t1->[1],         # chrID of template 
 				$l_5p, # left 5' in in_fa
 				$l_3p, # left 3' in in_fa
 				$r_3p, # right 3' in in_fa
