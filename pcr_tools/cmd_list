@@ -2,3 +2,10 @@
 perl retrieve_template_forSNP.pl site.lis -out site -ref_fa /Data/Sunhh/melon/db/melon_v351edit.chr.fa -min_flank_size 50
 perl run_primer_forSNP.pl -in_tempTab site.tempX.tab -out_prefix site # Got site.primer.tab;
 
+# Check false priming
+bn6 -evalue 5000 -db /Data/Sunhh/melon/db/melon_v351edit.chr.fa -task blastn-short -num_threads 50 -query chk1.fa -out chk1.fa.bn6
+perl /home/Sunhh/tools/github/NGS_data_processing/pcr_tools/get_priming_loc_bnV2_2_24.pl chk1.fa.bn6 > chk1.fa.bn6.primer_loc
+less -S chk1.fa.bn6.primer_loc | deal_table.pl -col_uniq 0 > a2
+ColLink.pl a1 -f1 a2 -sign 'ok,multi' -add | deal_table.pl -column 1
+
+
