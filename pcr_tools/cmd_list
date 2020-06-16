@@ -1,0 +1,4 @@
+# Design primers for SNP list (site.list)
+perl retrieve_template_forSNP.pl site.lis -out site -ref_fa /Data/Sunhh/melon/db/melon_v351edit.chr.fa -min_flank_size 50
+perl run_primer_forSNP.pl -in_tempTab site.tempX.tab -out_prefix site # Got site.primer.tab;
+
