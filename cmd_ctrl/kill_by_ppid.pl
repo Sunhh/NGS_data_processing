@@ -1,6 +1,9 @@
 #!/usr/bin/perl
 use strict; 
 use warnings; 
+BEGIN {
+	use lib "/usr/local/share/perl5/";
+}
 use LogInforSunhh; 
 use Getopt::Long; 
 my %opts; 
