@@ -1,4 +1,5 @@
 #!/usr/bin/perl -w
+# 20200806: For -add_KaKs function, fix the problem when the input CDS IDs have too many characters (>= 32). 
 use strict; 
 use warnings; 
 use LogInforSunhh; 
@@ -6,6 +7,8 @@ use fileSunhh;
 use mathSunhh; 
 my $ms_obj = mathSunhh->new(); 
 use mcsSunhh; 
+use fastaSunhh; 
+my $fs_obj = fastaSunhh->new(); 
 
 use Parallel::ForkManager;
 
@@ -464,6 +467,68 @@ sub _readInKsLis {
 }# _readInKsLis () 
 
 sub _lis2ks {
+	# Edit on 2020-08-06 to change input sequence ID to a/b before running jcvi; 
+	my %parm = $ms_obj->_setHashFromArr(@_); 
+	$parm{'fas_prot'} //= ''; 
+	$parm{'out_pref'} //= 'paired'; 
+	$parm{'alnMethod'} //= 'muscle'; 
+	defined $parm{'fas_cds'} or &stopErr("[Err] -fas_cds must be given.\n"); 
+	defined $parm{'in_pair_list'} or &stopErr("[Err] -in_pair_list is needed.\n"); 
+	my %cds_seq = %{ $fs_obj->save_seq_to_hash('faFile'=>$parm{'fas_cds'}) }; 
+	my %pep_seq; 
+	my $ofh_cds = &openFH("$parm{'out_pref'}.cds.fasta", '>'); 
+	my $ofh_pep; 
+	my $med_prot = ''; 
+	if ( $parm{'fas_prot'} ne '' ) {
+		$med_prot = "$parm{'out_pref'}.cds.fasta.pep"; 
+		$ofh_pep = &openFH($med_prot, '>'); 
+		%pep_seq = %{ $fs_obj->save_seq_to_hash('faFile'=>$parm{'fas_prot'}) }; 
+	}
+	my (%id_old2new, $tmpCnt1, %id_new2old); 
+	for my $tmpLID (map { @{$_}[0,1] } &fileSunhh::load_tabFile($parm{'in_pair_list'})) {
+		defined $cds_seq{$tmpLID} or &stopErr("[Err] Failed to find sequence for ID [$tmpLID]\n"); 
+		if ( defined $id_old2new{$tmpLID} ) {
+			$tmpCnt1 = $id_old2new{$tmpLID}; 
+		} else {
+			$tmpCnt1 ++; 
+			$id_old2new{$tmpLID} = $tmpCnt1; 
+			$id_new2old{$tmpCnt1} = $tmpLID; 
+		}
+		$cds_seq{$tmpLID}{'seq'} =~ s!\s!!g; 
+		$cds_seq{$tmpLID}{'seq'} =~ s!(.{60})!$1\n!g; chomp($cds_seq{$tmpLID}{'seq'}); 
+		print {$ofh_cds} ">$tmpCnt1\n$cds_seq{$tmpLID}{'seq'}\n"; 
+		if ($med_prot ne '') {
+			defined $pep_seq{$tmpLID} or &stopErr("[Err] Failed to find pep sequence for ID [$tmpLID]\n"); 
+			$pep_seq{$tmpLID}{'seq'} =~ s!\s!!g; 
+			$pep_seq{$tmpLID}{'seq'} =~ s!(.{60})!$1\n!g; chomp($pep_seq{$tmpLID}{'seq'}); 
+			print {$ofh_pep} ">$tmpCnt1\n$pep_seq{$tmpLID}{'seq'}\n"; 
+		}
+	}
+	close($ofh_cds); 
+	close($ofh_pep); 
+	# &exeCmd_1cmd("$opts{'exe_python'} -m jcvi.apps.ks prepare $parm{'in_pair_list'} $parm{'fas_cds'} $parm{'fas_prot'} -o $parm{'out_pref'}.cds.fasta") and &stopErr("[Err] Failed prepare\n"); 
+	&exeCmd_1cmd("$opts{'exe_python'} -m jcvi.apps.ks calc    --msa=$parm{'alnMethod'} $med_prot $parm{'out_pref'}.cds.fasta -o $parm{'out_pref'}.cds.fasta.ks"); 
+	my ( $header, $pair2ks ) = &_readInKsLis( "$parm{'out_pref'}.cds.fasta.ks" ); 
+	my $paFh = &openFH($parm{'in_pair_list'}, '<'); 
+	my $oksFh = &openFH("$parm{'out_pref'}.ks", '>'); 
+	# print {$oksFh} join("\t", qw/gene1 gene2/, @$header[1 .. $#{$header}])."\n"; 
+	print {$oksFh} join("\t", @$header[0 .. $#{$header}])."\n"; 
+	while (<$paFh>) {
+		m/^\s*(#|$)/ and next; 
+		chomp; s!\s+$!!; 
+		my @ta = split(/\t/, $_); 
+		my ($g1Ori, $g2Ori) = @ta[0,1]; 
+		my $g1 = $id_old2new{$g1Ori}; 
+		my $g2 = $id_old2new{$g2Ori}; 
+		defined $pair2ks->{$g1}{$g2} or do { &tsmsg("[Err] No Ks result found for line: $_\n"); next; }; 
+		print {$oksFh} join("\t", $g1Ori, $g2Ori, @{$pair2ks->{$g1}{$g2}})."\n"; 
+	}
+	close ($paFh); 
+	
+	return ($header, $pair2ks);
+}# _lis2ks() 
+
+sub _lis2ks_ori {
 	my %parm = $ms_obj->_setHashFromArr(@_); 
 	$parm{'fas_prot'} //= ''; 
 	$parm{'out_pref'} //= 'paired'; 
@@ -490,7 +555,7 @@ sub _lis2ks {
 	close ($paFh); 
 	
 	return ($header, $pair2ks);
-}# _lis2ks() 
+}# _lis2ks_ori() 
 
 
 sub mcs_filterBlast {
