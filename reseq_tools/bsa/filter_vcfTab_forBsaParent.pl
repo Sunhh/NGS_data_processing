@@ -10,16 +10,19 @@ GetOptions(\%opts,
 	"col_diffPair:s@", 
 	"col_samePair:s@", 
 	"col_diff2Ref:s@", 
+	"maxAlleleLen:i", 
 	"help!", 
 	"noHeader!", 
 ); 
 
--t and !@ARGV and die "perl $0 input.vcfTab -col_noN 3 -col_noN 4 -col_homo 3 -col_homo 4 -col_diffPair 3,4 -col_diffPair 3,5 -col_samePair 4,5 > input.vcfTab.filtered\n"; 
+-t and !@ARGV and die "perl $0 input.vcfTab -maxAlleleLen -1 -col_noN 3 -col_noN 4 -col_homo 3 -col_homo 4 -col_diffPair 3,4 -col_diffPair 3,5 -col_samePair 4,5 > input.vcfTab.filtered\n"; 
 
 unless ($opts{'noHeader'}) {
 	my $hh = <>; 
 	print STDOUT $hh; 
 }
+
+$opts{'maxAlleleLen'} //= -1; 
 
 my ($chk_noN, $chk_homo, $chk_diffP, $chk_sameP, $chk_diff2Ref) = (0,0,0,0,0); 
 my (@cn_noN, @cn_homo, @cn_diffP, @cn_sameP, @cn_diff2Ref); 
@@ -57,28 +60,72 @@ while (<>) {
 	if ($chk_noN == 1) {
 		for my $t2 (@ta[@cn_noN]) {
 			$t2 =~ m!(^\./\.$|N|n)! and next LINE; 
+			if ( $opts{'maxAlleleLen'} > 1 ) {
+				if ( $t2 =~ m!^([ATGC\*\.]+)/([ATGC\*\.]+)$! ) {
+					length($1) > $opts{'maxAlleleLen'} and next LINE; 
+					length($2) > $opts{'maxAlleleLen'} and next LINE; 
+				} elsif ( $t2 =~ m!^([ATGC*\.]+)$!i ) {
+					length($1) > $opts{'maxAlleleLen'} and next LINE; 
+				}
+			}
 		}
 	}
 	if ($chk_homo == 1) {
 		for my $t2 (@ta[@cn_homo]) {
 			$t2 =~ m!^[ATGCatgc]+$! or $t2 =~ m!^([ATGCatgc]+)/\1$! or next LINE; 
+			if ( $opts{'maxAlleleLen'} > 1 ) {
+				if ( $t2 =~ m!^([ATGC\*\.]+)/([ATGC\*\.]+)$! ) {
+					length($1) > $opts{'maxAlleleLen'} and next LINE; 
+					length($2) > $opts{'maxAlleleLen'} and next LINE; 
+				} elsif ( $t2 =~ m!^([ATGC*\.]+)$!i ) {
+					length($1) > $opts{'maxAlleleLen'} and next LINE; 
+				}
+			}
 		}
 	}
 	if ($chk_diff2Ref == 1) {
 		for my $t2 (@ta[@cn_diff2Ref]) {
 			$t2 eq "$ta[2]/$ta[2]" and next LINE; 
+			if ( $opts{'maxAlleleLen'} > 1 ) {
+				if ( $t2 =~ m!^([ATGC\*\.]+)/([ATGC\*\.]+)$! ) {
+					length($1) > $opts{'maxAlleleLen'} and next LINE; 
+					length($2) > $opts{'maxAlleleLen'} and next LINE; 
+				} elsif ( $t2 =~ m!^([ATGC*\.]+)$!i ) {
+					length($1) > $opts{'maxAlleleLen'} and next LINE; 
+				}
+			}
 		}
 	}
 	if ($chk_diffP == 1) {
 		for my $t3 (@cn_diffP) {
 			my ($cn1, $cn2) = @$t3; 
 			$ta[$cn1] eq $ta[$cn2] and next LINE; 
+			for my $t2 (@ta[$cn1, $cn2]) {
+				if ( $opts{'maxAlleleLen'} > 1 ) {
+					if ( $t2 =~ m!^([ATGC\*\.]+)/([ATGC\*\.]+)$! ) {
+						length($1) > $opts{'maxAlleleLen'} and next LINE; 
+						length($2) > $opts{'maxAlleleLen'} and next LINE; 
+					} elsif ( $t2 =~ m!^([ATGC*\.]+)$!i ) {
+						length($1) > $opts{'maxAlleleLen'} and next LINE; 
+					}
+				}
+			}
 		}
 	}
 	if ($chk_sameP == 1) {
 		for my $t3 (@cn_sameP) {
 			my ($cn1, $cn2) = @$t3; 
 			$ta[$cn1] eq $ta[$cn2] or next LINE; 
+			for my $t2 (@ta[$cn1, $cn2]) {
+				if ( $opts{'maxAlleleLen'} > 1 ) {
+					if ( $t2 =~ m!^([ATGC\*\.]+)/([ATGC\*\.]+)$! ) {
+						length($1) > $opts{'maxAlleleLen'} and next LINE; 
+						length($2) > $opts{'maxAlleleLen'} and next LINE; 
+					} elsif ( $t2 =~ m!^([ATGC*\.]+)$!i ) {
+						length($1) > $opts{'maxAlleleLen'} and next LINE; 
+					}
+				}
+			}
 		}
 	}
 	print STDOUT "$_\n"; 

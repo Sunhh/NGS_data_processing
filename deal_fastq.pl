@@ -215,7 +215,7 @@ sub sepByRG {
 	my $expr; 
 	$opts{'rdIDfmt'} =~ m!^M1$!i and $expr = qr/^\@((?:[^\s:]+:){4})/; 
 	$opts{'rdIDfmt'} =~ m!^M2$!i and $expr = qr/^\@((?:[^\s:]+:){2})/; 
-	my (%ofh, $ofNum, %ofIdx, %ofFname); 
+	my (%ofh, %ofRdNum, $ofNum, %ofIdx, %ofFname); 
 	for my $fh1 (@InFp) {
 		my ($l1, $l2, $l3, $l4, $k) = ('', '', '', ''); 
 		while ($l1 = <$fh1>) {
@@ -225,32 +225,32 @@ sub sepByRG {
 			unless (defined $ofh{$k}) {
 				$ofNum ++; 
 				$ofIdx{$k} = $ofNum; 
+				$ofFname{$k} = "$opts{'sepByRG'}_${ofNum}.fq.gz"; 
 				unless ( $opts{'onlyCheck'} ) {
-					$ofFname{$k} = "$opts{'sepByRG'}_${ofNum}.fq.gz"; 
 					$ofh{$k} = &openFH($ofFname{$k}, '>'); 
 					if ( $ofNum > 10 ) {
 						$opts{'forceSep'} or &stopErr("[Err] The output file will be bigger than 10, please check -rdIDfmt or provide -forceSep \n"); 
 					}
 				}
 			}
-			$ofh{$k} ++; 
+			$ofRdNum{$k} ++; 
 			$opts{'onlyCheck'} or print {$ofh{$k}} "$l1$l2$l3$l4"; 
 		}
 		close($fh1); 
 	}
 	if ($opts{'onlyCheck'}) {
-		my @fn_arr = sort { $a->[1] <=> $b->[1] } map { [$_, $ofIdx{$_}] } keys %ofh; 
+		my @fn_arr = sort { $a->[1] <=> $b->[1] } map { [$_, $ofIdx{$_}] } keys %ofIdx; 
 		print STDOUT join("\t", qw/sepPrefix sepFNum sepFIdx sepRunID sepFRdNum/)."\n"; 
 		for my $f1 (@fn_arr) {
 			my $runID = $f1->[0]; $runID =~ s!\:$!!; 
-			print STDOUT join("\t", $opts{'sepByRG'}, scalar(@fn_arr), $f1->[1], $runID, $ofh{ $f1->[0] })."\n"; 
+			print STDOUT join("\t", $opts{'sepByRG'}, scalar(@fn_arr), $f1->[1], $runID, $ofRdNum{ $f1->[0] })."\n"; 
 		}
 	} else {
 		my @fn_arr = sort { $a->[1] <=> $b->[1] } map { [$_, $ofIdx{$_}, $ofFname{$_}] } keys %ofh; 
 		print STDOUT join("\t", qw/sepPrefix sepFNum sepFIdx sepRunID sepFRdNum sepFName/)."\n"; 
 		for my $f1 (@fn_arr) {
 			my $runID = $f1->[0]; $runID =~ s!\:$!!; 
-			print STDOUT join("\t", $opts{'sepByRG'}, scalar(@fn_arr), $f1->[1], $runID, $ofh{$f1->[0]}, $f1->[2])."\n"; 
+			print STDOUT join("\t", $opts{'sepByRG'}, scalar(@fn_arr), $f1->[1], $runID, $ofRdNum{$f1->[0]}, $f1->[2])."\n"; 
 			close($ofh{$f1->[0]}); 
 		}
 	}
