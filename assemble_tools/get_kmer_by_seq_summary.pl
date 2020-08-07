@@ -25,6 +25,10 @@ my $wdir = &fileSunhh::new_tmp_dir('create'=>1);
 my @ostat = qw/interval_mean interval_median interval_stdev MEAN MEDIAN MIN MAX NoNull/; 
 print STDOUT join("\t", qw/SeqID/, @ostat)."\n"; 
 for my $v1 (@klist) {
+	if (!defined $seqs{$v1}) {
+		print STDOUT join("\t", $v1, (('0') x scalar(@ostat)))."\n"; 
+		next; 
+	}
 	# &tsmsg("[Msg] Calculating for [$v1]\n"); 
 	$seqs{$v1} =~ s!^\s+!!; 
 	$seqs{$v1} =~ s!\s+!\n!g; 
