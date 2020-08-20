@@ -1,5 +1,6 @@
 #!/usr/bin/perl -w
 # 20200806: For -add_KaKs function, fix the problem when the input CDS IDs have too many characters (>= 32). 
+# 20200820: Fix -add_KaKs when there are duplicated gene names. 
 use strict; 
 use warnings; 
 use LogInforSunhh; 
@@ -487,13 +488,16 @@ sub _lis2ks {
 	my (%id_old2new, $tmpCnt1, %id_new2old); 
 	for my $tmpLID (map { @{$_}[0,1] } &fileSunhh::load_tabFile($parm{'in_pair_list'})) {
 		defined $cds_seq{$tmpLID} or &stopErr("[Err] Failed to find sequence for ID [$tmpLID]\n"); 
-		if ( defined $id_old2new{$tmpLID} ) {
-			$tmpCnt1 = $id_old2new{$tmpLID}; 
-		} else {
-			$tmpCnt1 ++; 
-			$id_old2new{$tmpLID} = $tmpCnt1; 
-			$id_new2old{$tmpCnt1} = $tmpLID; 
-		}
+		#if ( defined $id_old2new{$tmpLID} ) {
+		#	$tmpCnt1 = $id_old2new{$tmpLID}; 
+		#} else {
+		#	$tmpCnt1 ++; 
+		#	$id_old2new{$tmpLID} = $tmpCnt1; 
+		#	$id_new2old{$tmpCnt1} = $tmpLID; 
+		#}
+		$tmpCnt1 ++; 
+		push(@{$id_old2new{$tmpLID}}, $tmpCnt1); 
+		$id_new2old{$tmpCnt1} = $tmpLID; 
 		$cds_seq{$tmpLID}{'seq'} =~ s!\s!!g; 
 		$cds_seq{$tmpLID}{'seq'} =~ s!(.{60})!$1\n!g; chomp($cds_seq{$tmpLID}{'seq'}); 
 		print {$ofh_cds} ">$tmpCnt1\n$cds_seq{$tmpLID}{'seq'}\n"; 
@@ -518,10 +522,17 @@ sub _lis2ks {
 		chomp; s!\s+$!!; 
 		my @ta = split(/\t/, $_); 
 		my ($g1Ori, $g2Ori) = @ta[0,1]; 
-		my $g1 = $id_old2new{$g1Ori}; 
-		my $g2 = $id_old2new{$g2Ori}; 
-		defined $pair2ks->{$g1}{$g2} or do { &tsmsg("[Err] No Ks result found for line: $_\n"); next; }; 
-		print {$oksFh} join("\t", $g1Ori, $g2Ori, @{$pair2ks->{$g1}{$g2}})."\n"; 
+		my $find_ks = 0; 
+		FFF1:
+		for my $g1 (@{$id_old2new{$g1Ori}}) {
+			for my $g2 (@{$id_old2new{$g2Ori}}) {
+				defined $pair2ks->{$g1}{$g2} or next; 
+				$find_ks = 1; 
+				print {$oksFh} join("\t", $g1Ori, $g2Ori, @{$pair2ks->{$g1}{$g2}})."\n"; 
+				last FFF1; 
+			}
+		}
+		$find_ks == 0 and do { &tsmsg("[Err] No Ks result found for line: $_\n"); next; }; 
 	}
 	close ($paFh); 
 	
