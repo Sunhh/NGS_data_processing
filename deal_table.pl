@@ -27,6 +27,7 @@
 # 2016-12-01 Add -cpuN for selected, time consuming tasks. 
 # 2016-12-02 'cut & paste' method for -colByTbl_cut is not fast enough. trying to use -cpuN
 # 2016-12-03 -colByTbl_cut is removed. 
+# 2020-08-23 Fix -col_sort for mixed character and number column; 
 
 use strict;
 use warnings; 
@@ -1157,7 +1158,11 @@ sub col_sort {
 	foreach my $rul (@{$opts{'col_sort_ruls'}}) {
 		my $result = 0; 
 		if ( &is_digital($tempa[$rul->[0]]) and &is_digital($tempb[$rul->[0]]) ) {
-			$result = $tempa[$rul->[0]] <=> $tempb[$rul->[0]]; 
+			$result = $tempa[$rul->[0]] <=> $tempb[$rul->[0]] || $tempa[$rul->[0]] cmp $tempb[$rul->[0]]; 
+		} elsif ( &is_digital($tempa[$rul->[0]]) ) {
+			$result = -1; 
+		} elsif ( &is_digital($tempb[$rul->[0]]) ) {
+			$result = 1; 
 		} else {
 			$result = $tempa[$rul->[0]] cmp $tempb[$rul->[0]]; 
 		}
