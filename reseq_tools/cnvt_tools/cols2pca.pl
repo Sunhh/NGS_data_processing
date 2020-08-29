@@ -162,6 +162,7 @@ for my $fh (@InFp) {
 				if ( $opts{'input_is_tab'} ) {
 					$ta[$i] //= './.'; 
 					length($ta[$i]) > 0 or $ta[$i] = './.'; 
+					$ta[$i] =~ m!\/! or $ta[$i] = "$ta[$i]/$ta[$i]"; 
 					$ta[$i] =~ m!^([^\s/]+)/([^\s/]+)$! or &stopErr("[Err] Bad genotype 01 [$ta[$i]]\n"); 
 					my ($a1, $a2) = ($1, $2); 
 					$a1 eq '.' and next; 

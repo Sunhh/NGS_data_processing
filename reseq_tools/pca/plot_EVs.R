@@ -34,9 +34,14 @@ for ( i in 1:length(grpLis) ) {
 	indvColor[ grpLis[i] == aa$Grp ] <- grpColor[i]
 	indvShape[ grpLis[i] == aa$Grp ] <- grpShape[i]
 }
-pdf( file = "plot_EVs.pdf" )
+pdf( file = "plot_EV1_EV2.pdf" )
 plot( aa$EV1[kk] , aa$EV2[kk], col=indvColor[kk], pch=indvShape[kk], xlab="EV1", ylab="EV2" )
 legend( legendTag , legend=grpLis, col=grpColor, pch=grpShape)
-write.table( cbind("Grp"=grpLis, "GrpColor"=grpColor, "GrpShape"=grpShape), file="plot_EVs.para_plot", quote=FALSE, sep="\t", row.names=FALSE )
+write.table( cbind("Grp"=grpLis, "GrpColor"=grpColor, "GrpShape"=grpShape), file="plot_EV1_EV2.para_plot", quote=FALSE, sep="\t", row.names=FALSE )
+dev.off() 
+pdf( file = "plot_EV1_EV3.pdf" )
+plot( aa$EV1[kk] , aa$EV3[kk], col=indvColor[kk], pch=indvShape[kk], xlab="EV1", ylab="EV3" )
+legend( legendTag , legend=grpLis, col=grpColor, pch=grpShape)
+write.table( cbind("Grp"=grpLis, "GrpColor"=grpColor, "GrpShape"=grpShape), file="plot_EV1_EV3.para_plot", quote=FALSE, sep="\t", row.names=FALSE )
 dev.off() 
 
