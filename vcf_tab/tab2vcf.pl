@@ -36,8 +36,17 @@ for (keys %seq) { $seq{$_}{'seq'} =~ s!\s!!g; $seq{$_}{'len'} = length($seq{$_}{
 
 my $o_header = <<OH; 
 ##fileformat=VCFv4.1
-###ALT=<ID=NON_REF,Description="Represents any possible alternative allele at this location">
+##ALT=<ID=NON_REF,Description="Represents any possible alternative allele at this location">
 OH
+for my $k1 (sort keys %seq) {
+	my $ltxt = "##contig=<ID=$k1,length=$seq{$k1}{'len'}>\n"; 
+	$o_header .= $ltxt; 
+}
+{
+	my $absP = &fileSunhh::_abs_path($opts{'in_tab'}); 
+	$o_header .= "##reference=file://$absP\n"; 
+}
+
 
 print STDOUT "$o_header"; 
 my $fh = &openFH( $opts{'in_tab'}, '<' ); 
