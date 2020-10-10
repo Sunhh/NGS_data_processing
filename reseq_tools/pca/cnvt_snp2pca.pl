@@ -162,8 +162,17 @@ for my $fh (@InFp) {
 				if ( $opts{'input_is_tab'} ) {
 					$ta[$i] //= './.'; 
 					length($ta[$i]) > 0 or $ta[$i] = './.'; 
-					$ta[$i] =~ m!^([^\s/]+)/([^\s/]+)$! or &stopErr("[Err] Bad genotype 01 [$ta[$i]]\n"); 
-					my ($a1, $a2) = ($1, $2); 
+					my ($a1, $a2); 
+					if ($ta[$i] =~ m!^([^\s/]+)/([^\s/]+)$!) {
+						($a1, $a2) = ($1, $2); 
+					} else {
+						if ($ta[$i] =~ m!^[ATGCN]+$!) {
+							($a1, $a2) = ($ta[$i], $ta[$i]);
+							$ta[$i] = "$ta[$i]/$ta[$i]";
+						} else {
+							&stopErr("[Err] Bad genotype 01 [$ta[$i]]\n"); 
+						}
+					}
 					$a1 eq '.' and next; 
 					if ( $a1 =~ m!^[ATGC]$! and $a2 =~ m!^[ATGC]$! ) {
 						@{$tmp_al[$i]} = ($a1, $a2); 
