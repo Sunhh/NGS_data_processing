@@ -49,7 +49,7 @@ my %chrCumS = %{ &load_chrCL( $fn_chrCL ) };
 my $fh = &openFH( $fn_wind, '<' ); 
 while (&wantLineC($fh)) {
 	my @ta = &splitL("\t", $_); 
-	if ( $ta[0] =~ m/^chrID$/i ) {
+	if ( $ta[$opts{'col_id'}] =~ m/^chrID$/i ) {
 		print STDOUT join("\t", @ta)."\n"; 
 		next; 
 	}
