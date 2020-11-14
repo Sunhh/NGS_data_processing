@@ -75,7 +75,9 @@ for (my $i=$opts{'minR'};$i<=$opts{'maxR'};$i++){
 	} else {
 		&exeCmd_1cmd("cp -p $OutDir/$UsePosition $out_Dir/$UsePosition1"); 
 	}
-	my $location_num = `wc -l $out_Dir/$UsePosition1  | cut  -f 1 -d " " | tr -d '\n' `;
+	# my $location_num = `wc -l $out_Dir/$UsePosition1  | cut  -f 1 -d " " | tr -d '\n' `;
+	my $c1 = "head -1 $out_Dir/$UsePosition1 | sed -e 's!\\s\\+!\\n!g' | tail -n +2 | wc -l | cut -f 1 -d \" \" | tr -d '\\n'"; 
+	my $location_num = `$c1`; 
 	my $sample_num   = `wc -l $curr_dir/$individual | cut  -f 1 -d " " | tr -d '\n'`; 
 	
 

@@ -112,6 +112,7 @@ sub get_line {
 	my $refBase = uc( substr( $seq{$ta[0]}{'seq'}, $ta[1]-1, 1 ) ); 
 	my %alleles; 
 	for my $tb (@ta[3 .. $#ta]) {
+		$tb eq 'N' and $tb = './.'; # 20201111
 		my @idv_al = &SNP_tbl::tab_allele($tb); 
 		$idv_al[0][0] eq '.' and next; 
 		for my $tc (@idv_al) {
@@ -129,6 +130,7 @@ sub get_line {
 	}
 	my $txt_ALT = ( scalar(@arr_ALT) > 0 ) ? join(',', @arr_ALT) : '.' ; 
 	for my $tb ( @ta[3 .. $#ta] ) {
+		$tb eq "N" and $tb = './.'; # 20201111
 		my @idv_al = &SNP_tbl::tab_allele($tb); 
 		$idv_al[0][0] eq '.' and do { $tb = './.'; next; }; 
 		$#idv_al == 0 and push(@idv_al, $idv_al[0]); 
