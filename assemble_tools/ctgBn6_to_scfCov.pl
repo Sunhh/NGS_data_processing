@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# 2020-11-19 : Try to add SE for query; 
 use strict; 
 use warnings; 
 use LogInforSunhh; 
@@ -60,6 +61,8 @@ for my $ctgID (%ctg2scf) {
 	for my $tb ( @{$ctg2scf{$ctgID}} ) {
 		my @tc = @$tb; 
 		$info{$tc[2]}{'noN'} += ($tc[1]-$tc[0]+1); 
+		$info{$tc[2]}{'wiN'} //= $tc[4]; 
+		$info{$tc[2]}{'wiN'} < $tc[4] and $info{$tc[2]}{'wiN'} = $tc[4]; 
 	}
 }
 &tsmsg("[Msg] AGP file loaded.\n"); 
@@ -135,7 +138,7 @@ while (<>) {
 	
 }
 
-print STDOUT join("\t", qw/ScfID LenInCtg CovLenInScf CovPercInScf CovByScf CovLenSpan2 CovPercSpan2 CovS2 CovE2/)."\n"; 
+print STDOUT join("\t", qw/ScfID LenInCtg CovLenInScf CovPercInScf CovByScf CovLenSpan2 CovPercSpan2 CovS2 CovE2 CovS1 CovE1 LenInScf1/)."\n"; 
 for my $tk1 (sort keys %blk) {
 	my %maxSum; 
 	
@@ -160,6 +163,8 @@ for my $tk1 (sort keys %blk) {
 		}
 		my $t_s = $tc->[0][0]; 
 		my $t_e = $tc->[-1][1]; 
+		my $q_s = $blk{$tk1}{$tk2}[0][0];
+		my $q_e = $blk{$tk1}{$tk2}[-1][1];
 		print STDOUT join("\t", 
 			$tk1, 
 			$info{$tk1}{'noN'}, 
@@ -169,7 +174,10 @@ for my $tk1 (sort keys %blk) {
 			$sum_span, 
 			sprintf("%0.2f", $sum_span / ($t_e-$t_s+1) *100), 
 			$t_s, 
-			$t_e
+			$t_e,
+			$q_s,
+			$q_e,
+			$info{$tk1}{'wiN'}
 		)."\n"; 
 	}
 }
