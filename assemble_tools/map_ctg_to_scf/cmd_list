@@ -1,0 +1,98 @@
+deal_fasta.pl -baseCount Cmos_1.0_HiC.fasta > hic.bc
+
+deal_fasta.pl -attr key:len P3Genom_V1p3.scf.fa > ori.kl
+deal_fasta.pl -scf2ctg cmosV1ctg P3Genom_V1p3.scf.fa
+
+makeblastdb -in Cmos_1.0_HiC.fasta -dbtype nucl
+blastn -outfmt "6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen sstrand" \
+ -db      Cmos_1.0_HiC.fasta \
+ -query   cmosV1ctg.ctg.fa \
+ -out     V1ctg_to_hic.bn6 \
+ -ungapped           \
+ -max_target_seqs  3 \
+ -num_threads    40 \
+ -word_size      100 \
+ -qcov_hsp_perc  99 \
+ -perc_identity  99
+
+cat V1ctg_to_hic.bn6 | awk ' $3 == 100 && $7 == 1 && $8 == $13 ' > V1ctg_to_hic.bn6.p100
+deal_table.pl V1ctg_to_hic.bn6 -kSrch_idx V1ctg_to_hic.bn6.p100 -kSrch_drop > V1ctg_to_hic.bn6.p100.rest
+deal_table.pl -col_uniq 0 V1ctg_to_hic.bn6.p100 > V1ctg_to_hic.bn6.p100.u
+deal_table.pl V1ctg_to_hic.bn6.p100 -kSrch_drop -kSrch_idx V1ctg_to_hic.bn6.p100.u > V1ctg_to_hic.bn6.p100.p
+perl /home/Sunhh/tools/github/NGS_data_processing/assemble_tools/ctgBn6_to_scfCov.pl -minIdent 1  cmosV1ctg.ctg2scf.agp V1ctg_to_hic.bn6.p100.u > V1ctg_to_hic.bn6.p100.u.ctgCov
+
+# From here, I should write a script to deal with contigs with multi-hits and shortness.
+perl simple_fill.pl P3Genom_V1p3.scf.fa Cmos_1.0_HiC.fasta V1ctg_to_hic.bn6.p100.u.ctgCov > V1ctg_to_hic.bn6.p100.u.ctgCov.fill 2> V1ctg_to_hic.bn6.p100.u.ctgCov.rest
+
+# Manually fix.
+manual.good
+
+# make final AGP
+cat V1ctg_to_hic.bn6.p100.u.ctgCov.fill manual.good > final.ctgCov.good
+# Edit final.ctgCov.good; 
+
+cat final.ctgCov.good | perl -e 'my %lines; while (my $l = <>) {
+ $l =~ m!^\s*#! and next; 
+ chomp($l); my @ta=split(/\t/, $l); 
+ $ta[0] eq "ScfID" and next; 
+ my $str = (map { $_->[0] } sort { $b->[1] <=> $a->[1] } map { [split(/:/, $_)] } split(/;/, $ta[12]))[0]; 
+ push(@{$lines{$ta[4]}}, [@ta[4,7,8, 0,9,10], $str, $ta[12]]); 
+}
+for my $k1 (sort keys %lines) {
+ my @tb = sort { $a->[1]<=>$b->[1] } @{$lines{$k1}}; 
+ my $n=1;
+ for (my $n=0; $n<=$#tb; $n++) {
+  print join("\t", @{$tb[$n]}[0,1,2], 2*$n+1, "W", @{$tb[$n]}[3,4,5,6,7])."\n"; 
+ }
+}
+' > final.V1Scf2HiC.agp
+
+perl /home/Sunhh/tools/github/NGS_data_processing/assemble_tools/link_seq_by_agp.pl \
+ -agpFile    final.V1Scf2HiC.agp \
+ -ctgFas     P3Genom_V1p3.scf.fa \
+ -noAddRest  \
+1> rebuilt.hic.fa
+deal_fasta.pl -baseCount rebuilt.hic.fa > rebuilt.hic.fa.bc
+deal_table.pl hic.bc -kSrch_idx rebuilt.hic.fa.bc -kSrch_srcCol 0-7 -kSrch_idxCol 0-7 -kSrch_drop
+
+# Convert gff3:
+perl /home/Sunhh/tools/github/NGS_data_processing/assemble_tools/cnvt_loc_fromAGP_toAGP_forLoci.pl \
+ -for_gff3     \
+ -new_agp      final.V1Scf2HiC.agp \
+ -old_loc      P3Genom_V1p3.prot_scf.gff3 \
+ -new_loc      cmos_hic.prot.gff3
+
+ 
+
+################################################################################
+# perl /home/Sunhh/tools/github/NGS_data_processing/assemble_tools/cnvt_loc_fromAGP_toAGP_forLoci.pl   -old_agp input_old.ctg2scf.agp   -new_agp input_new.ctg2scf.agp   -old_loc in_old_by_oldChrPos.gff3 
+#
+# -help 
+#
+# -old_loc        [filename] Input .gff3 file. 
+# -new_loc        [filename] Output .gff3 file. print to STDOUT if not given. 
+#
+# -old_agp        [filename] .AGP format for old_loc
+# -new_agp        [filename] .AGP format for new_loc
+#                   old_agp and new_agp should share the same contig sets. 
+#
+# -colN_seqID     ['0']
+# -colN_seqP      ['3,4']
+# -colN_seqStr    ['']
+#
+# -for_gff3       [Boolean] If given, the input and output are treated as .gff3 file, -colN_* parameters are ignored. 
+# -for_vcf        [Boolean] If given, the input and output are treated as .vcf file, -colN_* parameters are ignored. 
+#   -refFas       [filename] Check if the new loc is consistent with converted fasta sequences. 
+#   -bad_loc      [filename] Store bad loci in this file. Only valid when -refFas is given. 
+#   This result is different from picard-LiftoverVcf at InDel locations. 
+#   When the old strand is reversed in the new_loc, the last base instead of first base will be the REF allele, 
+#   so please take this in mind when processing VCF files. 
+#   And I don't think picard is correct here. 
+#   For example : 
+#     AGP : WM97pbV1_Chr06  1       29507460        1       W       ClaScf_0005     1       29507460        -       Scaffold5
+#     RAW_vcf : ClaScf_0005     383269       .       G       GCTTTTTTTTTTTT
+#     picard  : WM97pbV1_Chr06  29124180     .       G       GAAAAAAAAAAGAA # This 'GAA' is wrong. 
+#     mine    : WM97pbV1_Chr06  29124192     .       C       AAAAAAAAAAAAGC
+#     manual  : WM97pbV1_Chr06  29124191     .       G       GAAAAAAAAAAAAG
+#
+################################################################################
