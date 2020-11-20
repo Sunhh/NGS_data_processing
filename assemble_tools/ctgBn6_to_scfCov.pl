@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 # 2020-11-19 : Try to add SE for query; 
+# 2020-11-20 : Try to add strand stats; 
 use strict; 
 use warnings; 
 use LogInforSunhh; 
@@ -71,6 +72,7 @@ my %cnt;
 $cnt{'cntN_step'} = $opts{'log_lineN'}; 
 my %blk; 
 my %blk2; 
+my %strands; 
 while (<>) {
 	&fileSunhh::log_section( $. , \%cnt ) and &tsmsg("[Msg] Processing $. line.\n"); 
 	chomp; 
@@ -129,16 +131,18 @@ while (<>) {
 	unless ( $opts{keepSelfAlign} ) {
 		$scfID1 eq $scfID2 and next; 
 	}
+	my $final_str = '+'; 
 	my @se1 = ( $r1s[0][1], $r1e[0][1] ); 
-	$se1[0] > $se1[1] and @se1[0,1] = @se1[1,0]; 
+	$se1[0] > $se1[1] and do { @se1[0,1] = @se1[1,0]; $final_str =~ tr/+/-/; }; 
 	push(@{$blk{$scfID1}{$scfID2}}, [$se1[0], $se1[1]]); 
 	my @se2 = ( $r2s[0][1], $r2e[0][1] ); 
-	$se2[0] > $se2[1] and @se2[0,1] = @se2[1,0]; 
+	$se2[0] > $se2[1] and do { @se2[0,1] = @se2[1,0]; $final_str =~ tr/+/-/; }; 
+	$strands{$scfID1}{$scfID2}{$final_str} += $se1[1] - $se1[0] + 1; 
 	push(@{$blk2{$scfID2}{$scfID1}}, [$se2[0], $se2[1]]); 
 	
 }
 
-print STDOUT join("\t", qw/ScfID LenInCtg CovLenInScf CovPercInScf CovByScf CovLenSpan2 CovPercSpan2 CovS2 CovE2 CovS1 CovE1 LenInScf1/)."\n"; 
+print STDOUT join("\t", qw/ScfID LenInCtg CovLenInScf CovPercInScf CovByScf CovLenSpan2 CovPercSpan2 CovS2 CovE2 CovS1 CovE1 LenInScf1 strands/)."\n"; 
 for my $tk1 (sort keys %blk) {
 	my %maxSum; 
 	
@@ -165,6 +169,8 @@ for my $tk1 (sort keys %blk) {
 		my $t_e = $tc->[-1][1]; 
 		my $q_s = $blk{$tk1}{$tk2}[0][0];
 		my $q_e = $blk{$tk1}{$tk2}[-1][1];
+		$strands{$tk1}{$tk2}{'+'} //= 0; 
+		$strands{$tk1}{$tk2}{'-'} //= 0; 
 		print STDOUT join("\t", 
 			$tk1, 
 			$info{$tk1}{'noN'}, 
@@ -177,7 +183,8 @@ for my $tk1 (sort keys %blk) {
 			$t_e,
 			$q_s,
 			$q_e,
-			$info{$tk1}{'wiN'}
+			$info{$tk1}{'wiN'}, 
+			"+:$strands{$tk1}{$tk2}{'+'};-:$strands{$tk1}{$tk2}{'-'}"
 		)."\n"; 
 	}
 }
