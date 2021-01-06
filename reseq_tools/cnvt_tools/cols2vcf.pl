@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# 2021-01-06 Accepting single char in SNP.col and always replacing '1/0' with '0/1'; 
 use strict; 
 use warnings; 
 use LogInforSunhh; 
@@ -94,6 +95,8 @@ while (<>) {
 			$bb = $st->SingleChar($bb); 
 			defined $dblist{ $bb } or do { push( @allele_arr, ['.', '.'] ); next; }; 
 			push( @allele_arr, [ @{$dblist{ $bb }} ] ); 
+		} elsif ( defined $dblist{$bb} ) {
+			push( @allele_arr, [ @{$dblist{ $bb }} ] ); 
 		} elsif ( $bb =~ m!^([ATGC])\+([ATGCN]+)$! ) {
 			$bb = "$1$2"; 
 			push( @allele_arr, [ $bb, $bb ] ); 
@@ -133,7 +136,7 @@ while (<>) {
 		if ( $tr1->[0] eq '.' ) {
 			push( @allele_str, './.' ); 
 		} else {
-			$is_noSort or ( $baseNum{$tr1->[0]} > $baseNum{$tr1->[1]} and ( $baseNum{$tr1->[0]}, $baseNum{$tr1->[1]} ) = ( $baseNum{$tr1->[1]}, $baseNum{$tr1->[0]} ) ); 
+			$is_noSort or ( $baseNum{$tr1->[0]} > $baseNum{$tr1->[1]} and @{$tr1}[0,1] = @{$tr1}[1,0] ); 
 			push( @allele_str, join('/', $baseNum{$tr1->[0]}, $baseNum{$tr1->[1]}) );
 		}
 	}

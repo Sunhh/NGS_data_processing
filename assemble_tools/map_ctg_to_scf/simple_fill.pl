@@ -111,10 +111,12 @@ for my $k1 (keys %qseq) {
 	}
 	if (scalar(@idx) == 1) {
 		print STDOUT join("\t", $k1, "x", "x", "x", $idx[0][0], "x", "x", $idx[0][1], $idx[0][2], 1, $qseq{$k1}{'len'}, $qseq{$k1}{'len'}, $idx[0][3])."\n"; 
-	} else {
+	} elsif (scalar(@idx) > 1) {
 		for my $i3 (@idx) {
-			print STDERR join("\t", $k1, "x", "x", "x", $i3->[0], "x", "x", $i3->[1], $i3->[2], 1, $qseq{$k1}{'len'}, $qseq{$k1}{'len'}, $i3->[3])."\n"; 
+			print STDERR join("\t", $k1, "m", "m", "m", $i3->[0], "m", "m", $i3->[1], $i3->[2], 1, $qseq{$k1}{'len'}, $qseq{$k1}{'len'}, $i3->[3])."\n"; 
 		}
+	} else {
+		print STDERR join("\t", $k1, qw/u u u u u u u u u u/, $qseq{$k1}{'len'}, "+:0;-:0")."\n"; 
 	}
 }
 
