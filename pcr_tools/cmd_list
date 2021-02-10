@@ -1,11 +1,13 @@
 # Design primers for SNP list (site.list)
-perl retrieve_template_forSNP.pl site.lis -out site -ref_fa /Data/Sunhh/melon/db/melon_v351edit.chr.fa -min_flank_size 50
-perl run_primer_forSNP.pl -in_tempTab site.tempX.tab -out_prefix site # Got site.primer.tab;
+perl pcr_tools/retrieve_template_forSNP.pl site.list -out site -ref_fa /Data/Sunhh/marker_design/20210125_mitoMarker/db/CM3.5.1_wiMtCtDNA.fa -min_flank_size 50
+perl pcr_tools/run_primer_forSNP.pl -in_tempTab site.tempX.tab -out_prefix site # Got site.primer.tab;
 
 # Check false priming
-bn6 -evalue 5000 -db /Data/Sunhh/melon/db/melon_v351edit.chr.fa -task blastn-short -num_threads 50 -query chk1.fa -out chk1.fa.bn6
+less -S site.primer.tab | perl -e 'while (<>) { chomp; $. == 1 and next; my @ta=split(/\t/, $_); print ">$ta[1]_f\n$ta[2]\n>$ta[1]_r\n$ta[3]\n";  }' > chk1.fa
+makeblastdb -in /Data/Sunhh/marker_design/20210125_mitoMarker/db/CM3.5.1_wiMtCtDNA.fa -dbtype nucl
+bn6 -evalue 5000 -db /Data/Sunhh/marker_design/20210125_mitoMarker/db/CM3.5.1_wiMtCtDNA.fa -task blastn-short -num_threads 50 -query chk1.fa -out chk1.fa.bn6
 perl /home/Sunhh/tools/github/NGS_data_processing/pcr_tools/get_priming_loc_bnV2_2_24.pl chk1.fa.bn6 > chk1.fa.bn6.primer_loc
-less -S chk1.fa.bn6.primer_loc | deal_table.pl -col_uniq 0 > a2
-ColLink.pl a1 -f1 a2 -sign 'ok,multi' -add | deal_table.pl -column 1
-
+deal_table.pl site.primer.tab -column 1,0,2,4,3,5,15,9,12 > a1
+cat chk1.fa.bn6.primer_loc | deal_table.pl -col_uniq 0 > a2
+ColLink.pl a1 -f1 a2 -sign 'ok,multi' -add | ColLink.pl -f1 site.list -keyC1 0 -keyC2 1 -add -Col1 2,3,4,5 > a3
 
