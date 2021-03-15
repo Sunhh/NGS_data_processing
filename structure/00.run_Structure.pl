@@ -3,6 +3,7 @@
 use strict; 
 use warnings; 
 use LogInforSunhh; 
+use fileSunhh; 
 use Getopt::Long; 
 my %opts; 
 GetOptions(\%opts, 
@@ -35,11 +36,10 @@ $opts{'randSeed'} and $seed_tag = '-randSeed';
 
 my $individual = $opts{'indv_txt'}; 
 my $snp_number = $opts{'snp_number'}; 
-my $UsePosition = $opts{'geno_tbl'}; 
-my $UsePosition1 = $UsePosition; 
-$UsePosition1 =~ s!^\S+/!!; 
+my $UsePosition = &fileSunhh::_abs_path($opts{'geno_tbl'}); 
+my $UsePosition1 = &fileSunhh::_basename($UsePosition); 
 
-my $OutDir = $opts{'OutDir'};
+my $OutDir = &fileSunhh::_abs_path_4link($opts{'OutDir'});
 
 my $BinDir = $opts{'BinDir'}; 
 
@@ -71,9 +71,9 @@ for (my $i=$opts{'minR'};$i<=$opts{'maxR'};$i++){
 	mkdir($out_Dir) unless (-d $out_Dir); 
 	chdir($out_Dir); 
 	if ($snp_number > 0) {
-		&exeCmd_1cmd("perl $BinDir/rand_small_position.pl $OutDir/$UsePosition  $out_Dir/$UsePosition1  $snp_number");
+		&exeCmd_1cmd("perl $BinDir/rand_small_position.pl $UsePosition  $out_Dir/$UsePosition1  $snp_number");
 	} else {
-		&exeCmd_1cmd("cp -p $OutDir/$UsePosition $out_Dir/$UsePosition1"); 
+		&exeCmd_1cmd("cp -p $UsePosition $out_Dir/$UsePosition1"); 
 	}
 	# my $location_num = `wc -l $out_Dir/$UsePosition1  | cut  -f 1 -d " " | tr -d '\n' `;
 	my $c1 = "head -1 $out_Dir/$UsePosition1 | sed -e 's!\\s\\+!\\n!g' | tail -n +2 | wc -l | cut -f 1 -d \" \" | tr -d '\\n'"; 
