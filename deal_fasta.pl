@@ -1244,7 +1244,7 @@ sub N50 {
 			if ( $genomSize > 0 ) {
 				if ( $Need_ratios{$tk1} != -1 and $sum >= $genomSize * $Need_ratios{$tk1} ) {
 					my $ti = $i+1; 
-					print STDOUT "GN$tn (ATGC) (Index) : $tlen ($tlen_atgc) ($ti)\n"; 
+					print STDOUT "NG$tn (ATGC) (Index) : $tlen ($tlen_atgc) ($ti)\n"; 
 					$Need_ratios{$tk1} = -1; 
 				}
 			}else {
