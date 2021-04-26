@@ -78,7 +78,7 @@ while (<V>) {
 				}
 			} else {
 				$is_good = 0; 
-				&tsmsg("[Err] Unknown wrn_type: [$tmp]\n"); 
+				&tsmsg("[Wrn] Unknown wrn_type: [$tmp]\n"); 
 				last CHK_WRN; 
 			}
 		}#End CHK_WRN: 
