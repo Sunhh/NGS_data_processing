@@ -33,7 +33,7 @@ while (<>) {
 	/^Query name\t|^qseqid\t/ and next; 
 	s/\s+$//; 
 	my @a = split(/\t/, $_); 
-	if ($a[0] =~ /^(\S+)_(\d+)([fr])$/i) {
+	if ($a[0] =~ /^(\S+)_(\d+)_?([fr])$/i) {
 		my ($pro_id, $pri_id, $fr_id) = ($1,$2,$3); 
 		# $a[1] == $a[3] or next BO; 
 		$a[12] - $a[7] <= $max_diff_tail or next BO; 
