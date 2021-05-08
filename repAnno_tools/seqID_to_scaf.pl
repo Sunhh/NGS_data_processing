@@ -6,7 +6,7 @@ my %h;
 print STDERR join("\t", qw/seqID scfID/)."\n"; 
 while (<>) {
 	if ( m/^>/ ) {
-		m/^>(\S+) \(dbseq\-nr (\d+)\) \[(\d+),(\d+)\]$/ or die "$_\n"; 
+		m/^>(\S+) .*\(dbseq\-nr (\d+)\) \[(\d+),(\d+)\]$/ or die "$_\n"; 
 		my $seqID = "seq$2"; 
 		my $scfID = "$1"; 
 		my ($eleS, $eleE) = ($3,$4); 

@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# 2020-03-31 Adapt to repeatmodeler 2.0; 
 use strict; 
 use warnings; 
 use LogInforSunhh; 
@@ -20,6 +21,7 @@ GetOptions(\%opts,
 	"cpuN:i", 
 	"out:s", "outTbl:s", 
 	"repeat_times:i", 
+	"v2_modeler!", 
 ); 
 
 $opts{'repeat_times'} //= 1; 
@@ -48,6 +50,9 @@ for my $k1 (sort { $ori_seq{$a}{'Order'} <=> $ori_seq{$b}{'Order'} } keys %ori_s
 	my %t1 = %{ &parse_input_header( $ori_seq{$k1}{'head'} ) }; 
 	$ori_cls{ $t1{'key_shrt'} } = $t1{'class'}; 
 	my $oheader = $t1{'header_shrt'}; 
+	if ($opts{'v2_modeler'}) {
+		$oheader .= "#Unknown"; 
+	}
 
 	chomp( $ori_seq{$k1}{'seq'} ); 	
 	print OT ">$oheader\n$ori_seq{$k1}{'seq'}\n"; 
@@ -143,6 +148,7 @@ sub usage {
 #
 # -help
 # -path_repClass [RepeatClassifier]
+# -v2_modeler    [Boolean] Give this if using RepeatModeler V2.0; 
 # -para_RC       [-engine ncbi]
 #
 # -out           [inFa.classified]

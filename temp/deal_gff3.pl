@@ -1,5 +1,8 @@
 #!/usr/bin/perl
 # 2016-07-08 Add function to extract CDS sequence according to gff file. 
+# 2018-05-14 Add function to extract CDS sequence according to gff file. 
+# 2018-07-10 Sort GFF by its inner features. 
+# 2019-01-16 Change 'frame' value to fit blastx and transeq; 
 use strict; 
 use warnings; 
 use LogInforSunhh; 
@@ -20,8 +23,13 @@ GetOptions(\%opts,
 	"outFas:s",    # Output fasta file if defined. 
 	
 	# Actions 
+	"sort!", 
+	"simpleSort!", 
 	"seqret!", # Not added. 
-	
+	  "extractFeat:s", # Not used. 
+
+	"getAGP:s", 
+
 	"fixTgt!", # 
 	
 	"compare2gffC:s", 
@@ -44,12 +52,13 @@ GetOptions(\%opts,
 	
 	"ch_makerID:s", # Finished. The input gff must be exactly as maker output. 
 	 "geneID_list:s", # [file], "oldGeneID \t newGeneID"
+	
+	"ch_ID:s",      # Change feature IDs in GFF file; 
 
 	"ch_locByAGP:s", # Finished. I think I should add 'sortTopIDBy' to &write_gff3File() . 
 	 "sortTopIDBy:s", # raw/lineNum/position
 	
 	# Filter options. 
-	"extractFeat:s", # Not used. 
 	"help!", 
 ); 
 
@@ -75,9 +84,13 @@ sub usage {
 # 
 # Action options: 
 #----------------------------------------------------------------------------------------------------
+# -simpleSort       [Boolean]
+#----------------------------------------------------------------------------------------------------
 # -ch_makerID       [oldID_newID] Convert mRNA ID and gene IDs according to file 'oldID_newID'. 
 #                     'oldID_newID' should have two column, old ID and new ID. 
 #   -geneID_list    [oldID_newID] Additionally provide a list to change gene IDs. 
+#----------------------------------------------------------------------------------------------------
+# -ch_ID            [oldID_newID] All the ID/Parent should exist in the input oldID_newID list. 
 #----------------------------------------------------------------------------------------------------
 # -ch_locByAGP      [in_ref.agp] Change IDs and locations according to this agp. Here assume to change agp_ctg to agp_scaff. 
 #   -sortTopIDBy    ['raw'] raw/lineNum/position. In fact, raw should be equal to lineNum. 
@@ -85,6 +98,7 @@ sub usage {
 # -addFaToGff       [Boolean] Add -scfFa to the tail of -inGff . 
 #----------------------------------------------------------------------------------------------------
 # -seqret           [Boolean] Retrieve fasta sequence. Not used yet. 
+#   -extractFeat    [] Could be CDS. Not used yet. 
 #
 #----------------------------------------------------------------------------------------------------
 # -fixTgt           [Boolean] Fix coordinates problem in "Target:" section. 
@@ -126,7 +140,7 @@ sub usage {
 #                         If this is not given, the inGff will be output if it is included by gffC. 
 #  
 #   -rmOvlap          [Boolean] Remove 
-#     -rmOvlapLen     [1/-1] bps. 
+#     -rmOvlapLen     [1/-1] bps. Value '-1' means not considering by overlapped length. 
 #     -rmOvlapRatio1  [-1] 0-1 (1 is 100%)
 #     -rmOvlapRatio2  [-1] 0-1 (1 is 100%)
 #     -rmOvlapType    [exon,CDS,mRNA]
@@ -149,10 +163,11 @@ sub usage {
 #                       Similar to -ovlapFeatType . 
 #   -islandStrand     ['Both'] Could be 'Single'. 
 #----------------------------------------------------------------------------------------------------
+# -getAGP           ['CDS'] Get .agp file for CDS features; Not used yet. 
+#----------------------------------------------------------------------------------------------------
 #
 # 
 # Filter options: 
-# -extractFeat      [] Could be CDS. Not used yet. 
 # -gff_top_hier     [undef()] Will use gffSunhh default value if not given. 
 #                     Could be 'mrna,match,protein_match,expressed_sequence_match'
 #
@@ -188,7 +203,63 @@ defined $opts{'outFas'} and $oFasFh = &openFH($opts{'outFas'}, '>');
 if ( $opts{'getJnLoc'} ) {
 	&action_getJnLoc(); 
 	exit(); 
+} elsif ( defined $opts{'ch_ID'} ) {
+	&action_ch_ID(); 
+	exit(); 
+} elsif ( defined $opts{'simpleSort'} ) {
+	&action_simpleSort(); 
+	exit(); 
 }
+
+sub action_simpleSort {
+	my %trans_feature = qw(
+		contig             contig
+		gene               gene
+		transcript         mrna
+		mrna               mrna
+		five_prime_utr     five_prime_utr
+		exon               exon
+		cds                cds
+		three_prime_utr    three_prime_utr
+	); 
+	my %good_feature = qw(
+		contig             0.5
+		gene               1
+		mrna               2
+		five_prime_utr     3
+		exon               4 
+		cds                5 
+		three_prime_utr    6
+	); 
+	my (@lines, %info, $lineN); 
+	$lineN = 0; 
+	while (<$iFh>) {
+		$lineN ++; 
+		chomp; 
+		if (m!^\s*#!) {
+			if (@lines > 0) {
+				# Sort and output @lines; 
+				@lines = (); 
+			}
+			print {$oFh} "$_\n"; 
+			next; 
+		}
+		my @ta = split(/\t/, $_); 
+		my $featID = lc($ta[2]); 
+		defined $trans_feature{$featID} or &stopErr("[Err] Unknown feature [$featID]\n"); 
+		$info{'ln2line'}{$lineN} = $_; 
+		$info{'ln2feat'}{$lineN} = $trans_feature{$featID}; 
+		if ($ta[8] =~ m!(?:^|;)\s*Parent\s*=\s*([^\s;]+)\s*(?:$|;)!i) {
+			my $pID = $1; 
+			$pID =~ m!,! and &stopErr("[Err] I don't support multiple parents.\n"); 
+			$info{'ln2parentID'}{$lineN} = $pID; 
+		}
+		if ($ta[8] =~ m!(?:^|;)\s*ID\s*=\s*([^\s;]+)\s*(?:$|;)!i) {
+			my $cID = $1; 
+			$info{'ln2currentID'}{$lineN} = $cID; 
+		}
+	}
+}# action_simpleSort() 
 
 
 
@@ -218,15 +289,37 @@ if ( defined $opts{'list_intron'} ) {
 	$opts{'intron_byFeat'} //= 'CDS'; 
 	$gff_obj->_setTypeHash( $opts{'gff_top_hier'}, [$opts{'intron_byFeat'}] ); 
 }
+if ( defined $opts{'getAGP'} ) {
+	if ( $opts{'getAGP'} =~ m!^CDS$!i ) {
+		$opts{'gff_top_hier'} = { 'mrna'=>1, 'match'=>2, 'protein_match'=>3, 'expressed_sequence_match'=>4 }; 
+		$opts{'seqret'} = 1; 
+		$opts{'extractFeat'} = 'CDS'; 
+	} elsif ( $opts{'getAGP'} =~ m!^exon$!i ) {
+		$opts{'gff_top_hier'} = { 'mrna'=>1, 'match'=>2, 'protein_match'=>3, 'expressed_sequence_match'=>4 }; 
+		$opts{'seqret'} = 1; 
+		$opts{'extractFeat'} = 'exon'; 
+	} else {
+		&stopErr("[Err] Unknown type for -getAGP ; Should be CDS/exon\n"); 
+	}
+}
+if ( $opts{'seqret'} ) {
+	if ( $opts{'extractFeat'} =~ m!^(cds|exon)$!i) {
+		$opts{'gff_top_hier'} = { 'mrna'=>1, 'match'=>2, 'protein_match'=>3, 'expressed_sequence_match'=>4 }; 
+	}
+}
+
 $opts{'sortGffBy'} //= 'lineNum'; 
 $opts{'sortTopIDBy'} //= 'raw'; $opts{'sortTopIDBy'} = lc($opts{'sortTopIDBy'}); # raw/lineNum/position 
+$opts{'extractFeat'} //= 'CDS'; 
 
 # Step1. Read in gff file and sequence files. 
 my (%in_gff, %in_seq ); 
 &load_gff_fas( \%in_gff, \%in_seq ); 
 
 # Step2. Different actions. 
-if ( $opts{'addFaToGff'} ) { 
+if ( $opts{'sort'} ) {
+	&action_sort(); 
+} elsif ( $opts{'addFaToGff'} ) { 
 	&action_addFaToGff(); 
 } elsif ( defined $opts{'compare2gffC'} ) {
 	&action_compare2gffC(); 
@@ -250,6 +343,8 @@ if ( $opts{'addFaToGff'} ) {
 	&action_ch_makerID(); 
 } elsif ( defined $opts{'ch_locByAGP'} ) {
 	&action_ch_locByAGP(); 
+} elsif ( $opts{'seqret'} ) {
+	&action_seqret(); 
 } else {
 	&tsmsg("[Err] No valid action.\n"); 
 	exit; 
@@ -258,6 +353,117 @@ if ( $opts{'addFaToGff'} ) {
 ################################################################################
 ############### StepX. action sub-routines here. 
 ################################################################################
+sub action_seqret {
+	my %str2num = qw(
+	 +     1
+	 -     -1
+	 1     1
+	 -1    -1
+	 0     -1
+	 plus  1
+	 minus -1
+	); 
+	TOPID:
+	for my $topID ( sort { $in_gff{'ID2lineN'}{$a} <=> $in_gff{'ID2lineN'}{$b} } keys %{$in_gff{'lineN_group'}} ) {
+		my @posi_top; 
+		my @posi_cds; 
+		my $curLnNum = $in_gff{'lineN_group'}{$topID}{'curLn'}[0]; 
+		my $top_str = ''; 
+		my $top_chr = ''; 
+		my $top_name = ''; 
+		my %curLnH; 
+		if ( defined $in_gff{'lineN2hash'}{$curLnNum} ) {
+			%curLnH = %{ $in_gff{'lineN2hash'}{$curLnNum} }; 
+			$top_str = $str2num{ lc( $curLnH{'strand'} ) } // ''; 
+			$top_chr = $curLnH{'seqID'} // ''; 
+			$top_name = $curLnH{'attrib'}{'featID'} // ''; 
+			@posi_top = ( [ $curLnH{'start'}, $curLnH{'end'} ] ); 
+		}
+		OFFID:
+		for my $offLnNum ( @{$in_gff{'lineN_group'}{$topID}{'offLn'}} ) {
+			defined $in_gff{'lineN2hash'}{$offLnNum} or next OFFID; 
+			my %offLnH = %{ $in_gff{'lineN2hash'}{$offLnNum} }; 
+			if ( $opts{'extractFeat'} =~ m!^cds$!i ) {
+				$offLnH{'type'} =~ m!^CDS$!i or next OFFID; 
+			} elsif ( $opts{'extractFeat'} =~ m!^exon$!i ) {
+				$offLnH{'type'} =~ m!^exon$!i or next OFFID; 
+			}
+			$top_str eq '' and $top_str = $str2num{ lc($offLnH{'strand'}) } // ''; 
+			$top_chr eq '' and $top_chr = $offLnH{'seqID'} // ''; 
+			if ( keys %{$offLnH{'attrib'}{'parentID'}} > 0 ) {
+				my @ta1 = sort keys %{ $offLnH{'attrib'}{'parentID'} }; 
+				my $ta1_txt = join(";", @ta1); 
+				if ( $top_name eq '' ) {
+					$top_name = $ta1_txt; 
+				} else {
+					$top_name eq $ta1_txt or &stopErr("[Err] Unequal top_name : [ $top_name, $ta1_txt ]\n"); 
+				}
+			}
+			my @ta = split(/\t/, $in_gff{'lineN2line'}{$offLnNum}); 
+			my $t_frame; 
+			if ( $ta[7] eq '.' or $ta[7] eq '0' ) {
+				$t_frame = 1; 
+			} elsif ( $ta[7] == 1 ) {
+				$t_frame = 2; 
+			} elsif ( $ta[7] == 2 ) {
+				$t_frame = 3; 
+			} else {
+				&stopErr("[Err] Failed to parse gff phase [$ta[7]]\n"); 
+			}
+			push( @posi_cds, [ $offLnH{'start'}, $offLnH{'end'}, $t_frame] ); 
+		}# End for my $offLnNum 
+		@posi_cds > 0 or next TOPID; 
+		$top_str eq '' and do { &tsmsg("[Wrn] No strand information for topID=[$topID]\n"); $top_str = 1; }; 
+		$top_chr eq '' and do { &stopErr("[Err] No top_chr found for [$topID]\n"); }; 
+		defined $in_seq{$top_chr} or do { &tsmsg("[Wrn] No [$top_chr] sequence found for [$topID]\n"); next TOPID; }; 
+		# Check @posi_cds
+		for my $tr (@posi_cds) {
+			$tr->[0] > $tr->[1] and &stopErr("[Err] I can't accept start[$tr->[0]] > end[$tr->[1]] in gff3 file.\n"); 
+		}
+		if ($top_str == -1) {
+			# Be careful when the CDS loci should not ordered by position; 
+			@posi_cds = sort { $b->[0] <=> $a->[0] } @posi_cds; 
+		}
+		if ( defined $opts{'getAGP'} ) {
+			my %h1; 
+			$h1{'eleN'} = 0; 
+			# ##agp-version   2.0
+			# Super_scaffold_248      1       341379  1       W       SpoScf_00639    1       341379  -
+			# Super_scaffold_248      341380  600696  2       N       259317  scaffold        yes     map
+			for my $tr (@posi_cds) {
+				$h1{'eleN'} ++; 
+				$h1{'prevE'} //= 0; 
+				print {$oFh} join("\t", 
+					$top_name, 
+					$h1{'prevE'}+1, 
+					$h1{'prevE'}+$tr->[1]-$tr->[0]+1, 
+					$h1{'eleN'}, 
+					'W', 
+					$top_chr, 
+					$tr->[0], 
+					$tr->[1], 
+					( $top_str == -1 ) ? '-' : '+'
+				)."\n"; 
+				$h1{'prevE'} = $h1{'prevE'}+$tr->[1]-$tr->[0]+1; 
+			}
+			next TOPID; 
+		}
+
+		# get sequences; 
+		my @sub_seqs; 
+		for my $tr ( @posi_cds ) {
+			push( @sub_seqs, substr($in_seq{$top_chr}, $tr->[0]-1, $tr->[1]-$tr->[0]+1) ); 
+		}
+		$top_str == -1 and @sub_seqs = &rev_comp(@sub_seqs); 
+		my $final_seq = join('', @sub_seqs); 
+		if ( $opts{'extractFeat'} =~ m!^cds$!i ) {
+			print {$oFh} ">$top_name [frame=$posi_cds[0][2]]\n$final_seq\n"; 
+		} elsif ( $opts{'extractFeat'} =~ m!^exon$!i ) {
+			print {$oFh} ">$top_name\n$final_seq\n"; 
+		}
+	}# End for my $topID 
+}# action_seqret() 
+
 sub action_getJnLoc {
 	my $wrk_dir = &fileSunhh::new_tmp_dir(); 
 	mkdir($wrk_dir); 
@@ -296,7 +502,25 @@ sub action_getJnLoc {
 	close O2; 
 	open I3,'-|', "ColLink.pl $wrk_dir/in.gff.loc_cds -f1 $wrk_dir/in.gff.loc_mrna -keyC1 0 -keyC2 1 -add -COl1 1,3,4,5 | deal_table.pl -column 1,7,2,8,9,10,3,4,0,6" or die; 
 	while (<I3>) {
-		print {$oFh} $_; 
+		chomp($_); 
+		my @ta = &splitL("\t", $_); 
+		if ($. == 1) {
+			$ta[0] eq 'mrnaID' or &stopErr("[Err] Bad first line: $_\n"); 
+			print {$oFh} join("\t", @ta, qw/CDSBlocksNum 5UTR 3UTR/)."\n"; 
+			next; 
+		}
+		my $cdsN = ( $ta[9] =~ tr/;/;/ ) + 1; 
+		my ($utr5, $utr3); 
+		if ($ta[5] eq '-') {
+			$utr5 = $ta[4]-$ta[7]; 
+			$utr3 = $ta[6]-$ta[3]; 
+		} elsif ($ta[5] =~ m!^(\.|\+)$!) {
+			$utr5 = $ta[6]-$ta[3]; 
+			$utr3 = $ta[4]-$ta[7]; 
+		} else {
+			&stopErr("[Err] Bad strand character [$ta[5]] in line:\n$_\n"); 
+		}
+		print {$oFh} join("\t", @ta, $cdsN, $utr5, $utr3)."\n"; 
 	}
 	close I3; 
 
@@ -389,6 +613,36 @@ sub action_ch_locByAGP {
 	
 	return(); 
 }# sub action_ch_locByAGP() 
+sub action_ch_ID {
+	my %o2n = map { $_->[0] => $_->[1] } &fileSunhh::load_tabFile( $opts{'ch_ID'} ); 
+	while (<$iFh>) {
+		chomp; 
+		if (m!^\s*(#|$)!) {
+			print {$oFh} "$_\n"; 
+			next; 
+		}
+		my @ta = split(/\t/, $_); 
+		if ($ta[8] =~ m!ID=([^\s;]+)!) {
+			my $id0=$1; 
+			my @id1 = split(/,/, $id0); 
+			for my $id2 (@id1) {
+				defined $o2n{$id2} and $id2 = $o2n{$id2}; 
+			}
+			$id0=join(',', @id1);
+			$ta[8] =~ s!ID=([^\s;]+)!ID=$id0!; 
+		}
+		if ($ta[8] =~ m!Parent=([^\s;]+)!) {
+			my $id0=$1; 
+			my @id1 = split(/,/, $id0); 
+			for my $id2 (@id1) {
+				defined $o2n{$id2} and $id2 = $o2n{$id2}; 
+			}
+			$id0=join(',', @id1);
+			$ta[8] =~ s!Parent=([^\s;]+)!Parent=$id0!; 
+		}
+		print {$oFh} join("\t", @ta)."\n"; 
+	}
+}# action_ch_ID() 
 sub action_ch_makerID {
 	my $fh = &openFH( $opts{'ch_makerID'}, '<' ); 
 	my %o2n_m; 
@@ -566,6 +820,9 @@ sub action_islandGene {
 	$gff_obj->write_gff3File( 'outFH'=>$oFh, 'gff3_href'=>\%in_gff, 'topIDs_aref'=>$kept_topIDs_aref, 'sort_by'=>$opts{'sortGffBy'} ); 
 }# action_islandGene() 
 
+sub action_sort {
+	$gff_obj->write_gff3File( 'outFH'=>$oFh, 'gff3_href'=>\%in_gff, 'sort_by'=>$opts{'sortGffBy'} ); 
+}# action_sort() 
 sub action_gffret {
 	my $kept_topIDs_aref = []; 
 	my $lisFh = &openFH($opts{'gffret'}, '<'); 
@@ -1362,4 +1619,19 @@ sub load_gff_fas {
 	return ($gff_href, $seq_href); 
 }# load_gff_fas
 
+######################################################################
+######################################################################
+######################################################################
+######################################################################
+#!/usr/bin/perl
 
+
+sub rev_comp {
+	my @back; 
+	for (@_) {
+		my $ts = reverse($_); 
+		$ts =~ tr/acgturykmbvdhACGTURYKMBVDHwWsSnN/tgcaayrmkvbhdTGCAAYRMKVBHDwWsSnN/; 
+		push(@back, $ts); 
+	}
+	return @back; 
+}

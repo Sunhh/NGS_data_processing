@@ -1,7 +1,8 @@
 #!/usr/bin/env perl
 # 2014-03-20 A script to deal with fastq format reads. It will be always in processing. 
 # 2014-03-25 Add function to search a pattern in reads, and return different values as defined. 
-#
+# 2018-06-28 Split reads by their RUN information; 
+# 2018-10-28 Stat barcode tag; 
 
 BEGIN {
 	use File::Basename; 
@@ -79,6 +80,18 @@ perl $0 in.fastq
 
 -clean_fq     [Boolean] Sometimes the input fastq file has some line shift problem. Clean those records. 
 
+-sepByRG      ['opref'] Separate reads according the RUN information inferred from their read ID. 
+                'opref' is the output prefix, the resulting file will be 'opref_1.fq.gz', 'opref_2.fq.gz', ...; 
+  -rdIDfmt    ['M1']  Separate reads according the RUN information inferred from their read ID. 
+                'M1' format : EAS139:136:FC706VJ:2:2104:15343:197393 1:Y:18:ATCACG ; RUN infor is 'EAS139:136:FC706VJ:2:' ;
+                'M2' format : HWUSI-EAS100R:6:73:941:1973#0/1 ; RUN infor is 'HWUSI-EAS100R:6:' ;
+  -forceSep   [Boolean] Force to separate the input reads even though the output files will be bigger than 10. 
+  -onlyCheck  [Boolean] Only check the output number, instead of really output files. 
+
+
+-statBarc     [Number] Count barcode frequency in read ID line. 
+  -statBarcID [pref]
+
 #******* Instruction of this program *********#
 HELP
 	exit(1); 
@@ -101,6 +114,8 @@ GetOptions(\%opts,
 	"get_key!", 
 	"reorder:s", 
 	"clean_fq!", 
+	"sepByRG:s", "rdIDfmt:s", "forceSep!", "onlyCheck!", 
+	"statBarc:i", "statBarcID:s", 
 	"help!", 
 ); 
 
@@ -161,10 +176,86 @@ my %good_str = qw(
 &get_key() if ( $opts{'get_key'} ); 
 &reorder() if ( defined $opts{'reorder'} ); 
 &cleanFq() if ( $opts{'clean_fq'} ); 
+&sepByRG() if ( defined $opts{'sepByRG'} ); 
+&statBarcode() if ( defined $opts{'statBarc'} ); 
 
 #****************************************************************#
 #--------------Subprogram------------Start-----------------------#
 #****************************************************************#
+
+sub statBarcode {
+	$opts{'statBarc'} <= 0 and $opts{'statBarc'} = 10000; 
+	$opts{'statBarcID'} //= 'pref'; 
+	my %hh; 
+	for my $fh1 (@InFp) {
+		my $nn = 0; 
+		while (my $l1 = <$fh1>) {
+			<$fh1>; <$fh1>; <$fh1>; 
+			$nn++; 
+			$l1 =~ m!^\@\S+\s+[12]:[YN]:\d+:([ATGCN]+)\s*$! or &stopErr("[Err] Bad foramt of read ID line: $_\n"); # 1:N:0:TGCGTAAC
+			$hh{$1} ++; 
+			$nn >= $opts{'statBarc'} and last; 
+		}
+	}
+	my @bb = sort {$hh{$b} <=> $hh{$a} || $a cmp $b} keys %hh; 
+	if (scalar(@bb) == 1 or $hh{$bb[0]} > $hh{$bb[1]}*10) {
+		print STDOUT join("\t", $opts{'statBarcID'}, $bb[0], $hh{$bb[0]})."\n"; 
+	} else {
+		print STDOUT join("\t", $opts{'statBarcID'}, qw/NOT_SURE 0/)."\n"; 
+	}
+	for my $bc (@bb) {
+		&tsmsg("[Msg] $opts{'statBarcID'}\t$bc\t$hh{$bc}\n"); 
+	}
+	return; 
+}# statBarcode() 
+
+sub sepByRG {
+	$opts{'rdIDfmt'} //= 'M1'; 
+	$opts{'rdIDfmt'} =~ m!^(M1|M2)$!i or &stopErr("[Err] -rdIDfmt should be M1 or M1\n"); 
+	my $expr; 
+	$opts{'rdIDfmt'} =~ m!^M1$!i and $expr = qr/^\@((?:[^\s:]+:){4})/; 
+	$opts{'rdIDfmt'} =~ m!^M2$!i and $expr = qr/^\@((?:[^\s:]+:){2})/; 
+	my (%ofh, %ofRdNum, $ofNum, %ofIdx, %ofFname); 
+	for my $fh1 (@InFp) {
+		my ($l1, $l2, $l3, $l4, $k) = ('', '', '', ''); 
+		while ($l1 = <$fh1>) {
+			$l2 = <$fh1>; $l3 = <$fh1>; $l4 = <$fh1>; 
+			$l1 =~ m!$expr!o or &stopErr("[Err] Bad ID : [$l1]\n"); 
+			$k = $1; 
+			unless (defined $ofh{$k}) {
+				$ofNum ++; 
+				$ofIdx{$k} = $ofNum; 
+				$ofFname{$k} = "$opts{'sepByRG'}_${ofNum}.fq.gz"; 
+				unless ( $opts{'onlyCheck'} ) {
+					$ofh{$k} = &openFH($ofFname{$k}, '>'); 
+					if ( $ofNum > 10 ) {
+						$opts{'forceSep'} or &stopErr("[Err] The output file will be bigger than 10, please check -rdIDfmt or provide -forceSep \n"); 
+					}
+				}
+			}
+			$ofRdNum{$k} ++; 
+			$opts{'onlyCheck'} or print {$ofh{$k}} "$l1$l2$l3$l4"; 
+		}
+		close($fh1); 
+	}
+	if ($opts{'onlyCheck'}) {
+		my @fn_arr = sort { $a->[1] <=> $b->[1] } map { [$_, $ofIdx{$_}] } keys %ofIdx; 
+		print STDOUT join("\t", qw/sepPrefix sepFNum sepFIdx sepRunID sepFRdNum/)."\n"; 
+		for my $f1 (@fn_arr) {
+			my $runID = $f1->[0]; $runID =~ s!\:$!!; 
+			print STDOUT join("\t", $opts{'sepByRG'}, scalar(@fn_arr), $f1->[1], $runID, $ofRdNum{ $f1->[0] })."\n"; 
+		}
+	} else {
+		my @fn_arr = sort { $a->[1] <=> $b->[1] } map { [$_, $ofIdx{$_}, $ofFname{$_}] } keys %ofh; 
+		print STDOUT join("\t", qw/sepPrefix sepFNum sepFIdx sepRunID sepFRdNum sepFName/)."\n"; 
+		for my $f1 (@fn_arr) {
+			my $runID = $f1->[0]; $runID =~ s!\:$!!; 
+			print STDOUT join("\t", $opts{'sepByRG'}, scalar(@fn_arr), $f1->[1], $runID, $ofRdNum{$f1->[0]}, $f1->[2])."\n"; 
+			close($ofh{$f1->[0]}); 
+		}
+	}
+	return; 
+}# sepByRG() 
 
 sub cleanFq {
 	for my $fh1 (@InFp) {

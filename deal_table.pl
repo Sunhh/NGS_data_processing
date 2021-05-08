@@ -27,6 +27,7 @@
 # 2016-12-01 Add -cpuN for selected, time consuming tasks. 
 # 2016-12-02 'cut & paste' method for -colByTbl_cut is not fast enough. trying to use -cpuN
 # 2016-12-03 -colByTbl_cut is removed. 
+# 2020-08-23 Fix -col_sort for mixed character and number column; 
 
 use strict;
 use warnings; 
@@ -59,6 +60,7 @@ GetOptions(\%opts,
 	"chID_RefLis:s", "chID_Row!", "chID_OldColN:i", "chID_NewColN:i", "chID_skipH:i", "chID_RowColN:i", # Change Column/Row names according to reference. 
 	"spec_loci_1from2!", "spec_loci_f1:s", "spec_loci_f2:s", "spec_loci_minLen:i", 
 	"self_agp_from_keyLen!", # output of "deal_fasta.pl -attribute key:len"
+	"join_sameRow!", 
 	"cpuN:i", 
 	"log_ln:i", 
 	"help!");
@@ -138,6 +140,8 @@ command:perl $0 <STDIN|parameters>
 
   -symbol         Defining the symbol to divide data.Default is "\\t";
   -dR2dN          [Boolean] Change \\r to \\n in files. 
+
+  -join_sameRow   [Boolean] Join col-1 accoding to col-0; 
 
   -log_ln         [0]
 
@@ -259,6 +263,8 @@ if ( &goodVar($opts{col_sort}) ) {
 
 &kl2agp() if ( defined $opts{'self_agp_from_keyLen'} ); 
 
+&joinColByCol() if ( $opts{'join_sameRow'} ); 
+
 for (@InFp) {
 	close ($_);
 }
@@ -267,6 +273,24 @@ for (@InFp) {
 ######################################################################
 ## sub-routines for functions. 
 ######################################################################
+
+sub joinColByCol {
+	my %h; 
+	my @k_cols = (0); 
+	my @v_cols = (1); 
+	for my $fh (@InFp) {
+		while (&wantLineC($fh)) {
+			my @ta = &splitL($symbol, $_); 
+			my $kk = join("\t", @ta[@k_cols]); 
+			my $vv = join(";;", @ta[@v_cols]); 
+			push(@{$h{$kk}}, $vv); 
+		}
+	}
+	for my $kk (sort keys %h) {
+		print STDOUT join("\t", $kk, join(', ', @{$h{$kk}}))."\n"; 
+	}
+	return; 
+}# joinColByCol() 
 
 sub kl2agp {
 	for my $fh (@InFp) {
@@ -490,7 +514,7 @@ sub chRowColName {
 				} else {
 					$cur_n ++; 
 				}
-				if ( m!^\s*(#|$)! ) {
+				if ( m!^\s*(##|$)! ) {
 					print STDOUT "$_\n"; 
 					next; 
 				}
@@ -1128,17 +1152,33 @@ sub extreme{
 
 sub col_sort {
 	no strict; 
-	&_prep_cSort_ruls(); 
 	my @tempa = &splitL($symbol, $a); 
 	my @tempb = &splitL($symbol, $b); 
 	no warnings; 
 	foreach my $rul (@{$opts{'col_sort_ruls'}}) {
-		if ( my $result=( ($tempa[$rul->[0]]<=>$tempb[$rul->[0]]) || ($tempa[$rul->[0]] cmp $tempb[$rul->[0]]) ) * $rul->[1] ) {
-			return $result;
+		my $result = 0; 
+		if ( &is_digital($tempa[$rul->[0]]) and &is_digital($tempb[$rul->[0]]) ) {
+			$result = $tempa[$rul->[0]] <=> $tempb[$rul->[0]] || $tempa[$rul->[0]] cmp $tempb[$rul->[0]]; 
+		} elsif ( &is_digital($tempa[$rul->[0]]) ) {
+			$result = -1; 
+		} elsif ( &is_digital($tempb[$rul->[0]]) ) {
+			$result = 1; 
+		} else {
+			$result = $tempa[$rul->[0]] cmp $tempb[$rul->[0]]; 
 		}
+		$result != 0 and return( $result * $rul->[1] ); 
 	}
 	0;
 }#end col_sort
+
+sub is_digital {
+	if      ($_[0] =~ m!^[+-]?\d+(\.?\d*)?([eE][+-]?\d+)?$!) {
+		return 1; 
+	} elsif ($_[0] =~ m!^[+-]?(\.\d+)?([eE][+-]?\d+)?$!) {
+		return 1; 
+	}
+	return 0; 
+}# is_digital()
 
 sub _prep_cSort_ruls {
 	defined $opts{'col_sort_ruls'} and @{$opts{'col_sort_ruls'}} > 0 and return; 

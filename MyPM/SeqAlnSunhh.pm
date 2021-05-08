@@ -789,6 +789,7 @@ sub trim_cigar_str_bothEnd {
 =head1 parseCigar( $CigarString_inSam )
 
 Return      : (\%type2Number)
+
   {qw/Dlen Elen Hlen Ilen Mlen Nlen Plen RdLen Slen SpanRefLen Xlen/} => number; 
   Plen : Read 'Padded SAM' sectioin in manual. standing for '*'. (silent deletion from padded reference)
   Elen : '=', sequence match 
@@ -800,7 +801,7 @@ Return      : (\%type2Number)
   Slen : 'S', soft clipping (clipped sequences present in SEQ)
   Hlen : 'H', hard clipping (clipped sequences NOT present in SEQ)
   SpanRefLen : Mlen + Dlen + Nlen + Plen + Elen + Xlen. '-1' for non-aligned read. 
-  RdLen      : Mlen + Ilen + Slen + Elen + Xlen
+  RdLen      : Mlen + Ilen + Slen + Elen + Xlen + Hlen
   MatchRdLen : Mlen + Ilen + Elen + Xlen
   MatchRefLen: Mlen + Dlen + Plen + Elen + Xlen # Do not include intron region!!! 
 
@@ -847,52 +848,66 @@ sub parseCigar {
 	}
 	$cigarString eq '' or &stopErr("[Err] Left unknown Cigar string $cigarString\n");
 	$back{'SpanRefLen'} = $back{'Mlen'} + $back{'Dlen'} + $back{'Nlen'} + $back{'Plen'} + $back{'Elen'} + $back{'Xlen'};
-	$back{'RdLen'} = $back{'Mlen'} + $back{'Ilen'} + $back{'Slen'} + $back{'Elen'} + $back{'Xlen'};
+	$back{'RdLen'} = $back{'Mlen'} + $back{'Ilen'} + $back{'Slen'} + $back{'Elen'} + $back{'Xlen'} + $back{'Hlen'};
 	$back{'MatchRdLen'} = $back{'Mlen'} + $back{'Ilen'} + $back{'Elen'} + $back{'Xlen'}; 
 	$back{'MatchRefLen'} = $back{'Mlen'} + $back{'Dlen'} + $back{'Plen'} + $back{'Elen'} + $back{'Xlen'}; 
 	return \%back;
 
 }# sub parseCigar() 
 
-=head1 cnt_sam_mismatch (\@sam_line_array, 'set_rna|set_dna')
+=head1 cnt_sam_mismatch (\@sam_line_array)
 
 Return      : ($mismatch_number, \%cigar_hash)
 
 Description : 
+
+                   Count total mismatches in the read = Slen+Hlen+NM = Slen+Hlen+Ilen+Dlen+XM; 
+                   In hisat2 output sam, NM=Ilen+Dlen+XM, so the mismach number could also be Slen+Hlen+NM; 
+                   So the counts for set_rna and set_dna are the same with this method. 
+                   I don't use 'set_rna/set_dna' to distinguish them any more. 
    For 'set_rna' :(default). For hisat2. 'S|H|I|D' in cigar and 'XM:i:(\d+)' are added together. Here I don't use 'Xlen' because 'XM:i:(\d+)' covers it in hisat2. 
    For 'set_dna' : 'S|H' in cigar and 'NM:i:(\d+)' are added together. 'X|I|D' are all covered by 'NM:i:'. 
    This function is only used when I don't want to use line2hash() function. 
 
 =cut
 sub cnt_sam_mismatch {
-	my ($ar, $type) = @_; 
-	$type //= 'set_rna'; 
-	$type =~ m/^(set_rna|set_dna)$/ or &stopErr("[Err] Bad type [$type] for cnt_sam_mismatch()\n"); 
+	# Edit 20180720 : Remove input-$type; 
+	# my ($ar, $type) = @_; 
+	# $type //= 'set_rna'; 
+	# $type =~ m/^(set_rna|set_dna)$/ or &stopErr("[Err] Bad type [$type] for cnt_sam_mismatch()\n"); 
+	my ($ar) = @_; 
 	my %cigar_h = %{ &parseCigar( $ar->[5] ) }; 
 
 	my $cnt = 0; 
-	if ($type eq 'set_rna') {
-		for my $tk (qw/Slen Hlen Ilen Dlen/) {
-			defined $cigar_h{$tk} and $cnt += $cigar_h{$tk}; 
-		}
-		for my $tb (@{$ar}[ 11 .. $#$ar]) {
-			$tb =~ m/^XM:i:(\d+)$/ or next; 
-			$cnt += $1; 
-			last; 
-		}
-	} elsif ($type eq 'set_dna') {
-		for my $tk (qw/Slen Hlen/) {
-			defined $cigar_h{$tk} and $cnt += $cigar_h{$tk}; 
-		}
-		for my $tb (@{$ar}[ 11 .. $#$ar]) {
-			$tb =~ m/^NM:i:(\d+)$/ or next; 
-			$cnt += $1; 
-			last; 
-		}
-	} else {
-		&stopErr("[Err] why here.\n"); 
+	for my $tk (qw/Slen Hlen/) {
+		defined $cigar_h{$tk} and $cnt += $cigar_h{$tk}; 
 	}
-	
+	for my $tb (@{$ar}[ 11 .. $#$ar]) {
+		$tb =~ m/^NM:i:(\d+)$/ or next; 
+		$cnt += $1; 
+		last; 
+	}
+	# if ($type eq 'set_rna') {
+	# 	for my $tk (qw/Slen Hlen Ilen Dlen/) {
+	# 		defined $cigar_h{$tk} and $cnt += $cigar_h{$tk}; 
+	# 	}
+	# 	for my $tb (@{$ar}[ 11 .. $#$ar]) {
+	# 		$tb =~ m/^XM:i:(\d+)$/ or next; 
+	# 		$cnt += $1; 
+	# 		last; 
+	# 	}
+	# } elsif ($type eq 'set_dna') {
+	# 	for my $tk (qw/Slen Hlen/) {
+	# 		defined $cigar_h{$tk} and $cnt += $cigar_h{$tk}; 
+	# 	}
+	# 	for my $tb (@{$ar}[ 11 .. $#$ar]) {
+	# 		$tb =~ m/^NM:i:(\d+)$/ or next; 
+	# 		$cnt += $1; 
+	# 		last; 
+	# 	}
+	# } else {
+	# 	&stopErr("[Err] why here.\n"); 
+	# }
 	
 	return($cnt, \%cigar_h); 
 }# cnt_sam_mismatch ()

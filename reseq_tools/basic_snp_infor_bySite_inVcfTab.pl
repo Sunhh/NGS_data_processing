@@ -12,6 +12,7 @@ GetOptions(\%opts,
 	"help!", 
 	"cpuN:i",       # 1
 	"colN_start:i", # 3
+	"inclRefCol:s",  # undef
 	"noHeader!", 
 	"ret_line:s", 
 	"rules:s@", 
@@ -20,6 +21,7 @@ $opts{'cpuN'} //= 1;
 $opts{'cpuN'} = int($opts{'cpuN'}); 
 $opts{'cpuN'} < 1 and $opts{'cpuN'} = 1; 
 $opts{'colN_start'} //= 3; 
+defined $opts{'inclRefCol'} and $opts{'inclRefCol'} !~ m!^\-?\d+$! and die "Bad format of -inclRefCol [$opts{'inclRefCol'}]\n"; 
 
 my @out_type = qw/cnt_indvN cnt_lmiss cnt_alleleTypeN alleleTypeCnt cnt_homo cnt_hete MinorAF hete2N_cnt_lmiss hete2N_cnt_alleleTypeN hete2N_alleleTypeCnt hete2N_cnt_homo hete2N_MinorAF/; 
 my @hav_type = (@out_type, qw/MinorAN MajorAN hete2N_MinorAN hete2N_MajorAN/); 
@@ -35,6 +37,7 @@ perl $0 in.vcf.tab > in.vcf.tab.l_cnt
  -cpuN           [$opts{'cpuN'}] 
 
  -colN_start     [$opts{'colN_start'}]
+ -inclRefCol     [ColNumber] If given, the REF base column will also be counted as an individual. 
 
  -noHeader       [Boolean] If given, the 1st line will be modified too. 
 
@@ -133,7 +136,15 @@ for my $fh ( @InFp ) {
 				
 				my @th = @ta[0 .. ($opts{'colN_start'} - 1)]; 
 				my @tb = @ta[ $opts{'colN_start'} .. $#ta ]; 
+				if (defined $opts{'inclRefCol'}) {
+					my $t_rb = $ta[$opts{'inclRefCol'}]; 
+					$t_rb =~ s!^N$!.!i; # continuous Ns is different from missing; 
+					unshift(@tb, "$t_rb/$t_rb"); 
+				}
 				my %h = &cnt_type( \@tb ); 
+				for my $tk1 (@out_type) {
+					$h{$tk1} //= ''; 
+				}
 				print O join( "\t", @th, @h{@out_type} )."\n"; 
 				if ( defined $opts{'ret_line'} ) {
 					my $is_ok = 1; 
@@ -173,7 +184,15 @@ for my $fh ( @InFp ) {
 			my @ta = &splitL( "\t", $_ ); 
 			my @th = @ta[0 .. ($opts{'colN_start'} - 1)]; 
 			my @tb = @ta[ $opts{'colN_start'} .. $#ta ]; 
+			if (defined $opts{'inclRefCol'}) {
+				my $t_rb = $ta[$opts{'inclRefCol'}]; 
+				$t_rb =~ s!^N$!.!i; # continuous Ns is different from missing; 
+				unshift(@tb, "$t_rb/$t_rb"); 
+			}
 			my %h = &cnt_type( \@tb ); 
+			for my $tk1 (@out_type) {
+				$h{$tk1} //= ''; 
+			}
 			print STDOUT join( "\t", @th, @h{@out_type} )."\n"; 
 			if ( defined $opts{'ret_line'} ) {
 				my $is_ok = 1; 

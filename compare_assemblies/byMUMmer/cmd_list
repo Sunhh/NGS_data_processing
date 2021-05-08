@@ -1,0 +1,22 @@
+nucmer --prefix=pb_ngs --minmatch 50 --mincluster 500 --breaklen 10000 wm97pb_v0.scf.fa WM97v2.chr.fa
+show-coords --rcl pb_ngs.delta > pb_ngs.coords
+delta-filter -1 -i 95.0 -l 10000 -u 50 -o 10.0 pb_ngs.delta > pb_ngs.filter
+mummerplot pb_ngs.filter --png -s large --layout
+
+nucmer --prefix=pb_ngs --minmatch 50 --mincluster 500 --breaklen 10000 WM97pbV0.ctg.fa WM97_v1.scf.fa
+show-coords -rcl pb_ngs.delta > pb_ngs.coords
+# show-aligns ref_qry.delta refname qryname > ref_qry.aligns
+# show-tiling ref_qry.delta > ref_qry.tiling
+
+perl join_coords.pl pb_ngs.coords > pb_ngs.coords.jn
+perl -e 'while (<>) { chomp; my @ta=split(/\t/, $_); if ( $ta[12] <= 30e3 ) { $ta[9] >= 0.8*$ta[12] or next; } else { $ta[9] >= 10e3 or next; } print "$_\n"; }' pb_ngs.coords.jn > pb_ngs.coords.jn.slct
+perl join_coords.pl -inType joined pb_ngs.coords.jn.slct -maxOvl1 1000 -maxOvl2 1000 > pb_ngs.coords.jn.slctJn
+deal_table.pl pb_ngs.coords.jn.slctJn -col_reps 13,14 | deal_table.pl -col_sort 13,14,9 | deal_table.pl -reverse > pb_ngs.coords.jn.slctJn.toChk
+deal_table.pl pb_ngs.coords.jn.slctJn -col_uniq 13,14 > pb_ngs.coords.jn.slctJn.toUse
+
+# Manually check and get manual_alignments.txt file. 
+perl stat1_mergeCov.pl manual_alignments.txt > manual_alignments.txt.stat
+deal_fasta.pl -listSite '[nN]+' WM97_v1.scf.fa > ngs.nlis
+perl stat2_chk_gapCover.pl ngs.nlis manual_alignments.txt.stat > ngs.nlis.coverTag
+perl stat3_addGeneTag.pl WM97_v1.scf.annot_prot.gff3 ngs.nlis.coverTag > ngs.nlis.coverTag.geneTag
+

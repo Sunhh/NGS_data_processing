@@ -645,7 +645,7 @@ sub transfer_position {
 
 	my @old_ctgInf = $self->switch_position( 'qry2ref' => $parm{'from_ref2qry'} , 'qryID' => $parm{'fromLoc'}[0] , 'qryPos' => $parm{'fromLoc'}[1] , 'qryStr' => $parm{'fromLoc'}[2] ); 
 	if (@old_ctgInf == 1 and @{$old_ctgInf[0]} == 0) {
-		&tsmsg("[Wrn] No defined old location for [@{$parm{'fromLoc'}}] [@{$old_ctgInf[0]}]\n"); 
+		# &tsmsg("[Wrn] No defined old location for [@{$parm{'fromLoc'}}] [@{$old_ctgInf[0]}]\n"); 
 		$old_ctgInf[0] = $parm{'fromLoc'}; 
 	} elsif ( @old_ctgInf == 1 and defined $old_ctgInf[0][0] ) {
 		; 
@@ -654,7 +654,7 @@ sub transfer_position {
 	}
 	my @new_scfInf = $self->switch_position( 'qry2ref' => $parm{'to_qry2ref'} , 'qryID' => $old_ctgInf[0][0] , 'qryPos' => $old_ctgInf[0][1] , 'qryStr' => $old_ctgInf[0][2] );
 	if (@new_scfInf == 1 and @{$new_scfInf[0]} == 0) {
-		&tsmsg("[Wrn] No defined new location for [@{$old_ctgInf[0]}]\n"); 
+		# &tsmsg("[Wrn] No defined new location for [@{$old_ctgInf[0]}]\n"); 
 		$new_scfInf[0] = $old_ctgInf[0]; 
 	} elsif ( @new_scfInf == 1 ) {
 		; 
@@ -1890,6 +1890,8 @@ sub index_numbers {
 
 Return      : ( \@slct_indice_sorted )
 
+Annotation  : There is no replacement in the randomly selecting; 
+
 =cut
 sub randSlct_num {
 	my ($total_num, $n) = @_; 
@@ -1906,6 +1908,23 @@ sub randSlct_num {
 	@back = sort { $a <=> $b } @back; 
 	return(\@back); 
 }# sub randSlct_num () 
+
+=head1 create_randNum ( $num_digits )
+
+Return      : ( $a_number )
+
+=cut
+sub create_randNum {
+	my $num_digits = shift; 
+	my $nn = ""; 
+	for (1 .. $num_digits) {
+		my $r=int(rand(10));
+		$r == 10 and $r = 9;
+		$nn .= $r;
+	}
+	$nn =~ s!^0!1!;
+	return($nn);
+}# sub create_randNum() 
 
 
 =head1 _sideClose_pathInStruct( \@struct, \@path, 'both|left|right' )

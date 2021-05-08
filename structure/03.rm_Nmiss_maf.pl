@@ -86,16 +86,27 @@ while (<$in_fh>) {
 	my @ta = split(/\t/, $_); 
 	%al_cnt = (); $al_tot = 0; $miss_cnt = 0; 
 	for my $tb (@ta[$geno_col .. $#ta]) {
-		$tb eq '-' and $tb = 'N'; 
-		$tb eq 'N' and do { $miss_cnt ++; next; }; 
-		# $tb = ($opts{'SNP_tbl::dna_d2b($tb)'}) ? $st_obj->SingleChar( $tb, 'maxAlleleN'=>2, 'onlyATGC'=>0 ) : $st_obj->SingleChar( $tb, 'maxAlleleN'=>0, 'onlyATGC'=>0 ); 
-		$tb = $st_obj->SingleChar( $tb, 'maxAlleleN'=>2, 'onlyATGC'=>0 ) ; 
-		$tb eq 'N' and next LINE; # Contain abnormal genotype. 
-		@al_base = &SNP_tbl::dna_d2b($tb); 
-		$al_base[1] //= $al_base[0]; 
-		$al_cnt{ $al_base[0] } ++; 
-		$al_cnt{ $al_base[1] } ++; 
-		$al_tot += 2; 
+		if ($tb =~ m!^([^\s/]+)/([^\s/]+)$!) {
+			my ($a1, $a2) = ($1, $2); 
+			$a1 eq '.' and do { $miss_cnt ++; next; }; 
+			$a1 = uc($a1); $a2 = uc($a2); 
+			#$a1 =~ m!^[ATGC]+$! or next LINE; 
+			#$a2 =~ m!^[ATGC]+$! or next LINE; 
+			$al_cnt{$a1} ++; 
+			$al_cnt{$a2} ++; 
+			$al_tot += 2; 
+		} else {
+			$tb eq '-' and $tb = 'N'; 
+			$tb eq 'N' and do { $miss_cnt ++; next; }; 
+			# $tb = ($opts{'SNP_tbl::dna_d2b($tb)'}) ? $st_obj->SingleChar( $tb, 'maxAlleleN'=>2, 'onlyATGC'=>0 ) : $st_obj->SingleChar( $tb, 'maxAlleleN'=>0, 'onlyATGC'=>0 ); 
+			$tb = $st_obj->SingleChar( $tb, 'maxAlleleN'=>2, 'onlyATGC'=>0 ) ; 
+			$tb eq 'N' and next LINE; # Contain abnormal genotype. 
+			@al_base = &SNP_tbl::dna_d2b($tb); 
+			$al_base[1] //= $al_base[0]; 
+			$al_cnt{ $al_base[0] } ++; 
+			$al_cnt{ $al_base[1] } ++; 
+			$al_tot += 2; 
+		}
 	}
 	my @tk = sort { $al_cnt{$b} <=> $al_cnt{$a} || $a cmp $b } keys %al_cnt; 
 	# defined $tk[1] or next; 

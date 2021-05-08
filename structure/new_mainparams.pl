@@ -108,7 +108,8 @@ for(my $ii=$minK; $ii<=$K; $ii++)
 	open OE,'>',"$outextrparams" or die "$!\n"; 
 	while (<CE>) {
 		if (m/RRRRRRR/) {
-			$randSeed and $seedNum = int(rand(1000000));
+			# $randSeed and $seedNum = int(rand(1000000));
+			$randSeed and $seedNum = &rand_9();
 			s/RRRRRRR/$seedNum/;
 		}
 		print OE $_; 
@@ -118,5 +119,17 @@ for(my $ii=$minK; $ii<=$K; $ii++)
 
 	print "\t\tstructure_K$aa\thave\tdone\n";
 }
+
+sub rand_9 {
+	# It seems the structure won't accept big number like 3e10; So I want to use 1e9 to 9e9 only; 
+	my $nn = ""; 
+	for (1 .. 9) {
+		my $r=int(rand(10));
+		$r == 10 and $r = 9;
+		$nn .= $r;
+	}
+	$nn =~ s!^0!1!;
+	return($nn);
+}# rand_9() 
 
 ######## swimming in the sky and flying in the sea#####

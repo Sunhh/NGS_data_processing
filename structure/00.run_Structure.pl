@@ -1,7 +1,9 @@
 #!/usr/bin/perl
+# 2019-03-08 Don't translate geno_tbl to struct. 
 use strict; 
 use warnings; 
 use LogInforSunhh; 
+use fileSunhh; 
 use Getopt::Long; 
 my %opts; 
 GetOptions(\%opts, 
@@ -11,6 +13,7 @@ GetOptions(\%opts,
 	"minR:i", # minimum K : 2
 	"maxR:i", # maximum K : 7
 	"geno_tbl:s", # No header line. 
+	"isStructTbl!", 
 	"OutDir:s", # pwd
 	"BinDir:s", 
 	"maxK:i", # 20 
@@ -33,9 +36,10 @@ $opts{'randSeed'} and $seed_tag = '-randSeed';
 
 my $individual = $opts{'indv_txt'}; 
 my $snp_number = $opts{'snp_number'}; 
-my $UsePosition = $opts{'geno_tbl'}; 
+my $UsePosition = &fileSunhh::_abs_path($opts{'geno_tbl'}); 
+my $UsePosition1 = &fileSunhh::_basename($UsePosition); 
 
-my $OutDir = $opts{'OutDir'};
+my $OutDir = &fileSunhh::_abs_path_4link($opts{'OutDir'});
 
 my $BinDir = $opts{'BinDir'}; 
 
@@ -67,15 +71,21 @@ for (my $i=$opts{'minR'};$i<=$opts{'maxR'};$i++){
 	mkdir($out_Dir) unless (-d $out_Dir); 
 	chdir($out_Dir); 
 	if ($snp_number > 0) {
-		&exeCmd_1cmd("perl $BinDir/rand_small_position.pl $OutDir/$UsePosition  $out_Dir/$UsePosition  $snp_number");
+		&exeCmd_1cmd("perl $BinDir/rand_small_position.pl $UsePosition  $out_Dir/$UsePosition1  $snp_number");
 	} else {
-		&exeCmd_1cmd("cp -p $OutDir/$UsePosition $out_Dir/$UsePosition"); 
+		&exeCmd_1cmd("cp -p $UsePosition $out_Dir/$UsePosition1"); 
 	}
-	my $location_num = `wc -l $out_Dir/$UsePosition  | cut  -f 1 -d " " | tr -d '\n' `;
+	# my $location_num = `wc -l $out_Dir/$UsePosition1  | cut  -f 1 -d " " | tr -d '\n' `;
+	my $c1 = "head -1 $out_Dir/$UsePosition1 | sed -e 's!\\s\\+!\\n!g' | tail -n +2 | wc -l | cut -f 1 -d \" \" | tr -d '\\n'"; 
+	my $location_num = `$c1`; 
 	my $sample_num   = `wc -l $curr_dir/$individual | cut  -f 1 -d " " | tr -d '\n'`; 
 	
 
-	&exeCmd_1cmd("perl $BinDir/get_structure_input.pl $out_Dir/$UsePosition $curr_dir/$individual $out_Dir/Input.file");
+	if ($opts{'isStructTbl'}) {
+		&exeCmd_1cmd("cp -p $out_Dir/$UsePosition1 $out_Dir/Input.file"); 
+	} else {
+		&exeCmd_1cmd("perl $BinDir/get_structure_input.pl $out_Dir/$UsePosition1 $curr_dir/$individual $out_Dir/Input.file");
+	}
 	&exeCmd_1cmd("perl $BinDir/new_mainparams.pl $seed_tag -minK $opts{'minK'} -K $opts{'maxK'} -output $out_Dir -input $BinDir  -loca $location_num  -sample $sample_num");
 
 	# open O,'>', "cmd_list_runStruct" or die; 

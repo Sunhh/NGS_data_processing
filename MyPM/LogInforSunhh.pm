@@ -1,6 +1,10 @@
 package LogInforSunhh; 
 # Change output of exeCmd; 
 
+BEGIN {
+	use lib "/Data/Sunhh/src/general/conda/pkgs/perl-parallel-forkmanager-1.17-0/lib/perl5/site_perl/5.22.0/";
+}
+
 use strict; 
 use warnings; 
 use IPC::Open3; 
@@ -188,6 +192,7 @@ sub change_procN {
 	-e $nprocF or return $prev_maxP; 
 	open F,'<',"$nprocF" or &stopErr("[Err] Failed to open [$nprocF].\n"); 
 	my $new_maxP = <F>; 
+	( defined $new_maxP and $new_maxP ne '' ) or do { &tsmsg("[Wrn] Value is bad in file [$nprocF]\n"); return $prev_maxP; }; 
 	chomp($new_maxP); 
 	$new_maxP = (split(/\s+/, $new_maxP))[0]; 
 	$new_maxP = int($new_maxP); 
@@ -209,6 +214,14 @@ sub get_pm {
 	return( new Parallel::ForkManager($_[0]) ); 
 }# get_pm() 
 
+=head1 get_pid ()
+ Reference: http://perldoc.perl.org/perlvar.html
+ Return the PID number of current process; 
+=cut
+sub get_pid {
+	# use English; 
+	return($$); 
+}#get_pid() 
 
 
 1; 

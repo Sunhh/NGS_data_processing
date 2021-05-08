@@ -61,7 +61,20 @@ for my $la (@agp_arr) {
 	$new_seq{$newID}{'prevP'} //= 0; 
 	$new_seq{$newID}{'seq'} //= ''; 
 	my $add_seq = ''; 
-	$la->[1] == $new_seq{$newID}{'prevP'} + 1 or &stopErr("[Err] The position coordinates are not continuous: scfID=$newID prevP=$new_seq{$newID}{'prevP'} currP=$la->[1]\n"); 
+	if ($la->[1] == $new_seq{$newID}{'prevP'} + 1) {
+		; 
+	} elsif ( $la->[4] =~ m/^W$/i ) {
+		&tsmsg("[Wrn] Filling N gaps for $newID\n"); 
+		unless ( $la->[1] > $new_seq{$newID}{'prevP'} + 1 ) {
+			die "@$la\n"; 
+		}
+		$add_seq = $opts{'Nchar'} x ( $la->[1] - $new_seq{$newID}{'prevP'} - 1 ); 
+		$new_seq{$newID}{'seq'} .= $add_seq;
+		$new_seq{$newID}{'prevP'} = $la->[1] - 1; 
+		$add_seq = ''; 
+	} else {
+		&stopErr("[Err] The position coordinates are not continuous: scfID=$newID prevP=$new_seq{$newID}{'prevP'} currP=$la->[1]\n");
+	}
 	if ( $la->[4] =~ m/^N$/i ) {
 		$add_seq = $opts{'Nchar'} x $la->[5]; 
 		$new_seq{$newID}{'seq'} .= $add_seq; 

@@ -1,0 +1,15 @@
+fimo --o fimoOut_allTrans  --bfile --motif--  yyt_motif.meme  Cmel351.annot.chr.gff3.jnLoc.YYTpromoter_loc.fa
+perl parse_fimoTSV.pl fimoOut_allTrans/fimo.tsv > fimoOut_allTrans/fimo.tsv.info
+perl setup_keySite.pl fimoOut_allTrans/fimo.tsv.info > fimoOut_allTrans/fimo.tsv.info.keysite
+
+perl pipe_gatk_inFqList.pl \
+ -cpuN          15 \
+ -conf_file     BY9Hyyt_gatk.conf \
+ -in_pref_list  pref_BY9H \
+ -prj_ID        BY9Hyyt \
+ -wrk_dir       proc_BY9Hyyt \
+ -doStep        1,2,3,4,5,6,7,8,9 \
+ -plCatVar -intervalLen 1000000 \
+ -CallByScf
+
+

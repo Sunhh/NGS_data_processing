@@ -53,6 +53,7 @@ while (<$inLocFh>) {
 		next; 
 	}
 	my ($chrID, $chrS, $chrE) = @ta; 
+	$chrE //= $chrS; 
 	push(@{$chrLoc{$chrID}}, [$chrS, $chrE]); 
 	my $loc_ID = "$chrID:$chrS-$chrE"; 
 	if ($opts{'tagLoc_colN'} != -9999) {

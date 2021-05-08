@@ -38,6 +38,8 @@ R    -
 r    -
 U    ?
 u    ?
++    +
+-    -
 ); 
 
 my @infor_scf2LG; 

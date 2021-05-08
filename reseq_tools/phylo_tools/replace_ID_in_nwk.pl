@@ -86,7 +86,7 @@ sub rmStatNum {
 }
 sub fmtBranch {
 	if ( $opts{'branch_round'} >= 0 ) {
-		$_[0] =~ s/:(\d+\.\d+)/":" . sprintf("%.0f", $1*$opts{'branch_scale'})/eg
+		$_[0] =~ s/:(\d+\.\d+)/":" . sprintf("%.0f", $1*$opts{'branch_scale'})/eg; 
 		#my $prev = $_[0]; 
 		# while ($_[0] =~ s/:(\d+\.\d+)/":" . int($1*$opts{'branch_scale'})/eg) {
 		#while ($_[0] =~ s/:(\d+\.\d+)/":" . sprintf("%.0f", $1*$opts{'branch_scale'})/eg) {
@@ -94,7 +94,7 @@ sub fmtBranch {
 		#	$prev = $_[0]; 
 		#}
 	} else {
-		$_[0] =~ s/:(\d+\.\d+)/":" . ($1*$opts{'branch_scale'})/eg
+		$_[0] =~ s/:(\d+\.\d+)/":" . ($1*$opts{'branch_scale'})/eg; 
 		#my $prev = $_[0]; 
 		#while ($_[0] =~ s/:(\d+\.\d+)/":" . ($1*$opts{'branch_scale'})/eg) {
 		#	$prev eq $_[0] and last; 

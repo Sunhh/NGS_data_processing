@@ -10,15 +10,23 @@ function tsmsg {
 }
 
 pl_goodWrn="$HOME/tools/github/NGS_data_processing/annot_tools/snap_good_wrn_by_valid.pl"
-dir_snap='/data/Sunhh/src/Annot/maker/maker/exe/snap'
+dir_snap='/Data/Sunhh/src/annotation/maker/maker/exe/snap/'
 export PATH="$PATH:$dir_snap"
 
 ovl_len=2000
+# ln -s ../../../05.run_maker/result/r4/02.fullIntron/r4_finalUse.gff3 ./
 
 in_gff=r5_maker_fullIntron_Island2kb_wiFa.gff3
+# woFa_gff=r4_finalUse.gff3
+# genom_fa=/Data/Sunhh/seldom/forWushan/rose_genome/gene_prediction/db/samantha_ctg.fasta
+# in_gff="${woFa_gff}.wiFa.gff"
 org_name=P1Genom
 useTag="r5FullIntronIsland2kb"
-ohmm_name=P1Genom.${useTag}.hmm
+ohmm_name=${org_name}.${useTag}.hmm
+
+cat $woFa_gff > $in_gff
+echo "##FASTA" >> $in_gff
+cat $genom_fa >> $in_gff
 
 exe_cmd "maker2zff -n $in_gff"
 # exe_cmd "maker2zff -x 0 -o 1 -c 1 -l 30 $in_gff"

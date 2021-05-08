@@ -36,8 +36,24 @@ for (keys %seq) { $seq{$_}{'seq'} =~ s!\s!!g; $seq{$_}{'len'} = length($seq{$_}{
 
 my $o_header = <<OH; 
 ##fileformat=VCFv4.1
-###ALT=<ID=NON_REF,Description="Represents any possible alternative allele at this location">
+##ALT=<ID=NON_REF,Description="Represents any possible alternative allele at this location">
+##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Allelic depths for the ref and alt alleles in the order listed">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype quality">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=PGT,Number=1,Type=String,Description="Physical phasing haplotype information, describing how the alternate alleles are phased in relation to one another">
+##FORMAT=<ID=PID,Number=1,Type=String,Description="Physical phasing ID information, where each unique ID within a given sample (but not across samples) connects records within a phasing group">
+##FORMAT=<ID=PL,Number=G,Type=Integer,Description="The phred-scaled genotype likelihoods rounded to the closest integer">
 OH
+for my $k1 (sort keys %seq) {
+	my $ltxt = "##contig=<ID=$k1,length=$seq{$k1}{'len'}>\n"; 
+	$o_header .= $ltxt; 
+}
+{
+	my $absP = &fileSunhh::_abs_path($opts{'in_tab'}); 
+	$o_header .= "##reference=file://$absP\n"; 
+}
+
 
 print STDOUT "$o_header"; 
 my $fh = &openFH( $opts{'in_tab'}, '<' ); 
@@ -96,6 +112,7 @@ sub get_line {
 	my $refBase = uc( substr( $seq{$ta[0]}{'seq'}, $ta[1]-1, 1 ) ); 
 	my %alleles; 
 	for my $tb (@ta[3 .. $#ta]) {
+		$tb eq 'N' and $tb = './.'; # 20201111
 		my @idv_al = &SNP_tbl::tab_allele($tb); 
 		$idv_al[0][0] eq '.' and next; 
 		for my $tc (@idv_al) {
@@ -113,6 +130,7 @@ sub get_line {
 	}
 	my $txt_ALT = ( scalar(@arr_ALT) > 0 ) ? join(',', @arr_ALT) : '.' ; 
 	for my $tb ( @ta[3 .. $#ta] ) {
+		$tb eq "N" and $tb = './.'; # 20201111
 		my @idv_al = &SNP_tbl::tab_allele($tb); 
 		$idv_al[0][0] eq '.' and do { $tb = './.'; next; }; 
 		$#idv_al == 0 and push(@idv_al, $idv_al[0]); 

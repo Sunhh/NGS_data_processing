@@ -2,14 +2,37 @@
 use strict; 
 use warnings; 
 use LogInforSunhh; 
+use Getopt::Long; 
+my %opts; 
+GetOptions(\%opts, 
+	"pl_rm2Gff:s", 
+	"exe_gff3_merge:s", 
+	"help!", 
+); 
 
-!@ARGV and &stopErr("[Err] perl $0 inFa.rmMsk.out inFa.rmMsk.forMaker.gff\n"); 
+$opts{'pl_rm2Gff'} //= '/Data/Sunhh/src/annotation/repeatmasker/RepeatMasker/util/rmOutToGFF3.pl'; # NERCV server; 
+$opts{'exe_gff3_merge'} //= 'gff3_merge'; 
 
-my $pl_rm2Gff="/share/app/Annotation/repeatmasker/RepeatMasker/util/rmOutToGFF3.pl"; 
-my $gff3_merge="gff3_merge"; 
+my $htxt = <<HH; 
+
+perl $0 inFa.rmMsk.out inFa.rmMsk.forMaker.gff > aaaa
+
+ -pl_rm2Gff       [Path to rmOutToGFF3.pl] $opts{'pl_rm2Gff'}
+ -exe_gff3_merge  [gff3_merge] From maker. 
+
+HH
+
+!@ARGV and &LogInforSunhh::usage($htxt); 
+$opts{'help'} and &LogInforSunhh::usage($htxt); 
+
 
 my $inRmOut = shift; 
 my $outGff = shift; 
+
+
+
+my $pl_rm2Gff = $opts{'pl_rm2Gff'}; 
+my $gff3_merge = $opts{'exe_gff3_merge'}; 
 
 &exeCmd("perl $pl_rm2Gff $inRmOut > $inRmOut.gff.raw"); 
 open F,'<',"$inRmOut.gff.raw" or &stopErr("[Err] Failed to open file [$inRmOut.gff.raw]. $!\n"); 

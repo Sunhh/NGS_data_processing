@@ -9,9 +9,15 @@ GetOptions(\%opts,
 	"help!", 
 	"out_cumLen:s", 
 	"delt_len:i", # 0 
+	"joinedID:s", 
+	"col_id:i", # 0
+	"col_pos:i@", # 1,2
 ); 
 
 $opts{'delt_len'} //= 0; 
+$opts{'joinedID'} //= 'joinedChr'; 
+$opts{'col_id'}   //= 0; 
+$opts{'col_pos'}  //= [1,2]; 
 
 my $help_txt = <<HH; 
 ################################################################################
@@ -21,6 +27,10 @@ my $help_txt = <<HH;
 #
 # -delt_len       [0] Distance between two adjacent chromosomes. 
 # -out_cumLen     [filename] Output a chrLen_cum file for plotting. 
+# -joinedID       [$opts{'joinedID'}] 
+# 
+# -col_id         [$opts{'col_id'}]
+# -col_pos        [-col_pos 1 -col_pos 2]
 ################################################################################
 HH
 
@@ -32,24 +42,29 @@ defined $opts{'out_cumLen'} and $glob{'fh_oCumLen'} = &openFH( $opts{'out_cumLen
 
 my $fn_chrCL = shift; 
 my $fn_wind  = shift; 
-my $new_id = "joinedChr"; 
+my $new_id = $opts{'joinedID'};  
 
 my %chrCumS = %{ &load_chrCL( $fn_chrCL ) }; 
 
 my $fh = &openFH( $fn_wind, '<' ); 
 while (&wantLineC($fh)) {
 	my @ta = &splitL("\t", $_); 
-	if ( $ta[0] =~ m/^chrID$/i ) {
+	if ( $ta[$opts{'col_id'}] =~ m/^chrID$/i ) {
 		print STDOUT join("\t", @ta)."\n"; 
 		next; 
 	}
-	my $rawID = $ta[0]; 
+	my $rawID = $ta[$opts{'col_id'}]; 
 	$rawID =~ m!^(\d+)$! and $rawID = "chr$rawID"; 
-	defined $chrCumS{$rawID} or die "$_\n"; 
-	for my $tb (@ta[1,2]) {
+	if ( ! defined $chrCumS{$rawID} ) {
+		&tsmsg("[Wrn] Skip line : $_\n"); 
+		print STDOUT join("\t", @ta)."\n"; 
+		next; 
+	}
+	for my $tb (@ta[@{$opts{'col_pos'}}]) {
+		$tb =~ m!^NA$!i and next; 
 		$tb = $tb + $chrCumS{$rawID}[0]; 
 	}
-	$ta[0] = $new_id; 
+	$ta[$opts{'col_id'}] = $new_id; 
 	print STDOUT join("\t", @ta)."\n"; 
 }
 close($fh); 

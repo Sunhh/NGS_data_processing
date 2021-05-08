@@ -45,6 +45,8 @@
 ### 2016-05-02 Add '-scf2ctg out_prefix' to separate scaffolds into contigs. 
 ### 2016-08-30 Add '-jn_byID' to join sequences from different files with the same IDs. 
 ### 2016-08-30 Replace AA seq with corresponding Nucl sequences. 
+### 2019-01-16 Change the definition of -frame; It means the first base's frame (+|-(1/2/3)) before, but now it means the first base position of the first frame, which is same to blastx and transeq. 
+### 2019-08-09 Add -chop_agp to mask -chop_info 
 
 use strict;
 use warnings; 
@@ -159,6 +161,7 @@ Usage: $0  <fasta_file | STDIN>
   -chop_min           [0] Minimum length of pieces. 
   -chop_noPos         [Boolean] Default add raw position of pieces. 
   -chop_info          [Boolean] If given, the output is a table instead of a sequence file. 
+  -chop_agp           [Boolean] If given, the output is an AGP file. This overwrites -chop_info option. 
 
   -joinR12            [Boolean] Input files as paired, and join R1/R2 reads in a same stream. 
 
@@ -176,7 +179,10 @@ Usage: $0  <fasta_file | STDIN>
 
   -cds2aa             [Boolean]
     -codon_table        [1] Could be 1,2,3,4,5,6,7,8,9,10
-    -frame              [1] Could be 1,2,3 (plus strand), -1,-2,-3 (reverse strand)
+    -infer_frame        [Boolean] Infer frame from the definition line by '[frame=\\d+]' format information. This will overwrite -frame option; 
+    -frame              [1] Could be 1,2,3 (plus strand), -1,-2,-3 (reverse strand). Same meaning of blastx and transeq; 
+
+  -loc_4d             [Boolean]
 
 #******* Instruction of this program *********#
 HELP
@@ -204,7 +210,7 @@ GetOptions(\%opts,"help!",
 	"fa2fq!", "fa2fqQChar:s", "fq2fa!", 
 	"replaceID!", "replaceIDlist:s", "replaceIDcol:s", "replaceIDadd!", 
 	"reorderByList:s", 
-	"chop_seq!", "chop_len:i", "chop_step:i", "chop_min:i", "chop_noPos!", "chop_info!", 
+	"chop_seq!", "chop_len:i", "chop_step:i", "chop_min:i", "chop_noPos!", "chop_info!", "chop_agp!", 
 	"joinR12!", 
 	"rna2dna!", 
 	"rmTailXN!", 
@@ -214,7 +220,8 @@ GetOptions(\%opts,"help!",
 	"jn_byID!", 
 	"aa2cds:s", # filename_cds.fa
 	"cds2aa!", 
-	  "codon_table:i", "frame:i", 
+	  "codon_table:i", "frame:i", "infer_frame!", 
+	"loc_4d!", 
 );
 &usage if ($opts{"help"}); 
 !@ARGV and -t and &usage; 
@@ -291,6 +298,7 @@ $opts{'frame'} //= 1;
 &jn_byID() if ( $opts{'jn_byID'} ); 
 &aa2cds() if ( defined $opts{'aa2cds'} ); 
 &cds2aa() if ( $opts{'cds2aa'} ); 
+&cds2aa() if ( $opts{'loc_4d'} ); 
 
 for (@InFp) {
 	close ($_); 
@@ -308,38 +316,69 @@ for (@InFp) {
 
 sub cds2aa {
 	my $frame = $opts{'frame'}; 
+	my %bb_4d; 
+	if ( $opts{'loc_4d'} ) {
+		my %t = %{ &fastaSunhh::get_4d_codon($opts{'codon_table'}) }; 
+		%bb_4d = map { uc(substr($_, 0, 2)) => $t{$_}[0] } keys %t; 
+		print STDOUT join("\t", qw/geneID cds_posi codon aa_posi aa/)."\n"; 
+	}
 	for (my $i=0; $i<@InFp; $i++) {
 		my $fh1 = $InFp[$i];
 		RD:
 		while ( !eof($fh1) ) {
 			for ( my ($relHR1, $get1) = &get_fasta_seq($fh1); defined $relHR1; ($relHR1, $get1) = &get_fasta_seq($fh1) ) {
 				$relHR1->{'seq'} =~ s/[\s]//g; # Keep '-' for position. 
-				my $t_seq = $relHR1->{'seq'}; 
-				if ( $frame > 0 and $frame <= 3 ) {
-					$t_seq = substr($t_seq, $frame - 1); 
-				} elsif ( $frame < 0 and $frame >= -3 ) {
-					&rcSeq(\$t_seq, 'rc'); 
-					$t_seq = substr($t_seq,-$frame - 1); 
-				} else {
-					&stopErr("[Err] Bad frame number [$frame]\n"); 
+				$relHR1->{'len'} = length($relHR1->{'seq'}); 
+				my $t_seq = uc($relHR1->{'seq'}); 
+				$t_seq =~ tr!X!N!; 
+				my $t_frame = $frame; 
+				if ( $opts{'infer_frame'} and $relHR1->{'head'} =~ m!\[frame=([+-]?\d+)\]!i ) {
+					$t_frame = $1; 
+					$t_frame =~ m!^[+-]?(1|2|3)$! or do { &tsmsg("[Wrn] Skip bad frame information [$t_frame]\n"); $t_frame = $frame; }; 
 				}
-				my $t_len = length($t_seq); 
-				if ( $t_len > 0 ) {
+				if ($t_frame > 0) {
+					$t_frame > 1 and $t_seq = substr($t_seq, $t_frame-1); 
+				} elsif ($t_frame < 0) {
+					&rcSeq(\$t_seq, 'rc'); 
+					$t_frame < -1 and $t_seq = substr($t_seq, -$t_frame-1); 
+				} else {
+					&stopErr("[Err] Bad frame number [$t_frame]\n"); 
+				}
+
+				my $t_len_0 = length($t_seq); 
+				if ( $t_len_0 > 0 ) {
 					my $aa_seq = ''; 
-					my $t_res = $t_len % 3; 
+					my $t_len = $t_len_0; 
+					my $t_res = $t_len_0 % 3; 
 					$t_res > 0 and $t_seq .= ( 'N' x (3-$t_res) ); 
 					$t_len = length($t_seq); 
-					for (my $j=0; $j<$t_len; $j+=3) {
-						my $bbb = substr($t_seq, $j, 3); 
-						my ($aa)= &fastaSunhh::bbb2aa($bbb); 
-						$aa_seq .= $aa; 
+					if ( $opts{'loc_4d'} ) {
+						my $aa_idx = 0; 
+						for (my $j=0; $j<$t_len; $j+=3) {
+							$j+3 > $t_len_0 and last; 
+							$aa_idx ++; 
+							my $bb = substr($t_seq, $j, 2); 
+							defined $bb_4d{$bb} or next; 
+							if ($t_frame > 0) {
+								print STDOUT join("\t", $relHR1->{'key'}, ($t_frame-1)+$j+3, substr($t_seq, $j, 3), $aa_idx, $bb_4d{$bb})."\n"; 
+							} else {
+								# $t_frame < 0
+								print STDOUT join("\t", $relHR1->{'key'}, $t_len_0-($j+3)-1, substr($t_seq, $j, 3), $aa_idx, $bb_4d{$bb})."\n"; 
+							}
+						}
+					} else {
+						for (my $j=0; $j<$t_len; $j+=3) {
+							my $bbb = substr($t_seq, $j, 3); 
+							my ($aa)= &fastaSunhh::bbb2aa($bbb, $opts{'codon_table'}); 
+							$aa_seq .= $aa; 
+						}
+						my $dispR = &Disp_seq(\$aa_seq, $opts{'frag_width'}); 
+						print STDOUT ">$relHR1->{'head'} [frame=$t_frame]\n$$dispR"; 
+						undef($dispR); 
 					}
-					my $dispR = &Disp_seq(\$aa_seq, $opts{'frag_width'}); 
-					print STDOUT ">$relHR1->{'head'} [frame=$frame]\n$$dispR"; 
-					undef($dispR); 
 				} else {
 					&tsmsg("[Wrn] sequence [$relHR1->{'key'}] has zero length.\n"); 
-					print STDOUT ">$relHR1->{'head'} [frame=$frame]\n\n"; 
+					print STDOUT ">$relHR1->{'head'} [frame=$t_frame]\n\n"; 
 				}
 			}
                 }#End while() RD:
@@ -594,7 +633,9 @@ sub chop_seq {
 	$opts{'chop_step'} //= $opts{'chop_len'}; 
 	$opts{'chop_min'}  //= 0; 
 
-	if ($opts{'chop_info'}) {
+	if ( $opts{'chop_agp'} ) {
+		; 
+	} elsif ($opts{'chop_info'}) {
 		print STDOUT join("\t", qw/key WI WS WE GC AG Wkey len N wN/)."\n"; 
 	}
 	
@@ -604,7 +645,9 @@ sub chop_seq {
 			my $seqLen = length( $relHR->{'seq'} ); 
 			my $tkey = $relHR->{'key'} ; 
 			my %cnt; 
-			if ( $opts{'chop_info'} ) {
+			if ( $opts{'chop_agp'} ) {
+				; 
+			} elsif ( $opts{'chop_info'} ) {
 				$cnt{'N'} = ( $relHR->{'seq'} =~ tr/nN/nN/ ); 
 			}
 			for (my $i=1; ($i-1) * $opts{'chop_step'} + 1 < $seqLen ; $i++) {
@@ -615,7 +658,9 @@ sub chop_seq {
 				my $sub_seq = substr( $relHR->{'seq'}, $s-1, $e-$s+1 ); 
 				my $tag = " [${s}-${e}]"; 
 				$opts{'chop_noPos'} and $tag = ''; 
-				if ( $opts{'chop_info'} ) {
+				if ( $opts{'chop_agp'} ) {
+					print STDOUT join("\t", $tkey, $s, $e, $i, "W", "${tkey}_$i", 1, $e-$s+1, "+")."\n"; 
+				} elsif ( $opts{'chop_info'} ) {
 					my $c_a = ( $sub_seq =~ tr/aA/aA/ ); 
 					my $c_t = ( $sub_seq =~ tr/tT/tT/ ); 
 					my $c_g = ( $sub_seq =~ tr/gG/gG/ ); 
@@ -1199,7 +1244,7 @@ sub N50 {
 			if ( $genomSize > 0 ) {
 				if ( $Need_ratios{$tk1} != -1 and $sum >= $genomSize * $Need_ratios{$tk1} ) {
 					my $ti = $i+1; 
-					print STDOUT "GN$tn (ATGC) (Index) : $tlen ($tlen_atgc) ($ti)\n"; 
+					print STDOUT "NG$tn (ATGC) (Index) : $tlen ($tlen_atgc) ($ti)\n"; 
 					$Need_ratios{$tk1} = -1; 
 				}
 			}else {

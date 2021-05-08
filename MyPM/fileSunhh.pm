@@ -1,15 +1,16 @@
 package fileSunhh; 
 # 2014-11-22
 
+BEGIN {
+	use lib "/usr/local/share/perl5/"; 
+}
+
 use strict; 
 use warnings; 
 use File::Which; 
 # use IO::Zlib; # This package doesn't support bzip2 files. And adding IO::Compress:Bzip2 and IO::Uncompress::Bunzip2 is too many work currently. Not very useful since I am using linux usually. 
-use File::Basename; 
 use File::Copy::Recursive; 
 use File::Copy; 
-use File::Spec::Functions qw( catfile path ); 
-use File::Path; 
 use LogInforSunhh; 
 use mathSunhh; 
 use Cwd; 
@@ -653,6 +654,7 @@ Mainly copy from http://stackoverflow.com/questions/8243189/check-if-file-exists
 Return     : ($first_found_path, [$found_path_1, $found_path_2, ...])
 =cut
 sub _chkExist ($) {
+	use File::Spec::Functions; 
 	my $inFile = shift; 
 	( defined $inFile and $inFile ne '' ) or return (undef(), []); 
 	my @path = File::Spec::Functions::path; 
@@ -686,6 +688,17 @@ Invoke Cwd::abs_path()
 sub _abs_path {
 	return Cwd::abs_path(@_); 
 }# sub _abs_path() 
+=head1 _abs_path_4link()
+
+Use absolute path of directory, but input filename.
+This is more friendly for symbol link of filenames.
+
+=cut
+sub _abs_path_4link{
+	my $dir_path = &_abs_path( &fileSunhh::_dirname($_[0]) ); 
+	my $fname    = &_basename( $_[0] );
+	return( &_catfile($dir_path, $fname) );
+}#_abs_path_4link() 
 =head1 _copy()
 Invoke File::Copy::copy()
 =cut
@@ -702,17 +715,54 @@ sub _move {
 =head1 _rmtree()
 =cut
 sub _rmtree {
+	use File::Path; 
 	return File::Path::rmtree(@_); 
 }#sub _rmtree()
 
 =head1 _basename()
 =cut
 sub _basename {
+	use File::Basename; 
 	return File::Basename::basename(@_); 
 }
 =head1 _dirname()
 =cut
 sub _dirname {
+	use File::Basename; 
 	return File::Basename::dirname(@_); 
 }
+=head1 _catfile()
+=cut
+sub _catfile{
+	use File::Spec::Functions; 
+	return(File::Spec::Functions::catfile(@_)); 
+}
+=head1 _which($program_name)
+
+Function   : Similar to linux which command
+Return     : $string
+
+=cut
+sub _which {
+	my ($id, $true_abs) = @_; 
+	$true_abs //= 0; 
+	my ($path_to_id) = File::Which::which($id); 
+	if (defined $path_to_id) {
+		if ($true_abs) {
+			return(&_abs_path( $path_to_id )); 
+		} else {
+			return(&_abs_path_4link( $path_to_id )); 
+		}
+	} elsif ( -x $id ) {
+		if ($true_abs) {
+			return(&_abs_path( $id )); 
+		} else {
+			return(&_abs_path_4link( $id )); 
+		}
+	} else {
+		return(); 
+	}
+	
+}# _which()
+
 1; 

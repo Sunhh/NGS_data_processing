@@ -1,6 +1,9 @@
 #!/usr/bin/env perl
 use strict; 
 use warnings; 
+BEGIN {
+	use lib "/usr/local/share/perl5/"; 
+}
 use LogInforSunhh; 
 use Parallel::ForkManager; 
 
@@ -122,7 +125,7 @@ sub linearize {
 		} else {
 			push(@back, $a1); 
 		}
-		$back[-1] !~ m!^\s*#! and $back[-1] =~ s!(\s)\\$!$1! and $is_cont = 1; 
+		$back[-1] !~ m!^\s*#! and $back[-1] =~ s!\\$!! and $is_cont = 1; 
 	}
 	if ( scalar(@back) < scalar(@$in_aref) ) {
 		@back = &linearize(\@back); 
