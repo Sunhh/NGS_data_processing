@@ -2,6 +2,8 @@
 use strict; 
 use warnings; 
 
+-t and !@ARGV and die "perl $0 down_SRR_R2.fq > down_SRR_R2.fix.fq\n"; 
+
 while (my $l1 = <>) {
   my $l2 = <>; 
   my $l3 = <>; 
