@@ -1,0 +1,1662 @@
+map01100 Metabolic pathways (58)
+
+  ko:K00013 hisD; histidinol dehydrogenase [EC:1.1.1.23]
+  ko:K00052 leuB; 3-isopropylmalate dehydrogenase [EC:1.1.1.85]
+  ko:K00058 serA; D-3-phosphoglycerate dehydrogenase / 2-oxoglutarate reductase [EC:1.1.1.95 1.1.1.399]
+  ko:K00128 ALDH; aldehyde dehydrogenase (NAD+) [EC:1.2.1.3]
+  ko:K00134 GAPDH; glyceraldehyde 3-phosphate dehydrogenase [EC:1.2.1.12]
+  ko:K00232 E1.3.3.6; acyl-CoA oxidase [EC:1.3.3.6]
+  ko:K00454 LOX2S; lipoxygenase [EC:1.13.11.12]
+  ko:K00487 CYP73A; trans-cinnamate 4-monooxygenase [EC:1.14.14.91]
+  ko:K00600 glyA; glycine hydroxymethyltransferase [EC:2.1.2.1]
+  ko:K00654 SPT; serine palmitoyltransferase [EC:2.3.1.50]
+  ko:K00679 E2.3.1.158; phospholipid:diacylglycerol acyltransferase [EC:2.3.1.158]
+  ko:K00696 E2.4.1.14; sucrose-phosphate synthase [EC:2.4.1.14]
+  ko:K00734 B3GALT6; galactosylxylosylprotein 3-beta-galactosyltransferase [EC:2.4.1.134]
+  ko:K00735 B3GAT1; galactosylgalactosylxylosylprotein 3-beta-glucuronosyltransferase 1 [EC:2.4.1.135]
+  ko:K00750 GYG1; glycogenin [EC:2.4.1.186]
+  ko:K00914 PIK3C3; phosphatidylinositol 3-kinase [EC:2.7.1.137]
+  ko:K00915 IPMK; inositol-polyphosphate multikinase [EC:2.7.1.140 2.7.1.151]
+  ko:K00921 PIKFYVE; 1-phosphatidylinositol-3-phosphate 5-kinase [EC:2.7.1.150]
+  ko:K00963 UGP2; UTP--glucose-1-phosphate uridylyltransferase [EC:2.7.7.9]
+  ko:K00972 UAP1; UDP-N-acetylglucosamine/UDP-N-acetylgalactosamine diphosphorylase [EC:2.7.7.23 2.7.7.83]
+  ko:K00979 kdsB; 3-deoxy-manno-octulosonate cytidylyltransferase (CMP-KDO synthetase) [EC:2.7.7.38]
+  ko:K01047 PLA2G; secretory phospholipase A2 [EC:3.1.1.4]
+  ko:K01054 MGLL; acylglycerol lipase [EC:3.1.1.23]
+  ko:K01079 serB; phosphoserine phosphatase [EC:3.1.3.3]
+  ko:K01099 INPP5B_F; inositol polyphosphate 5-phosphatase INPP5B/F [EC:3.1.3.36]
+  ko:K01110 PTEN; phosphatidylinositol-3,4,5-trisphosphate 3-phosphatase and dual-specificity protein phosphatase PTEN [EC:3.1.3.16 3.1.3.48 3.1.3.67]
+  ko:K01213 E3.2.1.67; galacturan 1,4-alpha-galacturonidase [EC:3.2.1.67]
+  ko:K01510 ENTPD1_3_8; apyrase [EC:3.6.1.5]
+  ko:K01535 PMA1; H+-transporting ATPase [EC:7.1.2.1]
+  ko:K01687 ilvD; dihydroxy-acid dehydratase [EC:4.2.1.9]
+  ko:K01757 STR1; strictosidine synthase [EC:4.3.3.2]
+  ko:K01784 galE; UDP-glucose 4-epimerase [EC:5.1.3.2]
+  ko:K01853 CAS1; cycloartenol synthase [EC:5.4.99.8]
+  ko:K01904 4CL; 4-coumarate--CoA ligase [EC:6.2.1.12]
+  ko:K02145 ATPeV1A; V-type H+-transporting ATPase subunit A [EC:7.1.2.2]
+  ko:K05857 PLCD; phosphatidylinositol phospholipase C, delta [EC:3.1.4.11]
+  ko:K06210 NMNAT; nicotinamide mononucleotide adenylyltransferase [EC:2.7.7.1 2.7.7.18]
+  ko:K07408 CYP1A1; cytochrome P450 family 1 subfamily A1 [EC:1.14.14.1]
+  ko:K08730 PTDSS2; phosphatidylserine synthase 2 [EC:2.7.8.29]
+  ko:K09588 CYP90A1; cytochrome P450 family 90 subfamily A1 [EC:1.14.-.-]
+  ko:K09753 CCR; cinnamoyl-CoA reductase [EC:1.2.1.44]
+  ko:K10775 PAL; phenylalanine ammonia-lyase [EC:4.3.1.24]
+  ko:K11423 SETD2; [histone H3]-lysine36 N-trimethyltransferase [EC:2.1.1.359]
+  ko:K11808 ADE2; phosphoribosylaminoimidazole carboxylase [EC:4.1.1.21]
+  ko:K12447 USP; UDP-sugar pyrophosphorylase [EC:2.7.7.64]
+  ko:K12657 ALDH18A1; delta-1-pyrroline-5-carboxylate synthetase [EC:2.7.2.11 1.2.1.41]
+  ko:K13065 E2.3.1.133; shikimate O-hydroxycinnamoyltransferase [EC:2.3.1.133]
+  ko:K13082 DFR; bifunctional dihydroflavonol 4-reductase/flavanone 4-reductase [EC:1.1.1.219 1.1.1.234]
+  ko:K13379 RGP; reversibly glycosylated polypeptide / UDP-arabinopyranose mutase [EC:2.4.1.- 5.4.99.30]
+  ko:K13506 GPAT3_4; glycerol-3-phosphate O-acyltransferase 3/4 [EC:2.3.1.15]
+  ko:K13508 GPAT; glycerol-3-phosphate acyltransferase [EC:2.3.1.15 2.3.1.198]
+  ko:K13648 GAUT; alpha-1,4-galacturonosyltransferase [EC:2.4.1.43]
+  ko:K14152 HIS4; phosphoribosyl-ATP pyrophosphohydrolase / phosphoribosyl-AMP cyclohydrolase / histidinol dehydrogenase [EC:3.6.1.31 3.5.4.19 1.1.1.23]
+  ko:K15398 CYP86A4S; fatty acid omega-hydroxylase [EC:1.14.-.-]
+  ko:K15633 gpmI; 2,3-bisphosphoglycerate-independent phosphoglycerate mutase [EC:5.4.2.12]
+  ko:K16190 GLCAK; glucuronokinase [EC:2.7.1.43]
+  ko:K16818 DAD1; phospholipase A1 [EC:3.1.1.32]
+  ko:K19891 GN1_2_3; glucan endo-1,3-beta-glucosidase 1/2/3 [EC:3.2.1.39]
+
+map01110 Biosynthesis of secondary metabolites (33)
+
+  ko:K00013 hisD; histidinol dehydrogenase [EC:1.1.1.23]
+  ko:K00052 leuB; 3-isopropylmalate dehydrogenase [EC:1.1.1.85]
+  ko:K00058 serA; D-3-phosphoglycerate dehydrogenase / 2-oxoglutarate reductase [EC:1.1.1.95 1.1.1.399]
+  ko:K00128 ALDH; aldehyde dehydrogenase (NAD+) [EC:1.2.1.3]
+  ko:K00134 GAPDH; glyceraldehyde 3-phosphate dehydrogenase [EC:1.2.1.12]
+  ko:K00232 E1.3.3.6; acyl-CoA oxidase [EC:1.3.3.6]
+  ko:K00454 LOX2S; lipoxygenase [EC:1.13.11.12]
+  ko:K00487 CYP73A; trans-cinnamate 4-monooxygenase [EC:1.14.14.91]
+  ko:K00600 glyA; glycine hydroxymethyltransferase [EC:2.1.2.1]
+  ko:K00696 E2.4.1.14; sucrose-phosphate synthase [EC:2.4.1.14]
+  ko:K00750 GYG1; glycogenin [EC:2.4.1.186]
+  ko:K00963 UGP2; UTP--glucose-1-phosphate uridylyltransferase [EC:2.7.7.9]
+  ko:K01047 PLA2G; secretory phospholipase A2 [EC:3.1.1.4]
+  ko:K01079 serB; phosphoserine phosphatase [EC:3.1.3.3]
+  ko:K01687 ilvD; dihydroxy-acid dehydratase [EC:4.2.1.9]
+  ko:K01757 STR1; strictosidine synthase [EC:4.3.3.2]
+  ko:K01853 CAS1; cycloartenol synthase [EC:5.4.99.8]
+  ko:K01904 4CL; 4-coumarate--CoA ligase [EC:6.2.1.12]
+  ko:K08730 PTDSS2; phosphatidylserine synthase 2 [EC:2.7.8.29]
+  ko:K09588 CYP90A1; cytochrome P450 family 90 subfamily A1 [EC:1.14.-.-]
+  ko:K09753 CCR; cinnamoyl-CoA reductase [EC:1.2.1.44]
+  ko:K10775 PAL; phenylalanine ammonia-lyase [EC:4.3.1.24]
+  ko:K11808 ADE2; phosphoribosylaminoimidazole carboxylase [EC:4.1.1.21]
+  ko:K12447 USP; UDP-sugar pyrophosphorylase [EC:2.7.7.64]
+  ko:K12657 ALDH18A1; delta-1-pyrroline-5-carboxylate synthetase [EC:2.7.2.11 1.2.1.41]
+  ko:K13065 E2.3.1.133; shikimate O-hydroxycinnamoyltransferase [EC:2.3.1.133]
+  ko:K13082 DFR; bifunctional dihydroflavonol 4-reductase/flavanone 4-reductase [EC:1.1.1.219 1.1.1.234]
+  ko:K13506 GPAT3_4; glycerol-3-phosphate O-acyltransferase 3/4 [EC:2.3.1.15]
+  ko:K13508 GPAT; glycerol-3-phosphate acyltransferase [EC:2.3.1.15 2.3.1.198]
+  ko:K14152 HIS4; phosphoribosyl-ATP pyrophosphohydrolase / phosphoribosyl-AMP cyclohydrolase / histidinol dehydrogenase [EC:3.6.1.31 3.5.4.19 1.1.1.23]
+  ko:K15404 CER1; aldehyde decarbonylase [EC:4.1.99.5]
+  ko:K15633 gpmI; 2,3-bisphosphoglycerate-independent phosphoglycerate mutase [EC:5.4.2.12]
+  ko:K16818 DAD1; phospholipase A1 [EC:3.1.1.32]
+
+map01230 Biosynthesis of amino acids (10)
+
+  ko:K00013 hisD; histidinol dehydrogenase [EC:1.1.1.23]
+  ko:K00052 leuB; 3-isopropylmalate dehydrogenase [EC:1.1.1.85]
+  ko:K00058 serA; D-3-phosphoglycerate dehydrogenase / 2-oxoglutarate reductase [EC:1.1.1.95 1.1.1.399]
+  ko:K00134 GAPDH; glyceraldehyde 3-phosphate dehydrogenase [EC:1.2.1.12]
+  ko:K00600 glyA; glycine hydroxymethyltransferase [EC:2.1.2.1]
+  ko:K01079 serB; phosphoserine phosphatase [EC:3.1.3.3]
+  ko:K01687 ilvD; dihydroxy-acid dehydratase [EC:4.2.1.9]
+  ko:K12657 ALDH18A1; delta-1-pyrroline-5-carboxylate synthetase [EC:2.7.2.11 1.2.1.41]
+  ko:K14152 HIS4; phosphoribosyl-ATP pyrophosphohydrolase / phosphoribosyl-AMP cyclohydrolase / histidinol dehydrogenase [EC:3.6.1.31 3.5.4.19 1.1.1.23]
+  ko:K15633 gpmI; 2,3-bisphosphoglycerate-independent phosphoglycerate mutase [EC:5.4.2.12]
+
+map05014 Amyotrophic lateral sclerosis (9)
+
+  ko:K00914 PIK3C3; phosphatidylinositol 3-kinase [EC:2.7.1.137]
+  ko:K03029 PSMD4; 26S proteasome regulatory subunit N10
+  ko:K03065 PSMC3; 26S proteasome regulatory subunit T5
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+  ko:K07874 RAB1A; Ras-related protein Rab-1A
+  ko:K08333 PIK3R4; phosphoinositide-3-kinase, regulatory subunit 4 [EC:2.7.11.1]
+  ko:K10396 KIF5; kinesin family member 5
+  ko:K14317 NUP214; nuclear pore complex protein Nup214
+  ko:K17095 ANXA7_11; annexin A7/11
+
+map05022 Pathways of neurodegeneration - multiple diseases (9)
+
+  ko:K00914 PIK3C3; phosphatidylinositol 3-kinase [EC:2.7.1.137]
+  ko:K03029 PSMD4; 26S proteasome regulatory subunit N10
+  ko:K03065 PSMC3; 26S proteasome regulatory subunit T5
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+  ko:K07874 RAB1A; Ras-related protein Rab-1A
+  ko:K08333 PIK3R4; phosphoinositide-3-kinase, regulatory subunit 4 [EC:2.7.11.1]
+  ko:K10396 KIF5; kinesin family member 5
+
+map05165 Human papillomavirus infection (8)
+
+  ko:K01110 PTEN; phosphatidylinositol-3,4,5-trisphosphate 3-phosphatase and dual-specificity protein phosphatase PTEN [EC:3.1.3.16 3.1.3.48 3.1.3.67]
+  ko:K02145 ATPeV1A; V-type H+-transporting ATPase subunit A [EC:7.1.2.2]
+  ko:K02206 CDK2; cyclin-dependent kinase 2 [EC:2.7.11.22]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04681 RBL1; retinoblastoma-like protein 1
+  ko:K06627 CCNA; cyclin-A
+  ko:K11584 PPP2R5; serine/threonine-protein phosphatase 2A regulatory subunit B'
+  ko:K16175 SCRIB; protein scribble
+
+map04110 Cell cycle (8)
+
+  ko:K02206 CDK2; cyclin-dependent kinase 2 [EC:2.7.11.22]
+  ko:K02210 MCM7; DNA replication licensing factor MCM7 [EC:3.6.4.12]
+  ko:K02212 MCM4; DNA replication licensing factor MCM4 [EC:3.6.4.12]
+  ko:K02608 ORC6; origin recognition complex subunit 6
+  ko:K04681 RBL1; retinoblastoma-like protein 1
+  ko:K06627 CCNA; cyclin-A
+  ko:K06670 SCC1; cohesin complex subunit SCC1
+  ko:K12456 APC13; anaphase-promoting complex subunit 13
+
+map05010 Alzheimer disease (8)
+
+  ko:K00134 GAPDH; glyceraldehyde 3-phosphate dehydrogenase [EC:1.2.1.12]
+  ko:K00914 PIK3C3; phosphatidylinositol 3-kinase [EC:2.7.1.137]
+  ko:K03029 PSMD4; 26S proteasome regulatory subunit N10
+  ko:K03065 PSMC3; 26S proteasome regulatory subunit T5
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+  ko:K08333 PIK3R4; phosphoinositide-3-kinase, regulatory subunit 4 [EC:2.7.11.1]
+  ko:K10396 KIF5; kinesin family member 5
+
+map05203 Viral carcinogenesis (8)
+
+  ko:K02206 CDK2; cyclin-dependent kinase 2 [EC:2.7.11.22]
+  ko:K03124 TFIIB; transcription initiation factor TFIIB
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+  ko:K04681 RBL1; retinoblastoma-like protein 1
+  ko:K06627 CCNA; cyclin-A
+  ko:K15305 VAC14; vacuole morphology and inheritance protein 14
+  ko:K16175 SCRIB; protein scribble
+
+map05166 Human T-cell leukemia virus 1 infection (8)
+
+  ko:K01110 PTEN; phosphatidylinositol-3,4,5-trisphosphate 3-phosphatase and dual-specificity protein phosphatase PTEN [EC:3.1.3.16 3.1.3.48 3.1.3.67]
+  ko:K02206 CDK2; cyclin-dependent kinase 2 [EC:2.7.11.22]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+  ko:K04421 MAP3K3; mitogen-activated protein kinase kinase kinase 3 [EC:2.7.11.25]
+  ko:K06627 CCNA; cyclin-A
+  ko:K14290 XPO1; exportin-1
+  ko:K15305 VAC14; vacuole morphology and inheritance protein 14
+
+map05169 Epstein-Barr virus infection (7)
+
+  ko:K01510 ENTPD1_3_8; apyrase [EC:3.6.1.5]
+  ko:K02206 CDK2; cyclin-dependent kinase 2 [EC:2.7.11.22]
+  ko:K03029 PSMD4; 26S proteasome regulatory subunit N10
+  ko:K03065 PSMC3; 26S proteasome regulatory subunit T5
+  ko:K04730 IRAK1; interleukin-1 receptor-associated kinase 1 [EC:2.7.11.1]
+  ko:K04733 IRAK4; interleukin-1 receptor-associated kinase 4 [EC:2.7.11.1]
+  ko:K06627 CCNA; cyclin-A
+
+map00520 Amino sugar and nucleotide sugar metabolism (7)
+
+  ko:K00963 UGP2; UTP--glucose-1-phosphate uridylyltransferase [EC:2.7.7.9]
+  ko:K00972 UAP1; UDP-N-acetylglucosamine/UDP-N-acetylgalactosamine diphosphorylase [EC:2.7.7.23 2.7.7.83]
+  ko:K01784 galE; UDP-glucose 4-epimerase [EC:5.1.3.2]
+  ko:K12447 USP; UDP-sugar pyrophosphorylase [EC:2.7.7.64]
+  ko:K13379 RGP; reversibly glycosylated polypeptide / UDP-arabinopyranose mutase [EC:2.4.1.- 5.4.99.30]
+  ko:K13648 GAUT; alpha-1,4-galacturonosyltransferase [EC:2.4.1.43]
+  ko:K16190 GLCAK; glucuronokinase [EC:2.7.1.43]
+
+map04111 Cell cycle - yeast (7)
+
+  ko:K02210 MCM7; DNA replication licensing factor MCM7 [EC:3.6.4.12]
+  ko:K02212 MCM4; DNA replication licensing factor MCM4 [EC:3.6.4.12]
+  ko:K02608 ORC6; origin recognition complex subunit 6
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K06670 SCC1; cohesin complex subunit SCC1
+  ko:K06683 CDC15; cell division control protein CDC15 [EC:2.7.11.1]
+  ko:K06685 MOB1; MOB kinase activator 1
+
+map04113 Meiosis - yeast (7)
+
+  ko:K02210 MCM7; DNA replication licensing factor MCM7 [EC:3.6.4.12]
+  ko:K02212 MCM4; DNA replication licensing factor MCM4 [EC:3.6.4.12]
+  ko:K02608 ORC6; origin recognition complex subunit 6
+  ko:K06683 CDC15; cell division control protein CDC15 [EC:2.7.11.1]
+  ko:K08139 HXT; MFS transporter, SP family, sugar:H+ symporter
+  ko:K10878 SPO11; meiotic recombination protein SPO11
+  ko:K11584 PPP2R5; serine/threonine-protein phosphatase 2A regulatory subunit B'
+
+map05132 Salmonella infection (7)
+
+  ko:K00134 GAPDH; glyceraldehyde 3-phosphate dehydrogenase [EC:1.2.1.12]
+  ko:K00914 PIK3C3; phosphatidylinositol 3-kinase [EC:2.7.1.137]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04437 FLNA; filamin
+  ko:K04730 IRAK1; interleukin-1 receptor-associated kinase 1 [EC:2.7.11.1]
+  ko:K04733 IRAK4; interleukin-1 receptor-associated kinase 4 [EC:2.7.11.1]
+  ko:K10396 KIF5; kinesin family member 5
+
+map04141 Protein processing in endoplasmic reticulum (6)
+
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+  ko:K07953 SAR1; GTP-binding protein SAR1 [EC:3.6.5.-]
+  ko:K10956 SEC61A; protein transport protein SEC61 subunit alpha
+  ko:K12275 SEC62; translocation protein SEC62
+  ko:K14006 SEC23; protein transport protein SEC23
+  ko:K14007 SEC24; protein transport protein SEC24
+
+map01200 Carbon metabolism (6)
+
+  ko:K00058 serA; D-3-phosphoglycerate dehydrogenase / 2-oxoglutarate reductase [EC:1.1.1.95 1.1.1.399]
+  ko:K00134 GAPDH; glyceraldehyde 3-phosphate dehydrogenase [EC:1.2.1.12]
+  ko:K00232 E1.3.3.6; acyl-CoA oxidase [EC:1.3.3.6]
+  ko:K00600 glyA; glycine hydroxymethyltransferase [EC:2.1.2.1]
+  ko:K01079 serB; phosphoserine phosphatase [EC:3.1.3.3]
+  ko:K15633 gpmI; 2,3-bisphosphoglycerate-independent phosphoglycerate mutase [EC:5.4.2.12]
+
+map01120 Microbial metabolism in diverse environments (6)
+
+  ko:K00058 serA; D-3-phosphoglycerate dehydrogenase / 2-oxoglutarate reductase [EC:1.1.1.95 1.1.1.399]
+  ko:K00128 ALDH; aldehyde dehydrogenase (NAD+) [EC:1.2.1.3]
+  ko:K00134 GAPDH; glyceraldehyde 3-phosphate dehydrogenase [EC:1.2.1.12]
+  ko:K00600 glyA; glycine hydroxymethyltransferase [EC:2.1.2.1]
+  ko:K01079 serB; phosphoserine phosphatase [EC:3.1.3.3]
+  ko:K15633 gpmI; 2,3-bisphosphoglycerate-independent phosphoglycerate mutase [EC:5.4.2.12]
+
+map04144 Endocytosis (6)
+
+  ko:K01528 DNM1_3; dynamin 1/3 [EC:3.6.5.5]
+  ko:K10396 KIF5; kinesin family member 5
+  ko:K12472 EPS15; epidermal growth factor receptor substrate 15
+  ko:K12486 SMAP; stromal membrane-associated protein
+  ko:K12492 ARFGAP1; ADP-ribosylation factor GTPase-activating protein 1
+  ko:K12493 ARFGAP2_3; ADP-ribosylation factor GTPase-activating protein 2/3
+
+map05130 Pathogenic Escherichia coli infection (6)
+
+  ko:K00134 GAPDH; glyceraldehyde 3-phosphate dehydrogenase [EC:1.2.1.12]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04730 IRAK1; interleukin-1 receptor-associated kinase 1 [EC:2.7.11.1]
+  ko:K04733 IRAK4; interleukin-1 receptor-associated kinase 4 [EC:2.7.11.1]
+  ko:K07874 RAB1A; Ras-related protein Rab-1A
+  ko:K14007 SEC24; protein transport protein SEC24
+
+map00562 Inositol phosphate metabolism (6)
+
+  ko:K00914 PIK3C3; phosphatidylinositol 3-kinase [EC:2.7.1.137]
+  ko:K00915 IPMK; inositol-polyphosphate multikinase [EC:2.7.1.140 2.7.1.151]
+  ko:K00921 PIKFYVE; 1-phosphatidylinositol-3-phosphate 5-kinase [EC:2.7.1.150]
+  ko:K01099 INPP5B_F; inositol polyphosphate 5-phosphatase INPP5B/F [EC:3.1.3.36]
+  ko:K01110 PTEN; phosphatidylinositol-3,4,5-trisphosphate 3-phosphatase and dual-specificity protein phosphatase PTEN [EC:3.1.3.16 3.1.3.48 3.1.3.67]
+  ko:K05857 PLCD; phosphatidylinositol phospholipase C, delta [EC:3.1.4.11]
+
+map00564 Glycerophospholipid metabolism (6)
+
+  ko:K01047 PLA2G; secretory phospholipase A2 [EC:3.1.1.4]
+  ko:K05929 E2.1.1.103; phosphoethanolamine N-methyltransferase [EC:2.1.1.103]
+  ko:K08730 PTDSS2; phosphatidylserine synthase 2 [EC:2.7.8.29]
+  ko:K13506 GPAT3_4; glycerol-3-phosphate O-acyltransferase 3/4 [EC:2.3.1.15]
+  ko:K13508 GPAT; glycerol-3-phosphate acyltransferase [EC:2.3.1.15 2.3.1.198]
+  ko:K16818 DAD1; phospholipase A1 [EC:3.1.1.32]
+
+map04218 Cellular senescence (6)
+
+  ko:K01110 PTEN; phosphatidylinositol-3,4,5-trisphosphate 3-phosphatase and dual-specificity protein phosphatase PTEN [EC:3.1.3.16 3.1.3.48 3.1.3.67]
+  ko:K02206 CDK2; cyclin-dependent kinase 2 [EC:2.7.11.22]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04681 RBL1; retinoblastoma-like protein 1
+  ko:K06627 CCNA; cyclin-A
+  ko:K10752 RBBP4; histone-binding protein RBBP4
+
+map04075 Plant hormone signal transduction (6)
+
+  ko:K12126 PIF3; phytochrome-interacting factor 3
+  ko:K13415 BRI1; protein brassinosteroid insensitive 1 [EC:2.7.10.1 2.7.11.1]
+  ko:K13422 MYC2; transcription factor MYC2
+  ko:K13464 JAZ; jasmonate ZIM domain-containing protein
+  ko:K14485 TIR1; transport inhibitor response 1
+  ko:K14486 ARF; auxin response factor
+
+map05417 Lipid and atherosclerosis (6)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+  ko:K04730 IRAK1; interleukin-1 receptor-associated kinase 1 [EC:2.7.11.1]
+  ko:K04733 IRAK4; interleukin-1 receptor-associated kinase 4 [EC:2.7.11.1]
+  ko:K07408 CYP1A1; cytochrome P450 family 1 subfamily A1 [EC:1.14.14.1]
+
+map04070 Phosphatidylinositol signaling system (6)
+
+  ko:K00914 PIK3C3; phosphatidylinositol 3-kinase [EC:2.7.1.137]
+  ko:K00915 IPMK; inositol-polyphosphate multikinase [EC:2.7.1.140 2.7.1.151]
+  ko:K00921 PIKFYVE; 1-phosphatidylinositol-3-phosphate 5-kinase [EC:2.7.1.150]
+  ko:K01099 INPP5B_F; inositol polyphosphate 5-phosphatase INPP5B/F [EC:3.1.3.36]
+  ko:K01110 PTEN; phosphatidylinositol-3,4,5-trisphosphate 3-phosphatase and dual-specificity protein phosphatase PTEN [EC:3.1.3.16 3.1.3.48 3.1.3.67]
+  ko:K05857 PLCD; phosphatidylinositol phospholipase C, delta [EC:3.1.4.11]
+
+map05152 Tuberculosis (6)
+
+  ko:K00914 PIK3C3; phosphatidylinositol 3-kinase [EC:2.7.1.137]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+  ko:K04730 IRAK1; interleukin-1 receptor-associated kinase 1 [EC:2.7.11.1]
+  ko:K04733 IRAK4; interleukin-1 receptor-associated kinase 4 [EC:2.7.11.1]
+  ko:K08064 NFYA; nuclear transcription factor Y, alpha
+
+map04722 Neurotrophin signaling pathway (6)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+  ko:K04421 MAP3K3; mitogen-activated protein kinase kinase kinase 3 [EC:2.7.11.25]
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+  ko:K04730 IRAK1; interleukin-1 receptor-associated kinase 1 [EC:2.7.11.1]
+  ko:K04733 IRAK4; interleukin-1 receptor-associated kinase 4 [EC:2.7.11.1]
+
+map04934 Cushing syndrome (6)
+
+  ko:K02206 CDK2; cyclin-dependent kinase 2 [EC:2.7.11.22]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+  ko:K14961 RBBP5; COMPASS component SWD1
+  ko:K14963 WDR5; COMPASS component SWD3
+
+map05161 Hepatitis B (6)
+
+  ko:K02206 CDK2; cyclin-dependent kinase 2 [EC:2.7.11.22]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+  ko:K04730 IRAK1; interleukin-1 receptor-associated kinase 1 [EC:2.7.11.1]
+  ko:K04733 IRAK4; interleukin-1 receptor-associated kinase 4 [EC:2.7.11.1]
+  ko:K06627 CCNA; cyclin-A
+
+map04010 MAPK signaling pathway (6)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+  ko:K04421 MAP3K3; mitogen-activated protein kinase kinase kinase 3 [EC:2.7.11.25]
+  ko:K04437 FLNA; filamin
+  ko:K04730 IRAK1; interleukin-1 receptor-associated kinase 1 [EC:2.7.11.1]
+  ko:K04733 IRAK4; interleukin-1 receptor-associated kinase 4 [EC:2.7.11.1]
+
+map05017 Spinocerebellar ataxia (6)
+
+  ko:K00914 PIK3C3; phosphatidylinositol 3-kinase [EC:2.7.1.137]
+  ko:K03029 PSMD4; 26S proteasome regulatory subunit N10
+  ko:K03065 PSMC3; 26S proteasome regulatory subunit T5
+  ko:K03124 TFIIB; transcription initiation factor TFIIB
+  ko:K08064 NFYA; nuclear transcription factor Y, alpha
+  ko:K08333 PIK3R4; phosphoinositide-3-kinase, regulatory subunit 4 [EC:2.7.11.1]
+
+map05016 Huntington disease (5)
+
+  ko:K00914 PIK3C3; phosphatidylinositol 3-kinase [EC:2.7.1.137]
+  ko:K03029 PSMD4; 26S proteasome regulatory subunit N10
+  ko:K03065 PSMC3; 26S proteasome regulatory subunit T5
+  ko:K08333 PIK3R4; phosphoinositide-3-kinase, regulatory subunit 4 [EC:2.7.11.1]
+  ko:K10396 KIF5; kinesin family member 5
+
+map00940 Phenylpropanoid biosynthesis (5)
+
+  ko:K00487 CYP73A; trans-cinnamate 4-monooxygenase [EC:1.14.14.91]
+  ko:K01904 4CL; 4-coumarate--CoA ligase [EC:6.2.1.12]
+  ko:K09753 CCR; cinnamoyl-CoA reductase [EC:1.2.1.44]
+  ko:K10775 PAL; phenylalanine ammonia-lyase [EC:4.3.1.24]
+  ko:K13065 E2.3.1.133; shikimate O-hydroxycinnamoyltransferase [EC:2.3.1.133]
+
+map04151 PI3K-Akt signaling pathway (5)
+
+  ko:K01110 PTEN; phosphatidylinositol-3,4,5-trisphosphate 3-phosphatase and dual-specificity protein phosphatase PTEN [EC:3.1.3.16 3.1.3.48 3.1.3.67]
+  ko:K02206 CDK2; cyclin-dependent kinase 2 [EC:2.7.11.22]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+  ko:K11584 PPP2R5; serine/threonine-protein phosphatase 2A regulatory subunit B'
+
+map05200 Pathways in cancer (5)
+
+  ko:K01110 PTEN; phosphatidylinositol-3,4,5-trisphosphate 3-phosphatase and dual-specificity protein phosphatase PTEN [EC:3.1.3.16 3.1.3.48 3.1.3.67]
+  ko:K02206 CDK2; cyclin-dependent kinase 2 [EC:2.7.11.22]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+  ko:K06627 CCNA; cyclin-A
+
+map04140 Autophagy - animal (5)
+
+  ko:K00914 PIK3C3; phosphatidylinositol 3-kinase [EC:2.7.1.137]
+  ko:K01110 PTEN; phosphatidylinositol-3,4,5-trisphosphate 3-phosphatase and dual-specificity protein phosphatase PTEN [EC:3.1.3.16 3.1.3.48 3.1.3.67]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K07874 RAB1A; Ras-related protein Rab-1A
+  ko:K08333 PIK3R4; phosphoinositide-3-kinase, regulatory subunit 4 [EC:2.7.11.1]
+
+map05012 Parkinson disease (5)
+
+  ko:K03029 PSMD4; 26S proteasome regulatory subunit N10
+  ko:K03065 PSMC3; 26S proteasome regulatory subunit T5
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+  ko:K10396 KIF5; kinesin family member 5
+
+map05131 Shigellosis (5)
+
+  ko:K00914 PIK3C3; phosphatidylinositol 3-kinase [EC:2.7.1.137]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K05857 PLCD; phosphatidylinositol phospholipase C, delta [EC:3.1.4.11]
+  ko:K08333 PIK3R4; phosphoinositide-3-kinase, regulatory subunit 4 [EC:2.7.11.1]
+  ko:K11253 H3; histone H3
+
+map05020 Prion disease (5)
+
+  ko:K03029 PSMD4; 26S proteasome regulatory subunit N10
+  ko:K03065 PSMC3; 26S proteasome regulatory subunit T5
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+  ko:K10396 KIF5; kinesin family member 5
+
+map04114 Oocyte meiosis (5)
+
+  ko:K02206 CDK2; cyclin-dependent kinase 2 [EC:2.7.11.22]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+  ko:K11584 PPP2R5; serine/threonine-protein phosphatase 2A regulatory subunit B'
+  ko:K12456 APC13; anaphase-promoting complex subunit 13
+
+map00561 Glycerolipid metabolism (5)
+
+  ko:K00128 ALDH; aldehyde dehydrogenase (NAD+) [EC:1.2.1.3]
+  ko:K00679 E2.3.1.158; phospholipid:diacylglycerol acyltransferase [EC:2.3.1.158]
+  ko:K01054 MGLL; acylglycerol lipase [EC:3.1.1.23]
+  ko:K13506 GPAT3_4; glycerol-3-phosphate O-acyltransferase 3/4 [EC:2.3.1.15]
+  ko:K13508 GPAT; glycerol-3-phosphate acyltransferase [EC:2.3.1.15 2.3.1.198]
+
+map04371 Apelin signaling pathway (5)
+
+  ko:K00914 PIK3C3; phosphatidylinositol 3-kinase [EC:2.7.1.137]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K07200 PRKAG; 5'-AMP-activated protein kinase, regulatory gamma subunit
+  ko:K08333 PIK3R4; phosphoinositide-3-kinase, regulatory subunit 4 [EC:2.7.11.1]
+  ko:K09262 MEF2D; MADS-box transcription enhancer factor 2D
+
+map04071 Sphingolipid signaling pathway (4)
+
+  ko:K00654 SPT; serine palmitoyltransferase [EC:2.3.1.50]
+  ko:K01110 PTEN; phosphatidylinositol-3,4,5-trisphosphate 3-phosphatase and dual-specificity protein phosphatase PTEN [EC:3.1.3.16 3.1.3.48 3.1.3.67]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K11584 PPP2R5; serine/threonine-protein phosphatase 2A regulatory subunit B'
+
+map00592 alpha-Linolenic acid metabolism (4)
+
+  ko:K00232 E1.3.3.6; acyl-CoA oxidase [EC:1.3.3.6]
+  ko:K00454 LOX2S; lipoxygenase [EC:1.13.11.12]
+  ko:K01047 PLA2G; secretory phospholipase A2 [EC:3.1.1.4]
+  ko:K16818 DAD1; phospholipase A1 [EC:3.1.1.32]
+
+map00040 Pentose and glucuronate interconversions (4)
+
+  ko:K00963 UGP2; UTP--glucose-1-phosphate uridylyltransferase [EC:2.7.7.9]
+  ko:K01213 E3.2.1.67; galacturan 1,4-alpha-galacturonidase [EC:3.2.1.67]
+  ko:K12447 USP; UDP-sugar pyrophosphorylase [EC:2.7.7.64]
+  ko:K16190 GLCAK; glucuronokinase [EC:2.7.1.43]
+
+map04626 Plant-pathogen interaction (4)
+
+  ko:K13425 WRKY22; WRKY transcription factor 22
+  ko:K13434 PTI6; pathogenesis-related genes transcriptional activator PTI6
+  ko:K13447 RBOH; respiratory burst oxidase [EC:1.6.3.- 1.11.1.-]
+  ko:K18835 WRKY2; WRKY transcription factor 2
+
+map04728 Dopaminergic synapse (4)
+
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+  ko:K10396 KIF5; kinesin family member 5
+  ko:K11584 PPP2R5; serine/threonine-protein phosphatase 2A regulatory subunit B'
+
+map04714 Thermogenesis (4)
+
+  ko:K01054 MGLL; acylglycerol lipase [EC:3.1.1.23]
+  ko:K07200 PRKAG; 5'-AMP-activated protein kinase, regulatory gamma subunit
+  ko:K11340 ACTL6A; actin-like protein 6A
+  ko:K15601 KDM3; [histone H3]-dimethyl-L-lysine9 demethylase [EC:1.14.11.65]
+
+map04145 Phagosome (4)
+
+  ko:K00914 PIK3C3; phosphatidylinositol 3-kinase [EC:2.7.1.137]
+  ko:K00921 PIKFYVE; 1-phosphatidylinositol-3-phosphate 5-kinase [EC:2.7.1.150]
+  ko:K02145 ATPeV1A; V-type H+-transporting ATPase subunit A [EC:7.1.2.2]
+  ko:K10956 SEC61A; protein transport protein SEC61 subunit alpha
+
+map04068 FoxO signaling pathway (4)
+
+  ko:K01110 PTEN; phosphatidylinositol-3,4,5-trisphosphate 3-phosphatase and dual-specificity protein phosphatase PTEN [EC:3.1.3.16 3.1.3.48 3.1.3.67]
+  ko:K02206 CDK2; cyclin-dependent kinase 2 [EC:2.7.11.22]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K07200 PRKAG; 5'-AMP-activated protein kinase, regulatory gamma subunit
+
+map01240 Biosynthesis of cofactors (4)
+
+  ko:K00128 ALDH; aldehyde dehydrogenase (NAD+) [EC:1.2.1.3]
+  ko:K00600 glyA; glycine hydroxymethyltransferase [EC:2.1.2.1]
+  ko:K00963 UGP2; UTP--glucose-1-phosphate uridylyltransferase [EC:2.7.7.9]
+  ko:K06210 NMNAT; nicotinamide mononucleotide adenylyltransferase [EC:2.7.7.1 2.7.7.18]
+
+map05164 Influenza A (4)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04733 IRAK4; interleukin-1 receptor-associated kinase 4 [EC:2.7.11.1]
+  ko:K14290 XPO1; exportin-1
+  ko:K15043 KPNA2_7; importin subunit alpha-1/8
+
+map05215 Prostate cancer (4)
+
+  ko:K01110 PTEN; phosphatidylinositol-3,4,5-trisphosphate 3-phosphatase and dual-specificity protein phosphatase PTEN [EC:3.1.3.16 3.1.3.48 3.1.3.67]
+  ko:K02206 CDK2; cyclin-dependent kinase 2 [EC:2.7.11.22]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+
+map04912 GnRH signaling pathway (4)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+  ko:K04421 MAP3K3; mitogen-activated protein kinase kinase kinase 3 [EC:2.7.11.25]
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+
+map04138 Autophagy - yeast (4)
+
+  ko:K00654 SPT; serine palmitoyltransferase [EC:2.3.1.50]
+  ko:K00914 PIK3C3; phosphatidylinositol 3-kinase [EC:2.7.1.137]
+  ko:K00915 IPMK; inositol-polyphosphate multikinase [EC:2.7.1.140 2.7.1.151]
+  ko:K08333 PIK3R4; phosphoinositide-3-kinase, regulatory subunit 4 [EC:2.7.11.1]
+
+map04261 Adrenergic signaling in cardiomyocytes (4)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+  ko:K11584 PPP2R5; serine/threonine-protein phosphatase 2A regulatory subunit B'
+
+map00680 Methane metabolism (4)
+
+  ko:K00058 serA; D-3-phosphoglycerate dehydrogenase / 2-oxoglutarate reductase [EC:1.1.1.95 1.1.1.399]
+  ko:K00600 glyA; glycine hydroxymethyltransferase [EC:2.1.2.1]
+  ko:K01079 serB; phosphoserine phosphatase [EC:3.1.3.3]
+  ko:K15633 gpmI; 2,3-bisphosphoglycerate-independent phosphoglycerate mutase [EC:5.4.2.12]
+
+map04914 Progesterone-mediated oocyte maturation (4)
+
+  ko:K02206 CDK2; cyclin-dependent kinase 2 [EC:2.7.11.22]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K06627 CCNA; cyclin-A
+  ko:K12456 APC13; anaphase-promoting complex subunit 13
+
+map05140 Leishmaniasis (4)
+
+  ko:K03231 EEF1A; elongation factor 1-alpha
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04730 IRAK1; interleukin-1 receptor-associated kinase 1 [EC:2.7.11.1]
+  ko:K04733 IRAK4; interleukin-1 receptor-associated kinase 4 [EC:2.7.11.1]
+
+map00073 Cutin, suberine and wax biosynthesis (4)
+
+  ko:K13356 FAR; alcohol-forming fatty acyl-CoA reductase [EC:1.2.1.84]
+  ko:K13407 CYP94A1; fatty acid omega-hydroxylase [EC:1.14.-.-]
+  ko:K15398 CYP86A4S; fatty acid omega-hydroxylase [EC:1.14.-.-]
+  ko:K15404 CER1; aldehyde decarbonylase [EC:4.1.99.5]
+
+map00500 Starch and sucrose metabolism (4)
+
+  ko:K00696 E2.4.1.14; sucrose-phosphate synthase [EC:2.4.1.14]
+  ko:K00750 GYG1; glycogenin [EC:2.4.1.186]
+  ko:K00963 UGP2; UTP--glucose-1-phosphate uridylyltransferase [EC:2.7.7.9]
+  ko:K19891 GN1_2_3; glucan endo-1,3-beta-glucosidase 1/2/3 [EC:3.2.1.39]
+
+map00260 Glycine, serine and threonine metabolism (4)
+
+  ko:K00058 serA; D-3-phosphoglycerate dehydrogenase / 2-oxoglutarate reductase [EC:1.1.1.95 1.1.1.399]
+  ko:K00600 glyA; glycine hydroxymethyltransferase [EC:2.1.2.1]
+  ko:K01079 serB; phosphoserine phosphatase [EC:3.1.3.3]
+  ko:K15633 gpmI; 2,3-bisphosphoglycerate-independent phosphoglycerate mutase [EC:5.4.2.12]
+
+map02010 ABC transporters (3)
+
+  ko:K05681 ABCG2; ATP-binding cassette, subfamily G (WHITE), member 2
+  ko:K08711 ABCG2.PDR; ATP-binding cassette, subfamily G (WHITE), member 2, PDR
+  ko:K08712 ABCG2.SNQ2; ATP-binding cassette, subfamily G (WHITE), member 2, SNQ2
+
+map05162 Measles (3)
+
+  ko:K02206 CDK2; cyclin-dependent kinase 2 [EC:2.7.11.22]
+  ko:K04730 IRAK1; interleukin-1 receptor-associated kinase 1 [EC:2.7.11.1]
+  ko:K04733 IRAK4; interleukin-1 receptor-associated kinase 4 [EC:2.7.11.1]
+
+map05142 Chagas disease (3)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04730 IRAK1; interleukin-1 receptor-associated kinase 1 [EC:2.7.11.1]
+  ko:K04733 IRAK4; interleukin-1 receptor-associated kinase 4 [EC:2.7.11.1]
+
+map04212 Longevity regulating pathway - worm (3)
+
+  ko:K01110 PTEN; phosphatidylinositol-3,4,5-trisphosphate 3-phosphatase and dual-specificity protein phosphatase PTEN [EC:3.1.3.16 3.1.3.48 3.1.3.67]
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+  ko:K13356 FAR; alcohol-forming fatty acyl-CoA reductase [EC:1.2.1.84]
+
+map05135 Yersinia infection (3)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04730 IRAK1; interleukin-1 receptor-associated kinase 1 [EC:2.7.11.1]
+  ko:K04733 IRAK4; interleukin-1 receptor-associated kinase 4 [EC:2.7.11.1]
+
+map04150 mTOR signaling pathway (3)
+
+  ko:K01110 PTEN; phosphatidylinositol-3,4,5-trisphosphate 3-phosphatase and dual-specificity protein phosphatase PTEN [EC:3.1.3.16 3.1.3.48 3.1.3.67]
+  ko:K02145 ATPeV1A; V-type H+-transporting ATPase subunit A [EC:7.1.2.2]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map05133 Pertussis (3)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04730 IRAK1; interleukin-1 receptor-associated kinase 1 [EC:2.7.11.1]
+  ko:K04733 IRAK4; interleukin-1 receptor-associated kinase 4 [EC:2.7.11.1]
+
+map00010 Glycolysis / Gluconeogenesis (3)
+
+  ko:K00128 ALDH; aldehyde dehydrogenase (NAD+) [EC:1.2.1.3]
+  ko:K00134 GAPDH; glyceraldehyde 3-phosphate dehydrogenase [EC:1.2.1.12]
+  ko:K15633 gpmI; 2,3-bisphosphoglycerate-independent phosphoglycerate mutase [EC:5.4.2.12]
+
+map05171 Coronavirus disease - COVID-19 (3)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04730 IRAK1; interleukin-1 receptor-associated kinase 1 [EC:2.7.11.1]
+  ko:K04733 IRAK4; interleukin-1 receptor-associated kinase 4 [EC:2.7.11.1]
+
+map04510 Focal adhesion (3)
+
+  ko:K01110 PTEN; phosphatidylinositol-3,4,5-trisphosphate 3-phosphatase and dual-specificity protein phosphatase PTEN [EC:3.1.3.16 3.1.3.48 3.1.3.67]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04437 FLNA; filamin
+
+map03013 RNA transport (3)
+
+  ko:K03231 EEF1A; elongation factor 1-alpha
+  ko:K14290 XPO1; exportin-1
+  ko:K14317 NUP214; nuclear pore complex protein Nup214
+
+map05415 Diabetic cardiomyopathy (3)
+
+  ko:K00134 GAPDH; glyceraldehyde 3-phosphate dehydrogenase [EC:1.2.1.12]
+  ko:K01110 PTEN; phosphatidylinositol-3,4,5-trisphosphate 3-phosphatase and dual-specificity protein phosphatase PTEN [EC:3.1.3.16 3.1.3.48 3.1.3.67]
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+
+map04146 Peroxisome (3)
+
+  ko:K00232 E1.3.3.6; acyl-CoA oxidase [EC:1.3.3.6]
+  ko:K13345 PEX12; peroxin-12
+  ko:K13356 FAR; alcohol-forming fatty acyl-CoA reductase [EC:1.2.1.84]
+
+map05145 Toxoplasmosis (3)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04730 IRAK1; interleukin-1 receptor-associated kinase 1 [EC:2.7.11.1]
+  ko:K04733 IRAK4; interleukin-1 receptor-associated kinase 4 [EC:2.7.11.1]
+
+map05034 Alcoholism (3)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+  ko:K11253 H3; histone H3
+
+map04024 cAMP signaling pathway (3)
+
+  ko:K00232 E1.3.3.6; acyl-CoA oxidase [EC:1.3.3.6]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+
+map04922 Glucagon signaling pathway (3)
+
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+  ko:K07200 PRKAG; 5'-AMP-activated protein kinase, regulatory gamma subunit
+
+map04152 AMPK signaling pathway (3)
+
+  ko:K06627 CCNA; cyclin-A
+  ko:K07200 PRKAG; 5'-AMP-activated protein kinase, regulatory gamma subunit
+  ko:K11584 PPP2R5; serine/threonine-protein phosphatase 2A regulatory subunit B'
+
+map03008 Ribosome biogenesis in eukaryotes (3)
+
+  ko:K06943 NOG1; nucleolar GTP-binding protein
+  ko:K14290 XPO1; exportin-1
+  ko:K14556 DIP2; U3 small nucleolar RNA-associated protein 12
+
+map05225 Hepatocellular carcinoma (3)
+
+  ko:K01110 PTEN; phosphatidylinositol-3,4,5-trisphosphate 3-phosphatase and dual-specificity protein phosphatase PTEN [EC:3.1.3.16 3.1.3.48 3.1.3.67]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K11340 ACTL6A; actin-like protein 6A
+
+map04016 MAPK signaling pathway - plant (3)
+
+  ko:K13422 MYC2; transcription factor MYC2
+  ko:K13425 WRKY22; WRKY transcription factor 22
+  ko:K13447 RBOH; respiratory burst oxidase [EC:1.6.3.- 1.11.1.-]
+
+map00053 Ascorbate and aldarate metabolism (3)
+
+  ko:K00128 ALDH; aldehyde dehydrogenase (NAD+) [EC:1.2.1.3]
+  ko:K12447 USP; UDP-sugar pyrophosphorylase [EC:2.7.7.64]
+  ko:K16190 GLCAK; glucuronokinase [EC:2.7.1.43]
+
+map04921 Oxytocin signaling pathway (3)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+  ko:K07200 PRKAG; 5'-AMP-activated protein kinase, regulatory gamma subunit
+
+map04066 HIF-1 signaling pathway (3)
+
+  ko:K00134 GAPDH; glyceraldehyde 3-phosphate dehydrogenase [EC:1.2.1.12]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+
+map05205 Proteoglycans in cancer (3)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04437 FLNA; filamin
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+
+map04620 Toll-like receptor signaling pathway (3)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04730 IRAK1; interleukin-1 receptor-associated kinase 1 [EC:2.7.11.1]
+  ko:K04733 IRAK4; interleukin-1 receptor-associated kinase 4 [EC:2.7.11.1]
+
+map00052 Galactose metabolism (3)
+
+  ko:K00963 UGP2; UTP--glucose-1-phosphate uridylyltransferase [EC:2.7.7.9]
+  ko:K01784 galE; UDP-glucose 4-epimerase [EC:5.1.3.2]
+  ko:K12447 USP; UDP-sugar pyrophosphorylase [EC:2.7.7.64]
+
+map00340 Histidine metabolism (3)
+
+  ko:K00013 hisD; histidinol dehydrogenase [EC:1.1.1.23]
+  ko:K00128 ALDH; aldehyde dehydrogenase (NAD+) [EC:1.2.1.3]
+  ko:K14152 HIS4; phosphoribosyl-ATP pyrophosphohydrolase / phosphoribosyl-AMP cyclohydrolase / histidinol dehydrogenase [EC:3.6.1.31 3.5.4.19 1.1.1.23]
+
+map03030 DNA replication (3)
+
+  ko:K02210 MCM7; DNA replication licensing factor MCM7 [EC:3.6.4.12]
+  ko:K02212 MCM4; DNA replication licensing factor MCM4 [EC:3.6.4.12]
+  ko:K07466 RFA1; replication factor A1
+
+map04014 Ras signaling pathway (3)
+
+  ko:K01047 PLA2G; secretory phospholipase A2 [EC:3.1.1.4]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K19613 SHOC2; leucine-rich repeat protein SHOC2
+
+map04720 Long-term potentiation (3)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+
+map04928 Parathyroid hormone synthesis, secretion and action (3)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+  ko:K09262 MEF2D; MADS-box transcription enhancer factor 2D
+
+map05214 Glioma (3)
+
+  ko:K01110 PTEN; phosphatidylinositol-3,4,5-trisphosphate 3-phosphatase and dual-specificity protein phosphatase PTEN [EC:3.1.3.16 3.1.3.48 3.1.3.67]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+
+map04022 cGMP-PKG signaling pathway (3)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+  ko:K09262 MEF2D; MADS-box transcription enhancer factor 2D
+
+map04725 Cholinergic synapse (3)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+
+map03060 Protein export (3)
+
+  ko:K03217 yidC; YidC/Oxa1 family membrane protein insertase
+  ko:K10956 SEC61A; protein transport protein SEC61 subunit alpha
+  ko:K12275 SEC62; translocation protein SEC62
+
+map00941 Flavonoid biosynthesis (3)
+
+  ko:K00487 CYP73A; trans-cinnamate 4-monooxygenase [EC:1.14.14.91]
+  ko:K13065 E2.3.1.133; shikimate O-hydroxycinnamoyltransferase [EC:2.3.1.133]
+  ko:K13082 DFR; bifunctional dihydroflavonol 4-reductase/flavanone 4-reductase [EC:1.1.1.219 1.1.1.234]
+
+map05235 PD-L1 expression and PD-1 checkpoint pathway in cancer (3)
+
+  ko:K01110 PTEN; phosphatidylinositol-3,4,5-trisphosphate 3-phosphatase and dual-specificity protein phosphatase PTEN [EC:3.1.3.16 3.1.3.48 3.1.3.67]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04421 MAP3K3; mitogen-activated protein kinase kinase kinase 3 [EC:2.7.11.25]
+
+map05170 Human immunodeficiency virus 1 infection (3)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04730 IRAK1; interleukin-1 receptor-associated kinase 1 [EC:2.7.11.1]
+  ko:K04733 IRAK4; interleukin-1 receptor-associated kinase 4 [EC:2.7.11.1]
+
+map03460 Fanconi anemia pathway (3)
+
+  ko:K07466 RFA1; replication factor A1
+  ko:K10858 PMS2; DNA mismatch repair protein PMS2
+  ko:K15365 RMI2; RecQ-mediated genome instability protein 2
+
+map05134 Legionellosis (3)
+
+  ko:K03231 EEF1A; elongation factor 1-alpha
+  ko:K07874 RAB1A; Ras-related protein Rab-1A
+  ko:K07953 SAR1; GTP-binding protein SAR1 [EC:3.6.5.-]
+
+map05031 Amphetamine addiction (2)
+
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+
+map00230 Purine metabolism (2)
+
+  ko:K01510 ENTPD1_3_8; apyrase [EC:3.6.1.5]
+  ko:K11808 ADE2; phosphoribosylaminoimidazole carboxylase [EC:4.1.1.21]
+
+map04210 Apoptosis (2)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+
+map03050 Proteasome (2)
+
+  ko:K03029 PSMD4; 26S proteasome regulatory subunit N10
+  ko:K03065 PSMC3; 26S proteasome regulatory subunit T5
+
+map04392 Hippo signaling pathway - multiple species (2)
+
+  ko:K06683 CDC15; cell division control protein CDC15 [EC:2.7.11.1]
+  ko:K06685 MOB1; MOB kinase activator 1
+
+map05160 Hepatitis C (2)
+
+  ko:K02206 CDK2; cyclin-dependent kinase 2 [EC:2.7.11.22]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map00945 Stilbenoid, diarylheptanoid and gingerol biosynthesis (2)
+
+  ko:K00487 CYP73A; trans-cinnamate 4-monooxygenase [EC:1.14.14.91]
+  ko:K13065 E2.3.1.133; shikimate O-hydroxycinnamoyltransferase [EC:2.3.1.133]
+
+map04320 Dorso-ventral axis formation (2)
+
+  ko:K02184 FMN2; formin 2
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map04713 Circadian entrainment (2)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+
+map00410 beta-Alanine metabolism (2)
+
+  ko:K00128 ALDH; aldehyde dehydrogenase (NAD+) [EC:1.2.1.3]
+  ko:K00232 E1.3.3.6; acyl-CoA oxidase [EC:1.3.3.6]
+
+map04721 Synaptic vesicle cycle (2)
+
+  ko:K01528 DNM1_3; dynamin 1/3 [EC:3.6.5.5]
+  ko:K02145 ATPeV1A; V-type H+-transporting ATPase subunit A [EC:7.1.2.2]
+
+map01524 Platinum drug resistance (2)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K14686 SLC31A1; solute carrier family 31 (copper transporter), member 1
+
+map04931 Insulin resistance (2)
+
+  ko:K01110 PTEN; phosphatidylinositol-3,4,5-trisphosphate 3-phosphatase and dual-specificity protein phosphatase PTEN [EC:3.1.3.16 3.1.3.48 3.1.3.67]
+  ko:K07200 PRKAG; 5'-AMP-activated protein kinase, regulatory gamma subunit
+
+map04915 Estrogen signaling pathway (2)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+
+map04270 Vascular smooth muscle contraction (2)
+
+  ko:K01047 PLA2G; secretory phospholipase A2 [EC:3.1.1.4]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map04214 Apoptosis - fly (2)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+
+map04919 Thyroid hormone signaling pathway (2)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K05857 PLCD; phosphatidylinositol phospholipase C, delta [EC:3.1.4.11]
+
+map05221 Acute myeloid leukemia (2)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K06627 CCNA; cyclin-A
+
+map03015 mRNA surveillance pathway (2)
+
+  ko:K11584 PPP2R5; serine/threonine-protein phosphatase 2A regulatory subunit B'
+  ko:K14406 CSTF1; cleavage stimulation factor subunit 1
+
+map00591 Linoleic acid metabolism (2)
+
+  ko:K00454 LOX2S; lipoxygenase [EC:1.13.11.12]
+  ko:K01047 PLA2G; secretory phospholipase A2 [EC:3.1.1.4]
+
+map00380 Tryptophan metabolism (2)
+
+  ko:K00128 ALDH; aldehyde dehydrogenase (NAD+) [EC:1.2.1.3]
+  ko:K07408 CYP1A1; cytochrome P450 family 1 subfamily A1 [EC:1.14.14.1]
+
+map03040 Spliceosome (2)
+
+  ko:K12829 SF3B2; splicing factor 3B subunit 2
+  ko:K12830 SF3B3; splicing factor 3B subunit 3
+
+map04624 Toll and Imd signaling pathway (2)
+
+  ko:K04730 IRAK1; interleukin-1 receptor-associated kinase 1 [EC:2.7.11.1]
+  ko:K04733 IRAK4; interleukin-1 receptor-associated kinase 4 [EC:2.7.11.1]
+
+map04933 AGE-RAGE signaling pathway in diabetic complications (2)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K05857 PLCD; phosphatidylinositol phospholipase C, delta [EC:3.1.4.11]
+
+map00330 Arginine and proline metabolism (2)
+
+  ko:K00128 ALDH; aldehyde dehydrogenase (NAD+) [EC:1.2.1.3]
+  ko:K12657 ALDH18A1; delta-1-pyrroline-5-carboxylate synthetase [EC:2.7.2.11 1.2.1.41]
+
+map04932 Non-alcoholic fatty liver disease (2)
+
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+  ko:K07200 PRKAG; 5'-AMP-activated protein kinase, regulatory gamma subunit
+
+map04390 Hippo signaling pathway (2)
+
+  ko:K06685 MOB1; MOB kinase activator 1
+  ko:K16175 SCRIB; protein scribble
+
+map04621 NOD-like receptor signaling pathway (2)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04733 IRAK4; interleukin-1 receptor-associated kinase 4 [EC:2.7.11.1]
+
+map01210 2-Oxocarboxylic acid metabolism (2)
+
+  ko:K00052 leuB; 3-isopropylmalate dehydrogenase [EC:1.1.1.85]
+  ko:K01687 ilvD; dihydroxy-acid dehydratase [EC:4.2.1.9]
+
+map05230 Central carbon metabolism in cancer (2)
+
+  ko:K01110 PTEN; phosphatidylinositol-3,4,5-trisphosphate 3-phosphatase and dual-specificity protein phosphatase PTEN [EC:3.1.3.16 3.1.3.48 3.1.3.67]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map04925 Aldosterone synthesis and secretion (2)
+
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+
+map00290 Valine, leucine and isoleucine biosynthesis (2)
+
+  ko:K00052 leuB; 3-isopropylmalate dehydrogenase [EC:1.1.1.85]
+  ko:K01687 ilvD; dihydroxy-acid dehydratase [EC:4.2.1.9]
+
+map04910 Insulin signaling pathway (2)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K07200 PRKAG; 5'-AMP-activated protein kinase, regulatory gamma subunit
+
+map04012 ErbB signaling pathway (2)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+
+map05167 Kaposi sarcoma-associated herpesvirus infection (2)
+
+  ko:K00914 PIK3C3; phosphatidylinositol 3-kinase [EC:2.7.1.137]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map04723 Retrograde endocannabinoid signaling (2)
+
+  ko:K01054 MGLL; acylglycerol lipase [EC:3.1.1.23]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map04072 Phospholipase D signaling pathway (2)
+
+  ko:K01528 DNM1_3; dynamin 1/3 [EC:3.6.5.5]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map03420 Nucleotide excision repair (2)
+
+  ko:K07466 RFA1; replication factor A1
+  ko:K10846 ERCC5; DNA excision repair protein ERCC-5
+
+map00310 Lysine degradation (2)
+
+  ko:K00128 ALDH; aldehyde dehydrogenase (NAD+) [EC:1.2.1.3]
+  ko:K11423 SETD2; [histone H3]-lysine36 N-trimethyltransferase [EC:2.1.1.359]
+
+map01523 Antifolate resistance (2)
+
+  ko:K00600 glyA; glycine hydroxymethyltransferase [EC:2.1.2.1]
+  ko:K05681 ABCG2; ATP-binding cassette, subfamily G (WHITE), member 2
+
+map04064 NF-kappa B signaling pathway (2)
+
+  ko:K04730 IRAK1; interleukin-1 receptor-associated kinase 1 [EC:2.7.11.1]
+  ko:K04733 IRAK4; interleukin-1 receptor-associated kinase 4 [EC:2.7.11.1]
+
+map05163 Human cytomegalovirus infection (2)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+
+map05223 Non-small cell lung cancer (2)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K10396 KIF5; kinesin family member 5
+
+map04360 Axon guidance (2)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+
+map05226 Gastric cancer (2)
+
+  ko:K02206 CDK2; cyclin-dependent kinase 2 [EC:2.7.11.22]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map00130 Ubiquinone and other terpenoid-quinone biosynthesis (2)
+
+  ko:K00487 CYP73A; trans-cinnamate 4-monooxygenase [EC:1.14.14.91]
+  ko:K01904 4CL; 4-coumarate--CoA ligase [EC:6.2.1.12]
+
+map04530 Tight junction (2)
+
+  ko:K07200 PRKAG; 5'-AMP-activated protein kinase, regulatory gamma subunit
+  ko:K16175 SCRIB; protein scribble
+
+map04613 Neutrophil extracellular trap formation (2)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K11253 H3; histone H3
+
+map04020 Calcium signaling pathway (2)
+
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+  ko:K05857 PLCD; phosphatidylinositol phospholipase C, delta [EC:3.1.4.11]
+
+map00071 Fatty acid degradation (2)
+
+  ko:K00128 ALDH; aldehyde dehydrogenase (NAD+) [EC:1.2.1.3]
+  ko:K00232 E1.3.3.6; acyl-CoA oxidase [EC:1.3.3.6]
+
+map04013 MAPK signaling pathway - fly (2)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K14290 XPO1; exportin-1
+
+map04136 Autophagy - other (2)
+
+  ko:K00914 PIK3C3; phosphatidylinositol 3-kinase [EC:2.7.1.137]
+  ko:K08333 PIK3R4; phosphoinositide-3-kinase, regulatory subunit 4 [EC:2.7.11.1]
+
+map05206 MicroRNAs in cancer (2)
+
+  ko:K01110 PTEN; phosphatidylinositol-3,4,5-trisphosphate 3-phosphatase and dual-specificity protein phosphatase PTEN [EC:3.1.3.16 3.1.3.48 3.1.3.67]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map04911 Insulin secretion (2)
+
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+
+map05110 Vibrio cholerae infection (2)
+
+  ko:K02145 ATPeV1A; V-type H+-transporting ATPase subunit A [EC:7.1.2.2]
+  ko:K10956 SEC61A; protein transport protein SEC61 subunit alpha
+
+map00190 Oxidative phosphorylation (2)
+
+  ko:K01535 PMA1; H+-transporting ATPase [EC:7.1.2.1]
+  ko:K02145 ATPeV1A; V-type H+-transporting ATPase subunit A [EC:7.1.2.2]
+
+map04926 Relaxin signaling pathway (2)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+
+map05213 Endometrial cancer (2)
+
+  ko:K01110 PTEN; phosphatidylinositol-3,4,5-trisphosphate 3-phosphatase and dual-specificity protein phosphatase PTEN [EC:3.1.3.16 3.1.3.48 3.1.3.67]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map05222 Small cell lung cancer (2)
+
+  ko:K01110 PTEN; phosphatidylinositol-3,4,5-trisphosphate 3-phosphatase and dual-specificity protein phosphatase PTEN [EC:3.1.3.16 3.1.3.48 3.1.3.67]
+  ko:K02206 CDK2; cyclin-dependent kinase 2 [EC:2.7.11.22]
+
+map04810 Regulation of actin cytoskeleton (2)
+
+  ko:K00921 PIKFYVE; 1-phosphatidylinositol-3-phosphate 5-kinase [EC:2.7.1.150]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map00541 O-Antigen nucleotide sugar biosynthesis (2)
+
+  ko:K00963 UGP2; UTP--glucose-1-phosphate uridylyltransferase [EC:2.7.7.9]
+  ko:K01784 galE; UDP-glucose 4-epimerase [EC:5.1.3.2]
+
+map04211 Longevity regulating pathway (2)
+
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+  ko:K07200 PRKAG; 5'-AMP-activated protein kinase, regulatory gamma subunit
+
+map03430 Mismatch repair (2)
+
+  ko:K07466 RFA1; replication factor A1
+  ko:K10858 PMS2; DNA mismatch repair protein PMS2
+
+map05202 Transcriptional misregulation in cancer (2)
+
+  ko:K06627 CCNA; cyclin-A
+  ko:K11253 H3; histone H3
+
+map04115 p53 signaling pathway (2)
+
+  ko:K01110 PTEN; phosphatidylinositol-3,4,5-trisphosphate 3-phosphatase and dual-specificity protein phosphatase PTEN [EC:3.1.3.16 3.1.3.48 3.1.3.67]
+  ko:K02206 CDK2; cyclin-dependent kinase 2 [EC:2.7.11.22]
+
+map04391 Hippo signaling pathway - fly (2)
+
+  ko:K06685 MOB1; MOB kinase activator 1
+  ko:K16175 SCRIB; protein scribble
+
+map01521 EGFR tyrosine kinase inhibitor resistance (2)
+
+  ko:K01110 PTEN; phosphatidylinositol-3,4,5-trisphosphate 3-phosphatase and dual-specificity protein phosphatase PTEN [EC:3.1.3.16 3.1.3.48 3.1.3.67]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map04712 Circadian rhythm - plant (2)
+
+  ko:K12126 PIF3; phytochrome-interacting factor 3
+  ko:K12135 CO; zinc finger protein CONSTANS
+
+map05168 Herpes simplex virus 1 infection (2)
+
+  ko:K04730 IRAK1; interleukin-1 receptor-associated kinase 1 [EC:2.7.11.1]
+  ko:K04733 IRAK4; interleukin-1 receptor-associated kinase 4 [EC:2.7.11.1]
+
+map04350 TGF-beta signaling pathway (2)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04681 RBL1; retinoblastoma-like protein 1
+
+map05224 Breast cancer (2)
+
+  ko:K01110 PTEN; phosphatidylinositol-3,4,5-trisphosphate 3-phosphatase and dual-specificity protein phosphatase PTEN [EC:3.1.3.16 3.1.3.48 3.1.3.67]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map05218 Melanoma (2)
+
+  ko:K01110 PTEN; phosphatidylinositol-3,4,5-trisphosphate 3-phosphatase and dual-specificity protein phosphatase PTEN [EC:3.1.3.16 3.1.3.48 3.1.3.67]
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map04935 Growth hormone synthesis, secretion and action (2)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+
+map04916 Melanogenesis (2)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+
+map03010 Ribosome (2)
+
+  ko:K02888 RP-L21; large subunit ribosomal protein L21
+  ko:K02996 RP-S9; small subunit ribosomal protein S9
+
+map04668 TNF signaling pathway (2)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+
+map00770 Pantothenate and CoA biosynthesis (2)
+
+  ko:K00128 ALDH; aldehyde dehydrogenase (NAD+) [EC:1.2.1.3]
+  ko:K01687 ilvD; dihydroxy-acid dehydratase [EC:4.2.1.9]
+
+map04380 Osteoclast differentiation (1)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map05211 Renal cell carcinoma (1)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map00534 Glycosaminoglycan biosynthesis - heparan sulfate / heparin (1)
+
+  ko:K00734 B3GALT6; galactosylxylosylprotein 3-beta-galactosyltransferase [EC:2.4.1.134]
+
+map00532 Glycosaminoglycan biosynthesis - chondroitin sulfate / dermatan sulfate (1)
+
+  ko:K00734 B3GALT6; galactosylxylosylprotein 3-beta-galactosyltransferase [EC:2.4.1.134]
+
+map00760 Nicotinate and nicotinamide metabolism (1)
+
+  ko:K06210 NMNAT; nicotinamide mononucleotide adenylyltransferase [EC:2.7.7.1 2.7.7.18]
+
+map04710 Circadian rhythm (1)
+
+  ko:K07200 PRKAG; 5'-AMP-activated protein kinase, regulatory gamma subunit
+
+map04975 Fat digestion and absorption (1)
+
+  ko:K01047 PLA2G; secretory phospholipase A2 [EC:3.1.1.4]
+
+map04724 Glutamatergic synapse (1)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map00903 Limonene and pinene degradation (1)
+
+  ko:K00128 ALDH; aldehyde dehydrogenase (NAD+) [EC:1.2.1.3]
+
+map04310 Wnt signaling pathway (1)
+
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+
+map04612 Antigen processing and presentation (1)
+
+  ko:K08064 NFYA; nuclear transcription factor Y, alpha
+
+map03070 Bacterial secretion system (1)
+
+  ko:K03217 yidC; YidC/Oxa1 family membrane protein insertase
+
+map04213 Longevity regulating pathway - multiple species (1)
+
+  ko:K07200 PRKAG; 5'-AMP-activated protein kinase, regulatory gamma subunit
+
+map04664 Fc epsilon RI signaling pathway (1)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map04976 Bile secretion (1)
+
+  ko:K05681 ABCG2; ATP-binding cassette, subfamily G (WHITE), member 2
+
+map04142 Lysosome (1)
+
+  ko:K12385 NPC1; Niemann-Pick C1 protein
+
+map00660 C5-Branched dibasic acid metabolism (1)
+
+  ko:K00052 leuB; 3-isopropylmalate dehydrogenase [EC:1.1.1.85]
+
+map00901 Indole alkaloid biosynthesis (1)
+
+  ko:K01757 STR1; strictosidine synthase [EC:4.3.3.2]
+
+map05231 Choline metabolism in cancer (1)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map05216 Thyroid cancer (1)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map04960 Aldosterone-regulated sodium reabsorption (1)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map04920 Adipocytokine signaling pathway (1)
+
+  ko:K07200 PRKAG; 5'-AMP-activated protein kinase, regulatory gamma subunit
+
+map04979 Cholesterol metabolism (1)
+
+  ko:K12385 NPC1; Niemann-Pick C1 protein
+
+map04370 VEGF signaling pathway (1)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map04750 Inflammatory mediator regulation of TRP channels (1)
+
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+
+map04625 C-type lectin receptor signaling pathway (1)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map04659 Th17 cell differentiation (1)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map05204 Chemical carcinogenesis (1)
+
+  ko:K07408 CYP1A1; cytochrome P450 family 1 subfamily A1 [EC:1.14.14.1]
+
+map01040 Biosynthesis of unsaturated fatty acids (1)
+
+  ko:K00232 E1.3.3.6; acyl-CoA oxidase [EC:1.3.3.6]
+
+map00600 Sphingolipid metabolism (1)
+
+  ko:K00654 SPT; serine palmitoyltransferase [EC:2.3.1.50]
+
+map04658 Th1 and Th2 cell differentiation (1)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map00140 Steroid hormone biosynthesis (1)
+
+  ko:K07408 CYP1A1; cytochrome P450 family 1 subfamily A1 [EC:1.14.14.1]
+
+map00980 Metabolism of xenobiotics by cytochrome P450 (1)
+
+  ko:K07408 CYP1A1; cytochrome P450 family 1 subfamily A1 [EC:1.14.14.1]
+
+map00905 Brassinosteroid biosynthesis (1)
+
+  ko:K09588 CYP90A1; cytochrome P450 family 90 subfamily A1 [EC:1.14.-.-]
+
+map04745 Phototransduction - fly (1)
+
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+
+map01220 Degradation of aromatic compounds (1)
+
+  ko:K00487 CYP73A; trans-cinnamate 4-monooxygenase [EC:1.14.14.91]
+
+map05100 Bacterial invasion of epithelial cells (1)
+
+  ko:K01528 DNM1_3; dynamin 1/3 [EC:3.6.5.5]
+
+map04611 Platelet activation (1)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map03018 RNA degradation (1)
+
+  ko:K12581 CNOT7_8; CCR4-NOT transcription complex subunit 7/8
+
+map04540 Gap junction (1)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map05210 Colorectal cancer (1)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map00590 Arachidonic acid metabolism (1)
+
+  ko:K01047 PLA2G; secretory phospholipase A2 [EC:3.1.1.4]
+
+map04657 IL-17 signaling pathway (1)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map04011 MAPK signaling pathway - yeast (1)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map00710 Carbon fixation in photosynthetic organisms (1)
+
+  ko:K00134 GAPDH; glyceraldehyde 3-phosphate dehydrogenase [EC:1.2.1.12]
+
+map04660 T cell receptor signaling pathway (1)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map00460 Cyanoamino acid metabolism (1)
+
+  ko:K00600 glyA; glycine hydroxymethyltransferase [EC:2.1.2.1]
+
+map04730 Long-term depression (1)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map04726 Serotonergic synapse (1)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map00830 Retinol metabolism (1)
+
+  ko:K07408 CYP1A1; cytochrome P450 family 1 subfamily A1 [EC:1.14.14.1]
+
+map04918 Thyroid hormone synthesis (1)
+
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+
+map00280 Valine, leucine and isoleucine degradation (1)
+
+  ko:K00128 ALDH; aldehyde dehydrogenase (NAD+) [EC:1.2.1.3]
+
+map00270 Cysteine and methionine metabolism (1)
+
+  ko:K00058 serA; D-3-phosphoglycerate dehydrogenase / 2-oxoglutarate reductase [EC:1.1.1.95 1.1.1.399]
+
+map05323 Rheumatoid arthritis (1)
+
+  ko:K02145 ATPeV1A; V-type H+-transporting ATPase subunit A [EC:7.1.2.2]
+
+map04666 Fc gamma R-mediated phagocytosis (1)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map03022 Basal transcription factors (1)
+
+  ko:K03124 TFIIB; transcription initiation factor TFIIB
+
+map00625 Chloroalkane and chloroalkene degradation (1)
+
+  ko:K00128 ALDH; aldehyde dehydrogenase (NAD+) [EC:1.2.1.3]
+
+map04923 Regulation of lipolysis in adipocytes (1)
+
+  ko:K01054 MGLL; acylglycerol lipase [EC:3.1.1.23]
+
+map04015 Rap1 signaling pathway (1)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map01212 Fatty acid metabolism (1)
+
+  ko:K00232 E1.3.3.6; acyl-CoA oxidase [EC:1.3.3.6]
+
+map05120 Epithelial cell signaling in Helicobacter pylori infection (1)
+
+  ko:K02145 ATPeV1A; V-type H+-transporting ATPase subunit A [EC:7.1.2.2]
+
+map04740 Olfactory transduction (1)
+
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+
+map01522 Endocrine resistance (1)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map04961 Endocrine and other factor-regulated calcium reabsorption (1)
+
+  ko:K01528 DNM1_3; dynamin 1/3 [EC:3.6.5.5]
+
+map04662 B cell receptor signaling pathway (1)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map05220 Chronic myeloid leukemia (1)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map05030 Cocaine addiction (1)
+
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+
+map00565 Ether lipid metabolism (1)
+
+  ko:K01047 PLA2G; secretory phospholipase A2 [EC:3.1.1.4]
+
+map00511 Other glycan degradation (1)
+
+  ko:K01227 ENGASE; mannosyl-glycoprotein endo-beta-N-acetylglucosaminidase [EC:3.2.1.96]
+
+map05212 Pancreatic cancer (1)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map04217 Necroptosis (1)
+
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+
+map00981 Insect hormone biosynthesis (1)
+
+  ko:K00128 ALDH; aldehyde dehydrogenase (NAD+) [EC:1.2.1.3]
+
+map03320 PPAR signaling pathway (1)
+
+  ko:K00232 E1.3.3.6; acyl-CoA oxidase [EC:1.3.3.6]
+
+map04930 Type II diabetes mellitus (1)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map04913 Ovarian steroidogenesis (1)
+
+  ko:K07408 CYP1A1; cytochrome P450 family 1 subfamily A1 [EC:1.14.14.1]
+
+map04520 Adherens junction (1)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map02024 Quorum sensing (1)
+
+  ko:K03217 yidC; YidC/Oxa1 family membrane protein insertase
+
+map00100 Steroid biosynthesis (1)
+
+  ko:K01853 CAS1; cycloartenol synthase [EC:5.4.99.8]
+
+map00540 Lipopolysaccharide biosynthesis (1)
+
+  ko:K00979 kdsB; 3-deoxy-manno-octulosonate cytidylyltransferase (CMP-KDO synthetase) [EC:2.7.7.38]
+
+map00620 Pyruvate metabolism (1)
+
+  ko:K00128 ALDH; aldehyde dehydrogenase (NAD+) [EC:1.2.1.3]
+
+map03440 Homologous recombination (1)
+
+  ko:K07466 RFA1; replication factor A1
+
+map04137 Mitophagy - animal (1)
+
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+
+map00640 Propanoate metabolism (1)
+
+  ko:K00232 E1.3.3.6; acyl-CoA oxidase [EC:1.3.3.6]
+
+map04062 Chemokine signaling pathway (1)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map04917 Prolactin signaling pathway (1)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map04120 Ubiquitin mediated proteolysis (1)
+
+  ko:K12456 APC13; anaphase-promoting complex subunit 13
+
+map04927 Cortisol synthesis and secretion (1)
+
+  ko:K04374 ATF4; cyclic AMP-dependent transcription factor ATF-4
+
+map00670 One carbon pool by folate (1)
+
+  ko:K00600 glyA; glycine hydroxymethyltransferase [EC:2.1.2.1]
+
+map04929 GnRH secretion (1)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map00240 Pyrimidine metabolism (1)
+
+  ko:K01510 ENTPD1_3_8; apyrase [EC:3.6.1.5]
+
+map04978 Mineral absorption (1)
+
+  ko:K14686 SLC31A1; solute carrier family 31 (copper transporter), member 1
+
+map05219 Bladder cancer (1)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map04361 Axon regeneration (1)
+
+  ko:K01110 PTEN; phosphatidylinositol-3,4,5-trisphosphate 3-phosphatase and dual-specificity protein phosphatase PTEN [EC:3.1.3.16 3.1.3.48 3.1.3.67]
+
+map04972 Pancreatic secretion (1)
+
+  ko:K01047 PLA2G; secretory phospholipase A2 [EC:3.1.1.4]
+
+map00630 Glyoxylate and dicarboxylate metabolism (1)
+
+  ko:K00600 glyA; glycine hydroxymethyltransferase [EC:2.1.2.1]
+
+map04550 Signaling pathways regulating pluripotency of stem cells (1)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map04650 Natural killer cell mediated cytotoxicity (1)
+
+  ko:K04371 ERK; mitogen-activated protein kinase 1/3 [EC:2.7.11.24]
+
+map00360 Phenylalanine metabolism (1)
+
+  ko:K10775 PAL; phenylalanine ammonia-lyase [EC:4.3.1.24]
+
+map04971 Gastric acid secretion (1)
+
+  ko:K04515 CAMK2; calcium/calmodulin-dependent protein kinase (CaM kinase) II [EC:2.7.11.17]
+
+map05322 Systemic lupus erythematosus (1)
+
+  ko:K11253 H3; histone H3
+
+map05410 Hypertrophic cardiomyopathy (1)
+
+  ko:K07200 PRKAG; 5'-AMP-activated protein kinase, regulatory gamma subunit
+
+map04966 Collecting duct acid secretion (1)
+
+  ko:K02145 ATPeV1A; V-type H+-transporting ATPase subunit A [EC:7.1.2.2]
+
+map00515 Mannose type O-glycan biosynthesis (1)
+
+  ko:K00735 B3GAT1; galactosylgalactosylxylosylprotein 3-beta-glucuronosyltransferase 1 [EC:2.4.1.135]
