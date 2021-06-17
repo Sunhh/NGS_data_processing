@@ -70,7 +70,7 @@ if ( $opts{'needIndex'} ) {
 	while ( -e "$tmp_dbID.mfa" ) {
 		$tmp_dbID ++; 
 	}
-	&exeCmd_1cmd("cd $aln_dbs; ln -s $db_path ./$tmp_dbID.mfa; ./makeidx.pl -inp $tmp_dbID.mfa; cd -;", $opts{'printCmd'}); 
+	&runCmd("cd $aln_dbs; ln -s $db_path ./$tmp_dbID.mfa; ./makeidx.pl -inp $tmp_dbID.mfa; cd -;", $opts{'printCmd'}); 
 	&tsmsg("[Rec]Change database ID from [$dbID] to [$tmp_dbID]\n"); 
 	$dbID = $tmp_dbID; 
 }
@@ -94,22 +94,22 @@ if ( defined $opts{'cpuN'}  ) {
 my @oFiles; 
 for my $inFa ( @{$opts{'inFa'}} ) {
 	my $outFile = $opts{'out'} // "$inFa.spaln.gff3";
-	&exeCmd_1cmd("spaln $opts{'para_spaln'} -o $outFile -d$dbID $inFa", $opts{'printCmd'}); 
+	&runCmd("spaln $opts{'para_spaln'} -o $outFile -d$dbID $inFa", $opts{'printCmd'}); 
 	if ($opts{'cnvt2maker'}) {
 		if ( $opts{'aln_type'} eq 'prot2genome') {
-			&exeCmd_1cmd("perl $pl_cnvt2maker $outFile > $outFile.maker", $opts{'printCmd'}); 
+			&runCmd("perl $pl_cnvt2maker $outFile > $outFile.maker", $opts{'printCmd'}); 
 		} elsif ( $opts{'aln_type'} eq 'est2genome' ) {
-			&exeCmd_1cmd("perl $pl_cnvt2maker $outFile | perl -pe ' s!\\tprotein_match\\t!\\tmatch\\t!; ' > $outFile.maker", $opts{'printCmd'}); 
+			&runCmd("perl $pl_cnvt2maker $outFile | perl -pe ' s!\\tprotein_match\\t!\\tmatch\\t!; ' > $outFile.maker", $opts{'printCmd'}); 
 		} else {
-			&exeCmd_1cmd("perl $pl_cnvt2maker $outFile > $outFile.maker", $opts{'printCmd'}); 
+			&runCmd("perl $pl_cnvt2maker $outFile > $outFile.maker", $opts{'printCmd'}); 
 		}
-		&exeCmd_1cmd("mv $outFile.maker $outFile", $opts{'printCmd'}); 
+		&runCmd("mv $outFile.maker $outFile", $opts{'printCmd'}); 
 	}
 	push(@oFiles, $outFile); 
 }
 if ( defined $opts{'outMerge'} ) {
 	my $in_str = join(' ', @oFiles); 
-	&exeCmd_1cmd("gff3_merge -l -o $opts{'outMerge'} $in_str", $opts{'printCmd'}); 
+	&runCmd("gff3_merge -l -o $opts{'outMerge'} $in_str", $opts{'printCmd'}); 
 }
 if ( $opts{'needIndex'} ) {
 	my @idx_files; 
@@ -117,5 +117,9 @@ if ( $opts{'needIndex'} ) {
 		push(@idx_files, "${dbID}$suff"); 
 	}
 	my $idx_str = join(' ', @idx_files); 
-	&exeCmd_1cmd("cd $aln_dbs ; rm $idx_str ; cd -", $opts{'printCmd'}); 
+	&runCmd("cd $aln_dbs ; rm $idx_str ; cd -", $opts{'printCmd'}); 
+}
+
+sub runCmd {
+	&exeCmd_1cmd($_[0]) and &stopErr("[Err] Failed to run CMD:$_[0]\n");
 }
