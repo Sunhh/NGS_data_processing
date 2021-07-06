@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# 2021-06-29: Sort locations before comparison. Remove one layer of '@geneLines'
 use strict; 
 use warnings; 
 
@@ -85,9 +86,9 @@ if (defined $opts{'dupSrcGff'}) {
 				&add_mod(\@geneLines, \%have_model); 
 			}
 			@geneLines = (); 
-			push(@geneLines, [[@ta]]); 
+			push(@geneLines, [@ta]); 
 		} elsif ( defined $ele2incl{$eleType} ) {
-			push( @geneLines, [[@ta]] ); 
+			push( @geneLines, [@ta] ); 
 		} else {
 			die; 
 		}
@@ -111,9 +112,9 @@ while (<>) {
 			&is_have(\@geneLines, \%have_model, $noAdd) or &out_gL(\@geneLines); 
 		}
 		@geneLines = (); 
-		push(@geneLines, [[@ta]]); 
+		push(@geneLines, [@ta]); 
 	} elsif ( defined $ele2incl{$eleType} ) {
-		push(@geneLines, [[@ta]]); 
+		push(@geneLines, [@ta]); 
 	} else {
 		die; 
 	}
@@ -127,19 +128,17 @@ if (scalar(@geneLines) > 0) {
 
 sub add_mod {
 	my ($ar, $hr) = @_; 
-	my $scfID = $ar->[0][0][0];
-	my ($gS, $gE, $gStr) = @{$ar->[0][0]}[3,4,6]; 
+	my $scfID = $ar->[0][0];
+	my ($gS, $gE, $gStr) = @{$ar->[0]}[3,4,6]; 
 	my $gKey ; 
-	my @chk_ar ;
 	my ($chkS, $chkE);
 	for my $t1 (@$ar) {
-		my $eleType = lc($t1->[0][2]);
+		my $eleType = lc($t1->[2]);
 		defined $ele2chk{$eleType} or next;
-		push(@chk_ar, $t1);
-		defined $chkS or $chkS = $t1->[0][3];
-		defined $chkE or $chkE = $t1->[0][4];
-		$chkS > $t1->[0][3] and $chkS = $t1->[0][3];
-		$chkE < $t1->[0][4] and $chkE = $t1->[0][4];
+		defined $chkS or $chkS = $t1->[3];
+		defined $chkE or $chkE = $t1->[4];
+		$chkS > $t1->[3] and $chkS = $t1->[3];
+		$chkE < $t1->[4] and $chkE = $t1->[4];
 	}
 	$gKey = join("\t", $chkS, $chkE, $gStr);
 	push(@{$hr->{$scfID}{$gKey}}, [@$ar]); 
@@ -149,23 +148,24 @@ sub is_have {
 	my ($ar, $hr) = @_; 
 	my $noAdd = shift; 
 	$noAdd = $noAdd // 0; 
-	my $scfID = $ar->[0][0][0]; 
+	my $scfID = $ar->[0][0]; 
 	my $is_have = 1; 
-	my ($gS, $gE, $gStr) = @{$ar->[0][0]}[3,4,6]; 
+	my ($gS, $gE, $gStr) = @{$ar->[0]}[3,4,6]; 
 	my $gKey = join("\t", $gS, $gE, $gStr); 
 	my $had_ta8 = ''; 
 
 	my @chk_ar ; 
 	my ($chkS, $chkE); 
 	for my $t1 (@$ar) {
-		my $eleType = lc($t1->[0][2]); 
+		my $eleType = lc($t1->[2]); 
 		defined $ele2chk{$eleType} or next; 
 		push(@chk_ar, $t1); 
-		defined $chkS or $chkS = $t1->[0][3]; 
-		defined $chkE or $chkE = $t1->[0][4]; 
-		$chkS > $t1->[0][3] and $chkS = $t1->[0][3]; 
-		$chkE < $t1->[0][4] and $chkE = $t1->[0][4]; 
+		defined $chkS or $chkS = $t1->[3]; 
+		defined $chkE or $chkE = $t1->[4]; 
+		$chkS > $t1->[3] and $chkS = $t1->[3]; 
+		$chkE < $t1->[4] and $chkE = $t1->[4]; 
 	}
+	@chk_ar = sort { $a->[3] <=> $b->[3] || $a->[4] <=> $b->[4] || $a->[2] cmp $b->[2] } @chk_ar; 
 	# Update gKey
 	$gKey = join("\t", $chkS, $chkE, $gStr); 
 	
@@ -177,20 +177,21 @@ sub is_have {
 				my $tmp_have = 1; 
 				my @chk_tr; 
 				for my $t1 (@$tr) {
-					my $eleType = lc($t1->[0][2]); 
+					my $eleType = lc($t1->[2]); 
 					defined $ele2chk{$eleType} or next; 
 					push(@chk_tr, $t1); 
 				}
+				@chk_tr = sort {$a->[3] <=> $b->[3] || $a->[4] <=> $b->[4] || $a->[2] cmp $b->[2]  } @chk_tr; 
 				scalar( @chk_ar ) == scalar( @chk_tr ) or do { $tmp_have = 0; next CHK_MODEL; }; 
 				CHK_EXON: 
 				for (my $i=0; $i<@chk_tr; $i++) {
-					$chk_ar[$i][0][3] eq $chk_tr[$i][0][3] or do { $tmp_have = 0; last CHK_EXON; } ; 
-					$chk_ar[$i][0][4] eq $chk_tr[$i][0][4] or do { $tmp_have = 0; last CHK_EXON; } ; 
-					$chk_ar[$i][0][6] eq $chk_tr[$i][0][6] or do { $tmp_have = 0; last CHK_EXON; } ; 
+					$chk_ar[$i][3] eq $chk_tr[$i][3] or do { $tmp_have = 0; last CHK_EXON; } ; 
+					$chk_ar[$i][4] eq $chk_tr[$i][4] or do { $tmp_have = 0; last CHK_EXON; } ; 
+					$chk_ar[$i][6] eq $chk_tr[$i][6] or do { $tmp_have = 0; last CHK_EXON; } ; 
 				}
 				if ( $tmp_have == 1 ) {
 					$is_have = 1; 
-					$had_ta8 = $tr->[0][0][8]; 
+					$had_ta8 = $tr->[0][8]; 
 					defined $opts{'outDupPair'} and &out_gL( $tr, $oDupPairFh ); 
 					defined $opts{'outDupPair'} and &out_gL( $ar, $oDupPairFh ); 
 					last CHK_MODEL; 
@@ -205,7 +206,7 @@ sub is_have {
 	if ($is_have == 0) {
 		$noAdd or push(@{$hr->{$scfID}{$gKey}}, [@$ar]); 
 	} else {
-		$opts{'debug'} and &tsmsg("[Msg] Skip duplicted gKey [$gKey] for [$ar->[0][0][8]] by [$had_ta8]\n"); 
+		$opts{'debug'} and &tsmsg("[Msg] Skip duplicted gKey [$gKey] for [$ar->[0][8]] by [$had_ta8]\n"); 
 	}
 	
 	return $is_have; 
@@ -216,7 +217,7 @@ sub out_gL {
 	my $fh = shift; 
 	defined $fh or $fh = \*STDOUT; 
 	for my $r1 (@$ar) {
-		print {$fh} join("\t", @{$r1->[0]})."\n";
+		print {$fh} join("\t", @{$r1})."\n";
 	}
 	return 0;
 }

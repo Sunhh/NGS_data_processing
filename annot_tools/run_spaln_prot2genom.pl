@@ -93,6 +93,7 @@ if ( defined $opts{'cpuN'}  ) {
 # Run spaln
 my @oFiles; 
 for my $inFa ( @{$opts{'inFa'}} ) {
+	$inFa = abs_path($inFa); 
 	my $outFile = $opts{'out'} // "$inFa.spaln.gff3";
 	&exeCmd_1cmd("spaln $opts{'para_spaln'} -o $outFile -d$dbID $inFa", $opts{'printCmd'}); 
 	if ($opts{'cnvt2maker'}) {
