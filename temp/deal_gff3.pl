@@ -3,6 +3,7 @@
 # 2018-05-14 Add function to extract CDS sequence according to gff file. 
 # 2018-07-10 Sort GFF by its inner features. 
 # 2019-01-16 Change 'frame' value to fit blastx and transeq; 
+# 2021-07-09 Fix 'frame' to fit deal_fasta.pl. 
 use strict; 
 use warnings; 
 use LogInforSunhh; 
@@ -404,9 +405,9 @@ sub action_seqret {
 			if ( $ta[7] eq '.' or $ta[7] eq '0' ) {
 				$t_frame = 1; 
 			} elsif ( $ta[7] == 1 ) {
-				$t_frame = 2; 
-			} elsif ( $ta[7] == 2 ) {
 				$t_frame = 3; 
+			} elsif ( $ta[7] == 2 ) {
+				$t_frame = 2; 
 			} else {
 				&stopErr("[Err] Failed to parse gff phase [$ta[7]]\n"); 
 			}
