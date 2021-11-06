@@ -67,27 +67,45 @@ sub _featType2Num {
 
 
 =head2 write_gff3File ( 'outFH'=>$file_handle // $FH_of_outFile // \*STDOUT, 'outFile'=>$outFileName, 'writeMode'=>'>', 
+
   'seq_href'=>$out2_of_read_gff3File() , 'seq_width'=>60, 'seqIDs_aref'=>[@seqIDs_to_output], 
+
   'gff3_href'=>$out1_of_read_gff3File(), 'topIDs_aref'=>[keys %{$gff3_href->{'lineN_group'}}], 
+
   'sort_by'=>'raw/lineNum/str_posi/position'
+
 )
 
 Required : 
+
   'gff3_href' is required, which is the first output of function ->read_gff3File(); 
 
 Function : Output gff3 lines to file or file handle (Output to STDOUT in default). 
+
  'writeMode' should be used together with 'outFile'. 
+
  'seq_href' will be attached to the gff3 file when given. 
+
  'seqIDs_aref' controls the seqIDs to be output, 'seq_width' is the line width. 
+
  'topIDs_aref' controls the topIDs to be output, in this way we can output topIDs 1by1. 
+
    In default, I will sort all topIDs by the order of input gff3 file (by lineNum). 
+
  'sort_by' changes the order of output lines within a topID, 
+
    'raw'      with no change, 
+
    'lineNum'  with the order of input gff3 file. 
+
    'str_posi' with the order specific to strand, 
+
      small to large for "+" ; 
+
      large to small for "-" ; 
+
    'position' with the order small to large. 
+
 
 =cut
 sub write_gff3File {
@@ -237,30 +255,51 @@ Function :
            )
 
 Function : 
-Read in gff3 file by file handle or file name given. 
+Read in gff3 file by file handle or file name given.  
+
            It use {'lineN2line'} to record line text, {'lineN2hash'} to record feature related information, 
+
             and {'lineN_group'} to record {$topID} as key 
+
             and {$topID}{'parLn/curLn/offLn'} (array_ref) as values for parent/self/child line numbers. 
+
            When meeting duplicated feature IDs, it will add ":$lineNum" to the original featID until it is unique. 
+
             In this way, this line may fail to be grouped as a parent if it has a child feature line. 
+
            Empty or commented lines (m/^\s*(#|$)/) are not collected in $back_gff{'lineN_group'} hash_ref, 
+
             but exist in $back_gff{'lineN2line'} with {'lineN2hash'} as undef(). 
+
 
 Required : 
   'gffFH' || 'gffFile'
 
 Return   : (\%back_gff, \%back_seq)
- In %back_gff : 
+
+ In %back_gff :  
+
   {'lineN2line'}{$lineNum} = $line_txt; 
+
   {'lineN2hash'}{$lineNum} = undef()     - for absent or skipped (blank of commented) lines 
+
                              \%line_hash - for good gff3 lines parsed by $self->parse_line(); 
+
   {'ID2lineN'}{$featID} = $lineNum; 
+
   {'lineN2ID'}{$lineNum} = $featID; 
+
    Here $featID = $ID_in_attribute or $lineNum if not assigned. 
+
   {'PID2CID'}{$parent_featID}{$child_featID} = 1; 
+
   {'CID2PID'}{$child_featID}{$parent_featID} = 1; 
+
   {'lineN_group'}{$topID}{'parLn/curLn/offLn'} = [@lineNumbers]; 
+
+
  In %back_seq : 
+
   {'seqID'} = $fasta_seq_woBlank  
 
 =cut
@@ -545,31 +584,50 @@ sub read_gff3File {
 
 =head2 parse_line( 'ta'=>[ split(/\t/, $gff_line) ], 'line'=>$gff_line )
 
+
 Required    : 'ta'/'line'
 
 Function    : Parse gff3_line and record them in a hash_reference. 
 
 Return      : \%backH
+
  In %backH : 
+
    $backH{'seqID'}  = $seqID; 
+
    $backH{'srcID'}  = $srcID; 
+
    $backH{'type'}   = $tType; 
+
    $backH{'start'}  = $tS; 
+
    $backH{'end'}    = $tE; 
+
    $backH{'score'}  = $tScore; 
+
    $backH{'strand'} = $tStr; # '+'/'-'/'.', same to the input gff3 file. 
+
    $backH{'phase'}  = $tPhase; 
+
    $backH{'attrib'} = \%attrHash; 
 
+
 Sample GFF3 format: 
+
  Ref: http://gmod.org/wiki/GFF3
+
  Ref: http://www.sequenceontology.org/gff3.shtml
+
    S401991_pilon   .       contig  1       99924   .       .       .       ID=S401991_pilon;Name=S401991_pilon
+
    S401991_pilon   maker   gene    60810   79370   .       +       .       ID=maker-S401991_pilon-pred_gff_snap_masked-gene-0.7;Name=maker-S401991_pilon-pred_gff_snap_mask
 
  Col_8:phase(0/1/2)  should be given if Col_3:type is "CDS"; 
+
    For features of type "CDS", the phase indicates where the feature begins with reference to the reading frame. 
+
    For forward strand features, phase is counted from the start field. For reverse strand features, phase is counted from the end field.
+
 =cut
 sub parse_line {
 	my $self = shift; 
