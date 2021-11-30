@@ -37,10 +37,10 @@ HH
 	exit 1; 
 }
 
-$opts{'beginLn'} = $opts{'beginLn'} // 0; 
-$opts{'endLn'} = $opts{'endLn'} // 0; 
 $opts{'cpuN'}   //= 0; 
-$opts{'nprocF'} = $opts{'nprocF'} // 'Nproc'; 
+$opts{'beginLn'} //= 0; 
+$opts{'endLn'}   //= 0; 
+$opts{'nprocF'} //= 'Nproc'; 
 $opts{'grpLn'} //= 1; 
 $opts{'grpLn'} >= 1 or &stopErr("[Err] -grpLn cannot be smaller than 1.\n"); 
 $opts{'wait_sec'} //= 0; 
@@ -61,8 +61,6 @@ $opts{'beginLn'} <= 0 and $opts{'beginLn'} = 1;
 $opts{'endLn'} > $ttlN and $opts{'endLn'} = $ttlN; 
 $opts{'endLn'} <= 0 and $opts{'endLn'} = $ttlN; 
 &tsmsg("[Rec] Begin/End line modified to [$opts{'beginLn'} , $opts{'endLn'}]\n"); 
-
-my %jobDone; 
 
 my $MAX_PROCESSES = $opts{'cpuN'} ; # Sometimes $parm{'cpuN'} - 1 may be better.
 my $pm = new Parallel::ForkManager($MAX_PROCESSES); 
