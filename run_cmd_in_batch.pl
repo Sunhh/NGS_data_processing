@@ -1,4 +1,5 @@
 #!/usr/bin/env perl
+# 20211130: Fix grammar format
 use strict; 
 use warnings; 
 BEGIN {
@@ -11,7 +12,7 @@ use Getopt::Long;
 my %opts; 
 GetOptions(\%opts, 
 	"help!", 
-	"cpuN:s", "beginLn:i", "endLn:i", "nprocF:s", 
+	"cpuN:i", "beginLn:i", "endLn:i", "nprocF:s", 
 	"grpLn:i", 
 	"wait_sec:i", 
 	"rmComment!", 
@@ -38,7 +39,7 @@ HH
 
 $opts{'beginLn'} = $opts{'beginLn'} // 0; 
 $opts{'endLn'} = $opts{'endLn'} // 0; 
-$opts{'cpuN'} = $opts{'cpuN'} // 0; 
+$opts{'cpuN'}   //= 0; 
 $opts{'nprocF'} = $opts{'nprocF'} // 'Nproc'; 
 $opts{'grpLn'} //= 1; 
 $opts{'grpLn'} >= 1 or &stopErr("[Err] -grpLn cannot be smaller than 1.\n"); 
