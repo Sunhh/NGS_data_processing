@@ -35,6 +35,8 @@ my $asm_prefix = "HiC_scaffold_";
 my (@segments); 
 my %toResolve; 
 my %ngapIdx; 
+my %zeroLenIdx; 
+my %inAsmIdx; 
 my @assemblies; 
 while (<>) {
   chomp; 
@@ -48,7 +50,7 @@ while (<>) {
     } elsif ($name0 =~ m!^hic_gap_\d+$!) {
       $ngapIdx{$i0} = 1; 
     }
-    
+    $l0 == 0 and $zeroLenIdx{$i0} = 1; 
   } elsif (m!^(\-?\d+)(?:\s+\-?\d+)*$!) {
     my @ta = split(/\s+/, $_); 
     my @tasm; 
@@ -62,6 +64,7 @@ while (<>) {
         &stopErr("[Err] Bad assembly index in line: $_\n"); 
       }
       defined $ngapIdx{$ti} and next; 
+      defined $zeroLenIdx{$ti} and next; 
       push(@tasm, [$ti, $ts]); 
     }
     push(@assemblies, [@tasm]); 
@@ -94,6 +97,8 @@ for my $ta (@assemblies) {
   my $agp_idx = 0; 
   for (my $i=0; $i<@$ta; $i++) {
     my ($i0, $str) = @{$ta->[$i]}; 
+    # No matter what changes have been made before, here we are recording the truely used segments in the final assemblies. 
+    $inAsmIdx{$i0} = 1; 
     my $seg_len = $segments[$i0][2]-$segments[$i0][1]+1; 
     $agp_idx ++; 
     push(@{$asm[-1][1]}, [$asm[-1][0]+1, $asm[-1][0]+$seg_len, $agp_idx, "W", $segments[$i0][0], $segments[$i0][1], $segments[$i0][2], $str]); 
@@ -105,8 +110,19 @@ for my $ta (@assemblies) {
     }
   }
 }# End for my $ta (@assemblies) 
+##### There might be some segments (contigs) not assembled in the .assembly file, so I want to add them back. 
+for (my $i0=0; $i0<@segments; $i0++) {
+  defined $segments[$i0] or next; # This is not recorded in '>' definition  lines. 
+  defined $ngapIdx{$i0} and next; # This should not be assembled. 
+  defined $zeroLenIdx{$i0} and next; # This should not be assembled. 
+  defined $inAsmIdx{$i0} and next; # This is assembled. 
+  push(@asm, [0, []]); 
+  $asm[-1][0] = $segments[$i0][2]-$segments[$i0][1]+1;
+  $asm[-1][1] = [ [ 1, $asm[-1][0], 1, "W", $segments[$i0][0], $segments[$i0][1], $segments[$i0][2], "+" ] ]; 
+}
+
 ### Add names. 
-@asm = sort { $b->[0] <=> $a->[0] } @asm; 
+@asm = sort { $b->[0] <=> $a->[0] } @asm; # I want to sort the assembled sequences from long to short. 
 for (my $i=0; $i<@asm; $i++) {
   my $j = $i + 1; 
   my $out_seqname = ${asm_prefix}.$j; 
