@@ -34,7 +34,7 @@ perl $0 -in_fa_list in_fa_list -out_prefix out_prefix
   -in_fa_list    [fasta_file_list] The first column is used to find input fasta files. Could be one line only. 
 
   -exe_quast     [quast.py] Could be '/data/Sunhh/src/General/anaconda/install/envs/quast/bin/quast.py'
-  -para_quast    [ -t 50 --fragmented --min-identity 90.0 --min-alignment 300 --min-contig 300 --fast ]
+  -para_quast    [ -t 50 --fragmented --min-identity 90.0 --min-alignment 300 --min-contig 300 --fast --eukaryote --no-html --no-icarus ]
   -min_kept_len  [300] The minimal length accepted to keep in unaligned sequences. This should be no less than "--min-alignment" value used in QUAST. 
 
   -joinFinal     [Boolean] Generate a file having all the sequences in opref.pan/
@@ -54,7 +54,7 @@ defined $opts{'in_fa_list'} or &LogInforSunhh::usage($help_txt);
 
 $opts{'out_prefix'} //= 'opref'; 
 $opts{'exe_quast'}  //= 'quast.py'; 
-$opts{'para_quast'} //= ' -t 50 --fragmented --min-identity 90.0 --min-alignment 300 --min-contig 300 --fast '; 
+$opts{'para_quast'} //= ' -t 50 --fragmented --min-identity 90.0 --min-alignment 300 --min-contig 300 --fast --eukaryote --no-html --no-icarus'; 
 $opts{'selfSplitN'} //= 20; 
 $opts{'min_kept_len'} //= 300; 
 $opts{'cpuN'}     //= 1; 
