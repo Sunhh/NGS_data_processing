@@ -54,7 +54,7 @@ defined $opts{'in_fa_list'} or &LogInforSunhh::usage($help_txt);
 
 $opts{'out_prefix'} //= 'opref'; 
 $opts{'exe_quast'}  //= 'quast.py'; 
-$opts{'para_quast'} //= ' -t 50 --fragmented --min-identity 90.0 --min-alignment 300 --min-contig 300 --fast --eukaryote --no-html --no-icarus'; 
+$opts{'para_quast'} //= ' -t 50 --fragmented --min-identity 90.0 --min-alignment 300 --min-contig 300 --fast --eukaryote '; 
 $opts{'selfSplitN'} //= 20; 
 $opts{'min_kept_len'} //= 300; 
 $opts{'cpuN'}     //= 1; 
