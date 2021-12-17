@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# 
+# 12/15/2021 : Fix the bug when there are two exactly the same contigs in the file, both of them will be removed. 
 use strict; 
 use warnings; 
 use LogInforSunhh; 
@@ -48,7 +48,13 @@ while (<F2>) {
 	$ta[2] >= 100*$min_identR or next; 
 	($ta[7]-$ta[6]+1) >= $min_covR * $ta[12] or next; 
 	defined $u2{$ta[0]} and next; 
-	$u2{$ta[0]} = 1; 
+	if ($ta[12] < $ta[13]) {
+		$u2{$ta[0]} = 1; 
+	} elsif ($ta[12] == $ta[13]) {
+		defined $u2{$ta[1]} or $u2{$ta[0]} = 1; # I need some more modifications here to get an accurate result.
+	} else {
+		defined $u2{$ta[0]} or $u2{$ta[1]} = 1;
+	}
 	print O2 "$_\n"; 
 }
 close O2; 
