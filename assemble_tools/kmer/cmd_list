@@ -1,0 +1,22 @@
+perl /home/Sunhh/tools/github/NGS_data_processing/temp/get_cds_from_gff3.pl -genome_fas USVL531.chr.fa -genome_gff USVL531.gff3 > USVL531.cds.fa
+deal_fasta.pl -cds2aa USVL531.cds.fa -infer_frame > USVL531.prot.fa
+
+perl /home/Sunhh/tools/github/NGS_data_processing/temp/get_cds_from_gff3.pl -genome_fas USVL531.chr.fa -genome_gff USVL531.chr.gff3 > USVL531.cds.fa
+deal_fasta.pl -cds2aa USVL531.cds.fa -infer_frame > USVL531.prot.fa
+
+
+
+jellyfish count -C -m 81 -s 9999999999 -t 10 in.sample_read.fastq -o out.sample_m81.jf
+jellyfish histo -h 9999999999 -t 10 out.sample_m81.jf > out.sample_m81.histo
+deal_fasta.pl -cut 1 in.sample_genome.fa -cut_prefix sample
+ls sample_cutted/*.fasta | perl -e 'my $jfdb = "out.sample_m81.jf"; my $jfklen = 81; my $jfstep=1; my $pl="get_kmer_by_seq.pl"; 
+ while (<>) { chomp; system "perl $pl -jf_db $jfdb -jf_klen $jfklen -step $jfstep -outQual   $_ > $_.m${jfklen}cnt"; }
+'
+# Example command: perl get_kmer_by_seq.pl -jf_db out.sample_m81.jf  -jf_klen 81  -step 1  -outQual  sample_cutted/sample_001.fasta > sample_cutted/sample_001.fasta.m81cnt
+
+ls sample_cutted/*.fasta.m81cnt | perl -e 'my $pl="cnvt_qualFa_to_wind_avgTbl.pl"; 
+ while (<>) { chomp; system "perl $pl 500 500 $_ > $_.tab"; }
+'
+# Example command: perl cnvt_qualFa_to_wind_avgTbl.pl 500 500 sample_cutted/sample_001.fasta.m81cnt > sample_cutted/sample_001.fasta.m81cnt.tbl
+
+
