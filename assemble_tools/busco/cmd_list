@@ -17,3 +17,42 @@ perl summary_busco_full_table.pl  \
  genom_sample/run_embryophyta_odb10/full_table.tsv \
 > sample.busco_evaluation
 
+
+# Summarize
+perl summary_busco_full_table.pl \
+ genom_CA/run_embryophyta_odb10/full_table.tsv \
+ prot_CA/run_embryophyta_odb10/full_table.tsv  \
+ genom_CC/run_embryophyta_odb10/full_table.tsv \
+ prot_CC/run_embryophyta_odb10/full_table.tsv  \
+ genom_CL/run_embryophyta_odb10/full_table.tsv \
+ prot_CL/run_embryophyta_odb10/full_table.tsv  \
+ genom_CM/run_embryophyta_odb10/full_table.tsv \
+ prot_CM/run_embryophyta_odb10/full_table.tsv  \
+ | perl -e 'while (<>) { s!/run_embryophyta_odb10/full_table.tsv!!g; print; }' \
+> summary_busco_eval
+
+cat list.full_table | perl -e '
+ mkdir("tmp/") or die "Failed to create dir [tmp]\n";
+ my (@a1, @a2); while (<>) { chomp;
+  system "perl geneCopyN_busco_full_table.pl $_ > $_.gcopy";
+  my $t1=$_; $t1=~s!/run_embryophyta_odb10/full_table.tsv!!;
+  push(@a1, "$_.gcopy"); push(@a2, $t1);
+ }
+ system("cp -p $a1[0] tmp/1");
+ my (@col1, @col2); @col1=(0,1); @col2=(2);
+ for (my $i=1; $i<@a1; $i++) {
+  system "ColLink.pl tmp/1 -f1 $a1[$i] -keyC1 0 -keyC2 0 -add -Col1 1,2 -fill XXXX > tmp/2";
+  push(@col1, $col1[-1]+2);
+  push(@col2, $col2[-1]+2);
+  system "mv tmp/2 tmp/1";
+ }
+ open O,">","tmp/3" or die;
+ print O join("\t", "BUSCO_gene_ID", (map { "${_}.type\t${_}.cnt"} @a2))."\n";
+ close O;
+ system "cat tmp/3 tmp/1 > tmp/2";
+ my $cc = join(",", @col1, @col2);
+ system "deal_table.pl tmp/2 -column $cc";
+ system "rm -rf tmp/";
+' > summary_busco_geneCopy
+
+
