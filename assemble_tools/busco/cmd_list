@@ -1,0 +1,19 @@
+busco --offline      \
+ --in       sample.prot.fa \
+ --out      prot_sample \
+ -m prot --limit 20 --cpu 50  \
+ -l         /data/Sunhh/src/Assemble/BUSCO/embryophyta_odb10
+
+busco --offline      \
+ --in       sample.chr.fa \
+ --out      genom_sample \
+ -m geno --limit 20 --cpu 50 \
+ -l         /data/Sunhh/src/Assemble/BUSCO/embryophyta_odb10
+
+perl geneCopyN_busco_full_table.pl prot_sample/run_embryophyta_odb10/full_table.tsv  > sample.prot.busco_gene_coverage
+perl geneCopyN_busco_full_table.pl genom_sample/run_embryophyta_odb10/full_table.tsv > sample.genom.busco_gene_coverage
+perl summary_busco_full_table.pl  \
+ prot_sample/run_embryophyta_odb10/full_table.tsv \
+ genom_sample/run_embryophyta_odb10/full_table.tsv \
+> sample.busco_evaluation
+
