@@ -1,4 +1,5 @@
 #!/usr/bin/env perl 
+# 20220112: Add MaxInMatLen which means the length of region covered by any target sequences from 'In' class.
 use strict; 
 use warnings; 
 use mathSunhh; 
@@ -9,6 +10,7 @@ my $ms = mathSunhh->new();
 my %merged_blk; # Blocks for Ex class 
 my %merged_in_blk; # Blocks for In class
 my %merged_un_blk; # Blocks for Un-defined class that including In and Ex both. 
+my %merged_maxIn_blk; # Blocks for maybe in class;
 my %lines; 
 while (<>) {
 	chomp; 
@@ -23,6 +25,7 @@ while (<>) {
 
 	my $is_in = -1; 
 	my $is_ex = -1; 
+	my $is_maxIn = ($in > 0) ? 1 : -1;
 
 	if ( $en > 0 ) {
 		if ( $in == 0 ) {
@@ -50,12 +53,16 @@ while (<>) {
 		next; 
 	}
 
+	if ($is_maxIn == 1) {
+		push(@{$merged_maxIn_blk{$ta[0]}}, [$ta[2], $ta[3]]); 
+	}
+
 	if ( $is_in == 1 ) {
 		push(@{$merged_in_blk{$ta[0]}}, [$ta[2], $ta[3]]); 
 	} elsif ( $is_ex == 1 ) {
 		push(@{$merged_blk{$ta[0]}}, [$ta[2], $ta[3]]); 
 		push(@{$lines{$ta[0]}}, [@ta]); 
-		print "$_\n"; 
+		print STDOUT "$_\n"; 
 	} elsif ( $is_in == 0 and $is_ex == 0 ) {
 		push(@{$merged_un_blk{$ta[0]}}, [$ta[2], $ta[3]]); 
 	} elsif ( $is_in == -1 and $is_ex == -1 ) {
@@ -66,7 +73,7 @@ while (<>) {
 
 }
 
-print STDERR join("\t", qw/SeqID SeqLen ExMatS ExMatE ExMatLen TypeClasses InExType InMatLen UnMatLen/)."\n"; 
+print STDERR join("\t", qw/SeqID SeqLen ExMatS ExMatE ExMatLen TypeClasses InExType InMatLen UnMatLen MaxInMatLen/)."\n"; 
 for my $tid (keys %merged_blk) {
 	my $tar = $ms->mergeLocBlk( $merged_blk{$tid} ); 
 	my $cnt_len = 0; 
@@ -80,6 +87,13 @@ for my $tid (keys %merged_blk) {
 			$cnt_len_in += ($tr->[1]-$tr->[0]+1); 
 		}
 	}
+	my $cnt_len_maxIn = 0;
+	if (defined $merged_maxIn_blk{$tid}) {
+		my $tar = $ms->mergeLocBlk( $merged_maxIn_blk{$tid} ); 
+		for my $tr (@$tar) {
+			$cnt_len_maxIn += ($tr->[1]-$tr->[0]+1); 
+		}
+	}
 	my $cnt_len_un = 0; 
 	if (defined $merged_un_blk{$tid}) {
 		my $tar = $ms->mergeLocBlk( $merged_un_blk{$tid} ); 
@@ -89,7 +103,7 @@ for my $tid (keys %merged_blk) {
 	}
 
 	my @tb = @{$lines{$tid}[0]}; 
-	print STDERR join("\t", $tid, $tb[1], $tar->[0][0], $tar->[-1][1], $cnt_len, @tb[5 .. $#tb], $cnt_len_in, $cnt_len_un)."\n"; 
+	print STDERR join("\t", $tid, $tb[1], $tar->[0][0], $tar->[-1][1], $cnt_len, @tb[5 .. $#tb], $cnt_len_in, $cnt_len_un, $cnt_len_maxIn)."\n"; 
 }
 
 
