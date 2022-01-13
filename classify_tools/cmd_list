@@ -1,0 +1,104 @@
+# step 1. Only small contigs are being checked.
+deal_fasta.pl -keep_len 0-1000000 ../rmdup/asml2.p_ctg.fa.noRed.fa   > hf2.noRed.tochk.fa
+deal_fasta.pl -keep_len 0-1000000 ../rmdup/asml0.p_ctg.fa.noRed.fa   > hf0.noRed.tochk.fa
+deal_fasta.pl -keep_len 0-1000000 ../rmdup/asm00.pri_ctg.fa.noRed.fa > hc0.noRed.tochk.fa
+
+# step 2. Align contigs agains Nt database.
+blastn -query hf2.noRed.tochk.fa -out hf2.noRed.tochk.fa.toNt.bn6 \
+ -db nt -evalue 1e-5 -num_threads 50 -max_hsps 50 -max_target_seqs 50 -outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen sstrand staxids sscinames sskingdoms stitle'
+blastn -query hf0.noRed.tochk.fa -out hf0.noRed.tochk.fa.toNt.bn6 \
+ -db nt -evalue 1e-5 -num_threads 50 -max_hsps 50 -max_target_seqs 50 -outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen sstrand staxids sscinames sskingdoms stitle'
+blastn -query hc0.noRed.tochk.fa -out hc0.noRed.tochk.fa.toNt.bn6 \
+ -db nt -evalue 1e-5 -num_threads 50 -max_hsps 50 -max_target_seqs 50 -outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen sstrand staxids sscinames sskingdoms stitle'
+### Filter alignments hitting bad targets.
+##### KR559021 is from mitochondrion, but labeled as genomic DNA in GenBank.
+grep -v KR559021 hf2.noRed.tochk.fa.toNt.bn6 > hf2.noRed.tochk.fa.toNt.bn6.f1
+grep -v KR559021 hf0.noRed.tochk.fa.toNt.bn6 > hf0.noRed.tochk.fa.toNt.bn6.f1
+grep -v KR559021 hc0.noRed.tochk.fa.toNt.bn6 > hc0.noRed.tochk.fa.toNt.bn6.f1
+
+# step 3. Label the contigs according to their hits.
+perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/classify_region_byBn6.pl \
+ hf2.noRed.tochk.fa.toNt.bn6.f1 \
+ -joinInEx   hf2.noRed.tochk.fa.toNt.bn6.jnInEx \
+ -InList     Eukaryota:Satellite \
+ -ExList     NA:Viruses:Bacteria:Archaea:rDNA:Chloroplast:Mitochondrion:Plastid \
+> hf2.noRed.tochk.fa.toNt.bn6.class
+perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/classify_region_byBn6.pl \
+ hf0.noRed.tochk.fa.toNt.bn6.f1 \
+ -joinInEx   hf0.noRed.tochk.fa.toNt.bn6.jnInEx \
+ -InList     Eukaryota:Satellite \
+ -ExList     NA:Viruses:Bacteria:Archaea:rDNA:Chloroplast:Mitochondrion:Plastid \
+> hf0.noRed.tochk.fa.toNt.bn6.class
+perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/classify_region_byBn6.pl \
+ hc0.noRed.tochk.fa.toNt.bn6.f1 \
+ -joinInEx   hc0.noRed.tochk.fa.toNt.bn6.jnInEx \
+ -InList     Eukaryota:Satellite \
+ -ExList     NA:Viruses:Bacteria:Archaea:rDNA:Chloroplast:Mitochondrion:Plastid \
+> hc0.noRed.tochk.fa.toNt.bn6.class
+### Step 3.1 Count the region that can be mapped by 'In' targets.
+
+
+# step 4. Get regions that should be removed as contamination.
+perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/get_Ex_region.pl hf2.noRed.tochk.fa.toNt.bn6.jnInEx 1> hf2.noRed.tochk.fa.sepExLis 2> hf2.noRed.tochk.fa.jnExLis
+perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/get_Ex_region.pl hf0.noRed.tochk.fa.toNt.bn6.jnInEx 1> hf0.noRed.tochk.fa.sepExLis 2> hf0.noRed.tochk.fa.jnExLis
+perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/get_Ex_region.pl hc0.noRed.tochk.fa.toNt.bn6.jnInEx 1> hc0.noRed.tochk.fa.sepExLis 2> hc0.noRed.tochk.fa.jnExLis
+
+# step 5. Determine and classify the contaminations.
+cat hf2.noRed.tochk.fa.jnExLis | perl -e 'while (<>) { chomp; my @ta=split(/\t/, $_); 
+ $ta[0] eq "SeqID" and do { print "$_\tExMatPerc\n"; next; }; 
+ my $p=sprintf("%.2f", 100*$ta[4]/$ta[1]); 
+ print "$_\t$p\n"; 
+}' > hf2.noRed.tochk.fa.jnExLis.p
+cat hf0.noRed.tochk.fa.jnExLis | perl -e 'while (<>) { chomp; my @ta=split(/\t/, $_); 
+ $ta[0] eq "SeqID" and do { print "$_\tExMatPerc\n"; next; }; 
+ my $p=sprintf("%.2f", 100*$ta[4]/$ta[1]); 
+ print "$_\t$p\n"; 
+}' > hf0.noRed.tochk.fa.jnExLis.p
+cat hc0.noRed.tochk.fa.jnExLis | perl -e 'while (<>) { chomp; my @ta=split(/\t/, $_); 
+ $ta[0] eq "SeqID" and do { print "$_\tExMatPerc\n"; next; }; 
+ my $p=sprintf("%.2f", 100*$ta[4]/$ta[1]); 
+ print "$_\t$p\n"; 
+}' > hc0.noRed.tochk.fa.jnExLis.p
+### Step 5.1 Divide.
+cat hf2.noRed.tochk.fa.jnExLis.p | awk 'NR == 1 || $6 ~ /rDNA/' > hf2.noRed.tochk.fa.jnExLis.p.rDNA_contain
+cat hf2.noRed.tochk.fa.jnExLis.p | awk 'NR == 1 || !($6 ~ /rDNA/)' > hf2.noRed.tochk.fa.jnExLis.p.no_rDNA
+cat hf2.noRed.tochk.fa.jnExLis.p.no_rDNA | awk ' 
+ $11 >= 99 \
+   || ($2-$5+1 <= 1000) \
+   || (($11 >= 0.9*0.9*100) && $3 <= 0.05*$2 && $4 >= 0.95*$2 && $3 <= 2000 && $4 >= $2-2000) \
+' \
+> hf2.noRed.tochk.fa.jnExLis.p.contSet1_good
+deal_table.pl hf2.noRed.tochk.fa.jnExLis.p.no_rDNA -kSrch_drop -kSrch_idx hf2.noRed.tochk.fa.jnExLis.p.contSet1_good | \
+ awk ' $11 >= 50 && $10 < 1000 ' > hf2.noRed.tochk.fa.jnExLis.p.contSet2_maybe
+
+cat hf0.noRed.tochk.fa.jnExLis.p | awk 'NR == 1 || $6 ~ /rDNA/' > hf0.noRed.tochk.fa.jnExLis.p.rDNA_contain
+cat hf0.noRed.tochk.fa.jnExLis.p | awk 'NR == 1 || !($6 ~ /rDNA/)' > hf0.noRed.tochk.fa.jnExLis.p.no_rDNA
+cat hf0.noRed.tochk.fa.jnExLis.p.no_rDNA | awk '
+ $11 >= 99 \
+   || ($2-$5+1 <= 1000) \
+   || (($11 >= 0.9*0.9*100) && $3 <= 0.05*$2 && $4 >= 0.95*$2 && $3 <= 2000 && $4 >= $2-2000) \
+' \
+> hf0.noRed.tochk.fa.jnExLis.p.contSet1_good
+deal_table.pl hf0.noRed.tochk.fa.jnExLis.p.no_rDNA -kSrch_drop -kSrch_idx hf0.noRed.tochk.fa.jnExLis.p.contSet1_good | \
+ awk ' $11 >= 50 && $10 < 1000 ' > hf0.noRed.tochk.fa.jnExLis.p.contSet2_maybe
+
+cat hc0.noRed.tochk.fa.jnExLis.p | awk 'NR == 1 || $6 ~ /rDNA/' > hc0.noRed.tochk.fa.jnExLis.p.rDNA_contain
+cat hc0.noRed.tochk.fa.jnExLis.p | awk 'NR == 1 || !($6 ~ /rDNA/)' > hc0.noRed.tochk.fa.jnExLis.p.no_rDNA
+cat hc0.noRed.tochk.fa.jnExLis.p.no_rDNA | awk '
+ $11 >= 99 \
+   || ($2-$5+1 <= 1000) \
+   || (($11 >= 0.9*0.9*100) && $3 <= 0.05*$2 && $4 >= 0.95*$2 && $3 <= 2000 && $4 >= $2-2000) \
+' \
+> hc0.noRed.tochk.fa.jnExLis.p.contSet1_good
+deal_table.pl hc0.noRed.tochk.fa.jnExLis.p.no_rDNA -kSrch_drop -kSrch_idx hc0.noRed.tochk.fa.jnExLis.p.contSet1_good | \
+ awk ' $11 >= 50 && $10 < 1000 ' > hc0.noRed.tochk.fa.jnExLis.p.contSet2_maybe
+
+# Collect results.
+mkdir final
+mv *.jnExLis.p *.jnExLis.p.no_rDNA *.contSet1_good *.contSet2_maybe final/
+gzip *.bn6 ; mv *.bn6.gz final/
+mkdir torm/
+mv *.tochk.fa.toNt.* torm/
+mv *.fa.jnExLis *.fa.sepExLis *.jnExLis.p.rDNA_contain torm/
+
+
