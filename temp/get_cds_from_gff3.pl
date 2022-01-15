@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 ### 20180504 Add [frame=\d] for futher usage. 
+### 20220115: Allow to skip bad gene structure without CDS region.
 use strict; 
 use warnings; 
 use LogInforSunhh; 
@@ -106,6 +107,10 @@ for my $topID ( keys %{$gff_hash{'lineN_group'}} ) {
 	$top_str eq '' and do { &tsmsg("[Wrn] No strand information for topID=[$topID]\n"); $top_str = 1; }; 
 	$top_chr eq '' and do { &stopErr("[Err] No top_chr found for [$topID]\n"); };
 	defined $seq_hash{$top_chr} or do { &tsmsg( "[Wrn] No [$top_chr] sequence found for [$topID]\n" ); next TOPID; }; 
+	if (scalar(@posi_cds) == 0) {
+		&tsmsg("[Wrn] Error! There is no CDS region in [topID=$topID]{$top_chr}\n"); 
+		next;
+	}
 	# Check @posi_cds 
 	for my $tr (@posi_cds) {
 		$tr->[0] > $tr->[1] and &stopErr("[Err] I can't accept start[$tr->[0]] > end[$tr->[1]] in gff3 file.\n"); 
@@ -114,7 +119,7 @@ for my $topID ( keys %{$gff_hash{'lineN_group'}} ) {
 		@posi_cds = sort { $b->[0] <=> $a->[0] } @posi_cds; 
 	}
 	my $cdsP_1_k = "$posi_cds[0][0]:$posi_cds[0][1]"; 
-	defined $cdsP_to_frame{$cdsP_1_k} or &stopErr("[Err] Failed to find frame for CDS position [$seq_hash{$top_chr}:$cdsP_1_k]\n"); 
+	defined $cdsP_to_frame{$cdsP_1_k} or &stopErr("[Err] Failed to find frame for CDS position [{$top_chr}:$cdsP_1_k][topID=$topID]\n"); 
 	
 	# get sequences. 
 	my @sub_seqs; 
