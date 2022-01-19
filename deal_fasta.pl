@@ -47,8 +47,9 @@
 ### 2016-08-30 Replace AA seq with corresponding Nucl sequences. 
 ### 2019-01-16 Change the definition of -frame; It means the first base's frame (+|-(1/2/3)) before, but now it means the first base position of the first frame, which is same to blastx and transeq. 
 ### 2019-08-09 Add -chop_agp to mask -chop_info 
-### 2022-01-19 Add -deal_gff3_frame to change the meaning of '-frame' which is the original meaning of my script. 
-###   The gff3 phase-column means the bases that should be removed to reach the first frame, and my deal_gff3.pl produces a frame which means the frame number of the first base.
+### 2022-01-19 Change the meaning of '-frame', and use -blastx_frame to fit blastx and transeq.
+###   Without -blastx_frame, it fits my deal_gff3.pl output CDS.
+###   With -blastx_frame, it fits the blastx and transeq output.
 
 use strict;
 use warnings; 
@@ -182,7 +183,8 @@ Usage: $0  <fasta_file | STDIN>
   -cds2aa             [Boolean]
     -codon_table        [1] Could be 1,2,3,4,5,6,7,8,9,10
     -infer_frame        [Boolean] Infer frame from the definition line by '[frame=\\d+]' format information. This will overwrite -frame option; 
-    -frame              [1] Could be 1,2,3 (plus strand), -1,-2,-3 (reverse strand). Same meaning of blastx and transeq; 
+    -frame              [1] Could be 1,2,3 (plus strand), -1,-2,-3 (reverse strand). Different meaning of blastx and transeq by default.
+    -blastx_frame       [Boolean] This will change the way to parse -frame and -infer_frame. Required to fit blastx and transeq frames.
 
   -loc_4d             [Boolean]
 
@@ -222,7 +224,7 @@ GetOptions(\%opts,"help!",
 	"jn_byID!", 
 	"aa2cds:s", # filename_cds.fa
 	"cds2aa!", 
-	  "codon_table:i", "frame:i", "infer_frame!", 
+	  "codon_table:i", "frame:i", "infer_frame!", "blastx_frame!",
 	"loc_4d!", 
 );
 &usage if ($opts{"help"}); 
@@ -338,13 +340,26 @@ sub cds2aa {
 					$t_frame = $1; 
 					$t_frame =~ m!^[+-]?(1|2|3)$! or do { &tsmsg("[Wrn] Skip bad frame information [$t_frame]\n"); $t_frame = $frame; }; 
 				}
-				if ($t_frame > 0) {
-					$t_frame > 1 and $t_seq = substr($t_seq, $t_frame-1); 
-				} elsif ($t_frame < 0) {
-					&rcSeq(\$t_seq, 'rc'); 
-					$t_frame < -1 and $t_seq = substr($t_seq, -$t_frame-1); 
+				unless ($opts{'blastx_frame'}) {
+					if ($t_frame > 0) {
+						$t_frame == 2 and $t_seq = substr($t_seq, 2); # y = (4-x) % 3;
+						$t_frame == 3 and $t_seq = substr($t_seq, 1);
+					} elsif ($t_frame < 0) {
+						&rcSeq(\$t_seq, 'rc');
+						$t_frame == -2 and $t_seq = substr($t_seq, 2);
+						$t_frame == -3 and $t_seq = substr($t_seq, 1);
+					} else {
+						&stopErr("[Err] Bad frame number [$t_frame]\n"); 
+					}
 				} else {
-					&stopErr("[Err] Bad frame number [$t_frame]\n"); 
+					if ($t_frame > 0) {
+						$t_frame > 1 and $t_seq = substr($t_seq, $t_frame-1); 
+					} elsif ($t_frame < 0) {
+						&rcSeq(\$t_seq, 'rc'); 
+						$t_frame < -1 and $t_seq = substr($t_seq, -$t_frame-1); 
+					} else {
+						&stopErr("[Err] Bad frame number [$t_frame]\n"); 
+					}
 				}
 
 				my $t_len_0 = length($t_seq); 
@@ -361,11 +376,21 @@ sub cds2aa {
 							$aa_idx ++; 
 							my $bb = substr($t_seq, $j, 2); 
 							defined $bb_4d{$bb} or next; 
-							if ($t_frame > 0) {
-								print STDOUT join("\t", $relHR1->{'key'}, ($t_frame-1)+$j+3, substr($t_seq, $j, 3), $aa_idx, $bb_4d{$bb})."\n"; 
+							unless ($opts{'blastx_frame'}) {
+								my $pp = '';
+								$t_frame == 1  and $pp = $j+3;
+								$t_frame == 2  and $pp = 2 + $j+3;
+								$t_frame == 3  and $pp = 1 + $j+3;
+								$t_frame < 0 and $pp = $t_len_0-($j+3)+1;
+								print STDOUT join("\t", $relHR1->{'key'},, $pp, substr($t_seq, $j, 3), $aa_idx, $bb_4d{$bb})."\n";
 							} else {
-								# $t_frame < 0
-								print STDOUT join("\t", $relHR1->{'key'}, $t_len_0-($j+3)-1, substr($t_seq, $j, 3), $aa_idx, $bb_4d{$bb})."\n"; 
+								# $t_frame can be only 1/2/3/-1/-2/-3
+								if ($t_frame > 0) {
+									print STDOUT join("\t", $relHR1->{'key'}, ($t_frame-1)+$j+3, substr($t_seq, $j, 3), $aa_idx, $bb_4d{$bb})."\n"; 
+								} else {
+									# $t_frame < 0
+									print STDOUT join("\t", $relHR1->{'key'}, $t_len_0-($j+3)+1, substr($t_seq, $j, 3), $aa_idx, $bb_4d{$bb})."\n"; 
+								}
 							}
 						}
 					} else {
