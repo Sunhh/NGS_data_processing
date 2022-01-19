@@ -4,6 +4,7 @@
 # 2018-07-10 Sort GFF by its inner features. 
 # 2019-01-16 Change 'frame' value to fit blastx and transeq; 
 # 2021-07-09 Fix 'frame' to fit deal_fasta.pl. 
+# 2022-01-19 Add gff_top_hier definition in opts variable.
 use strict; 
 use warnings; 
 use LogInforSunhh; 
@@ -60,6 +61,7 @@ GetOptions(\%opts,
 	 "sortTopIDBy:s", # raw/lineNum/position
 	
 	# Filter options. 
+	"gff_top_hier:s", # Could be 'mrna,match,protein_match,expressed_sequence_match'
 	"help!", 
 ); 
 
