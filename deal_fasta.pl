@@ -47,6 +47,8 @@
 ### 2016-08-30 Replace AA seq with corresponding Nucl sequences. 
 ### 2019-01-16 Change the definition of -frame; It means the first base's frame (+|-(1/2/3)) before, but now it means the first base position of the first frame, which is same to blastx and transeq. 
 ### 2019-08-09 Add -chop_agp to mask -chop_info 
+### 2022-01-19 Add -deal_gff3_frame to change the meaning of '-frame' which is the original meaning of my script. 
+###   The gff3 phase-column means the bases that should be removed to reach the first frame, and my deal_gff3.pl produces a frame which means the frame number of the first base.
 
 use strict;
 use warnings; 
