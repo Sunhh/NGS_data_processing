@@ -215,53 +215,104 @@ if ( $opts{'getJnLoc'} ) {
 }
 
 sub action_simpleSort {
-	my %trans_feature = qw(
-		contig             contig
-		gene               gene
-		transcript         mrna
-		mrna               mrna
-		five_prime_utr     five_prime_utr
-		exon               exon
-		cds                cds
-		three_prime_utr    three_prime_utr
-	); 
-	my %good_feature = qw(
-		contig             0.5
-		gene               1
-		mrna               2
-		five_prime_utr     3
-		exon               4 
-		cds                5 
-		three_prime_utr    6
-	); 
-	my (@lines, %info, $lineN); 
-	$lineN = 0; 
-	while (<$iFh>) {
-		$lineN ++; 
-		chomp; 
-		if (m!^\s*#!) {
-			if (@lines > 0) {
-				# Sort and output @lines; 
-				@lines = (); 
-			}
-			print {$oFh} "$_\n"; 
-			next; 
-		}
-		my @ta = split(/\t/, $_); 
-		my $featID = lc($ta[2]); 
-		defined $trans_feature{$featID} or &stopErr("[Err] Unknown feature [$featID]\n"); 
-		$info{'ln2line'}{$lineN} = $_; 
-		$info{'ln2feat'}{$lineN} = $trans_feature{$featID}; 
-		if ($ta[8] =~ m!(?:^|;)\s*Parent\s*=\s*([^\s;]+)\s*(?:$|;)!i) {
-			my $pID = $1; 
-			$pID =~ m!,! and &stopErr("[Err] I don't support multiple parents.\n"); 
-			$info{'ln2parentID'}{$lineN} = $pID; 
-		}
-		if ($ta[8] =~ m!(?:^|;)\s*ID\s*=\s*([^\s;]+)\s*(?:$|;)!i) {
-			my $cID = $1; 
-			$info{'ln2currentID'}{$lineN} = $cID; 
-		}
-	}
+  my %good_ele = qw( 
+    gene  1
+    mrna  2
+    exon  3
+    five_prime_utr  4
+    cds             5
+    three_prime_utr 6
+  ); # To add : contig , transcript , ...
+
+  my %genes;
+  my %mrnas;
+  my $cntLineN = 0;
+  while (<$iFh>) {
+    $cntLineN ++;
+    m!^\s*(#|$)! and do {print; next;};
+    chomp;
+    my @ta=split(/\t/, $_);
+    my $eleID = lc($ta[2]);
+    defined $good_ele{$eleID} or die "[Err] Don't recoganize element [$ta[2]]\n";
+    my ($curID, $parentID);
+    $ta[8] =~ m!(?:^|;)\s*ID\s*=\s*([^;\s]+)!i and $curID = $1;
+    $ta[8] =~ m!(?:^|;)\s*Parent\s*=\s*([^;\s]+)! and $parentID = $1;
+    if      ($eleID eq 'gene') {
+      defined $genes{$curID} and defined $genes{$curID}{'geneLine'} and die "[Err] repeat geneID [$curID]: $_\n";
+      $genes{$curID}{'geneLine'} = [@ta];
+      $genes{$curID}{'lineN'} //= $cntLineN;
+    } elsif ($eleID eq 'mrna') {
+      defined $mrnas{$curID} and defined $mrnas{$curID}{'mrnaLine'} and die "[Err] Repeat mrnaID [$curID]: $_\n";
+      $mrnas{$curID}{'mrnaLine'} = [@ta];
+      $mrnas{$curID}{'geneID'} = $parentID;
+      $genes{$parentID}{'mrnaIDs'}{$curID} = 1;
+      $mrnas{$curID}{'lineN'} //= $cntLineN; # Don't want to use $.;
+      $ta[6] =~ m!^[+-]$! or die "[Err] Bad strand in line: $_\n";
+      $mrnas{$curID}{'str'} = $ta[6];
+    } elsif ($eleID eq 'exon') {
+      defined $parentID or die "[Err] No parentID found at line: $_\n";
+      push(@{$mrnas{$parentID}{'exonLines'}}, [@ta]);
+    } elsif ($eleID eq 'five_prime_utr') {
+      defined $parentID or die "[Err] No parentID found at line: $_\n";
+      push(@{$mrnas{$parentID}{'5utrLines'}}, [@ta]);
+    } elsif ($eleID eq 'cds') {
+      defined $parentID or die "[Err] No parentID found at line: $_\n";
+      push(@{$mrnas{$parentID}{'cdsLines'}}, [@ta]);
+    } elsif ($eleID eq 'three_prime_utr') {
+      defined $parentID or die "[Err] No parentID found at line: $_\n";
+      push(@{$mrnas{$parentID}{'3utrLines'}}, [@ta]);
+    } else {
+      die "[Err] Unknown element [$ta[2]]\n";
+    }
+  }# while ()
+
+  my %done_mrnaID;
+  for my $gID (sort { $genes{$a}{'lineN'} <=> $genes{$b}{'lineN'} } keys %genes) {
+    print {$oFh} join("\t", @{$genes{$gID}{'geneLine'}})."\n";
+    for my $mID (sort { $mrnas{$a}{'lineN'} <=> $mrnas{$b}{'lineN'} } keys %{$genes{$gID}{'mrnaIDs'}}) {
+      print {$oFh} join("\t", @{$mrnas{$mID}{'mrnaLine'}})."\n";
+      $mrnas{$mID}{'exonLines'} //= [];
+      $mrnas{$mID}{'5utrLines'} //= [];
+      $mrnas{$mID}{'cdsLines'}  //= [];
+      $mrnas{$mID}{'3utrLines'} //= [];
+      my @o1;
+      if ($mrnas{$mID}{'mrnaLine'}[6] eq '-') {
+        @o1 = sort { $b->[4] <=> $a->[4] || $good_ele{lc($a->[2])} <=> $good_ele{lc($b->[2])} } (
+          @{$mrnas{$mID}{'exonLines'}}, @{$mrnas{$mID}{'5utrLines'}}, @{$mrnas{$mID}{'cdsLines'}}, @{$mrnas{$mID}{'3utrLines'}}
+        );
+      } else {
+        @o1 = sort { $a->[3] <=> $b->[3] || $good_ele{lc($a->[2])} <=> $good_ele{lc($b->[2])} } (
+          @{$mrnas{$mID}{'exonLines'}}, @{$mrnas{$mID}{'5utrLines'}}, @{$mrnas{$mID}{'cdsLines'}}, @{$mrnas{$mID}{'3utrLines'}}
+        );
+      }
+      for my $lR1 (@o1) {
+        print {$oFh} join("\t", @$lR1)."\n";
+      }
+      $done_mrnaID{$mID} = 1;
+    }# for my $mID 
+  }# for my $gID
+  for my $mID (sort { $mrnas{$a}{'lineN'} <=> $mrnas{$b}{'lineN'} } keys %mrnas) {
+    defined $done_mrnaID{$mID} and next;
+    print {$oFh} join("\t", @{$mrnas{$mID}{'mrnaLine'}})."\n";
+    $mrnas{$mID}{'exonLines'} //= [];
+    $mrnas{$mID}{'5utrLines'} //= [];
+    $mrnas{$mID}{'cdsLines'}  //= [];
+    $mrnas{$mID}{'3utrLines'} //= [];
+    my @o1;
+    if ($mrnas{$mID}{'mrnaLine'}[6] eq '-') {
+      @o1 = sort { $b->[4] <=> $a->[4] || $good_ele{lc($a->[2])} <=> $good_ele{lc($b->[2])} } (
+        @{$mrnas{$mID}{'exonLines'}}, @{$mrnas{$mID}{'5utrLines'}}, @{$mrnas{$mID}{'cdsLines'}}, @{$mrnas{$mID}{'3utrLines'}}
+      );
+    } else {
+      @o1 = sort { $a->[3] <=> $b->[3] || $good_ele{lc($a->[2])} <=> $good_ele{lc($b->[2])} } (
+        @{$mrnas{$mID}{'exonLines'}}, @{$mrnas{$mID}{'5utrLines'}}, @{$mrnas{$mID}{'cdsLines'}}, @{$mrnas{$mID}{'3utrLines'}}
+      );
+    }
+    for my $lR1 (@o1) {
+      print {$oFh} join("\t", @$lR1)."\n";
+    }
+    $done_mrnaID{$mID} = 1;
+  }
 }# action_simpleSort() 
 
 
