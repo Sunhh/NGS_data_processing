@@ -245,7 +245,7 @@ sub action_simpleSort {
       defined $mrnas{$curID} and defined $mrnas{$curID}{'mrnaLine'} and die "[Err] Repeat mrnaID [$curID]: $_\n";
       $mrnas{$curID}{'mrnaLine'} = [@ta];
       $mrnas{$curID}{'geneID'} = $parentID;
-      $genes{$parentID}{'mrnaIDs'}{$curID} = 1;
+      $genes{$parentID}{'mrnaIDs'}{$curID} = $cntLineN;
       $mrnas{$curID}{'lineN'} //= $cntLineN; # Don't want to use $.;
       $ta[6] =~ m!^[+-]$! or die "[Err] Bad strand in line: $_\n";
       $mrnas{$curID}{'str'} = $ta[6];
