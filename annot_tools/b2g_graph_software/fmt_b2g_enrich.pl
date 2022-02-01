@@ -2,18 +2,20 @@
 use strict;
 use warnings;
 
+-t and !@ARGV and die "perl $0 3.Locule.Up.full.txt > 3.Locule.Up.full.txt.tab\n";
 
 while (<>) {
   chomp;
   my @ta=split(/\t/, $_);
   if ($ta[0] eq 'Tags') {
     $ta[10] eq 'TestSet Sequences' or die "Bad columns\n";
-    print join("\t", @ta[1..5], 'DEGs annotated', 'Genes annotated', 'Total DEGs', 'Total genes', "Genes")."\n";
+    print join("\t", @ta[1..5], 'Total DEGs', 'DEGs annotated', 'Genes annotated', 'Total genes', "Genes")."\n";
     next;
   }
   my $ttl_geneN = $ta[6]+$ta[7]+$ta[8]+$ta[9];
   my $ttl_degN  = $ta[6]+$ta[8];
-  print join("\t", @ta[1..5], $ta[6], $ta[7], $ttl_degN, $ttl_geneN, $ta[10])."\n";
+  $ta[10] //= "";
+  print join("\t", @ta[1..5], $ttl_degN, $ta[6], $ta[7], $ttl_geneN, $ta[10])."\n";
 }
 
 # 0   Tags
