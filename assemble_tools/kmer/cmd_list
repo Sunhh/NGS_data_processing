@@ -19,4 +19,9 @@ ls sample_cutted/*.fasta.m81cnt | perl -e 'my $pl="cnvt_qualFa_to_wind_avgTbl.pl
 '
 # Example command: perl cnvt_qualFa_to_wind_avgTbl.pl 500 500 sample_cutted/sample_001.fasta.m81cnt > sample_cutted/sample_001.fasta.m81cnt.tbl
 
+# Estimate genome size features with GenomeScope.R
+gzip -cd in.fq.gz | jellyfish count -C -m 81 -s 9999999999 -t 10 -o in.m81.jf /dev/fd/0
+jellyfish histo -t 10 -h 9999999999 in.m81.jf > in.m81.histo
+Rscript genomescope.R in.m81.histo 81 read_length in.genomescope.oDir 999999999
+perl extract_genomescope_summary.pl in.genomescope.oDir/summary.txt > summary_gscope.in.tbl
 
