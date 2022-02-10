@@ -1,0 +1,7 @@
+# Remove TE-associated proteins according to InterPro IDs (iprscan).
+### The file 'potential_TE_IPRacc' is updated on [2/1/2022]
+awk -F "\t" '$12 ~ /^IPR/' in.ipr.tsv > in.ipr.tsv.IPRacc
+perl list_IPRacc.pl in.ipr.tsv.IPRacc > in.ipr.tsv.IPRacc.line
+perl cnt_TEIPRacc.pl  potential_TE_IPRacc in.ipr.tsv.IPRacc.line > in.ipr.tsv.IPRacc.line.cnt
+
+
