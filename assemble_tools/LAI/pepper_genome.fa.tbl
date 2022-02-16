@@ -1,0 +1,59 @@
+==================================================
+file name: pepper_genome.fa         
+sequences:            91
+total length: 3023861164 bp  (3023606164 bp excl N/X-runs)
+GC level:         34.85 %
+bases masked: 2161988234 bp ( 71.50 %)
+==================================================
+               number of      length   percentage
+               elements*    occupied  of sequence
+--------------------------------------------------
+Retroelements       3004664   2161988234 bp   71.50 %
+   SINEs:                0            0 bp    0.00 %
+   Penelope              0            0 bp    0.00 %
+   LINEs:                0            0 bp    0.00 %
+    CRE/SLACS            0            0 bp    0.00 %
+     L2/CR1/Rex          0            0 bp    0.00 %
+     R1/LOA/Jockey       0            0 bp    0.00 %
+     R2/R4/NeSL          0            0 bp    0.00 %
+     RTE/Bov-B           0            0 bp    0.00 %
+     L1/CIN4             0            0 bp    0.00 %
+   LTR elements:    3004664   2161988234 bp   71.50 %
+     BEL/Pao             0            0 bp    0.00 %
+     Ty1/Copia      403805    266172867 bp    8.80 %
+     Gypsy/DIRS1    1153069   1106726942 bp   36.60 %
+       Retroviral        0            0 bp    0.00 %
+
+DNA transposons          0            0 bp    0.00 %
+   hobo-Activator        0            0 bp    0.00 %
+   Tc1-IS630-Pogo        0            0 bp    0.00 %
+   En-Spm                0            0 bp    0.00 %
+   MuDR-IS905            0            0 bp    0.00 %
+   PiggyBac              0            0 bp    0.00 %
+   Tourist/Harbinger     0            0 bp    0.00 %
+   Other (Mirage,        0            0 bp    0.00 %
+    P-element, Transib)
+
+Rolling-circles          0            0 bp    0.00 %
+
+Unclassified:            0            0 bp    0.00 %
+
+Total interspersed repeats:  2161988234 bp   71.50 %
+
+
+Small RNA:               0            0 bp    0.00 %
+
+Satellites:              0            0 bp    0.00 %
+Simple repeats:          0            0 bp    0.00 %
+Low complexity:          0            0 bp    0.00 %
+==================================================
+
+* most repeats fragmented by insertions or deletions
+  have been counted as one element
+                                                      
+
+RepeatMasker version 4.1.2-p1 , quick mode
+                                       
+run with rmblastn version 2.11.0+
+The query was compared to classified sequences in "pepper_genome.fa.LTRlib.fa"
+FamDB: 

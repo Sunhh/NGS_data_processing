@@ -1,0 +1,65 @@
+cp -p ../pepper_genome.fa . 
+
+# c1a_index
+/data/Sunhh/src/annotation/genometools/gt-1.5.9-Linux_x86_64-64bit-complete/bin/gt suffixerator \
+ -db          pepper_genome.fa \
+ -indexname   pepper_genome \
+ -tis -suf -lcp -des -ssp -sds -dna
+
+# c1b_ltrharvest_TGCA
+/data/Sunhh/src/annotation/genometools/gt-1.5.9-Linux_x86_64-64bit-complete/bin/gt ltrharvest \
+ -index       pepper_genome \
+ -similar 85 -vic 10 -seed 20 -seqids yes \
+ -minlenltr 100 -maxlenltr 7000 -mintsd 4 -maxtsd 6 \
+ -motif TGCA -motifmis 1 \
+> v_id85.harvest.scn
+
+# c1c_ltrharvest_nonTGCA
+/data/Sunhh/src/annotation/genometools/gt-1.5.9-Linux_x86_64-64bit-complete/bin/gt ltrharvest \
+ -index       pepper_genome \
+ -similar 85 -vic 10 -seed 20 -seqids yes \
+ -minlenltr 100 -maxlenltr 7000 -mintsd 4 -maxtsd 6 \
+> v_id85.harvest.nonTGCA.scn
+
+
+# Run LTR_retriever in parallel
+### mkdir by_para/ ; cp -p pepper_genome.fa by_para/ ;
+### cd by_para/ ;
+# export PATH=$PATH:/data/Sunhh/src/annotation/ltrfinder/LTR_Finder/source
+/data/Sunhh/src/annotation/ltrfinder/LTR_FINDER_parallel/LTR_FINDER_parallel \
+ -seq      pepper_genome.fa \
+ -threads  10 \
+ -harvest_out -size 1000000 -time 300 \
+ -finder   /data/Sunhh/src/annotation/ltrfinder/LTR_Finder/source/ltr_finder
+cat ../v_id85.harvest.scn ../v_id85.harvest.nonTGCA.scn pepper_genome.fa.finder.combine.scn > pepper_genome.fa.para_rawLTR.scn
+/data/Sunhh/src/annotation/ltr_retriever/LTR_retriever/LTR_retriever \
+ -genome       pepper_genome.fa \
+ -inharvest    pepper_genome.fa.para_rawLTR.scn \
+ -trf_path     /data/Sunhh/src/annotation/maker/maker/exe/RepeatMasker/trf
+#   Count LAI again in -unlock mode. "Unlock" mode is worth of trying if the LTR identity or the full LTR ratio are extreme values.
+mv pepper_genome.fa.out.LAI pepper_genome.fa.out.LAI_wiDefault
+perl /data/Sunhh/src/annotation/ltr_retriever/LTR_retriever/LAI -genome pepper_genome.fa -intact pepper_genome.fa.pass.list -all pepper_genome.fa.out -t 4 -q -blast /usr/local/bin/ -unlock
+Rscript ../plot_LAI_id85.R
+
+
+# Run LTR_retriever in single thread mode.
+### mkdir by_single/ ; cp -p pepper_genome.fa by_single/ ;
+### cd by_single/
+ltr_finder \
+ -D 15000 -d 1000 -L 7000 -l 100 \
+ -p 20 -C -M 0.85 \
+ pepper_genome.fa \
+> v_id85.finder.scn
+/data/Sunhh/src/annotation/ltr_retriever/LTR_retriever/LTR_retriever \
+ -genome       pepper_genome.fa \
+ -inharvest    ../v_id85.harvest.scn \
+ -infinder     v_id85.finder.scn \
+ -nonTGCA      ../v_id85.harvest.nonTGCA.scn \
+ -trf_path     /data/Sunhh/src/annotation/maker/maker/exe/RepeatMasker/trf
+# -cdhit_path   /data/Sunhh/src/align/cdhit/cd-hit-v4.8.1-2019-0228/cd-hit
+#   Count LAI again in -unlock mode. "Unlock" mode is worth of trying if the LTR identity or the full LTR ratio are extreme values.
+mv pepper_genome.fa.out.LAI pepper_genome.fa.out.LAI_wiDefault
+perl /data/Sunhh/src/annotation/ltr_retriever/LTR_retriever/LAI -genome pepper_genome.fa -intact pepper_genome.fa.pass.list -all pepper_genome.fa.out -t 4 -q -blast /usr/local/bin/ -unlock
+Rscript ../plot_LAI_id85.R
+
+
