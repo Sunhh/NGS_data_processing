@@ -11,7 +11,7 @@ use IPC::Open3;
 use Symbol; 
 use Exporter qw(import);
 
-our @EXPORT = qw(tsmsg stopErr exeCmd exeCmd_1cmd);
+our @EXPORT = qw(tsmsg stopErr exeCmd exeCmd_1cmd runCmd);
 our @EXPORT_OK = qw();
 
 =head1 tsmsg($seg1, $seg2, ...)
@@ -69,6 +69,15 @@ sub exeCmd_1cmd {
 	}
 	return 1; 
 }#End exeCmd 
+
+=head1 runCmd($cmd_to_exec)
+
+=cut
+sub runCmd {
+  my $cmd = shift;
+  &exeCmd_1cmd($cmd) and &stopErr("[Err] Failed at CMD: $cmd\n");
+  return();
+}# runCmd()
 
 =head1 timed_out( $cmd, $num_secs_to_timeout )
 
