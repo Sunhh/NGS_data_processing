@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 # 20200806: For -add_KaKs function, fix the problem when the input CDS IDs have too many characters (>= 32). 
 # 20200820: Fix -add_KaKs when there are duplicated gene names. 
+# [20220310] There is a bug in add_KaKs function which causes no KaKs attached to the original .collinearity (-in_aln) file when using "-ncpu 1" instead of multiple cpus. I'll fix it later when I have time.
 use strict; 
 use warnings; 
 use LogInforSunhh; 
