@@ -26,6 +26,7 @@ GetOptions(\%opts,
  "aln2list!", "addChr!", "tgt_gff:s", "srt_by:s", "raw_order!", 
  "aln2table!",
    "useYN!", 
+ "table2aln!", # require '-in_table'
  "sepTable!", 
    "sepColN:s", 
  "aln2pairList!", 
@@ -79,6 +80,8 @@ sub usage {
 # -sepTable       [Boolean] Separate table into one gene pair per line format. This is useful when checking gene pair's kaks. 
 #                   Need -in_table 
 #   -sepColN      [0,11,12,13,14,15] Only use these columns; 
+# 
+# -table2aln      [Boolean] requires -in_table
 # 
 # -glist2pairs    [Boolean] Extract non-redundant gene pairs in gene list. 
 #                   Here the gene list is the output of -aln2list. 
@@ -199,6 +202,10 @@ if ( $opts{'aln2list'} ) {
 	 'in_gff'=>$opts{'in_gff'}, 
 	 'in_aln'=>$opts{'in_aln'}, 
 	); 
+} elsif ( $opts{'table2aln'} ) {
+  &mcs_table2aln(
+   'in_table' => $opts{'in_table'}
+  );
 } elsif ( $opts{'glist2pairs'} ) {
 	&msc_glist2pairs(
 	 'in_glist'=>$opts{'in_glist'}, 
@@ -1129,6 +1136,28 @@ sub mcs_aln2pair {
 
 	return; 
 } # mcs_aln2pair
+
+sub mcs_table2aln {
+  my %parm = $ms_obj->_setHashFromArr(@_);
+
+  open F,'<',"$parm{'in_table'}" or die;
+  while (<F>) {
+    chomp;
+    my @ta=split(/\t/, $_);
+    if ( $ta[0] eq 'BlkID' ) {
+      next;
+    }
+    my ($alnID, $alnScore, $alnEval, $alnNum, $chr1, $chr2, $str) = @ta[0, 8, 9, 10, 1, 4, 7];
+    $str = ($str eq "-") ? "minus" : "plus" ;
+    print STDOUT "## Alignment $alnID: score=$alnScore e_value=$alnEval N=$alnNum $chr1\&$chr2 $str\n";
+    my @gene1 = split(/,/, $ta[11]);
+    my @gene2 = split(/,/, $ta[12]);
+    for (my $i=0; $i<@gene1; $i++) {
+      print STDOUT join("\t", "$alnID\-$i:", $gene1[$i], $gene2[$i], "0.0")."\n";
+    }
+  }
+  close F;
+}# mcs_table2aln()
 
 sub msc_aln2table {
 	my %parm = $ms_obj->_setHashFromArr(@_); 
