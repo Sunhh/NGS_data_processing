@@ -78,7 +78,7 @@ my @incl_1; # ([long_id, short_id, long_len, short_len])
   for my $suff (qw/not ntf nto ndb nhr nin nsq/) {
     push(@torm, "$fn.$suff");
   }
-  my $cmd = "blastn ";
+  my $cmd = "blastn -task blastn ";
   $cmd .= " -outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen sstrand' ";
   $cmd .= " -num_threads 50 -word_size $bn_wordsize -perc_identity $bn_ident -evalue $bn_eval ";
   $cmd .= " -max_hsps 5 -max_target_seqs 50 -dust no ";
@@ -130,7 +130,7 @@ my @incl_2;
   for my $suff (qw/not ntf nto ndb nhr nin nsq/) {
     push(@torm, "$fn.long.fa.$suff");
   }
-  my $cmd = "blastn ";
+  my $cmd = "blastn -task blastn ";
   $cmd .= " -outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen sstrand' ";
   $cmd .= " -num_threads 50 -word_size $bn_wordsize -perc_identity $bn_ident -evalue $bn_eval ";
   $cmd .= " -max_hsps 5 -max_target_seqs 50 -dust no ";
