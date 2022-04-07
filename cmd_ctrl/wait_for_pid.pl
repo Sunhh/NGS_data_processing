@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 # 20180411 Use kill() to monitor PID. 
+# [4/7/2022] Invoke 'ps' command instead of kill() function to see if a PID is running, because I need authority to correctly use kill().
 use strict; 
 use warnings; 
 BEGIN {
@@ -43,11 +44,11 @@ while (1) {
 	my $all_done = 1; 
 	my @tk = sort keys %pids; 
 	for my $t1 (@tk) {
-		if (kill(0, $t1) == 0) {
-			delete $pids{$t1}; 
-		} else {
+    if ( &if_running($t1) ) {
 			$all_done = 0; 
 			last; 
+		} else {
+			delete $pids{$t1}; 
 		}
 	}
 	if ($all_done == 1) {
@@ -59,4 +60,15 @@ while (1) {
 	sleep $opts{'sleep_seconds'}
 }
 
+sub if_running {
+  my ($tp) = @_;
+  my @txt = `ps -p $tp -o pid`;
+  chomp(@txt);
+  my $is_run = 0;
+  for my $l1 (@txt) {
+    $l1 =~ s!^\+s|\s+$!!g;
+    $l1 =~ m!^\s*${tp}\s*$! and do { $is_run = 1; last; };
+  }
+  return($is_run);
+}
 
