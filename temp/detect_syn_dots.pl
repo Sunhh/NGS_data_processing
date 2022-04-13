@@ -5,9 +5,10 @@ use warnings;
 use Statistics::Regression;
 use fileSunhh;
 
-!@ARGV and die "perl $0 t1 > t1.o\n";
+!@ARGV and die "perl $0 t1 out_prefix\n";
 
 my $fn_xy = shift;
+my $opref = shift;
 
 # Load (x,y) points.
 my @v_xy = &fileSunhh::load_tabFile( $fn_xy );
@@ -20,25 +21,41 @@ my %dist_p2p;
 my %used;
 
 # Set up cutoffs.
-my $d1 = 500e3; # Maximum point-to-point distance.
-my $d2 = 300e3; # Maximum point-to-line distance.
 my $d3x = 300e3; # Maximum X distance of two neighboring points.
 my $d3y = 300e3; # Maximum Y distance of two neighboring points.
+my $d1 = sqrt($d3x**2 + $d3y**2); # Maximum point-to-point distance.
+# $d1 = 500e3;
+warn("d1=$d1\n");
+my $d2 = 200e3; # Maximum point-to-line distance.
 my $min_pts = 5;
+my $tail_lmN = 5;
 
 # Look for alignments from the first point.
 my $blkN = 0;
+open O1,'>',"$opref.sep" or die;
+open O2,'>',"$opref.jn" or die;
 for (my $i=0; $i<@v_xy; $i++) {
   defined $used{$i} and next;
   my @aln = ([$v_xy[$i][0], $v_xy[$i][1], $i]); # Currently, I allow one line for each point.
   &extAln(\@aln, \@v_xy, \%dist_p2p, \%used);
   scalar(@aln) == 0 and next;
   $blkN ++;
+  my @segs;
+  my ($min1, $min2, $max1, $max2);
   for my $a1 (@aln) {
     # print join("\t", $blkN, $a1->[0], $a1->[1], $aln[0][0], $aln[0][1], $aln[-1][0], $aln[-1][1])."\n";
-    print join("\t", $blkN, $a1->[0], $a1->[1])."\n";
+    print O1 join("\t", $blkN, $a1->[0], $a1->[1])."\n";
+    push(@segs, "$a1->[0],$a1->[1]");
+    $min1 //= $a1->[0]; $min1 > $a1->[0] and $min1 = $a1->[0];
+    $min2 //= $a1->[1]; $min2 > $a1->[1] and $min2 = $a1->[1];
+    $max1 //= $a1->[0]; $max1 < $a1->[0] and $max1 = $a1->[0];
+    $max2 //= $a1->[1]; $max2 < $a1->[1] and $max2 = $a1->[1];
   }
+  print O2 join("\t", $blkN, scalar(@segs), $min1, $max1, $min2, $max2)."\n";
 }
+close O1;
+close O2;
+
 
 sub extAln {
   my ($aR, $vR, $dR, $usedR) = @_;
@@ -65,16 +82,10 @@ sub extAln {
     }
     if ($has_fit == 0) {
       my $reg = Statistics::Regression->new( "pain", [ "const", "someX"] );
-      for (@$aR) {
-        $reg->include( $obs[$_->[2]][0], $obs[$_->[2]][1] );
-#        for my $k (keys %{$obs[$_->[2]][1]}) {
-#          print "$k => $obs[$_->[2]][1]{$k}\n";
-#        }
-#die;
+      for (my $ti = $#$aR; $ti > $#$aR-$tail_lmN and $ti >= 0; $ti--) {
+        $reg->include( $obs[$aR->[$ti][2]][0], $obs[$aR->[$ti][2]][1] );
       }
       ($fA, $fB) = $reg->theta();
-      defined $fA or $reg->print();
-      defined $fA or die "fA\n";
       $has_fit = 1;
     }
     my $t_d2 = &d_p2l($vR->[$j], $fA, $fB);
