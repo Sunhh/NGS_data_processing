@@ -1,11 +1,12 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
+use fileSunhh;
 
 !@ARGV and die "perl $0 out.of.genomescope/BC19/summary.txt out.of.genomescope/BC20/summary.txt > summary_gscope.tbl\n";
 
-my @outKey = qw(filename k max_genome_hap max_hetePerc max_genome_uni max_genome_rep);
-print STDOUT join("\t", qw/filename kmer genome_size hete% unique_region repeat_region/)."\n";
+my @outKey = qw(filename k k_depth max_genome_hap max_hetePerc max_genome_uni max_genome_rep);
+print STDOUT join("\t", qw/filename kmer kmer_depth genome_size hete% unique_region repeat_region/)."\n";
 for my $fn (@ARGV) {
   open F,'<',"$fn" or die;
   my %h;
@@ -28,6 +29,16 @@ for my $fn (@ARGV) {
     }
   }
   close F;
+  my $dirName = &fileSunhh::_dirname( &fileSunhh::_abs_path($fn) );
+  if (-e "$dirName/model.txt") {
+    open F2,'<',"$dirName/model.txt" or die "[Err] Failed to open file $dirName/model.txt\n";
+    while (<F2>) {
+      chomp;
+      m!^kmercov\s+(\S+)! or next;
+      $h{'k_depth'} = $1 * 2;
+    }
+    close F2;
+  }
   for (@outKey) {
     $h{$_} //= "N/A";
   }
