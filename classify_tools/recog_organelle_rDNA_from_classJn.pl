@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 # [4/9/2022] Need to convert this as pipeline some day later for repeat works!!!
 # [4/15/2022] Merge chloroplast and plastid to chloroplast class.
+# [4/15/2022] Try to recognize bacteria classes.
 use strict;
 use warnings;
 use LogInforSunhh;
@@ -21,6 +22,16 @@ while (<>) {
     print join("\t", "Mitochondrion", $_)."\n";
   } elsif ($ta[5] =~ m!^Satellite:\d+$!i) {
     print join("\t", "Satellite", $_)."\n";
+  } elsif ($ta[5] =~ m!^Viruses:\d+$!i) {
+    print join("\t", "Viruses", $_)."\n";
+  } elsif ($ta[5] =~ m!^Bacteria:\d+$!i) {
+    print join("\t", "Bacteria", $_)."\n";
+  } elsif ($ta[5] =~ m!^Archaea:\d+$!i) {
+    print join("\t", "Archaea", $_)."\n";
+  } elsif ($ta[5] =~ m!^NA:\d+$!i) {
+    print join("\t", "NA", $_)."\n";
+  } elsif ($ta[5] =~ m!^((?:NA|Viruses|Bacteria|Archaea):\d+(?:;;)?)+$!i) {
+    print join("\t", "NA", $_)."\n";
   } else {
     my @b = sort { $b->[1] <=> $a->[1] } map { [split(/:/, $_)] } split(/;;/, $ta[5]);
     if      ($b[0][0] =~ m!^(Chloroplast|Mitochondrion|Plastid)$!i) {
