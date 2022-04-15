@@ -3,6 +3,14 @@ use strict;
 use warnings;
 use LogInforSunhh;
 use fileSunhh;
+use Getopt::Long;
+my %opts;
+GetOptions(\%opts,
+  "gene_distance:i", # 2000
+  "help!"
+);
+
+$opts{'gene_distance'} //= 2000;
 
 my $htxt = <<HH;
 ################################################################################
@@ -12,7 +20,7 @@ my $htxt = <<HH;
 #   (1) have complete protein sequences in db_diamond;
 #   (2) do not overlap each other with at least overall 80% identity or overall 50% sum-up matches 
 #       (details determined by perl script rmRedunt_inputProt.pl).
-#   (3) separate at least 2kb away from each other.
+#   (3) separate at least 'gene_distance' ($opts{'gene_distance'} bp) away from each other.
 #
 ################################################################################
 HH
@@ -75,9 +83,12 @@ my $wdir = &fileSunhh::new_tmp_dir('create' => 1);
 }
 
 &runCmd("$pl_dealGff -inGff $fn_inGff -gffret $wdir/rmRed.kept_list > $wdir/rmRed.kept.gff3");
-&runCmd("$pl_dealGff -inGff $wdir/rmRed.kept.gff3 -islandGene 2000 -islandStrand Both > $opref.CompleteRmRedIsland.gff3");
+&runCmd("$pl_dealGff -inGff $wdir/rmRed.kept.gff3 -islandGene $opts{'gene_distance'} -islandStrand Both > $opref.CompleteRmRedIsland.gff3");
 &runCmd("cp -p $wdir/bp2db.bp6.comID $opref.completeProt.ID");
 &runCmd("cp -p $wdir/rmRed.kept_list $opref.completeRmRed.ID");
+&runCmd("$pl_dealGff -inGff $opref.CompleteRmRedIsland.gff3 -getJnLoc > $opref.CompleteRmRedIsland.gff3.JnLoc");
+&runCmd("$pl_dealFas $fn_inFas -drawByList -drawLcol 0 -drawWhole -drawList $opref.CompleteRmRedIsland.gff3.JnLoc > $opref.CompleteRmRedIsland.p.fa");
+
 
 &fileSunhh::_rmtree($wdir);
 
