@@ -34,8 +34,8 @@ my $opref   = shift;
   # However, it might be worth another try to treat them as contamination for chromosome anchoring.
   my $cmd = "perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/classify_region_byBn6.pl ";
   $cmd .= " $opref.tochk.toNt.bn6  -joinInEx $opref.tochk.toNt.bn6.jnInEx ";
-  $cmd .= " -InList Eukaryota:Satellite:rDNA ";
-  $cmd .= " -ExList NA:Viruses:Bacteria:Archaea:Chloroplast:Mitochondrion:Plastid ";
+  $cmd .= " -InList Eukaryota:Satellite:rDNA:Chloroplast:Mitochondrion:Plastid ";
+  $cmd .= " -ExList NA:Viruses:Bacteria:Archaea ";
   $cmd .= " > $opref.tochk.toNt.bn6.class ";
   &runCmd($cmd);
 }
