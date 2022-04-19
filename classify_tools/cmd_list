@@ -4,6 +4,11 @@ deal_fasta.pl -keep_len 0-1000000 ../rmdup/asml0.p_ctg.fa.noRed.fa   > hf0.noRed
 deal_fasta.pl -keep_len 0-1000000 ../rmdup/asm00.pri_ctg.fa.noRed.fa > hc0.noRed.tochk.fa
 
 # step 2. Align contigs agains Nt database.
+### [4/15/2022] Thinking about the contig alignments.
+###   If I align the contigs with their pretty long intact sequences, the restriction from ' -max_target_seqs 50 -max_hsps 50 ' parameters may miss short embedded contaminations in a long contig that is mainly made up of normal genomic sequences.
+###   A solution to this may be breaking the contigs into small pieces, say 2 kb segments, and then aligning them to the Nt database, followed by a coordinates conversion that changes the segment positions back to contig positions.
+###   I'll complement this in the future in a pipeline to reduce the complexity in manual work.
+###   Although I am not doing this currently, I don't think it matters much because the assembly error is lowered a lot by the improvement of HiFi sequencing technology!
 blastn -query hf2.noRed.tochk.fa -out hf2.noRed.tochk.fa.toNt.bn6 \
  -db nt -evalue 1e-5 -num_threads 50 -max_hsps 50 -max_target_seqs 50 -outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen sstrand staxids sscinames sskingdoms stitle'
 blastn -query hf0.noRed.tochk.fa -out hf0.noRed.tochk.fa.toNt.bn6 \
@@ -17,6 +22,11 @@ grep -v KR559021 hf0.noRed.tochk.fa.toNt.bn6 > hf0.noRed.tochk.fa.toNt.bn6.f1
 grep -v KR559021 hc0.noRed.tochk.fa.toNt.bn6 > hc0.noRed.tochk.fa.toNt.bn6.f1
 
 # step 3. Label the contigs according to their hits.
+### [4/15/2022] I decide to separate the recognition of micro-organisms and organelles because they should have different patterns.
+###   The hits to organelles or rDNAs should have high coverage because their evolution and genetic content are limited, 
+###     while the hits to micro-organisms may be dispersed because the genome of related bacteria or viruses may not be sequenced yet.
+###   So, I think using a different step to assign the contigs can help me to determine if I need to change the coverage ratio for contamination removal.
+###   Currently, I require 95% coverage to recoganize an organelle genome or rDNA repeat cluster.
 perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/classify_region_byBn6.pl \
  hf2.noRed.tochk.fa.toNt.bn6.f1 \
  -joinInEx   hf2.noRed.tochk.fa.toNt.bn6.jnInEx \
@@ -39,9 +49,11 @@ perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/classify_region
 
 
 # step 4. Get regions that should be removed as contamination.
-perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/get_Ex_region.pl hf2.noRed.tochk.fa.toNt.bn6.jnInEx 1> hf2.noRed.tochk.fa.sepExLis 2> hf2.noRed.tochk.fa.jnExLis
-perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/get_Ex_region.pl hf0.noRed.tochk.fa.toNt.bn6.jnInEx 1> hf0.noRed.tochk.fa.sepExLis 2> hf0.noRed.tochk.fa.jnExLis
-perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/get_Ex_region.pl hc0.noRed.tochk.fa.toNt.bn6.jnInEx 1> hc0.noRed.tochk.fa.sepExLis 2> hc0.noRed.tochk.fa.jnExLis
+### perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/get_Ex_region.pl hf2.noRed.tochk.fa.toNt.bn6.jnInEx 1> hf2.noRed.tochk.fa.sepExLis 2> hf2.noRed.tochk.fa.jnExLis
+# [4/15/2022] Using .class file can be more accurate.
+perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/get_Ex_region.pl hf2.noRed.tochk.fa.toNt.bn6.class 1> hf2.noRed.tochk.fa.sepExLis 2> hf2.noRed.tochk.fa.jnExLis
+perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/get_Ex_region.pl hf0.noRed.tochk.fa.toNt.bn6.class 1> hf0.noRed.tochk.fa.sepExLis 2> hf0.noRed.tochk.fa.jnExLis
+perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/get_Ex_region.pl hc0.noRed.tochk.fa.toNt.bn6.class 1> hc0.noRed.tochk.fa.sepExLis 2> hc0.noRed.tochk.fa.jnExLis
 
 # step 5. Determine and classify the contaminations.
 cat hf2.noRed.tochk.fa.jnExLis | perl -e 'while (<>) { chomp; my @ta=split(/\t/, $_); 
