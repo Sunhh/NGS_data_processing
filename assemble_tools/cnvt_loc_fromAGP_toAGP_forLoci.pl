@@ -58,7 +58,15 @@ while (<$old_locFh>) {
 	my @new_value; 
 	my $old_scfStr = '+'; 
 	@{$glob{'colN_seqStr'}} > 0 and $old_scfStr = $a1->[$glob{'colN_seqStr'}[0]]; 
-	$old_scfStr eq '.' and $old_scfStr = '+'; 
+	if ( $old_scfStr eq '.' or $old_scfStr eq '+') {
+		$old_scfStr = '+'; 
+	} elsif ( $old_scfStr eq 'plus' ) {
+		$old_scfStr = '+';
+	} elsif ( $old_scfStr eq '-' or $old_scfStr eq 'minus' ) {
+		$old_scfStr = '-';
+	} else {
+		die "Unknown strand [$old_scfStr]\n";
+	}
 	for my $cN ( @{$glob{'colN_seqP'}} ) {
 		my ($old_scfID, $old_scfPos) = ( @{$a1}[ $glob{'colN_seqID'}[0], $cN ] ); 
 		my @new_scfInf; 
