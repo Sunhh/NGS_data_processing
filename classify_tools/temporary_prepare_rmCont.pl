@@ -24,34 +24,35 @@ my $opref   = shift;
 
 &runCmd("deal_fasta.pl -keep_len 0-$max_len $ctgFa > $opref.tochk.fa");
 {
-  my $cmd = "blastn -query $opref.tochk.fa -out $opref.tochk.toNt.bn6 -db nt ";
-  $cmd .= " -evalue 1e-5 -num_threads 20 -max_hsps 50 -max_target_seqs 50  ";
-  $cmd .= " -outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen sstrand staxids sscinames sskingdoms stitle' ";
-  &runCmd($cmd);
+  # my $cmd = "blastn -query $opref.tochk.fa -out $opref.tochk2Nt.bn6 -db nt ";
+  # $cmd .= " -evalue 1e-5 -num_threads 20 -max_hsps 50 -max_target_seqs 50  ";
+  # $cmd .= " -outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen sstrand staxids sscinames sskingdoms stitle' ";
+  &runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/run_seg_blastn.pl  $opref.tochk2Nt  10000  $opref.tochk.fa  nt");
 }
 {
   # I'd like to keep rDNA as good assembly for contamination removal. 
   # However, it might be worth another try to treat them as contamination for chromosome anchoring.
   my $cmd = "perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/classify_region_byBn6.pl ";
-  $cmd .= " $opref.tochk.toNt.bn6  -joinInEx $opref.tochk.toNt.bn6.jnInEx ";
+  $cmd .= " $opref.tochk2Nt.bn6  -joinInEx $opref.tochk2Nt.bn6.jnInEx ";
   $cmd .= " -InList Eukaryota:Satellite:rDNA:Chloroplast:Mitochondrion:Plastid ";
   $cmd .= " -ExList NA:Viruses:Bacteria:Archaea ";
-  $cmd .= " > $opref.tochk.toNt.bn6.class ";
+  $cmd .= " > $opref.tochk2Nt.bn6.class ";
   &runCmd($cmd);
 }
-&runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/get_Ex_region.pl $opref.tochk.toNt.bn6.class 1> $opref.tochk.toNt.bn6.class.sep 2> $opref.tochk.toNt.bn6.class.jn");
+&runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/get_Ex_region.pl $opref.tochk2Nt.bn6.class 1> $opref.tochk2Nt.bn6.class.sep 2> $opref.tochk2Nt.bn6.class.jn");
+&runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/recog_organelle_rDNA_from_classJn.pl $opref.tochk2Nt.bn6.class.jn > $opref.tochk2Nt.bn6.class.jn.s1");
 
 # In order to detect rDNA and organelle genomes.
 {
   my $cmd = "perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/classify_region_byBn6.pl ";
-  $cmd .= " $opref.tochk.toNt.bn6  -joinInEx $opref.tochk.toNt.bn6.highCopy.jnInEx ";
+  $cmd .= " $opref.tochk2Nt.bn6  -joinInEx $opref.tochk2Nt.bn6.highCopy.jnInEx ";
   $cmd .= " -InList Eukaryota:NA:Viruses:Bacteria:Archaea ";
   $cmd .= " -ExList Chloroplast:Mitochondrion:Plastid:Satellite:rDNA ";
-  $cmd .= " > $opref.tochk.toNt.bn6.highCopy.class ";
+  $cmd .= " > $opref.tochk2Nt.bn6.highCopy.class ";
   &runCmd($cmd);
 }
-&runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/get_Ex_region.pl $opref.tochk.toNt.bn6.highCopy.class 1> $opref.tochk.toNt.bn6.highCopy.class.sep 2> $opref.tochk.toNt.bn6.highCopy.class.jn");
-&runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/recog_organelle_rDNA_from_classJn.pl $opref.tochk.toNt.bn6.highCopy.class.jn > $opref.tochk.toNt.bn6.highCopy.class.jn.s1");
+&runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/get_Ex_region.pl $opref.tochk2Nt.bn6.highCopy.class 1> $opref.tochk2Nt.bn6.highCopy.class.sep 2> $opref.tochk2Nt.bn6.highCopy.class.jn");
+&runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/recog_organelle_rDNA_from_classJn.pl $opref.tochk2Nt.bn6.highCopy.class.jn > $opref.tochk2Nt.bn6.highCopy.class.jn.s1");
 
 # deal_fasta.pl -keep_len 0-1000000 ../db/C31.hf2a.noRed.fa > C31.tochk.fa
 # blastn -query C31.tochk.fa -out C31.tochk.fa.toNt.bn6 \

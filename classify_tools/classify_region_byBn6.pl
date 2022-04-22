@@ -5,6 +5,7 @@
 # 2013-10-17 Version 1.
 # 2013-11-01 Edit to assign Include/Exclude kingdoms.
 # 2014-03-04 Fix a bug in which we fail to classify some end-to-end alignments. 
+# [4/21/2022] Join blocks according to InEx classes instead of kingdom classes.
 use strict;
 use warnings;
 use LogInforSunhh; 
@@ -33,7 +34,7 @@ sub writeFH {
 #         0      1      2      3      4        5       6      7    8      9    10     11       12   13   14      15      16        17         18
 # Pre configuration.
 my $only1Hit = ($opts{byHsp}) ? 0 : 1 ; # 如果指定这个参数为1 (Not using -byHsp parameter), 同一个query区间, 只会计算一次同一个Hit的cover, 这样如果query在Hit内重复出现(多个hsp), 这个Hit对该query单元的支持贡献也只有一次; 关闭为1; Not used now. 
-defined $opts{maxUn} or $opts{maxUn} = 1;
+$opts{maxUn} //= 1;
 
 my %skingdom=qw(
 NA        0
@@ -83,16 +84,16 @@ if ($opts{InPlastid}) {
 }
 if (defined $opts{InList}) {
 	for my $tK (split(/:/, $opts{InList})) {
-		defined $skingdom{$tK} or do { warn "[Err]No kingdom [$tK] defined. \n"; };
+		defined $skingdom{$tK} or do { &tsmsg("[Wrn] No kingdom [$tK] defined.\n"); };
 		$isInEx{$tK} = 'In';
-		warn "[Rec]Subject kingdom [$tK] is included.\n";
+		&tsmsg("[Rec]Subject kingdom [$tK] is included.\n");
 	}
 }
 if (defined $opts{ExList}) {
 	for my $tK (split(/:/, $opts{ExList})) {
-		defined $skingdom{$tK} or do { warn "[Err]No kingdom [$tK] defined. \n"; };
+		defined $skingdom{$tK} or do { &tsmsg("[Wrn]No kingdom [$tK] defined.\n"); };
 		$isInEx{$tK} = 'Ex';
-		warn "[Rec]Subject kingdom [$tK] is excluded.\n";
+		&tsmsg("[Rec]Subject kingdom [$tK] is excluded.\n");
 	}
 }
 
@@ -209,7 +210,7 @@ while (<>) {
 		defined $dvd_site{$qid}{$tp} or $dvd_site{$qid}{$tp} = 1;
 	}
 }
-warn "[Msg] file read in.\n";
+&tsmsg("[Msg] file read in.\n");
 
 
 # my %qUnit; # Or I will directly print them out to save memory usage.
@@ -220,7 +221,7 @@ if ( $is_joinInEx == 1 ) {
 
 
 for my $qid (sort { $scf_order{$a} <=> $scf_order{$b} } keys %dvd_site) {
-warn "[Msg]Processing scaff [$qid]\n";
+	&tsmsg("[Msg]Processing scaff [$qid]\n");
 	## Make minimum block units for each query.
 	my @qpoints = sort { $a<=>$b } keys %{ $dvd_site{$qid} }; # Sort block boundary sites.
 	# $qpoints[0] > 1 and unshift(@qpoints, 1);
@@ -232,64 +233,47 @@ warn "[Msg]Processing scaff [$qid]\n";
 		# This only happens when qS == qE in blocks; 
 		if ($qpoints[0] == 1) {
 			push( @qMinBlks, [ 0.5, 1.5 ] ); 
-		}
-		if (@qMinBlks == 0) {
+		} else {
 			push( @qMinBlks, [ 0.5, $qpoints[0]-0.5 ] ); 
-			push( @qMinBlks, [ $qMinBlks[-1][1], $qpoints[0]+0.5 ] ); 
 		}
-		if ($qMinBlks[-1][1] < $qLen{$qid}+0.5) {
-			push( @qMinBlks, [ $qMinBlks[-1][1], $qLen{$qid}+0.5 ] ); 
-		}
+		push( @qMinBlks, [ $qpoints[0]-0.5, $qpoints[0]+0.5 ] ); 
 	} else {
-		POINTS: 
-		for (my $i=0; $i<$#qpoints; $i++) {
-			if (@qMinBlks > 0) {
-				$qMinBlks[-1][1] == $qpoints[$i]+0.5 or &stopErr("[Err] end blk [$qMinBlks[-1][1]] not match curr_start [$qpoints[$i]]\n"); 
-			} else {
-				$i == 0 or &stopErr("[Err] why this?\n"); 
-				if ( $qpoints[$i] > 1 ) {
-					push( @qMinBlks, [ 0.5 , $qpoints[$i]-0.5 ] ); # Unmapped region in 5'-end . 
-					push( @qMinBlks , [ $qpoints[$i]-0.5, $qpoints[$i]+0.5 ] ); # Left-most point of mapping region. 
-				} else {
-					push( @qMinBlks, [ 0.5 , 1.5 ] ); # Left-most point of mapping region. 
-				}
+		# Initialize @qMinBlks
+		if ($qpoints[0] > 1) {
+			push(@qMinBlks, [0.5, $qpoints[0]-0.5]); # Unmapped region in 5'-end.
+		}
+		push(@qMinBlks, [$qpoints[0]-0.5, $qpoints[0]+0.5]); # Left-most point of mapping region.
+		for (my $i=1; $i<=$#qpoints; $i++) {
+			if ( $qpoints[$i-1]+1 < $qpoints[$i] ) {
+				push(@qMinBlks, [$qpoints[$i-1]+0.5, $qpoints[$i]-0.5]);
 			}
-			$qMinBlks[-1][1] < $qpoints[$i+1]-0.5 and push( @qMinBlks , [ $qMinBlks[-1][1], $qpoints[$i+1]-0.5 ] ); # Inner mapping region. 
-			push( @qMinBlks, [ $qMinBlks[-1][1], $qpoints[$i+1]+0.5 ] ); # Right-most of current block. 
+			push(@qMinBlks, [$qpoints[$i]-0.5, $qpoints[$i]+0.5]);
 		}
 	}
-	if ( $qMinBlks[-1][1] != $qLen{$qid}+0.5 ) {
+	$qMinBlks[-1][1] > $qLen{$qid}+0.5 and &stopErr("[Err] qMinBlks[-1][1] $qMinBlks[-1][1] > $qLen{$qid}+0.5\n");
+	if ( $qMinBlks[-1][1] < $qLen{$qid}+0.5 ) {
 		# There is some region left in the 3'-end. 
 		push( @qMinBlks, [ $qMinBlks[-1][1], $qLen{$qid}+0.5 ] ); 
 	}
-	## Give type counts (contributions) for each unit.
+	## Give type counts (contributions) for each unit in qMinBlks according to qBlks.
 	my @qSrtBlks = sort { $a->[0]<=>$b->[0] || $a->[1]<=>$b->[1] || $skingdom{$a->[2]} <=> $skingdom{$b->[2]} } @{ $qBlks{$qid} }; # Sort query aligned blocks for following comparison.
-	UNIT:
 	for (my $minI = 0; $minI < @qMinBlks; $minI++) {
 		my $minE = $qMinBlks[$minI]; # [ qstart, qend, {{skingdom=>nCount}} ]
 		BLOC:
 		for (my $j=0; $j<@qSrtBlks; $j++) {
 			my $srtE = $qSrtBlks[$j]; # [ qstart, qend, skingdom, hitName ]
-			if      ( $minE->[1] <= $srtE->[0] ) {
-				# unit is in upstream of the current first block.
-				# go to next unit.
-				next UNIT;
-			} elsif ( $minE->[0] < $srtE->[1] ) {
-				# unit is in the current first block.
-				# record and next block.
-				if ( $only1Hit ) {
-					defined $minE->[3]{ $srtE->[3] } or $minE->[2]{ $srtE->[2] } ++;
-					$minE->[3]{ $srtE->[3] } ++;
-				}else{
-					$minE->[2]{ $srtE->[2] } ++;
-				}
-				next BLOC;
+			$srtE->[1] < $minE->[0] and next BLOC;
+			$srtE->[0] > $minE->[1] and last BLOC;
+			# Since blocks in qMinBlks are the smallest ones, any overlapping qBlks should cover all of this minE block.
+			if ( $only1Hit ) {
+				# If count sequence coverage by target sequence number instead of HSPs.
+				defined $minE->[3]{ $srtE->[3] } or $minE->[2]{ $srtE->[2] } ++;
+				$minE->[3]{ $srtE->[3] } ++;
 			} else {
-				# unit is in downstream of the current first block.
-				; 
+				$minE->[2]{ $srtE->[2] } ++;
 			}
 		}#End BLOC:for
-	}#End UNIT:for
+	}#End
 
 	# Save the final classification.
 	# $qUnit{$qid} = [@qMinBlks];
@@ -330,82 +314,53 @@ warn "[Msg]Processing scaff [$qid]\n";
 			my ($kR1, $vR1, $kStr1) = &parse1(\@oskd);
 			my ($kR2, $vR2, $kStr2) = &parse1(\@oInEx);
 			if ( scalar(@combInEx) == 0 ) {
-				# Initialize.
-#				push( @combInEx,
-#					[$tr1->[0],           # qstart
-#					$tr1->[1],            # qend
-#					[$kR1, $vR1, $kStr1], # [KingdomTypes_Ref, KingdomCounts_Ref, KingdomTypes_String]
-#					[$kR2, $vR2, $kStr2]  # [InExcludeTypes_Ref, InExcludeCounts_Ref, InExcludeTypes_String]
-#					]
-#				);
+				# Initialize the first qMinBlk.
 				push( @combInEx,
-					[( $tr1->[0]-0.5 <= $opts{maxUn} ) ? 1 : $tr1->[0]+0.5 ,           # qstart
-					$tr1->[1]-0.5,            # qend
-					[$kR1, $vR1, $kStr1], # [KingdomTypes_Ref, KingdomCounts_Ref, KingdomTypes_String]
-					[$kR2, $vR2, $kStr2]  # [InExcludeTypes_Ref, InExcludeCounts_Ref, InExcludeTypes_String]
+					[ 1,                   # qstart
+					  $tr1->[1]-0.5,        # qend
+					  [$kR1, $vR1, $kStr1], # [KingdomTypes_Ref, KingdomCounts_Ref, KingdomTypes_String]
+					  [$kR2, $vR2, $kStr2]  # [InExcludeTypes_Ref, InExcludeCounts_Ref, InExcludeTypes_String]
 					]
 				);
 			} elsif ( $kStr2 eq 'In' and $vR2->[0] == 0 ) {
-				# the current block is unknown.
+				# the current block is unknown because it is unmapped. "In:0";
 				push( @combInEx,
-					[$tr1->[0]+0.5,           # qstart
-					$tr1->[1]-0.5,            # qend
-					[$kR1, $vR1, $kStr1], # [KingdomTypes_Ref, KingdomCounts_Ref, KingdomTypes_String]
-					[$kR2, $vR2, $kStr2]  # [InExcludeTypes_Ref, InExcludeCounts_Ref, InExcludeTypes_String]
+					[ $tr1->[0]+0.5,           # qstart
+					  $tr1->[1]-0.5,           # qend
+					  [$kR1, $vR1, $kStr1],    # [KingdomTypes_Ref, KingdomCounts_Ref, KingdomTypes_String]
+					  [$kR2, $vR2, $kStr2]     # [InExcludeTypes_Ref, InExcludeCounts_Ref, InExcludeTypes_String]
 					]
 				);
-			} elsif ( scalar(@combInEx) == 1 and $combInEx[-1][3][2] eq 'In' and $combInEx[-1][3][1][0] == 0 and ($tr1->[0] - 1 <= $opts{maxUn}) ) {
-				# This is the 2nd block and the 1st block is SHORT Unknown.
+			#} elsif ( scalar(@combInEx) == 1 and $combInEx[-1][3][2] eq 'In' and $combInEx[-1][3][1][0] == 0 and ($tr1->[0] - 0.5 <= $opts{maxUn}) ) {
+			#	# This is the 2nd block and the 1st block is SHORT Unknown.
+			#	# [4/21/2022] I don't want to merge the first unknown block into known.
+			#	pop(@combInEx);
+			#	push( @combInEx,
+			#		[1,
+			#		$tr1->[1]+0.5,
+			#		[$kR1, $vR1, $kStr1],
+			#		[$kR2, $vR2, $kStr2]
+			#		]
+			#	);
+			} elsif ( $#combInEx > 0 and $combInEx[-1][3][2] eq 'In' and $combInEx[-1][3][1][0] == 0 and $combInEx[-1][1]-$combInEx[-1][0]+1 <= $opts{'maxUn'} and !($combInEx[-2][3][2] eq 'In' and $combInEx[-2][3][1][0] == 0) and $combInEx[-2][3][2] eq $kStr2 ) {
+				# The previous block is short unmapped region and the one before the previous one is mapped.
+				# Same Kingdom class, so renew the [-2] element and remove the previous unmapped short region.
 				pop(@combInEx);
-				push( @combInEx,
-					[1,
-					$tr1->[1]+0.5,
-					[$kR1, $vR1, $kStr1],
-					[$kR2, $vR2, $kStr2]
-					]
+				&renewEle( $combInEx[-1] ,
+					[ $tr1->[0]+0.5, $tr1->[1]-0.5, [$kR1, $vR1, $kStr1], [$kR2, $vR2, $kStr2] ]
 				);
-			} elsif ( $tr1->[0] - $combInEx[-1][1] - 0.5 <= $opts{maxUn} ) {
-				# This is near the previous block.
-				if      ( $combInEx[-1][3][2] eq $kStr2 and ( $combInEx[-1][3][2] ne 'In' or $combInEx[-1][3][1][0] > 0 ) ) {
-					# Same InEx class, so renew the last element.
-					&renewEle( $combInEx[-1] ,
-						[ $tr1->[0]+0.5, $tr1->[1]-0.5, [$kR1, $vR1, $kStr1], [$kR2, $vR2, $kStr2] ]
-					);
-				} elsif ( $combInEx[-1][3][2] eq 'In' and $combInEx[-1][3][1][0] == 0 ) {
-					# The previous one is Unknown.
-					if ( scalar(@combInEx) > 1 and ($tr1->[0]+0.5 - $combInEx[-2][3][1] - 1 <= $opts{maxUn}) and $combInEx[-2][3][2] eq $kStr1 ) {
-						# The one before previous "unkown" is near enough, and same to the current one.
-						pop(@combInEx); # Remove the previous "unkown" record. then renew the last element.
-						&renewEle( $combInEx[-1] ,
-							[ $tr1->[0]+0.5, $tr1->[1]-0.5, [$kR1, $vR1, $kStr1], [$kR2, $vR2, $kStr2] ]
-						);
-					} else {
-						# Should be a new block.
-						push( @combInEx,
-							[$tr1->[0]+0.5,
-							$tr1->[1]-0.5,
-							[$kR1, $vR1, $kStr1],
-							[$kR2, $vR2, $kStr2]
-							]
-						);
-					}#End if
-				} else {
-					# Just push a new record.
-					push( @combInEx,
-						[$tr1->[0]+0.5,
-						$tr1->[1]-0.5,
-						[$kR1, $vR1, $kStr1],
-						[$kR2, $vR2, $kStr2]
-						]
-					);
-				}
+			} elsif ( !($combInEx[-1][3][2] eq 'In' and $combInEx[-1][3][1][0] == 0) and $combInEx[-1][3][2] eq $kStr2 ) {
+				# The previous block and the current block are both aligned and share the same InEx class.
+				&renewEle( $combInEx[-1] ,
+					[ $tr1->[0]+0.5, $tr1->[1]-0.5, [$kR1, $vR1, $kStr1], [$kR2, $vR2, $kStr2] ]
+				);
 			} else {
 				# Just push a new record.
 				push( @combInEx,
-					[$tr1->[0]+0.5,
-					$tr1->[1]-0.5,
-					[$kR1, $vR1, $kStr1],
-					[$kR2, $vR2, $kStr2]
+					[ $tr1->[0]+0.5,
+					  $tr1->[1]-0.5,
+					  [$kR1, $vR1, $kStr1],
+					  [$kR2, $vR2, $kStr2]
 					]
 				);
 			}# End if ( scalar(@combInEx) == 0 )
@@ -414,15 +369,7 @@ warn "[Msg]Processing scaff [$qid]\n";
 
 	# For combine
 	if ( $is_joinInEx == 1 ) {
-		if ( $qLen{$qid} - $combInEx[-1][1] <= $opts{maxUn} ) {
-			# The last block unit is near the tail.
-			$combInEx[-1][1] = $qLen{$qid};
-		}
-		if ( $combInEx[-1][3][2] eq 'In' and $combInEx[-1][3][1][0] == 0 and ($qLen{$qid} - $combInEx[-1][0] <= $opts{maxUn}) ) {
-			# The last block unit is SHORT Unknown.
-			pop(@combInEx);
-			$combInEx[-1][1] = $qLen{$qid};
-		}
+		# I don't want to remove the unmapped region at the ends which are not clipped by two known blocks.
 		for my $tr2 ( @combInEx ) {
 			my (@sdk_str, @inEx_str);
 			for (my $i=0; $i<@{$tr2->[2][0]}; $i++) {
@@ -448,7 +395,7 @@ if ( $is_joinInEx == 1 ) {
 	close( $joinInExFH );
 }
 
-warn "[Msg]Over.\n";
+&tsmsg("[Rec]Over.\n");
 
 #############################################################################
 ###############  End main             #######################################
@@ -511,102 +458,4 @@ sub renewEle {
 #############################################################################
 ###############  Dropped subroutines          ###############################
 #############################################################################
-
-# Mean values in [$vR1] and [$vR2]
-# 这里的加和规则没办法做成绝对准确，反正每次加和, 分子部分会有1个hit的失真, 分母可能有1bp重复, 就这样吧, 被大分母除一下也就可以参考了；
-# 浪费了太多时间考虑这个规则了, 简单一些.
-# Input  : ( $vR1 , $vR2 , $size1, $size2 )
-# Output : \@average
-sub avgVR {
-	my ($vr1, $vr2, $size1, $size2) = @_;
-	(defined $size1 and $size1 != 0) or $size1 = 1;
-	(defined $size2 and $size2 != 0) or $size2 = 1;
-
-	my (@avg);
-	for (my $i=0; $i<@$vr1; $i++) {
-		push( @avg,
-			($vr1->[$i]*$size1+$vr2->[$i]*$size2) / ($size1+$size2)
-		);
-	}
-	return(\@avg);
-}# End sub avgVR
-# Renew the last element in array @combInEx
-# input  : ($combInEx[-1], $toBeAdd_combInEx_ele)
-# output : new $combInEx[-1] .
-# In fact i do not think we need that return value, because the passed variable is an reference.
-sub renewEle_2 {
-	my ($er1, $er2) = @_;
-	my $size1 = $er1->[1] - $er1->[0] + 1;
-	my $size2 = $er2->[1] - $er2->[0] + 1;
-#	$er1->[2][1]
-#	=
-#	&avgVR(
-#		$er1->[2][1],
-#		$er2->[2][1],
-#		$size1,
-#		$size2
-#	);
-	if      ( $er1->[2][2] eq $er2->[2][2] ) {
-		$er1->[2][1]
-		=
-		&avgVR(
-			$er1->[2][1],
-			$er2->[2][1],
-			$size1,
-			$size2
-		);
-	} elsif ( $er1->[2][0][-1] ne 'COMB' ) {
-		push(@{$er1->[2][0]}, 'COMB');
-		push(@{$er1->[2][1]}, 0);
-		$er1->[2][2] .= ";;COMB";
-	}
-
-	$er1->[3][1] = &avgVR(
-		$er1->[3][1],
-		$er2->[3][1],
-		$size1,
-		$size2
-	);
-	$er1->[0] > $er2->[0] and $er1->[0] = $er2->[0];
-	$er1->[1] < $er2->[1] and $er1->[1] = $er2->[1];
-	return($er1);
-}# End sub renewEle
-
-sub openFH_dropped ($$) {
-	my $f = shift; 
-	my $type = shift; 
-	my %goodFileType = qw(
-		<       read
-		>       write
-		read    read
-		write   write
-	); 
-	defined $type or $type = 'read'; 
-	defined $goodFileType{$type} or die "[Err]Unknown open method tag [$type].\n"; 
-	$type = $goodFileType{$type}; 
-	local *FH; 
-	# my $tfh; 
-	if ($type eq 'read') {
-		if ($f =~ m/\.gz$/) {
-			open (FH, '-|', "gzip -cd $f") or die "[Err]$! [$f]\n"; 
-			# open ($tfh, '-|', "gzip -cd $f") or die "[Err]$! [$f]\n"; 
-		} elsif ( $f =~ m/\.bz2$/ ) {
-			open (FH, '-|', "bzip2 -cd $f") or die "[Err]$! [$f]\n"; 
-		} else {
-			open (FH, '<', "$f") or die "[Err]$! [$f]\n"; 
-		}
-	} elsif ($type eq 'write') {
-		if ($f =~ m/\.gz$/) {
-			open (FH, '|-', "gzip - > $f") or die "[Err]$! [$f]\n"; 
-		} elsif ( $f =~ m/\.bz2$/ ) {
-			open (FH, '|-', "bzip2 - > $f") or die "[Err]$! [$f]\n"; 
-		} else {
-			open (FH, '>', "$f") or die "[Err]$! [$f]\n"; 
-		}
-	} else {
-		# Something is wrong. 
-		die "[Err]Something is wrong here.\n"; 
-	}
-	return *FH; 
-}# End sub openFH()
 
