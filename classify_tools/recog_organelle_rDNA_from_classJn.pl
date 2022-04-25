@@ -4,6 +4,7 @@
 # [4/15/2022] Try to recognize bacteria classes.
 # [4/15/2022] Try to identify dispersed hits for rDNAs and satellites.
 # [4/21/2022] Make this specific for Euk as In class.
+# [4/22/2022] Allow more chloroplast
 use strict;
 use warnings;
 use LogInforSunhh;
@@ -61,7 +62,7 @@ while (<>) {
 
   # To identify organelle genome and others.
   $ta[4] >= $ta[1] * $minPerc_Ex or next; # This is loose to allow sharing between nuclear genome and mtDNA/ctDNA.
-  if      ($ta[5] =~ m!^((?:Chloroplast|Plastid):\d+(?:;;)?)+$!i and ($ta[4]+$ta[8]) >= $ta[1] * $minPerc_organelle) {
+  if      ($ta[5] =~ m!^((?:Chloroplast|Plastid):\d+(?:;;)?)+(;;Eukaryota:\d+)?$!i and ($ta[4]+$ta[8]) >= $ta[1] * $minPerc_organelle) {
     # Allow shared region between nuclear and mt/ct genomes.
     print join("\t", "Chloroplast", $_)."\n";
   } elsif ($ta[5] =~ m!^Mitochondrion:\d+(;;Eukaryota:\d+)?$!i and ($ta[4]+$ta[8]) >= $ta[1] * $minPerc_organelle) {

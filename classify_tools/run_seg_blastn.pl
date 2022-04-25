@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 # [4/20/2022] Because the input contigs are super long, it may lower the sensitivity by setting lower -max_hsp and -max_target_seqs for blastn. I'd like to break the query sequences into small segments, and then convert the alignment positions to the origin coordinate system.
 #   Many my own scripts will be used.
+# [4/21/2022] Use megablast instead of dc-megablast to speed up.
 use strict;
 use warnings;
 use LogInforSunhh;
@@ -29,7 +30,8 @@ my $stepL = int($segL/2); $stepL < 1 and $stepL = 1;
 &runCmd("deal_fasta.pl -attr key:len $inFa > $opref.ori.kl"); push(@torm, "$opref.ori.kl");
 
 {
-  my $cmd = "blastn -query $opref.seg.fa -out $opref.seg.toDb.bn6 -db $dbfn -task dc-megablast ";
+  # my $cmd = "blastn -query $opref.seg.fa -out $opref.seg.toDb.bn6 -db $dbfn -task dc-megablast ";
+  my $cmd = "blastn -query $opref.seg.fa -out $opref.seg.toDb.bn6 -db $dbfn -task megablast ";
   $cmd .= " -evalue 1e-5 -num_threads 80 -max_hsps 20 -max_target_seqs 20  ";
   $cmd .= " -outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen sstrand staxids sscinames sskingdoms stitle' ";
   &runCmd($cmd); push(@torm, "$opref.seg.toDb.bn6");
