@@ -554,26 +554,36 @@ sub action_getJnLoc {
   }
   close I2; 
   close O2; 
-  open I3,'-|', "ColLink.pl $wrk_dir/in.gff.loc_cds -f1 $wrk_dir/in.gff.loc_mrna -keyC1 0 -keyC2 1 -add -COl1 1,3,4,5 | deal_table.pl -column 1,7,2,8,9,10,3,4,0,6" or die; 
+  open I3,'-|', "ColLink.pl $wrk_dir/in.gff.loc_cds -f1 $wrk_dir/in.gff.loc_mrna -keyC1 0 -keyC2 1 -add -Col1 1,3,4,5 | deal_table.pl -column 1,7,2,8,9,10,3,4,0,6,5" or die; 
   while (<I3>) {
     chomp($_); 
     my @ta = &splitL("\t", $_); 
     if ($. == 1) {
-      $ta[0] eq 'mrnaID' or &stopErr("[Err] Bad first line: $_\n"); 
+      $ta[0] eq 'mrnaID' or &stopErr("[Err] Bad first line: $_\n");
+      pop(@ta);
       print {$oFh} join("\t", @ta, qw/CDSBlocksNum 5UTR 3UTR/)."\n"; 
       next; 
     }
-    my $cdsN = ( $ta[9] =~ tr/;/;/ ) + 1; 
-    my ($utr5, $utr3); 
+    my $cdsN = ( $ta[9] =~ tr/;/;/ ) + 1;
+    my ($utr5, $utr3) = (0, 0);
+    if ($ta[5] eq '' and $ta[10] =~ m!^(\-|\.|\+)$!) {
+      $ta[5] = $ta[10];
+      $ta[3] eq '' and $ta[3] = $ta[6];
+      $ta[4] eq '' and $ta[4] = $ta[7];
+    }
     if ($ta[5] eq '-') {
-      $utr5 = $ta[4]-$ta[7]; 
-      $utr3 = $ta[6]-$ta[3]; 
+      $utr5 = $ta[4]-$ta[7];
+      $utr3 = $ta[6]-$ta[3];
     } elsif ($ta[5] =~ m!^(\.|\+)$!) {
       $utr5 = $ta[6]-$ta[3]; 
-      $utr3 = $ta[4]-$ta[7]; 
+      $utr3 = $ta[4]-$ta[7];
     } else {
       &stopErr("[Err] Bad strand character [$ta[5]] in line:\n$_\n"); 
     }
+    for my $tb (@ta) {
+      $tb eq '' and $tb = 'NA';
+    }
+    pop(@ta);
     print {$oFh} join("\t", @ta, $cdsN, $utr5, $utr3)."\n"; 
   }
   close I3; 
