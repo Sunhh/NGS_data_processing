@@ -4,6 +4,13 @@ use strict;
 use warnings;
 use LogInforSunhh;
 use fileSunhh;
+use Getopt::Long;
+my %opts;
+GetOptions(\%opts,
+  "bn_task:s",
+  "help!"
+);
+
 
 my $htxt = <<HH;
 ###################################################################
@@ -16,6 +23,8 @@ perl $0  max_length  in_ctg.fa  out_prefix
 
 HH
 
+$opts{'bn_task'} //= 'megablast';
+
 !@ARGV and die "perl $0  max_length  in_ctg.fa  out_prefix\n";
 
 my $max_len = shift;
@@ -27,7 +36,7 @@ my $opref   = shift;
   # my $cmd = "blastn -query $opref.tochk.fa -out $opref.tochk2Nt.bn6 -db nt ";
   # $cmd .= " -evalue 1e-5 -num_threads 20 -max_hsps 50 -max_target_seqs 50  ";
   # $cmd .= " -outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen sstrand staxids sscinames sskingdoms stitle' ";
-  &runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/run_seg_blastn.pl  $opref.tochk2Nt  10000  $opref.tochk.fa  nt");
+  &runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/run_seg_blastn.pl  $opref.tochk2Nt  10000  $opref.tochk.fa  nt  -bn_task $opts{'bn_task'}");
 }
 {
   # I'd like to keep rDNA as good assembly for contamination removal. 
