@@ -6,6 +6,11 @@ use strict;
 use warnings;
 use LogInforSunhh;
 use fileSunhh;
+use Getopt::Long;
+my %opts;
+GetOptions(\%opts,
+  "bn_task:s", # megablast
+);
 
 my $htxt = <<HH;
 ################################################################################
@@ -13,6 +18,9 @@ perl $0 out_prefix 10000 to_rm_contamination.fa db_name
 
 
 HH
+
+$opts{'bn_task'} //= 'megablast';
+
 
 !@ARGV and &LogInforSunhh::usage($htxt);
 
@@ -31,7 +39,7 @@ my $stepL = int($segL/2); $stepL < 1 and $stepL = 1;
 
 {
   # my $cmd = "blastn -query $opref.seg.fa -out $opref.seg.toDb.bn6 -db $dbfn -task dc-megablast ";
-  my $cmd = "blastn -query $opref.seg.fa -out $opref.seg.toDb.bn6 -db $dbfn -task megablast ";
+  my $cmd = "blastn -query $opref.seg.fa -out $opref.seg.toDb.bn6 -db $dbfn -task $opts{'bn_task'} ";
   $cmd .= " -evalue 1e-5 -num_threads 80 -max_hsps 20 -max_target_seqs 20  ";
   $cmd .= " -outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen sstrand staxids sscinames sskingdoms stitle' ";
   &runCmd($cmd); push(@torm, "$opref.seg.toDb.bn6");
