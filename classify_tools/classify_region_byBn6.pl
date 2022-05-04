@@ -181,7 +181,7 @@ while (<>) {
 	my $sTXID = $ta[15]; 
 	defined $txid2King{$sTXID} and $skd = $txid2King{$sTXID}; 
 	my $stitle = $ta[18]; # Hit definition line.
-	if      ( $skd eq 'N/A' ) {
+	if      ( $skd eq 'N/A' or $skd eq '0' ) {
 		$skd='NA';
 	} elsif ( $stitle =~ m/\bchloroplast\b/i ) {
 		# $stitle !~ m/ribosom/i and $skd='Chloroplast';
