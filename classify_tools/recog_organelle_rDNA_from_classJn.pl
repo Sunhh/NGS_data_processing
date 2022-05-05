@@ -39,23 +39,23 @@ while (<>) {
   # To identify bacteria and viruses.
   ### I'd like to use a similar way as rDNA and satellites.
   if      ($ta[5] =~ m!^Viruses:\d+$!i) {
-    if ( $ta[4] >= $ta[1] * $minPerc_microorg and $ta[7] < $maxInLen_type1 ) {
+    if ( $ta[4] >= $ta[1] * $minPerc_microorg and $ta[7] < $maxInLen_type1 and $ta[7] < $ta[1] * $maxInPerc_type1) {
       print join("\t", "Viruses", $_)."\n"; next;
     }
-  } elsif ($ta[5] =~ m!^Bacteria:\d+$!i) {
-    if ( $ta[4] >= $ta[1] * $minPerc_microorg and $ta[7] < $maxInLen_type1 ) {
+  } elsif ($ta[5] =~ m!^Bacteria:\d+(;;(Eukaryota|rDNA):\d+)*$!i) {
+    if ( $ta[4] >= $ta[1] * $minPerc_microorg and $ta[7] < $maxInLen_type1 and $ta[7] < $ta[1] * $maxInPerc_type1) {
       print join("\t", "Bacteria", $_)."\n"; next;
     }
-  } elsif ($ta[5] =~ m!^Archaea:\d+$!i) {
-    if ( $ta[4] >= $ta[1] * $minPerc_microorg and $ta[7] < $maxInLen_type1 ) {
+  } elsif ($ta[5] =~ m!^Archaea:\d+(;;(Eukaryota|rDNA):\d+)*$!i) {
+    if ( $ta[4] >= $ta[1] * $minPerc_microorg and $ta[7] < $maxInLen_type1 and $ta[7] < $ta[1] * $maxInPerc_type1) {
       print join("\t", "Archaea", $_)."\n"; next;
     }
-  } elsif ($ta[5] =~ m!^NA:\d+$!i) {
-    if ( $ta[4] >= $ta[1] * $minPerc_microorg and $ta[7] < $maxInLen_type1 ) {
+  } elsif ($ta[5] =~ m!^NA:\d+(;;(Eukaryota|rDNA):\d+)*$!i) {
+    if ( $ta[4] >= $ta[1] * $minPerc_microorg and $ta[7] < $maxInLen_type1 and $ta[7] < $ta[1] * $maxInPerc_type1) {
       print join("\t", "NA", $_)."\n"; next;
     }
-  } elsif ($ta[5] =~ m!^((?:NA|Viruses|Bacteria|Archaea):\d+(?:;;)?)+$!i) {
-    if ( $ta[4] >= $ta[1] * $minPerc_microorg and $ta[7] < $maxInLen_type1 ) {
+  } elsif ($ta[5] =~ m!^((?:NA|Viruses|Bacteria|Archaea):\d+(?:;;)?)+(;;(Eukaryota|rDNA):\d+)*$!i) {
+    if ( $ta[4] >= $ta[1] * $minPerc_microorg and $ta[7] < $maxInLen_type1 and $ta[7] < $ta[1] * $maxInPerc_type1) {
       print join("\t", "NA", $_)."\n"; next;
     }
   }

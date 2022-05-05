@@ -193,7 +193,7 @@ while (<>) {
     $skd='Mitochondrion';
   } elsif ( $stitle =~ m/\b(?:plastid)\b/i ) {
     $skd='Plastid';
-  } elsif ( $stitle =~ m/\b(?:rDNA|rRNA|ribosomal RNA|ribosomal DNA)\b/i ) {
+  } elsif ( $skd eq 'Eukaryota' and $stitle =~ m/\b(?:rDNA|rRNA|ribosomal RNA|ribosomal DNA)\b/i ) {
     $skd='rDNA';
   } elsif ( $skd eq 'Eukaryota' and $stitle =~ m/\b(?:Satellite)\b/i ) {
     $skd='Satellite';
