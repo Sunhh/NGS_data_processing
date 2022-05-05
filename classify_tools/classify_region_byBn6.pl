@@ -6,6 +6,7 @@
 # 2013-11-01 Edit to assign Include/Exclude kingdoms.
 # 2014-03-04 Fix a bug in which we fail to classify some end-to-end alignments. 
 # [4/21/2022] Join blocks according to InEx classes instead of kingdom classes.
+# [5/5/2022] Ignore hits to target sequences without any taxonomy information.
 use strict;
 use warnings;
 use LogInforSunhh; 
@@ -182,6 +183,7 @@ while (<>) {
   defined $txid2King{$sTXID} and $skd = $txid2King{$sTXID}; 
   my $stitle = $ta[18]; # Hit definition line.
   if      ( $skd eq 'N/A' or $skd eq '0' ) {
+    ($ta[16] eq 'N/A' or $ta[15] eq '') and next; # There target sequence doesn't have any information in taxonomy database, so I skip this hit.
     $skd='NA';
   } elsif ( $stitle =~ m/\bchloroplast\b/i ) {
     # $stitle !~ m/ribosom/i and $skd='Chloroplast';
