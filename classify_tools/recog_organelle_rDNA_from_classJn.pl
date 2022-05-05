@@ -5,13 +5,24 @@
 # [4/15/2022] Try to identify dispersed hits for rDNAs and satellites.
 # [4/21/2022] Make this specific for Euk as In class.
 # [4/22/2022] Allow more chloroplast
+# [5/5/2022] Try to deal with bx6 results.
 use strict;
 use warnings;
 use LogInforSunhh;
 use fileSunhh;
+use Getopt::Long;
+my %opts;
+GetOptions(\%opts,
+  "for_bx6!", # awk -F"\t" ' $8 <= 90 && $5 >= 90 '. Do be careful when using this!!!
+  "maxInLen_bx6:i", # 90
+  "minExLen_bx6:i", # 90
+  "help!"
+);
 
 !@ARGV and die "perl $0 HAl2u.noRed.tochk.toNt.bn6.highCopy.class.jn > HAl2u.noRed.tochk.toNt.bn6.highCopy.class.jn.s1\n";
 
+$opts{'maxInLen_bx6'} //= 90;
+$opts{'minExLen_bx6'} //= 90;
 my $minPerc_organelle = 0.95;
 my $minPerc_Ex        = 0.50;
 my $minPerc_strict    = 0.95;
@@ -39,24 +50,54 @@ while (<>) {
   # To identify bacteria and viruses.
   ### I'd like to use a similar way as rDNA and satellites.
   if      ($ta[5] =~ m!^Viruses:\d+$!i) {
-    if ( $ta[4] >= $ta[1] * $minPerc_microorg and $ta[7] < $maxInLen_type1 and $ta[7] < $ta[1] * $maxInPerc_type1) {
-      print join("\t", "Viruses", $_)."\n"; next;
+    if ($opts{'for_bx6'}) {
+      if ( $ta[7] < $opts{'maxInLen_bx6'} and $ta[4] > $opts{'minExLen_bx6'} ) {
+        print join("\t", "Viruses", $_)."\n"; next;
+      }
+    } else {
+      if ( $ta[7] < $maxInLen_type1 and $ta[7] < $ta[1] * $maxInPerc_type1) {
+        print join("\t", "Viruses", $_)."\n"; next;
+      }
     }
   } elsif ($ta[5] =~ m!^Bacteria:\d+(;;(Eukaryota|rDNA):\d+)*$!i) {
-    if ( $ta[4] >= $ta[1] * $minPerc_microorg and $ta[7] < $maxInLen_type1 and $ta[7] < $ta[1] * $maxInPerc_type1) {
-      print join("\t", "Bacteria", $_)."\n"; next;
+    if ($opts{'for_bx6'}) {
+      if ( $ta[7] < $opts{'maxInLen_bx6'} and $ta[4] > $opts{'minExLen_bx6'} ) {
+        print join("\t", "Bacteria", $_)."\n"; next;
+      }
+    } else {
+      if ( $ta[4] >= $ta[1] * $minPerc_microorg and $ta[7] < $maxInLen_type1 and $ta[7] < $ta[1] * $maxInPerc_type1) {
+        print join("\t", "Bacteria", $_)."\n"; next;
+      }
     }
   } elsif ($ta[5] =~ m!^Archaea:\d+(;;(Eukaryota|rDNA):\d+)*$!i) {
-    if ( $ta[4] >= $ta[1] * $minPerc_microorg and $ta[7] < $maxInLen_type1 and $ta[7] < $ta[1] * $maxInPerc_type1) {
-      print join("\t", "Archaea", $_)."\n"; next;
+    if ($opts{'for_bx6'}) {
+      if ( $ta[7] < $opts{'maxInLen_bx6'} and $ta[4] > $opts{'minExLen_bx6'} ) {
+        print join("\t", "Archaea", $_)."\n"; next;
+      }
+    } else {
+      if ( $ta[4] >= $ta[1] * $minPerc_microorg and $ta[7] < $maxInLen_type1 and $ta[7] < $ta[1] * $maxInPerc_type1) {
+        print join("\t", "Archaea", $_)."\n"; next;
+      }
     }
   } elsif ($ta[5] =~ m!^NA:\d+(;;(Eukaryota|rDNA):\d+)*$!i) {
-    if ( $ta[4] >= $ta[1] * $minPerc_microorg and $ta[7] < $maxInLen_type1 and $ta[7] < $ta[1] * $maxInPerc_type1) {
-      print join("\t", "NA", $_)."\n"; next;
+    if ($opts{'for_bx6'}) {
+      if ( $ta[7] < $opts{'maxInLen_bx6'} and $ta[4] > $opts{'minExLen_bx6'} ) {
+        print join("\t", "NA", $_)."\n"; next;
+      }
+    } else {
+      if ( $ta[4] >= $ta[1] * $minPerc_microorg and $ta[7] < $maxInLen_type1 and $ta[7] < $ta[1] * $maxInPerc_type1) {
+        print join("\t", "NA", $_)."\n"; next;
+      }
     }
   } elsif ($ta[5] =~ m!^((?:NA|Viruses|Bacteria|Archaea):\d+(?:;;)?)+(;;(Eukaryota|rDNA):\d+)*$!i) {
-    if ( $ta[4] >= $ta[1] * $minPerc_microorg and $ta[7] < $maxInLen_type1 and $ta[7] < $ta[1] * $maxInPerc_type1) {
-      print join("\t", "NA", $_)."\n"; next;
+    if ($opts{'for_bx6'}) {
+      if ( $ta[7] < $opts{'maxInLen_bx6'} and $ta[4] > $opts{'minExLen_bx6'} ) {
+        print join("\t", "NA", $_)."\n"; next;
+      }
+    } else {
+      if ( $ta[4] >= $ta[1] * $minPerc_microorg and $ta[7] < $maxInLen_type1 and $ta[7] < $ta[1] * $maxInPerc_type1) {
+        print join("\t", "NA", $_)."\n"; next;
+      }
     }
   }
 
