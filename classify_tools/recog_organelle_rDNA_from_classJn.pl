@@ -55,7 +55,7 @@ while (<>) {
         print join("\t", "Viruses", $_)."\n"; next;
       }
     } else {
-      if ( $ta[7] < $maxInLen_type1 and $ta[7] < $ta[1] * $maxInPerc_type1) {
+      if ( $ta[4] >= $ta[1] * $minPerc_microorg and $ta[7] < $maxInLen_type1 and ($ta[7] < $ta[1] * $maxInPerc_type1 or $ta[7] < 100) ) {
         print join("\t", "Viruses", $_)."\n"; next;
       }
     }
@@ -65,7 +65,7 @@ while (<>) {
         print join("\t", "Bacteria", $_)."\n"; next;
       }
     } else {
-      if ( $ta[4] >= $ta[1] * $minPerc_microorg and $ta[7] < $maxInLen_type1 and $ta[7] < $ta[1] * $maxInPerc_type1) {
+      if ( $ta[4] >= $ta[1] * $minPerc_microorg and $ta[7] < $maxInLen_type1 and ($ta[7] < $ta[1] * $maxInPerc_type1 or $ta[7] < 100) ) {
         print join("\t", "Bacteria", $_)."\n"; next;
       }
     }
@@ -75,7 +75,7 @@ while (<>) {
         print join("\t", "Archaea", $_)."\n"; next;
       }
     } else {
-      if ( $ta[4] >= $ta[1] * $minPerc_microorg and $ta[7] < $maxInLen_type1 and $ta[7] < $ta[1] * $maxInPerc_type1) {
+      if ( $ta[4] >= $ta[1] * $minPerc_microorg and $ta[7] < $maxInLen_type1 and ($ta[7] < $ta[1] * $maxInPerc_type1 or $ta[7] < 100) ) {
         print join("\t", "Archaea", $_)."\n"; next;
       }
     }
@@ -85,7 +85,7 @@ while (<>) {
         print join("\t", "NA", $_)."\n"; next;
       }
     } else {
-      if ( $ta[4] >= $ta[1] * $minPerc_microorg and $ta[7] < $maxInLen_type1 and $ta[7] < $ta[1] * $maxInPerc_type1) {
+      if ( $ta[4] >= $ta[1] * $minPerc_microorg and $ta[7] < $maxInLen_type1 and ($ta[7] < $ta[1] * $maxInPerc_type1 or $ta[7] < 100) ) {
         print join("\t", "NA", $_)."\n"; next;
       }
     }
@@ -95,7 +95,7 @@ while (<>) {
         print join("\t", "NA", $_)."\n"; next;
       }
     } else {
-      if ( $ta[4] >= $ta[1] * $minPerc_microorg and $ta[7] < $maxInLen_type1 and $ta[7] < $ta[1] * $maxInPerc_type1) {
+      if ( $ta[4] >= $ta[1] * $minPerc_microorg and $ta[7] < $maxInLen_type1 and ($ta[7] < $ta[1] * $maxInPerc_type1 or $ta[7] < 100) ) {
         print join("\t", "NA", $_)."\n"; next;
       }
     }
