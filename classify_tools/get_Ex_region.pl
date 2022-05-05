@@ -12,7 +12,7 @@ perl $0 P1R02scaf.nt_bn6.MiORGN_join 1>sep_ex_lis 2>joined_ex_lis
  Output joined_ex_lis table : 
   SeqID SeqLen ExMatS ExMatE ExMatLen TypeClasses InExType InMatLen UnMatLen MaxInMatLen
 
-   UnMatLen : Length of regions that have hits to Nt but fail to be assigned an In/Ex classification.
+   UnMatLen : Length of regions that have hits to Nt but fail to be assigned an In/Ex FINAL classification.
    InMatLen : Length of regions that are assigned to In (included) class.
    ExMatLen : Length of regions that are assigned to Ex (excluded) class.
    MaxInMatLen : Length of regions that have at least one hit to In class Nt sequence, but it may be assigned as Un (unknown) or Ex classes.
