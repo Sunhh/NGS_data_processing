@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 # [4/9/2022] Need to convert this as pipeline some day later for repeat works!!!
+# [5/5/2022] Fit diamond blastx to Nr database.
 use strict;
 use warnings;
 use LogInforSunhh;
@@ -8,6 +9,7 @@ use Getopt::Long;
 my %opts;
 GetOptions(\%opts,
   "bn_task:s",
+  "bn_db:s", # nt
   "help!"
 );
 
@@ -15,6 +17,9 @@ GetOptions(\%opts,
 my $htxt = <<HH;
 ###################################################################
 perl $0  max_length  in_ctg.fa  out_prefix
+
+-bn_task   [megablast] Could be blastx for Nr alignment.
+-bn_db     [nt]
 
 * Please set up the correct BLASTDB environment for Nt database.
 * Please set up an Nt database together with taxonomy information.
@@ -24,19 +29,23 @@ perl $0  max_length  in_ctg.fa  out_prefix
 HH
 
 $opts{'bn_task'} //= 'megablast';
+if ($opts{'bn_task'} eq 'blastx') {
+  $opts{'bn_db'} //= '/data/share/database/db_blast/NCBI/diamond_db/nr_20211207_wtax'; # This is on panda server.
+} else {
+  $opts{'bn_db'} //= 'nt';
+}
 
-!@ARGV and die "perl $0  max_length  in_ctg.fa  out_prefix\n";
+!@ARGV and &LogInforSunhh::usage($htxt);
 
 my $max_len = shift;
 my $ctgFa   = shift;
 my $opref   = shift;
 
 &runCmd("deal_fasta.pl -keep_len 0-$max_len $ctgFa > $opref.tochk.fa");
-{
-  # my $cmd = "blastn -query $opref.tochk.fa -out $opref.tochk2Nt.bn6 -db nt ";
-  # $cmd .= " -evalue 1e-5 -num_threads 20 -max_hsps 50 -max_target_seqs 50  ";
-  # $cmd .= " -outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen sstrand staxids sscinames sskingdoms stitle' ";
-  &runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/run_seg_blastn.pl  $opref.tochk2Nt  10000  $opref.tochk.fa  nt  -bn_task $opts{'bn_task'}");
+if ($opts{'bn_task'} eq 'blastx') {
+  &runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/run_seg_blastn.pl  $opref.tochk2Nt  1000   $opref.tochk.fa  $opts{'bn_db'}  -bn_task $opts{'bn_task'}");
+} else {
+  &runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/run_seg_blastn.pl  $opref.tochk2Nt  10000  $opref.tochk.fa  $opts{'bn_db'}  -bn_task $opts{'bn_task'}");
 }
 {
   # I'd like to keep rDNA as good assembly for contamination removal. 
@@ -49,7 +58,11 @@ my $opref   = shift;
   &runCmd($cmd);
 }
 &runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/get_Ex_region.pl $opref.tochk2Nt.bn6.class 1> $opref.tochk2Nt.bn6.class.sep 2> $opref.tochk2Nt.bn6.class.jn");
-&runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/recog_organelle_rDNA_from_classJn.pl $opref.tochk2Nt.bn6.class.jn > $opref.tochk2Nt.bn6.class.jn.s1");
+if ($opts{'bn_task'} eq 'blastx') {
+  &runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/recog_organelle_rDNA_from_classJn.pl $opref.tochk2Nt.bn6.class.jn -for_bx6 > $opref.tochk2Nt.bn6.class.jn.s1");
+} else {
+  &runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/recog_organelle_rDNA_from_classJn.pl $opref.tochk2Nt.bn6.class.jn > $opref.tochk2Nt.bn6.class.jn.s1");
+}
 
 # In order to detect rDNA and organelle genomes.
 {
@@ -61,7 +74,11 @@ my $opref   = shift;
   &runCmd($cmd);
 }
 &runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/get_Ex_region.pl $opref.tochk2Nt.bn6.highCopy.class 1> $opref.tochk2Nt.bn6.highCopy.class.sep 2> $opref.tochk2Nt.bn6.highCopy.class.jn");
-&runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/recog_organelle_rDNA_from_classJn.pl $opref.tochk2Nt.bn6.highCopy.class.jn > $opref.tochk2Nt.bn6.highCopy.class.jn.s1");
+if ($opts{'bn_task'} eq 'blastx') {
+  &runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/recog_organelle_rDNA_from_classJn.pl $opref.tochk2Nt.bn6.highCopy.class.jn -for_bx6 > $opref.tochk2Nt.bn6.highCopy.class.jn.s1");
+} else {
+  &runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/recog_organelle_rDNA_from_classJn.pl $opref.tochk2Nt.bn6.highCopy.class.jn > $opref.tochk2Nt.bn6.highCopy.class.jn.s1");
+}
 
 # deal_fasta.pl -keep_len 0-1000000 ../db/C31.hf2a.noRed.fa > C31.tochk.fa
 # blastn -query C31.tochk.fa -out C31.tochk.fa.toNt.bn6 \
