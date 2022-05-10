@@ -3,6 +3,7 @@
 #   Many my own scripts will be used.
 # [4/21/2022] Use megablast instead of dc-megablast to speed up.
 # [5/5/2022]
+# [5/10/2022] Fix a bug for score_d2top filtering.
 use strict;
 use warnings;
 use LogInforSunhh;
@@ -60,16 +61,20 @@ my $stepL = int($segL/2); $stepL < 1 and $stepL = 1;
       chomp;
       my @ta=split(/\t/, $_);
       defined $hits{$ta[0]} or push(@qID, $ta[0]);
-      $hits{$ta[0]}{'topScore'} //= $ta[11];
-      $hits{$ta[0]}{'topScore'} < $ta[11] and $hits{$ta[0]}{'topScore'} = $ta[11];
-      $ta[11] >= $hits{$ta[0]}{'topScore'} * $opts{'score_d2top'} or next;
+      if ($ta[15] eq '' or $ta[16] eq 'N/A') {
+        $hits{$ta[0]}{'topScore'} //= $ta[11]; 
+        $hits{$ta[0]}{'topScore'} < $ta[11] and $hits{$ta[0]}{'topScore'} = $ta[11];
+      } else {
+        $hits{$ta[0]}{'topScore'} //= -1;
+      }
+      $ta[11] >= $hits{$ta[0]}{'topScore'} * (1-$opts{'score_d2top'}) or next;
       push(@{$hits{$ta[0]}{'aln'}}, [@ta]);
     }
     close F1;
     open O1,'>', "$opref.seg.toDb.bn6.1" or die;
     for my $qid (@qID) {
       for (@{$hits{$qid}{'aln'}}) {
-        $_->[11] >= $hits{$qid}{'topScore'} * $opts{'score_d2top'} or next;
+        $_->[11] >= $hits{$qid}{'topScore'} * (1-$opts{'score_d2top'}) or next;
         print O1 join("\t", @$_)."\n";
       }
     }
