@@ -62,10 +62,11 @@ my $stepL = int($segL/2); $stepL < 1 and $stepL = 1;
       my @ta=split(/\t/, $_);
       defined $hits{$ta[0]} or push(@qID, $ta[0]);
       if ($ta[15] eq '' or $ta[16] eq 'N/A') {
+        # This alignment is not good for topScore.
+        $hits{$ta[0]}{'topScore'} //= -1;
+      } else {
         $hits{$ta[0]}{'topScore'} //= $ta[11]; 
         $hits{$ta[0]}{'topScore'} < $ta[11] and $hits{$ta[0]}{'topScore'} = $ta[11];
-      } else {
-        $hits{$ta[0]}{'topScore'} //= -1;
       }
       $ta[11] >= $hits{$ta[0]}{'topScore'} * (1-$opts{'score_d2top'}) or next;
       push(@{$hits{$ta[0]}{'aln'}}, [@ta]);
