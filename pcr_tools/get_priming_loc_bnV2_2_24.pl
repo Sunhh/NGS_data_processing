@@ -1,7 +1,9 @@
 #!/usr/bin/perl -w 
 # 2010-5-25 11:30:58 input a blastn.o file. 
 # 2010-11-03 edit to get clean results. 
-use strict; 
+# [5/13/2022] Add help information.
+use strict;
+use LogInforSunhh;
 
 my %primer; 
 my $min_len = 15; 
@@ -24,7 +26,19 @@ m     -1
 
 #my %perfect_loc; 
 
-!@ARGV and -t and die "perl $0 primer.bn6\n#min_len=$min_len\nmax_diff=$max_diff\nmax_delt=$max_delt\nprimer_penalty=$pri_pen\npair_penalty=$pro_pen\n";
+my $htxt = <<HH;
+####################################################################################################
+# perl $0 primer.bn6 > primer.bn6.loc.table
+# 
+# The primer name format is "(\\S+)_(\\d+)_?[fr]"
+# min_len  =      $min_len
+# max_diff =      $max_diff
+# max_delt =      $max_delt
+# primer_penalty= $pri_pen
+# pair_penalty  = $pro_pen
+HH
+
+!@ARGV and -t and &LogInforSunhh::usage($htxt);
 
 
 
