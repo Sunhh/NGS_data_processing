@@ -1,17 +1,34 @@
 #!/usr/bin/perl -w 
 # 2010-5-25 11:30:58 input a blastn.o file. 
 # 2010-11-03 edit to get clean results. 
-# [5/13/2022] Add help information.
+# [5/13/2022] Add help information. Add opts
 use strict;
 use LogInforSunhh;
+use Getopt::Long;
+my %opts;
+GetOptions(\%opts,
+  "min_len:i",  # 15
+  "max_diff:i", # 0
+  "max_diff_tail:i", # 0
+  "max_delt:i", # 6000
+  "pri_pen:f",  # 0.1
+  "pro_pen:f",  # 1.0
+  "help!",
+);
+$opts{'min_len'}  //= 15;
+$opts{'max_diff'} //= 0;
+$opts{'max_diff_tail'} //= 0;
+$opts{'max_delt'} //= 6000;
+$opts{'pri_pen'} //= 0.1;
+$opts{'pro_pen'} //= 1.0;
 
-my %primer; 
-my $min_len = 15; 
-my $max_diff = 0; 
-my $max_diff_tail = 0; 
-my $max_delt = 6000; 
-my $pri_pen = 0.1; 
-my $pro_pen = 1; 
+my %primer;
+my $min_len  = $opts{'min_len'}; 
+my $max_diff = $opts{'max_diff'};
+my $max_diff_tail = $opts{'max_diff_tail'}; 
+my $max_delt = $opts{'max_delt'}; 
+my $pri_pen = $opts{'pri_pen'}; 
+my $pro_pen = $opts{'pro_pen'}; 
 
 my %str2num = qw(
 +      1
@@ -31,11 +48,12 @@ my $htxt = <<HH;
 # perl $0 primer.bn6 > primer.bn6.loc.table
 # 
 # The primer name format is "(\\S+)_(\\d+)_?[fr]"
-# min_len  =      $min_len
-# max_diff =      $max_diff
-# max_delt =      $max_delt
-# primer_penalty= $pri_pen
-# pair_penalty  = $pro_pen
+# -min_len  =      $min_len
+# -max_diff =      $max_diff
+# -max_diff_tail = $max_diff_tail
+# -max_delt =      $max_delt
+# -primer_penalty= $pri_pen
+# -pair_penalty  = $pro_pen
 HH
 
 !@ARGV and -t and &LogInforSunhh::usage($htxt);
@@ -79,7 +97,7 @@ while (<>) {
 
 # print STDERR join("\t", 'PrimerPair', 'L_penalty', 'R_penalty', 'P_penalty', 'Est.')."\n"; 
 
-
+print STDOUT join("\t", qw/PrimerPair targetID targetS targetE targetSize LPenalty RPenalty PPenalty EstPenalty/)."\n";
 
 for my $k1 (sort keys %primer) {
 	for (my $i=0; $i<@{$primer{$k1}}; $i++) {
