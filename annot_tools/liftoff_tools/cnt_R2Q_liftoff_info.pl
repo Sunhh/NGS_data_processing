@@ -31,9 +31,9 @@ use fileSunhh;
 my ($rOwnGff, $qOwnGff, $r2qGff) = @ARGV;
 
 my $pl_dealGff    = 'perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl';
-my $pl_gff2cdsBed = 'perl /data/Sunhh/try_liftoff/tools/cnvt_gff_to_cdsBed.pl';
-my $pl_infLOgff   = 'perl /data/Sunhh/try_liftoff/tools/info_liftoffGff.pl';
-my $pl_infBTins   = 'perl /data/Sunhh/try_liftoff/tools/info_bedtools_intersect.pl';
+my $pl_gff2cdsBed = 'perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/liftoff_tools/cnvt_gff_to_cdsBed.pl ';
+my $pl_infLOgff   = 'perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/liftoff_tools/info_liftoffGff.pl ';
+my $pl_infBTins   = 'perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/liftoff_tools/info_bedtools_intersect.pl ';
 my $exe_bedtools  = 'bedtools';
 
 my $wdir = &fileSunhh::new_tmp_dir('create' => 1);
