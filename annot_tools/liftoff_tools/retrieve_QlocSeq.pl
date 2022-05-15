@@ -16,7 +16,7 @@ while (<>) {
   chomp;
   my @ta=split(/\t/, $_);
   $ta[0] eq 'ori_R_ID' and next;
-  $ta[1] =~ m!^C\S:\S+:\d+\-\d+:[+-]$! or next;
+  $ta[1] =~ m!^C[^\s:]+:\S+:\d+\-\d+:[+-]$! or next;
   defined $h{$ta[1]} and next;
   $h{$ta[1]} = 1;
   my $chr_id  = $ta[4];
