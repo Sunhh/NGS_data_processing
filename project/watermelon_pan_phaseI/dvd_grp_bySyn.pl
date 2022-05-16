@@ -154,7 +154,7 @@ for my $gt (@ar_grp) {
   @sep_grp = sort { scalar(@$b) <=> scalar(@$a) } @sep_grp;
   my $gN = scalar(@connected_grp) + scalar(@sep_grp);
   my $gCntLen = length($gN)+1;
-  my $ofh1 = &openFH("$opts{'opref'}.grp.tbl", '>');
+  my $ofh1 = &openFH("$opts{'opref'}.grp_tbl", '>');
   for my $pt (@connected_grp) {
     $gCnt ++;
     my $grpID = sprintf("GrpSyn_%0${gCntLen}d", $gCnt);

@@ -18,6 +18,7 @@ while (<F1>) {
 }
 close F1;
 
+my $accN;
 open F2,'<',"$fn_mat" or die;
 my @h1;
 while (<F2>) {
@@ -29,6 +30,8 @@ while (<F2>) {
     next;
   }
   defined $gene2grp{$ta[0]} or next;
+  $accN //= $#ta;
+  $accN < $#ta and die "[Err] The line length is different in file [$fn_mat]!\n";
   my $grpID = $gene2grp{$ta[0]};
   for (my $i=1; $i<@ta; $i++) {
     $grpInfo{$grpID}{'pav'}[$i-1] //= 0;
@@ -39,6 +42,9 @@ while (<F2>) {
 close F2;
 print STDOUT join("\t", @h1)."\n";
 for my $grpID (sort keys %grpInfo) {
+  for (my $i=0; $i<=$accN; $i++) {
+    $grpInfo{$grpID}{'pav'}[$i] //= 0;
+  }
   print STDOUT join("\t", $grpID, map { ($_ >= 1) ? "P" : "A" ; } @{$grpInfo{$grpID}{'pav'}})."\n";
 }
 
