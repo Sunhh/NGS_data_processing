@@ -1,4 +1,5 @@
 #!/usr/bin/perl -w
+# [5/16/2022] Fix a bug which causes the missing of some genes that are not in a selected syntenic block but grouped with genes in a syntenic block.
 use strict;
 use warnings;
 use LogInforSunhh;
@@ -125,12 +126,9 @@ for my $gt (@ar_grp) {
   }
   @new_gt = map { [split("\t", $_)] } sort keys %in_genesH;
   # Put the rest genes into another new group for another check, and add the novel genes to in_genesH group.
-  for my $pkey (@blk_pkey) {
-    defined $in_pkey{$pkey} and next;
-    for my $pt (@{$blk_pairs{$pkey}}) {
-      defined $in_genesH{"$pt->[2]\t$pt->[0]"} or $rest_genesH{"$pt->[2]\t$pt->[0]"} = 1;
-      defined $in_genesH{"$pt->[3]\t$pt->[1]"} or $rest_genesH{"$pt->[3]\t$pt->[1]"} = 1;
-    }
+  for my $a1 (@old_gt) {
+    my $a2 = "$a1->[0]\t$a1->[1]";
+    defined $in_genesH{$a2} or $rest_genesH{$a2} = 1;
   }
   @rest_gt = map { [split("\t", $_)] } sort keys %rest_genesH;
   # Do this division again if there is a new gene group found.
