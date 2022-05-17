@@ -42,7 +42,7 @@ while (<F2>) {
 close F2;
 print STDOUT join("\t", @h1)."\n";
 for my $grpID (sort keys %grpInfo) {
-  for (my $i=0; $i<=$accN; $i++) {
+  for (my $i=0; $i<$accN; $i++) {
     $grpInfo{$grpID}{'pav'}[$i] //= 0;
   }
   print STDOUT join("\t", $grpID, map { ($_ >= 1) ? "P" : "A" ; } @{$grpInfo{$grpID}{'pav'}})."\n";
