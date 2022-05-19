@@ -1,6 +1,5 @@
 #!/usr/bin/perl
 # [3/17/2022] Need to add the cumulative coverage length of the query gene.
-# [3/20/2022] Direction matters, so I should run bedtools twice with different directions.
 # [3/22/2022] The output gff3 of liftoff needs to be filtered because there are still gene models with gene coverage lower than required.
 #             Strand-specific overlapping has been fixed.
 # [3/23/2022] I decide not to filter coverage in this program, but I'll output the coverage bases in the output intersection file.
@@ -22,7 +21,6 @@ GetOptions(\%opts,
   "para_minIdent:f", # 0.75
   "para_liftoff:s",  # " -p 20 -s $opts{'para_minIdent'} -a $opts{'para_minCov'} -copies "
   "pl_cntR2Q:s",     # "perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/liftoff_tools/cnt_R2Q_liftoff_info.pl "
-  "exe_bedtools:s",  # "bedtools"
   "exe_liftoff:s",   # "liftoff"
   "help!"
 );
@@ -38,7 +36,6 @@ my $htxt = <<HH;
 # -para_minIdent  [0.75]
 # -para_liftoff   [ -p 20 -s {para_minIdent} -a {para_minCov} -copies ]
 # -pl_cntR2Q      [perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/liftoff_tools/cnt_R2Q_liftoff_info.pl]
-# -exe_bedtools   [bedtools]
 # -exe_liftoff    [liftoff]
 ####################################################################################################
 HH
@@ -51,12 +48,11 @@ $opts{'para_minCov'}   //= 0.5;
 $opts{'para_minIdent'} //= 0.75;
 $opts{'para_liftoff'}  //= " -p 20 -s $opts{'para_minIdent'} -a $opts{'para_minCov'} -copies ";
 $opts{'pl_cntR2Q'}     //= "perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/liftoff_tools/cnt_R2Q_liftoff_info.pl";
-$opts{'exe_bedtools'}  //= 'bedtools';
 $opts{'exe_liftoff'}   //= 'liftoff';
 
 my %dta;
 $dta{'tmp_dir'}  = &fileSunhh::new_tmp_dir('create' => 1);
-for (qw/para_minCov para_minIdent para_liftoff pl_cntR2Q exe_bedtools exe_liftoff/) {
+for (qw/para_minCov para_minIdent para_liftoff pl_cntR2Q exe_liftoff/) {
   $dta{$_} = $opts{$_};
 }
 for (qw/out_dir from_tag from_gff3 from_fas to_tag to_gff3 to_fas/) {
