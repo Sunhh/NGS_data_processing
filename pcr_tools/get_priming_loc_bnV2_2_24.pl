@@ -69,6 +69,7 @@ while (<>) {
 		my ($pro_id, $pri_id, $fr_id) = ($1,$2,$3); 
 		# $a[1] == $a[3] or next BO; 
 		$a[12] - $a[7] <= $max_diff_tail or next BO; 
+		$a[7]-$a[6]+1  >= $min_len or next BO;
 
 		$fr_id = lc($fr_id); 
 		#if ($a[3]-$a[2]+1 >= $min_len) {
