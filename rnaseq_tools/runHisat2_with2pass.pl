@@ -99,7 +99,7 @@ for my $q ( @{$gg{'fq_infor'}} ) {
 
 	# Run stringtie if required. 
 	if ( $opts{'runStringtie'} ) {
-		&exeCmd_1cmd("$gg{'exe_stringtie'} $gg{'para_stringtie'} -o $qh{'pref'}_srt.asm.gtf -l $qh{'pref'}   $qh{'pref'}_srt.bam") and &stopErr("[Err] Failed to sort bam file.\n"); 
+		&exeCmd_1cmd("$gg{'exe_stringtie'} $gg{'para_stringtie'} -o $qh{'pref'}_srt.asm.gtf -l $qh{'pref'}   $qh{'pref'}_srt.bam") and &stopErr("[Err] Failed to sort bam file.\n");
 	}
 
 	&fileSunhh::_move( "$tmpDir/splicesites.txt", "$qh{'pref'}_splicesites.txt" ); 
@@ -228,6 +228,9 @@ HH
 
 	# replace default executable tools; 
 	for my $exeTool (qw/exe_hisat2 exe_samtools exe_stringtie exe_perl/) {
+		if ($exeTool eq 'exe_stringtie') {
+			$opts{'runStringtie'} or next;
+		}
 		defined $opts{$exeTool} and $gg{$exeTool} = $opts{$exeTool}; 
 		$gg{$exeTool} = &fileSunhh::_which( $gg{$exeTool} ); 
 		defined $gg{$exeTool} or &stopErr("[Err] Failed to find -$exeTool [$opts{$exeTool}]\n"); 
