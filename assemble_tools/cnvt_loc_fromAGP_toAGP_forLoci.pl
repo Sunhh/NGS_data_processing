@@ -58,7 +58,7 @@ while (<$old_locFh>) {
 	my @new_value; 
 	my $old_scfStr = '+'; 
 	@{$glob{'colN_seqStr'}} > 0 and $old_scfStr = $a1->[$glob{'colN_seqStr'}[0]]; 
-	if ( $old_scfStr eq '.' or $old_scfStr eq '+') {
+	if ( $old_scfStr eq '.' or $old_scfStr eq '+' or $old_scfStr eq '?') {
 		$old_scfStr = '+'; 
 	} elsif ( $old_scfStr eq 'plus' ) {
 		$old_scfStr = '+';
