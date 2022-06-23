@@ -39,6 +39,8 @@ plus   1
 minus -1
 p      1
 m     -1
+++     1
++-    -1
 ); 
 
 #my %perfect_loc; 
