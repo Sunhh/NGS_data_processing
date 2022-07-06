@@ -8,6 +8,7 @@ use Getopt::Long;
 my %opts;
 GetOptions(\%opts,
   "min_len:i",  # 15
+  "min_perc:i", # 0 - 100
   "max_diff:i", # 0
   "max_diff_tail:i", # 0
   "max_delt:i", # 6000
@@ -16,6 +17,7 @@ GetOptions(\%opts,
   "help!",
 );
 $opts{'min_len'}  //= 15;
+$opts{'min_perc'} //= 0;
 $opts{'max_diff'} //= 0;
 $opts{'max_diff_tail'} //= 0;
 $opts{'max_delt'} //= 6000;
@@ -24,6 +26,7 @@ $opts{'pro_pen'} //= 1.0;
 
 my %primer;
 my $min_len  = $opts{'min_len'}; 
+my $min_perc = $opts{'min_perc'};
 my $max_diff = $opts{'max_diff'};
 my $max_diff_tail = $opts{'max_diff_tail'}; 
 my $max_delt = $opts{'max_delt'}; 
@@ -51,6 +54,7 @@ my $htxt = <<HH;
 # 
 # The primer name format is "(\\S+)_(\\d+)_?[fr]"
 # -min_len  =      $min_len
+# -min_perc =      $min_perc # 0-100
 # -max_diff =      $max_diff
 # -max_diff_tail = $max_diff_tail
 # -max_delt =      $max_delt
@@ -72,6 +76,7 @@ while (<>) {
 		# $a[1] == $a[3] or next BO; 
 		$a[12] - $a[7] <= $max_diff_tail or next BO; 
 		$a[7]-$a[6]+1  >= $min_len or next BO;
+		$a[7]-$a[6]+1  >= $min_perc*$a[12]/100 or next BO;
 
 		$fr_id = lc($fr_id); 
 		#if ($a[3]-$a[2]+1 >= $min_len) {
