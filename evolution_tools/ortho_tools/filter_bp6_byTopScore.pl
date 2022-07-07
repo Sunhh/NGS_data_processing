@@ -5,10 +5,10 @@ use warnings;
 use Getopt::Long; 
 my %opts; 
 GetOptions(\%opts, 
-	"ncol_score:i", # 11
-	"ncol_index:i", # 0
-	"max_diffR:f",  # 0
-	"help!", 
+  "ncol_score:i", # 11
+  "ncol_index:i", # 0
+  "max_diffR:f",  # 0
+  "help!", 
 ); 
 
 $opts{'ncol_score'} //= 11; 
@@ -28,27 +28,28 @@ $opts{'help'} and die "$htxt";
 my %ss; 
 my $n=0; 
 while (<>) {
-	chomp; 
-	my @ta=split(/\t/, $_); 
-	if (defined $ss{$ta[$opts{'ncol_index'}]}{'topScore'}) {
-		$ss{$ta[$opts{'ncol_index'}]}{'topScore'} < $ta[ $opts{'ncol_score'} ] and $ss{$ta[$opts{'ncol_index'}]}{'topScore'} = $ta[ $opts{'ncol_score'} ]; 
-	} else {
-		$ss{$ta[$opts{'ncol_index'}]}{'topScore'} = $ta[ $opts{'ncol_score'} ]; 
-		$n++; 
-		$ss{ $ta[$opts{'ncol_index'}] }{'rank'} = $n; 
-	}
-	$ta[ $opts{'ncol_score'} ] >= (1-$opts{'max_diffR'}) * $ss{$ta[$opts{'ncol_index'}]}{'topScore'} or next; 
-	push(@{$ss{$ta[$opts{'ncol_index'}]}{'ele'}}, [ $_, $ta[ $opts{'ncol_score'} ] ]); 
+  chomp; 
+  my @ta=split(/\t/, $_); 
+
+  if (defined $ss{$ta[$opts{'ncol_index'}]}{'topScore'}) {
+    $ss{$ta[$opts{'ncol_index'}]}{'topScore'} < $ta[ $opts{'ncol_score'} ] and $ss{$ta[$opts{'ncol_index'}]}{'topScore'} = $ta[ $opts{'ncol_score'} ]; 
+  } else {
+    $ss{$ta[$opts{'ncol_index'}]}{'topScore'} = $ta[ $opts{'ncol_score'} ]; 
+    $n++; 
+    $ss{ $ta[$opts{'ncol_index'}] }{'rank'} = $n; 
+  }
+  $ta[ $opts{'ncol_score'} ] >= (1-$opts{'max_diffR'}) * $ss{$ta[$opts{'ncol_index'}]}{'topScore'} or next; 
+  push(@{$ss{$ta[$opts{'ncol_index'}]}{'ele'}}, [ $_, $ta[ $opts{'ncol_score'} ] ]); 
 }
 for my $i1 (sort { $ss{$a} <=> $ss{$b} } keys %ss) {
-	my @a1; 
-	for my $e1 (@{$ss{$i1}{'ele'}}) {
-		$e1->[1] >= $ss{$i1}{'topScore'} * (1-$opts{'max_diffR'}) or next; 
-		push(@a1, $e1); 
-	}
-	@a1 = sort { $b->[1] <=> $a->[1] } @a1; 
-	for my $e1 (@a1) {
-		print STDOUT "$e1->[0]\n"; 
-	}
+  my @a1; 
+  for my $e1 (@{$ss{$i1}{'ele'}}) {
+    $e1->[1] >= $ss{$i1}{'topScore'} * (1-$opts{'max_diffR'}) or next; 
+    push(@a1, $e1); 
+  }
+  @a1 = sort { $b->[1] <=> $a->[1] } @a1; 
+  for my $e1 (@a1) {
+    print STDOUT "$e1->[0]\n"; 
+  }
 }
 
