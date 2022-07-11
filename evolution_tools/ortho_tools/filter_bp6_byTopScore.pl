@@ -26,11 +26,17 @@ $opts{'help'} and die "$htxt";
 -t and !@ARGV and die "$htxt"; 
 
 my %ss; 
-my $n=0; 
+my $n=0;
+my $has_bs = 0;
 while (<>) {
   chomp; 
   my @ta=split(/\t/, $_); 
-
+  if ($ta[ $opts{'ncol_score'} ] =~ m!^bitscore$!i) {
+    $has_bs == 0 or next;
+    $has_bs = 1;
+    print STDOUT "$_\n";
+    next;
+  }
   if (defined $ss{$ta[$opts{'ncol_index'}]}{'topScore'}) {
     $ss{$ta[$opts{'ncol_index'}]}{'topScore'} < $ta[ $opts{'ncol_score'} ] and $ss{$ta[$opts{'ncol_index'}]}{'topScore'} = $ta[ $opts{'ncol_score'} ]; 
   } else {
