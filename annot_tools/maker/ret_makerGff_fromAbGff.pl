@@ -16,7 +16,9 @@ $idxPref =~ s!^\S+/!!;
 $idxPref =~ s!\.fa(sta)?$!!i;
 
 my $exe_maker = "/data/Sunhh/src/Support/mpich/maker_mpich/install/bin/mpiexec -n 20 /data/Sunhh/src/Annotation/maker/maker.3.01.03/bin/maker ";
-my $pl_rmMkFa = "perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/rm_maker_fasta.pl ";
+$exe_maker = "maker ";
+$exe_maker = "mpiexec -n 20 maker ";
+my $pl_rmMkFa = "perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/maker/rm_maker_fasta.pl ";
 
 &runCmd("maker -CTL");
 open F1,'<',"maker_opts.ctl" or die "maker_opts.ctl\n";
