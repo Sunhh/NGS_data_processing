@@ -14,6 +14,7 @@ function tsmsg {
   echo "[$(date)][Msg] $1"
 }
 
+# Set up parameters.
 # mkPref="21TJS6_FalT1"
 # gnPref="21TJS6"
 mkPref=$1
@@ -33,7 +34,7 @@ exe_cmd "$PL_dealTbl m2.tsv -kSrch_idx $IPRSCAN_HOME/../ipr.db_slct -kSrch_srcCo
 # Get the gff3 file.
 exe_cmd "$PL_retAbGff m2.tsv.wiIPR.mID ../${mkPref}_all.gff3 > m2.tsv.wiIPR.0.gff3"
 ### Convert ab to maker gff.
-exe_cmd "$PL_cvtAb2Mk  ab  ../../../src_data/in_genomes/${gnFa}  m2.tsv.wiIPR.0.gff3"
+exe_cmd "$PL_cvtAb2Mk  ab  ${gnFa}  m2.tsv.wiIPR.0.gff3"
 # The final files are:
 # gff3 : ab_maker_noFa.gff3
 # protein sequence    : ab.all.maker.proteins.fasta
