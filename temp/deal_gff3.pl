@@ -5,6 +5,7 @@
 # 2019-01-16 Change 'frame' value to fit blastx and transeq; 
 # 2021-07-09 Fix 'frame' to fit deal_fasta.pl. 
 # 2022-01-19 Add gff_top_hier definition in opts variable.
+# 2022-07-12 Add -add_cds_phrase to correct "." in the 8th column of CDS features.
 use strict; 
 use warnings; 
 use LogInforSunhh; 
@@ -59,6 +60,8 @@ GetOptions(\%opts,
 
   "ch_locByAGP:s", # Finished. I think I should add 'sortTopIDBy' to &write_gff3File() . 
    "sortTopIDBy:s", # raw/lineNum/position
+
+  "add_cds_phrase!",
   
   # Filter options. 
   "gff_top_hier:s", # Could be 'mrna,match,protein_match,expressed_sequence_match'
@@ -168,6 +171,8 @@ sub usage {
 #----------------------------------------------------------------------------------------------------
 # -getAGP           ['CDS'] Get .agp file for CDS features; Not used yet. 
 #----------------------------------------------------------------------------------------------------
+# -add_cds_phrase   [Boolean] Convert "." CDS phrase informaiton to 0/1/2.
+#----------------------------------------------------------------------------------------------------
 #
 # 
 # Filter options: 
@@ -203,6 +208,56 @@ defined $opts{'out'} and $oFh = &openFH($opts{'out'}, '>');
 my $oFasFh = undef(); 
 defined $opts{'outFas'} and $oFasFh = &openFH($opts{'outFas'}, '>'); 
 
+$opts{'seqInGff'} = ( $opts{'seqInGff'} ) ? 1 : 0; 
+if (defined $opts{'gff_top_hier'}) {
+  my @ta = grep { $_ ne '' } map { s!^\s+|\s+$!!g; lc($_); } split(/,/, $opts{'gff_top_hier'}); 
+  $opts{'gff_top_hier'} = {}; 
+  $gff_obj->_setTypeHash( $opts{'gff_top_hier'}, \@ta ); 
+} else {
+  $opts{'gff_top_hier'} = undef(); 
+}
+if ( defined $opts{'gffret'} or defined $opts{'gffInRegion'} ) {
+  $opts{'idType'} //= 'mRNA'; 
+}
+if ( defined $opts{'idType'} ) { 
+  $opts{'gff_top_hier'} = {}; 
+  my @ta = grep { $_ ne '' } map { s!^\s+|\s+$!!g; lc($_); } split(/,/, $opts{'idType'}); 
+  $gff_obj->_setTypeHash( $opts{'gff_top_hier'}, \@ta ); 
+}
+if ( defined $opts{'getLoc'} ) {
+  $opts{'gff_top_hier'} = {}; 
+  my @ta = grep { $_ ne '' } map { s!^\s+|\s+$!!g; lc($_); } split(/,/, $opts{'getLoc'}); 
+  $gff_obj->_setTypeHash( $opts{'gff_top_hier'}, \@ta ); 
+}
+if ( defined $opts{'list_intron'} ) {
+  $opts{'gff_top_hier'} = {}; 
+  $opts{'intron_byFeat'} //= 'CDS'; 
+  $gff_obj->_setTypeHash( $opts{'gff_top_hier'}, [$opts{'intron_byFeat'}] ); 
+}
+if ( defined $opts{'getAGP'} ) {
+  if ( $opts{'getAGP'} =~ m!^CDS$!i ) {
+    $opts{'gff_top_hier'} = { 'mrna'=>1, 'match'=>2, 'protein_match'=>3, 'expressed_sequence_match'=>4 }; 
+    $opts{'seqret'} = 1; 
+    $opts{'extractFeat'} = 'CDS'; 
+  } elsif ( $opts{'getAGP'} =~ m!^exon$!i ) {
+    $opts{'gff_top_hier'} = { 'mrna'=>1, 'match'=>2, 'protein_match'=>3, 'expressed_sequence_match'=>4 }; 
+    $opts{'seqret'} = 1; 
+    $opts{'extractFeat'} = 'exon'; 
+  } else {
+    &stopErr("[Err] Unknown type for -getAGP ; Should be CDS/exon\n"); 
+  }
+}
+if ( $opts{'seqret'} ) {
+  if ( $opts{'extractFeat'} =~ m!^(cds|exon)$!i) {
+    $opts{'gff_top_hier'} = { 'mrna'=>1, 'match'=>2, 'protein_match'=>3, 'expressed_sequence_match'=>4 }; 
+  }
+}
+
+$opts{'sortGffBy'} //= 'lineNum'; 
+$opts{'sortTopIDBy'} //= 'raw'; $opts{'sortTopIDBy'} = lc($opts{'sortTopIDBy'}); # raw/lineNum/position 
+$opts{'extractFeat'} //= 'CDS'; 
+
+# Step0. Actions without load_gff_fas() application.
 if ( $opts{'getJnLoc'} ) {
   &action_getJnLoc(); 
   exit(); 
@@ -212,7 +267,100 @@ if ( $opts{'getJnLoc'} ) {
 } elsif ( defined $opts{'simpleSort'} ) {
   &action_simpleSort(); 
   exit(); 
+} elsif ( $opts{'add_cds_phrase'} ) {
+  &action_add_cds_phrase();
+  exit();
 }
+
+# Step1. Read in gff file and sequence files. 
+my (%in_gff, %in_seq ); 
+&load_gff_fas( \%in_gff, \%in_seq ); 
+
+# Step2. Different actions. 
+if ( $opts{'sort'} ) {
+  &action_sort(); 
+} elsif ( $opts{'addFaToGff'} ) { 
+  &action_addFaToGff(); 
+} elsif ( defined $opts{'compare2gffC'} ) {
+  &action_compare2gffC(); 
+} elsif ( $opts{'gffInRegion'} ) {
+  &action_gffInRegion(); 
+} elsif ( $opts{'ovlapLongest'} ) {
+  &action_ovlapLongest(); 
+} elsif ( defined $opts{'islandGene'} ) {
+  &action_islandGene(); 
+} elsif ( defined $opts{'gffret'} ) {
+  &action_gffret(); 
+} elsif ( $opts{'listTopID'} ) {
+  &action_listTopID(); 
+} elsif ( defined $opts{'getLoc'} ) {
+  &action_getLoc(); 
+} elsif ( $opts{'fixTgt'} ) { 
+  &action_fixTgt(); 
+} elsif ( $opts{'list_intron'} ) {
+  &action_list_intron(); 
+} elsif ( defined $opts{'ch_makerID'} ) {
+  &action_ch_makerID(); 
+} elsif ( defined $opts{'ch_locByAGP'} ) {
+  &action_ch_locByAGP(); 
+} elsif ( $opts{'seqret'} ) {
+  &action_seqret(); 
+} else {
+  &tsmsg("[Err] No valid action.\n"); 
+  exit; 
+}
+
+################################################################################
+############### StepX. action sub-routines here. 
+################################################################################
+sub action_add_cds_phrase {
+  my @lines;
+  my %m2cds;
+  while (<$iFh>) {
+    chomp;
+    push(@lines, $_);
+    m!^\s*(#|$)! and next;
+    my @ta=split(/\t/, $_);
+    if ( $ta[2] =~ m!^cds$!i ) {
+      $ta[8] =~ m!Parent=([^;\s]+)!i or die "parent? $ta[8]\n";
+      my $pid=$1;
+      push(@{$m2cds{$pid}}, [@ta]);
+    }
+  }
+  close($iFh);
+  my %new_line;
+  for my $mid (keys %m2cds) {
+    if ($m2cds{$mid}[0][6] eq '+') {
+      @{$m2cds{$mid}} = sort { $a->[3] <=> $b->[3] } @{$m2cds{$mid}};
+      my $ph = $m2cds{$mid}[0][7];
+      $ph eq "." and $ph = 0;
+      for my $t1 (@{$m2cds{$mid}}) {
+        my $ori = join("\t", @$t1);
+        $t1->[7] = $ph;
+        $new_line{$ori} = join("\t", @$t1);
+        my $curr_len = $t1->[4]-$t1->[3]+1 - $ph;
+        $ph = (3 - ($curr_len % 3)) % 3;
+      }
+    } elsif ($m2cds{$mid}[0][6] eq '-') {
+      @{$m2cds{$mid}} = sort { $b->[4] <=> $a->[4] } @{$m2cds{$mid}};
+      my $ph = $m2cds{$mid}[0][7];
+      $ph eq "." and $ph = 0;
+      for my $t1 (@{$m2cds{$mid}}) {
+        my $ori = join("\t", @$t1);
+        $t1->[7] = $ph;
+        $new_line{$ori} = join("\t", @$t1);
+        my $curr_len = $t1->[4]-$t1->[3]+1 - $ph;
+        $ph = (3 - ($curr_len % 3)) % 3;
+      }
+    } else {
+      die "go die! $mid\n";
+    }
+  }
+  for (@lines) {
+    defined $new_line{$_} and $_ = $new_line{$_};
+    print {$oFh} "$_\n";
+  }
+}# action_add_cds_phrase()
 
 sub action_simpleSort {
   my %good_ele = qw( 
@@ -316,97 +464,6 @@ sub action_simpleSort {
 }# action_simpleSort() 
 
 
-
-$opts{'seqInGff'} = ( $opts{'seqInGff'} ) ? 1 : 0; 
-if (defined $opts{'gff_top_hier'}) {
-  my @ta = grep { $_ ne '' } map { s!^\s+|\s+$!!g; lc($_); } split(/,/, $opts{'gff_top_hier'}); 
-  $opts{'gff_top_hier'} = {}; 
-  $gff_obj->_setTypeHash( $opts{'gff_top_hier'}, \@ta ); 
-} else {
-  $opts{'gff_top_hier'} = undef(); 
-}
-if ( defined $opts{'gffret'} or defined $opts{'gffInRegion'} ) {
-  $opts{'idType'} //= 'mRNA'; 
-}
-if ( defined $opts{'idType'} ) { 
-  $opts{'gff_top_hier'} = {}; 
-  my @ta = grep { $_ ne '' } map { s!^\s+|\s+$!!g; lc($_); } split(/,/, $opts{'idType'}); 
-  $gff_obj->_setTypeHash( $opts{'gff_top_hier'}, \@ta ); 
-}
-if ( defined $opts{'getLoc'} ) {
-  $opts{'gff_top_hier'} = {}; 
-  my @ta = grep { $_ ne '' } map { s!^\s+|\s+$!!g; lc($_); } split(/,/, $opts{'getLoc'}); 
-  $gff_obj->_setTypeHash( $opts{'gff_top_hier'}, \@ta ); 
-}
-if ( defined $opts{'list_intron'} ) {
-  $opts{'gff_top_hier'} = {}; 
-  $opts{'intron_byFeat'} //= 'CDS'; 
-  $gff_obj->_setTypeHash( $opts{'gff_top_hier'}, [$opts{'intron_byFeat'}] ); 
-}
-if ( defined $opts{'getAGP'} ) {
-  if ( $opts{'getAGP'} =~ m!^CDS$!i ) {
-    $opts{'gff_top_hier'} = { 'mrna'=>1, 'match'=>2, 'protein_match'=>3, 'expressed_sequence_match'=>4 }; 
-    $opts{'seqret'} = 1; 
-    $opts{'extractFeat'} = 'CDS'; 
-  } elsif ( $opts{'getAGP'} =~ m!^exon$!i ) {
-    $opts{'gff_top_hier'} = { 'mrna'=>1, 'match'=>2, 'protein_match'=>3, 'expressed_sequence_match'=>4 }; 
-    $opts{'seqret'} = 1; 
-    $opts{'extractFeat'} = 'exon'; 
-  } else {
-    &stopErr("[Err] Unknown type for -getAGP ; Should be CDS/exon\n"); 
-  }
-}
-if ( $opts{'seqret'} ) {
-  if ( $opts{'extractFeat'} =~ m!^(cds|exon)$!i) {
-    $opts{'gff_top_hier'} = { 'mrna'=>1, 'match'=>2, 'protein_match'=>3, 'expressed_sequence_match'=>4 }; 
-  }
-}
-
-$opts{'sortGffBy'} //= 'lineNum'; 
-$opts{'sortTopIDBy'} //= 'raw'; $opts{'sortTopIDBy'} = lc($opts{'sortTopIDBy'}); # raw/lineNum/position 
-$opts{'extractFeat'} //= 'CDS'; 
-
-# Step1. Read in gff file and sequence files. 
-my (%in_gff, %in_seq ); 
-&load_gff_fas( \%in_gff, \%in_seq ); 
-
-# Step2. Different actions. 
-if ( $opts{'sort'} ) {
-  &action_sort(); 
-} elsif ( $opts{'addFaToGff'} ) { 
-  &action_addFaToGff(); 
-} elsif ( defined $opts{'compare2gffC'} ) {
-  &action_compare2gffC(); 
-} elsif ( $opts{'gffInRegion'} ) {
-  &action_gffInRegion(); 
-} elsif ( $opts{'ovlapLongest'} ) {
-  &action_ovlapLongest(); 
-} elsif ( defined $opts{'islandGene'} ) {
-  &action_islandGene(); 
-} elsif ( defined $opts{'gffret'} ) {
-  &action_gffret(); 
-} elsif ( $opts{'listTopID'} ) {
-  &action_listTopID(); 
-} elsif ( defined $opts{'getLoc'} ) {
-  &action_getLoc(); 
-} elsif ( $opts{'fixTgt'} ) { 
-  &action_fixTgt(); 
-} elsif ( $opts{'list_intron'} ) {
-  &action_list_intron(); 
-} elsif ( defined $opts{'ch_makerID'} ) {
-  &action_ch_makerID(); 
-} elsif ( defined $opts{'ch_locByAGP'} ) {
-  &action_ch_locByAGP(); 
-} elsif ( $opts{'seqret'} ) {
-  &action_seqret(); 
-} else {
-  &tsmsg("[Err] No valid action.\n"); 
-  exit; 
-}
-
-################################################################################
-############### StepX. action sub-routines here. 
-################################################################################
 sub action_seqret {
   my %str2num = qw(
    +     1

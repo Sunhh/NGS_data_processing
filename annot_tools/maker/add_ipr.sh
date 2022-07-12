@@ -31,7 +31,7 @@ exe_cmd "$IPRSCAN_HOME/interproscan.sh -iprlookup -goterms -pa -etra -cpu 24 -i 
 exe_cmd "$PL_dealTbl m2.tsv -kSrch_idx $IPRSCAN_HOME/../ipr.db_slct -kSrch_srcCol 3 | cut -f 1 | $PL_dealTbl -UniqColLine 0 > m2.tsv.wiIPR.mID"
 
 # Get the gff3 file.
-exe_cmd "$PL_retAbGff m2.tsv.wiIPR.mID ../3fal2_all.gff3 > m2.tsv.wiIPR.0.gff3"
+exe_cmd "$PL_retAbGff m2.tsv.wiIPR.mID ../${mkPref}_all.gff3 > m2.tsv.wiIPR.0.gff3"
 ### Convert ab to maker gff.
 exe_cmd "$PL_cvtAb2Mk  ab  ../../../src_data/in_genomes/${gnFa}  m2.tsv.wiIPR.0.gff3"
 # The final files are:
