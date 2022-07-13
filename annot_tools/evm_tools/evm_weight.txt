@@ -1,0 +1,10 @@
+ABINITIO_PREDICTION	maker	6
+ABINITIO_PREDICTION	Liftoff	5
+OTHER_PREDICTION	transdecoder	3
+PROTEIN	spliced_protein_alignments	1
+TRANSCRIPT	blat-C31prj_pasa	1
+TRANSCRIPT	blat-C31_pasa	1
+TRANSCRIPT	gmap-C31prj_pasa	1
+TRANSCRIPT	gmap-C31_pasa	1
+TRANSCRIPT	assembler-C31prj_pasa	10
+TRANSCRIPT	assembler-C31_pasa	10
