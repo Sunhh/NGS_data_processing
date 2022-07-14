@@ -1,0 +1,3 @@
+cat list.gnPref_mkPref_gnFa_gff | perl -e ' use fileSunhh; while (<>) { chomp; my @ta=split(/\t/, $_); -e "run_$ta[0]" or mkdir("run_$ta[0]"); &fileSunhh::write2file("run_$ta[0]/c1_runEVM", "nohup bash /data/Sunhh/wmhifi/analysis/gene_prediction/07_evm/run_evm_wiEVMpipe.sh $ta[1] $ta[2] /data/Sunhh/wmhifi/analysis/gene_prediction/07_evm/list.gnPref_mkPref_gnFa_gff > scrn.run_evm_wiEVMpipe\n", ">"); } '
+cat list.gnPref_mkPref_gnFa_gff | perl -e ' while (<>) { chomp; my @ta=split(/\t/, $_); print "cd run_$ta[0]; bash c1_runEVM\n"; }' > c1_runAllEVM
+

@@ -1,0 +1,9 @@
+perl pipe_for_functional_annotation.pl -onlyAHRD annot.cfg
+mkdir -p 04.AHRD/v1/
+cd 04.AHRD/
+bash ../generate_ahrd_yml.sh ../evmMerged.p.fa ./v1/ahrd_output_v1.csv > ahrd_in_v1.yml
+java -Xmx10G -jar /data/Sunhh/src/annotation/ahrd/AHRD/dist/ahrd.jar ahrd_in_v1.yml
+perl ../trim_orphan_right_brack.pl ./v1/ahrd_output_v1.csv > ./v1/ahrd_output_v1.csv_trim
+deal_table.pl -column 0-5 ./v1/ahrd_output_v1.csv_trim > ./v1/ahrd_output_v1.final.csv
+deal_table.pl -column 0,3 ./v1/ahrd_output_v1.final.csv > ./v1/ahrd_output_v1.final.csv.2col
+

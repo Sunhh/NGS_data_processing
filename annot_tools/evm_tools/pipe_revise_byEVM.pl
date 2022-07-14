@@ -7,6 +7,7 @@
 # [5/25/2022] Rewrite this script to make it simple to read. In this script, I don't implement any function, and I only care about the input parameters.
 # [5/26/2022] Select gene models with EVM software, and then add the missing genes by "longCDS" strategy.
 # [5/27/2022] It is annoying to have to wait for other liftoff runs finishing, so I want to copy the gff and genome files into my own directory to be independent.
+# [7/13/2022] Add -no_est. Allow missing of -in_parList
 
 use strict;
 use warnings;
@@ -26,6 +27,7 @@ GetOptions(\%opts,
   "max_olapRat:f", # 0
   "bestModel:s",   # longCDS
   "keepTmp!",
+  "no_est!",
   "help!",
 );
 
@@ -37,14 +39,18 @@ my $htxt = <<HHH;
 # 
 #   -bestModel         [longCDS] or EVM
 #
+#   -in_parList        [filename] "C31 C38 0.97 0.95 0.97". [par_ident, par_cov, par_idCopy]
+#
 #   -max_olapLen       [in_cfg or 0]
 #   -max_olapRat       [in_cfg or 0]
 # 
 #   -keepTmp           [Boolean]
+#
+#   -no_est            [Boolean] No est alignments are provided.
 ####################################################################################################
 HHH
 
-for my $k1 (qw/in_cfg in_refList in_addList in_parList out_pref/) {
+for my $k1 (qw/in_cfg in_refList in_addList out_pref/) {
   defined $opts{$k1} or &LogInforSunhh::usage($htxt);
 }
 
@@ -76,7 +82,7 @@ my %par_list; # {tag1}{tag2} = [ identity (-s), coverage (-a), (-sc) ];
   ### Copy input files to my directory.
   &fileSunhh::_copy($fn_rGenom, "$wdir/ref.genome.fa"); $fn_rGenom = "$wdir/ref.genome.fa";
   &fileSunhh::_copy($fn_rGff,   "$wdir/ref.ann.gff3");  $fn_rGff   = "$wdir/ref.ann.gff3";
-  -e $fn_rPep and do { &fileSunhh::_copy($fn_rPep,   "$wdir/ref.p.fa");      $fn_rPep   = "$wdir/ref.p.fa"; };
+  -e $fn_rPep and do { &fileSunhh::_copy($fn_rPep,   "$wdir/ref.p.fa");  $fn_rPep = "$wdir/ref.p.fa"; };
   # Load the add_list (for qry). Each line stands for a source genome and its gene model set.
   @fn_add = &fileSunhh::load_tabFile($par{'in_addList'});
   for (my $i=0; $i<@fn_add; $i++) {
@@ -84,11 +90,17 @@ my %par_list; # {tag1}{tag2} = [ identity (-s), coverage (-a), (-sc) ];
     &fileSunhh::_copy($fn_add[$i][2], "$wdir/add.$i.ann.gff3");  $fn_add[$i][2] = "$wdir/add.$i.ann.gff3";
     -e $fn_add[$i][3] and do { &fileSunhh::_copy($fn_add[$i][3], "$wdir/add.$i.p.fa"); $fn_add[$i][3] = "$wdir/add.$i.p.fa"; };
   }
-  my @fn_par = &fileSunhh::load_tabFile($par{'in_parList'});
-  for (@fn_par) {
-    $_->[4] //= 1.0;
-    $par_list{$_->[0]}{$_->[1]} = [$_->[2], $_->[3], $_->[4]]; # {tag1}{tag2} = [ -s, -a, -sc ];
-    $par_list{$_->[1]}{$_->[0]} = [$_->[2], $_->[3], $_->[4]];
+  if (defined $par{'in_parList'} and -e $par{'in_parList'}) {
+    my @fn_par = &fileSunhh::load_tabFile($par{'in_parList'});
+    for (@fn_par) {
+      $_->[4] //= 1.0;
+      $par_list{$_->[0]}{$_->[1]} = [$_->[2], $_->[3], $_->[4]]; # {tag1}{tag2} = [ -s, -a, -sc ];
+      $par_list{$_->[1]}{$_->[0]} = [$_->[2], $_->[3], $_->[4]];
+    }
+  } else {
+    for (my $i=0; $i<@fn_add; $i++) {
+      $par_list{$fn_add[$i][0]}{$rTag} //= [0.97, 0.95, 0.97];
+    }
   }
 }
 
@@ -138,7 +150,7 @@ if ($par{'bestModel'} =~ m!^\s*longCDS\s*$!i) {
 
   # Create EVM weight matrix file.
   &fileSunhh::write2file( "$wdir/evm/evm_weight.txt", join("\t", qw/ABINITIO_PREDICTION origin/, $par{'EVM_abPred_weight'})."\n", '>' );
-  &fileSunhh::write2file( "$wdir/evm/evm_weight.txt", join("\t", qw/ABINITIO_PREDICTION Liftoff/, $par{'EVM_abPred_weight'})."\n", '>>' );
+  &fileSunhh::write2file( "$wdir/evm/evm_weight.txt", join("\t", qw/ABINITIO_PREDICTION Liftoff/, $par{'EVM_transPred_weight'})."\n", '>>' );
   for my $l1 (&fileSunhh::load_tabFile($par{'fn_evm_weight'})) {
     $l1->[0] =~ m/PREDICTION/ and next;
     &fileSunhh::write2file( "$wdir/evm/evm_weight.txt", join("\t", @$l1)."\n", '>>' );
@@ -146,14 +158,19 @@ if ($par{'bestModel'} =~ m!^\s*longCDS\s*$!i) {
 
   # Copy protein alignment and transcript alignment files and genome file.
   &fileSunhh::_copy($par{'fn_evm_protAln'}, "$wdir/evm/prot_aln.evm.gff3");
-  &fileSunhh::_copy($par{'fn_evm_estAln'}, "$wdir/evm/est_aln.evm.gff3");
+  $opts{'no_est'} or &fileSunhh::_copy($par{'fn_evm_estAln'}, "$wdir/evm/est_aln.evm.gff3");
   &fileSunhh::_copy($fn_rGenom, "$wdir/evm/genome.fa");
 
   # Run EVM;
   chdir("$wdir/evm/");
-  &runCmd("$par{'EVM_HOME'}/EvmUtils/partition_EVM_inputs.pl  --genome genome.fa --gene_predictions gene_predictions.evm.gff3  --protein_alignments prot_aln.evm.gff3  --transcript_alignments est_aln.evm.gff3  $par{'para_evm_partition'} --partition_listing partitions_list.out");
+  if ($opts{'no_est'}) {
+    &runCmd("$par{'EVM_HOME'}/EvmUtils/partition_EVM_inputs.pl  --genome genome.fa --gene_predictions gene_predictions.evm.gff3  --protein_alignments prot_aln.evm.gff3  $par{'para_evm_partition'} --partition_listing partitions_list.out");
+  } else {
+    &runCmd("$par{'EVM_HOME'}/EvmUtils/partition_EVM_inputs.pl  --genome genome.fa --gene_predictions gene_predictions.evm.gff3  --protein_alignments prot_aln.evm.gff3  --transcript_alignments est_aln.evm.gff3  $par{'para_evm_partition'} --partition_listing partitions_list.out");
+  }
   my $cmd_2 = "$par{'EVM_HOME'}/EvmUtils/write_EVM_commands.pl  --genome genome.fa  --weights `pwd`/evm_weight.txt ";
-  $cmd_2 .= " --gene_predictions  gene_predictions.evm.gff3  --protein_alignments prot_aln.evm.gff3  --transcript_alignments est_aln.evm.gff3 ";
+  $cmd_2 .= " --gene_predictions  gene_predictions.evm.gff3  --protein_alignments prot_aln.evm.gff3 ";
+  $opts{'no_est'} or $cmd_2 .= " --transcript_alignments est_aln.evm.gff3 ";
   $cmd_2 .= " --output_file_name evm.out  ";
   $cmd_2 .= " --partitions partitions_list.out > commands.list ";
   &runCmd($cmd_2);
