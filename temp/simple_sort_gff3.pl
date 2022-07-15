@@ -28,7 +28,7 @@ while (<>) {
 		defined $l2_mRNA{$id} and die "repM: $_\n"; 
 		$l2_mRNA{$id} = [@ta]; 
 		push(@{$gene_to_mRNA{$pid}}, $id); 
-	} elsif ($ta[2] eq 'CDS') {
+	} elsif ($ta[2] eq 'CDS' or $ta[2] eq 'exon') {
 		$pid eq '' and die "cidP:$_\n"; 
 		push(@{$l3_CDS{$pid}}, [@ta]); 
 	} else {

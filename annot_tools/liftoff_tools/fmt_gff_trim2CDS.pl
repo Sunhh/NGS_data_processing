@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 # [3/26/2022] There are genes/mRNAs with exons on different chromosomes. I want to choose only one with longest CDS as representative in cross-species analysis.
+# [5/24/2022] Ignore those mRNAs with conflicting strands.
 use strict;
 use warnings;
 
@@ -8,6 +9,7 @@ use warnings;
 my %rec;
 my $mID='NA';
 my %recG;
+my %bad_genes;
 while (<>) {
   m!^\s*#|^\s*$! and next;
   chomp;
@@ -36,6 +38,8 @@ while (<>) {
     # $rec{$c_mID}{'cdsE'} //= $ta[4]; $rec{$c_mID}{'cdsE'} < $ta[4] and $rec{$c_mID}{'cdsE'} = $ta[4];
   }
 }
+my %has_out_gID;
+MRNA:
 for my $mID (sort {$rec{$a}{'rank'} <=> $rec{$b}{'rank'}} keys %rec) {
   scalar(@{$rec{$mID}{'cLine'}}) > 0 or next;
   # Count how many chromosomes we need
@@ -47,7 +51,8 @@ for my $mID (sort {$rec{$a}{'rank'} <=> $rec{$b}{'rank'}} keys %rec) {
       $chrInfo{$cL->[0]} //= [@{$cL}[3,4,6], $cCnt, $cL->[4]-$cL->[3]+1]; # [start, end, strand, rank]
       $chrInfo{$cL->[0]}[0] > $cL->[3] and $chrInfo{$cL->[0]}[0] = $cL->[3];
       $chrInfo{$cL->[0]}[1] < $cL->[4] and $chrInfo{$cL->[0]}[1] = $cL->[4];
-      $chrInfo{$cL->[0]}[2] eq $cL->[6] or die "[Err] Bad ID: $mID\n";
+      $chrInfo{$cL->[0]}[2] eq $cL->[6] or do { warn "[Err] Skip bad mID [$mID] with conflicting strands.\n"; next MRNA; };
+      # $chrInfo{$cL->[0]}[2] eq $cL->[6] or die "[Err] Bad ID: $mID\n";
       $chrInfo{$cL->[0]}[4] += ($cL->[4]-$cL->[3]+1);
     }
   }
@@ -73,7 +78,10 @@ for my $mID (sort {$rec{$a}{'rank'} <=> $rec{$b}{'rank'}} keys %rec) {
     @gLine[3,4] = ($chrInfo{$best_chrID}[0], $chrInfo{$best_chrID}[1]);
     @mLine[3,4] = ($chrInfo{$best_chrID}[0], $chrInfo{$best_chrID}[1]);
   }
-  print STDOUT join("\t", @gLine)."\n";
+  if (!(defined $has_out_gID{$gID})) {
+    print STDOUT join("\t", @gLine)."\n";
+    $has_out_gID{$gID} = 1;
+  }
   print STDOUT join("\t", @mLine)."\n";
   for my $cL (@{$rec{$mID}{'cLine'}}) {
     $cL->[0] eq $best_chrID or next;

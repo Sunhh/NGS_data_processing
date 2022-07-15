@@ -1,0 +1,15 @@
+perl pipe_for_functional_annotation.pl -onlyAHRD annot.cfg
+mkdir -p 04.AHRD/v1/
+cd 04.AHRD/
+bash ../generate_ahrd_yml.sh ../evmMerged.p.fa ./v1/ahrd_output_v1.csv > ahrd_in_v1.yml
+java -Xmx10G -jar /data/Sunhh/src/annotation/ahrd/AHRD/dist/ahrd.jar ahrd_in_v1.yml
+perl ../trim_orphan_right_brack.pl ./v1/ahrd_output_v1.csv > ./v1/ahrd_output_v1.csv_trim
+deal_table.pl -column 0-5 ./v1/ahrd_output_v1.csv_trim > ./v1/ahrd_output_v1.final.csv
+deal_table.pl -column 0,3 ./v1/ahrd_output_v1.final.csv > ./v1/ahrd_output_v1.final.csv.2col
+
+cat ./v1/ahrd_output_v1.final.csv.2col | deal_table.pl -col_repCount 1 | tail -n +2 | deal_table.pl -col_sort 0 | deal_table.pl -reverse > ./v1/ahrd.rcnt
+cat ./v1/ahrd.rcnt | perl -e 'while (<>) { chomp; m!retro|reverse|transpos|gag\b|polyprotein!i and print "$_\n";}' | less -S
+
+# False positives - functions that are not TE-related but match the regular expression pattern:
+#   AT3G25590: Micronuclear linker histone polyprotein-like protein
+
