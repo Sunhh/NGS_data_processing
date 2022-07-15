@@ -5,7 +5,7 @@
 # 2019-01-16 Change 'frame' value to fit blastx and transeq; 
 # 2021-07-09 Fix 'frame' to fit deal_fasta.pl. 
 # 2022-01-19 Add gff_top_hier definition in opts variable.
-# 2022-07-12 Add -add_cds_phrase to correct "." in the 8th column of CDS features.
+# 2022-07-12 Add -add_cds_phase to correct "." in the 8th column of CDS features.
 use strict; 
 use warnings; 
 use LogInforSunhh; 
@@ -61,7 +61,7 @@ GetOptions(\%opts,
   "ch_locByAGP:s", # Finished. I think I should add 'sortTopIDBy' to &write_gff3File() . 
    "sortTopIDBy:s", # raw/lineNum/position
 
-  "add_cds_phrase!",
+  "add_cds_phase!",
   
   # Filter options. 
   "gff_top_hier:s", # Could be 'mrna,match,protein_match,expressed_sequence_match'
@@ -171,7 +171,7 @@ sub usage {
 #----------------------------------------------------------------------------------------------------
 # -getAGP           ['CDS'] Get .agp file for CDS features; Not used yet. 
 #----------------------------------------------------------------------------------------------------
-# -add_cds_phrase   [Boolean] Convert "." CDS phrase informaiton to 0/1/2.
+# -add_cds_phase   [Boolean] Convert "." CDS phase informaiton to 0/1/2.
 #----------------------------------------------------------------------------------------------------
 #
 # 
@@ -267,8 +267,8 @@ if ( $opts{'getJnLoc'} ) {
 } elsif ( defined $opts{'simpleSort'} ) {
   &action_simpleSort(); 
   exit(); 
-} elsif ( $opts{'add_cds_phrase'} ) {
-  &action_add_cds_phrase();
+} elsif ( $opts{'add_cds_phase'} ) {
+  &action_add_cds_phase();
   exit();
 }
 
@@ -313,7 +313,7 @@ if ( $opts{'sort'} ) {
 ################################################################################
 ############### StepX. action sub-routines here. 
 ################################################################################
-sub action_add_cds_phrase {
+sub action_add_cds_phase {
   my @lines;
   my %m2cds;
   while (<$iFh>) {
@@ -360,7 +360,7 @@ sub action_add_cds_phrase {
     defined $new_line{$_} and $_ = $new_line{$_};
     print {$oFh} "$_\n";
   }
-}# action_add_cds_phrase()
+}# action_add_cds_phase()
 
 sub action_simpleSort {
   my %good_ele = qw( 

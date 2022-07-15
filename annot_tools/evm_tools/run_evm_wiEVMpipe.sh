@@ -1,3 +1,5 @@
+# [20220715] Version 1.1. Prepare the prot_aln.evm.gff3 [and est_aln.evm.gff3] files before running this script.
+
 ### Basic functions.
 function exe_cmd {
   echo "[$(date)][CMD] $1"
@@ -17,14 +19,35 @@ function tsmsg {
 # Parameter settings for different genomes.
 #mkPref="21TJS6_FalT1"
 #gnFa="/data/Sunhh/wmhifi/analysis/gene_prediction/in_genomes/21TJS6.fa"
-#gnPref="21TJS6"
-#fnList="/data/Sunhh/wmhifi/analysis/gene_prediction/07_evm/list.gnPref_mkPref_gnFa_gff"
 mkPref=$1
 gnFa=$2
-#gnPref=$3
 fnList=$3
+evmProtGff=$4
+evmEstGff=$5
 ### Check the "Prepare protein alignments" section!!!
 ### Check if you have "EST alignments" and revise the '-no_est' parameter in PL_pipeEVM!!!
+
+# Prepare weight matrix file.
+### evm_weight.txt
+printf "" > evm_weight.txt
+# echo -e "ABINITIO_PREDICTION\tmaker\t6" >> evm_weight.txt
+# echo -e "ABINITIO_PREDICTION\tLiftoff\t5" >> evm_weight.txt
+#echo -e "OTHER_PREDICTION\ttransdecoder\t3" >> evm_weight.txt
+echo -e "PROTEIN\tspliced_protein_alignments\t1" >> evm_weight.txt
+#echo -e "TRANSCRIPT\tblat-DB_pasa\t1" >> evm_weight.txt
+#echo -e "TRANSCRIPT\tgmap-DB_pasa\t1" >> evm_weight.txt
+#echo -e "TRANSCRIPT\tassembler-DB_pasa" >> evm_weight.txt
+
+
+if [[ $fnList == "" ]];
+then
+  printf "################################################################################
+bash $0  makerGff_prefix  genome_fa_fn  list.gnPref_mkPref_gnFa_gff  prot_aln.evm.gff3  [est_aln.evm.gff3]
+################################################################################
+"
+  exit 1;
+fi
+
 
 # Parameter settings in general
 CONDA_activate_liftoff="source /data/Sunhh/install/anaconda3/bin/activate liftoff"
@@ -39,7 +62,11 @@ PL_cnvtMk2EVM="perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/evm
 PL_rmHeadPartCDS="perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/liftoff_tools/rm_head_partial_frame_inGff.pl"
 PL_getCDSgff="perl /home/Sunhh/tools/github/NGS_data_processing/temp/get_cds_from_gff3.pl"
 # PL_pipeEVM="perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/evm_tools/pipe_revise_byEVM.pl"
-PL_pipeEVM="perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/evm_tools/pipe_revise_byEVM.pl -no_est "
+PL_pipeEVM="perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/evm_tools/pipe_revise_byEVM.pl"
+if [[ $evmEstGff == "" ]];
+then
+  PL_pipeEVM="perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/evm_tools/pipe_revise_byEVM.pl -no_est "
+fi
 PL_get_longCDS_in_gff="perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/evm_tools/get_longCDS_in_gff.pl"
 PL_runCmd="run_cmd_in_batch.pl"
 PL_dealFas="deal_fasta.pl"
@@ -86,7 +113,6 @@ para_evm_partition       --segmentSize 800000  --overlapSize 10000
 
 # Prepare genome fasta file
 # [[ -e db/ ]] || mkdir db/
-# exe_cmd "cp -p ${gnFa} ./db/${gnPref}.fa"
 [[ -e tmp/ ]] || mkdir tmp/
 
 # Prepare predicted gene models.
@@ -106,8 +132,6 @@ do
   fi
   exe_cmd "$PL_trim2cds  ${myArr[3]} > tmp/${myArr[1]}.trim2cds.gff3"
   echo -e "${myArr[1]}\t${myArr[2]}\t$PWD/tmp/${myArr[1]}.trim2cds.gff3\tNA\tNA" >> add_list
-  # exe_cmd "$EXE_liftoff -polish -copies -sc 0.97 -exclude_partial -s 0.97 -a 0.95 -p 40 -dir tmp/im.${myArr[1]} -o tmp/on.${myArr[1]}.ori.gff3 -u tmp/unmapped.${myArr[1]} -g tmp/${myArr[1]}.trim2cds.gff3 ./db/${gnPref}.fa ${myArr[2]}"
-  # exe_cmd "$PL_retGoodGff  tmp/on.${myArr[1]}.ori.gff3_polished > tmp/on.${myArr[1]}.gff3"
 done < "$fnList"
 # exe_cmd "$CONDA_deactivate"
 
@@ -118,21 +142,16 @@ done < "$fnList"
 # Combine gene predictions.
 
 # Prepare protein alignments.
-cat /data/Sunhh/wmhifi/analysis/gene_prediction/03_aln_prot/run_${gnPref}/*.spaln.s2.4maker.gff3 | $PL_cnvtMk2EVM > prot_aln.evm.gff3
+cat $evmProtGff | $PL_cnvtMk2EVM > prot_aln.evm.gff3
 
 # Prepare EST alignments.
-### Skip this for now.
 # cat ../../db/from_pasa/C31_compreh_prj.4maker.gff3 ../../db/from_pasa/C31_compreh_sra.4maker.gff3 | perl cnvt_maker2evmProtGff3.pl -out_featSource "" -out_featType "EST_match" > est_aln.evm.gff3
-
-# Prepare weight matrix file.
-### evm_weight.txt
-# echo -e "ABINITIO_PREDICTION\tmaker\t6" > evm_weight.txt
-# echo -e "ABINITIO_PREDICTION\tLiftoff\t5" >> evm_weight.txt
-#echo -e "OTHER_PREDICTION\ttransdecoder\t3" >> evm_weight.txt
-echo -e "PROTEIN\tspliced_protein_alignments\t1" >> evm_weight.txt
-#echo -e "TRANSCRIPT\tblat-DB_pasa\t1" >> evm_weight.txt
-#echo -e "TRANSCRIPT\tgmap-DB_pasa\t1" >> evm_weight.txt
-#echo -e "TRANSCRIPT\tassembler-DB_pasa" >> evm_weight.txt
+if [[ $evmEstGff == "" ]];
+then
+  :
+else
+  cat $evmEstGff | $PL_cnvtMk2EVM -out_featSource ""  -out_featType "EST_match" > est_aln.evm.gff3
+fi
 
 # Run EVM
 exe_cmd "$CONDA_activate_liftoff"
