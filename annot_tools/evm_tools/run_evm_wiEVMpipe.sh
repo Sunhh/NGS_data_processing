@@ -142,7 +142,7 @@ done < "$fnList"
 # Combine gene predictions.
 
 # Prepare protein alignments.
-cat $evmProtGff | $PL_cnvtMk2EVM > prot_aln.evm.gff3
+exe_cmd "cat $evmProtGff | $PL_cnvtMk2EVM > prot_aln.evm.gff3"
 
 # Prepare EST alignments.
 # cat ../../db/from_pasa/C31_compreh_prj.4maker.gff3 ../../db/from_pasa/C31_compreh_sra.4maker.gff3 | perl cnvt_maker2evmProtGff3.pl -out_featSource "" -out_featType "EST_match" > est_aln.evm.gff3
@@ -150,7 +150,7 @@ if [[ $evmEstGff == "" ]];
 then
   :
 else
-  cat $evmEstGff | $PL_cnvtMk2EVM -out_featSource ""  -out_featType "EST_match" > est_aln.evm.gff3
+  exe_cmd "cat $evmEstGff | $PL_cnvtMk2EVM -out_featSource ""  -out_featType "EST_match" > est_aln.evm.gff3"
 fi
 
 # Run EVM

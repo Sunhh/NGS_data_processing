@@ -1,0 +1,105 @@
+bad	Various-unknown	Unknown protein
+bad	TE-related	CACTA en-spm transposon protein
+bad	TE-related	CCHC-type domain-containing protein
+bad	TE-related	Enzymatic polyprotein
+bad	TE-related	Envelope-like protein
+bad	TE-related	Gag
+bad	TE-related	Gag protease polyprotein
+bad	TE-related	Gag-pol polyprotein
+bad	TE-related	Gag-asp_proteas domain-containing protein
+bad	TE-related	Gag-pro-like protein
+bad	TE-related	Gag-protease polyprotein
+bad	TE-related	Gag-proteinase polyprotein
+bad	TE-related	Gag/pol protein
+bad	TE-related	Gypsy-like retrotransposase
+bad	TE-related	HERV-K_8p23.1 provirus ancestral Gag polyprotein
+bad	TE-related	LINE-1 retrotransposable element ORF2 protein
+bad	TE-related	MuDR family transposase
+bad	TE-related	MuDRA-like transposase
+bad	TE-related	Plant transposase
+bad	TE-related	Polyprotein
+bad	TE-related	Retroelement pol polyprotein-like
+bad	TE-related	Retrotran_gag_3 domain-containing protein
+bad	TE-related	Retrotrans_gag domain-containing protein
+bad	TE-related	Retrotransposable element Tf2
+bad	TE-related	Retrotransposon gag protein
+bad	TE-related	Retrotransposon protein, putative, Ty3-gypsy subclass
+bad	TE-related	Retrotransposon protein
+bad	TE-related	Retrotransposon-derived protein PEG10, putative
+bad	TE-related	Retrovirus-related Pol polyprotein from transposon RE1
+bad	TE-related	Retrovirus-related Pol polyprotein from transposon TNT 1-94
+bad	TE-related	Retrovirus-related pol polyprotein from transposon
+bad	TE-related	Reverse transcriptase
+bad	TE-related	Reverse transcriptase domain-containing protein
+bad	TE-related	Reverse transcriptase, RNA-dependent DNA polymerase
+bad	TE-related	Transpos_assoc domain-containing protein
+bad	TE-related	Transposase
+bad	TE-related	Transposon TX1 uncharacterized 149 kDa protein
+bad	TE-related	Transposon Tf2-1 polyprotein isoform X1
+bad	TE-related	Transposon Tf2-8 polyprotein
+bad	TE-related	Transposon Ty3-I Gag-Pol polyprotein
+bad	TE-related	Transposon Ty3-I Gag-Pol polyprotein isoform X1
+bad	TE-related	Retrovirus-related Pol polyprotein from transposon
+bad	TE-related	Ty3/gypsy retrotransposon protein
+bad	TE-related	Ty3-gypsy retrotransposon protein
+bad	TE-related	Reverse transcriptase Ty1/copia-type domain-containing protein
+bad	TE-related	Ty1-copia retrotransposon protein
+bad	TE-related	BnaAnng22160D protein
+bad	TE-related	Ulp1-like peptidase
+bad	TE-related	Ribonuclease H
+bad	TE-related	RNase H domain-containing protein
+bad	chloroplast	30S ribosomal protein S3, chloroplastic
+bad	chloroplast	50S ribosomal protein L16, chloroplastic
+bad	chloroplast	ATPase_AAA_core domain-containing protein
+bad	chloroplast	DNA-directed RNA polymerase
+bad	chloroplast	DNA-directed RNA polymerase subunit beta''
+bad	chloroplast	Integrase catalytic domain-containing protein
+bad	chloroplast	NAD(P)H-quinone oxidoreductase subunit H, chloroplastic
+bad	chloroplast	ORF43m
+bad	chloroplast	Photosystem II CP43 reaction center protein
+bad	mitochondrion	30S ribosomal protein S11, chloroplastic
+bad	mitochondrion	ATP synthase subunit 9, mitochondrial
+bad	mitochondrion	ATP synthase subunit a
+bad	mitochondrion	ATP synthase subunit beta
+bad	mitochondrion	ATP synthase subunit beta, chloroplastic-like
+bad	mitochondrion	Complex1_49kDa domain-containing protein
+bad	mitochondrion	Cytochrome b reductase 1
+bad	mitochondrion	Cytochrome c biogenesis FN
+bad	mitochondrion	DNA-directed DNA polymerase
+bad	mitochondrion	DNA-directed RNA polymerase subunit alpha
+bad	mitochondrion	DUF2647 domain-containing protein
+bad	mitochondrion	Homolog of yeast ADA2 2A
+bad	mitochondrion	NADH dehydrogenase subunit 4
+bad	mitochondrion	NADH dehydrogenase subunit 7
+bad	mitochondrion	NADH-ubiquinone oxidoreductase chain 1
+bad	mitochondrion	NADH-ubiquinone oxidoreductase chain 4
+bad	mitochondrion	NADH-ubiquinone oxidoreductase chain 5
+bad	mitochondrion	ORF64c
+bad	mitochondrion	Orf101b
+bad	mitochondrion	Photosystem I P700 chlorophyll a apoprotein A1
+bad	mitochondrion	Photosystem I P700 chlorophyll a apoprotein A2
+bad	mitochondrion	Photosystem II D2 protein
+bad	mitochondrion	Photosystem II protein D1
+bad	mitochondrion	Protein Ycf2
+bad	mitochondrion	Protein Ycf2-like
+bad	mitochondrion	Ribosomal protein L2
+bad	mitochondrion	Ribosomal protein S19
+bad	mitochondrion	Ribosomal_L2_C domain-containing protein
+bad	mitochondrion	S-acyltransferase
+bad	mitochondrion	Serine-type D-Ala-D-Ala carboxypeptidase
+bad	mitochondrion	Succinate dehydrogenase subunit 3
+bad	microorg	Protein MNN4-like
+bad	rDNA	Senescence-associated protein
+bad	rRNA-gene-related	Regulator of rDNA transcription protein 15
+bad	rRNA-gene-related	SANT domain-containing protein
+bad	rRNA-gene-related	Rrna intron-encoded homing endonuclease
+suspect	TE-related	Beta-galactosidase
+suspect	TE-related	SWIM-type domain-containing protein
+suspect	TE-related	Chromo domain-containing protein
+good	plant-TE-derived	PMD domain-containing protein
+good	plant	S-protein homolog
+good	plant	DUF4283 domain-containing protein
+good	plant	WD_REPEATS_REGION domain-containing protein
+good	plant	Pentatricopeptide repeat-containing protein
+good	XXXXX	Transmembrane protein
+good	plant	DNA-directed RNA polymerase subunit beta
