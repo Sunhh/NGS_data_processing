@@ -1,0 +1,26 @@
+#
+# No need to change chr ID.
+#
+
+#
+# Change gene ID.
+#
+cut -f 1 ../07_evm/list.toAnnot | perl -e ' while (<>) { chomp; -e "run_$_/" or mkdir("run_$_/");
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/rename_by_GffJnLoc.pl $_ ../07_evm/run_$_/rmTE.JnLoc > run_$_/mapIDs\n"; 
+ print "cut -f 1,2 run_$_/mapIDs >  run_$_/mapIDs.2c\n";
+ print "cut -f 3,4 run_$_/mapIDs >> run_$_/mapIDs.2c\n";
+ my $cmd = "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -inGff ../07_evm/run_$_/rmTE.gff3 -ch_ID run_$_/mapIDs.2c | ";
+ $cmd .= " perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -add_cds_phase | ";
+ $cmd .= " perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/simplify_gff3.pl ";
+ $cmd .= " > run_$_/final.ann.gff3 ";
+ print "$cmd\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/get_cds_from_gff3.pl -genome_fas ../in_genomes/$_.fa -genome_gff run_$_/final.ann.gff3 | deal_fasta.pl -rmDefinition > run_$_/final.c.fa\n";
+ print "deal_fasta.pl -cds2aa run_$_/final.c.fa | deal_fasta.pl -rmDefinition > run_$_/final.p.fa\n";
+ print "\n";
+}' > c1_changeID
+
+#
+# Test BUSCO
+#
+cut -f 1 ../07_evm/list.toAnnot | perl -e 'while (<>) { chomp; system "cp -p run_$_/final.p.fa /data/Sunhh/temp/test_busco/seqs_protein/${_}_final.p.fa"; }'
+
