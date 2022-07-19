@@ -18,12 +18,10 @@ function tsmsg {
 
 # Parameter settings for different genomes.
 #mkPref="21TJS6_FalT1"
-#gnFa="/data/Sunhh/wmhifi/analysis/gene_prediction/in_genomes/21TJS6.fa"
 mkPref=$1
-gnFa=$2
-fnList=$3
-evmProtGff=$4
-evmEstGff=$5
+fnList=$2
+evmProtGff=$3
+evmEstGff=$4
 ### Check the "Prepare protein alignments" section!!!
 ### Check if you have "EST alignments" and revise the '-no_est' parameter in PL_pipeEVM!!!
 
@@ -42,7 +40,7 @@ echo -e "PROTEIN\tspliced_protein_alignments\t1" >> evm_weight.txt
 if [[ $fnList == "" ]];
 then
   printf "################################################################################
-bash $0  makerGff_prefix  genome_fa_fn  list.gnPref_mkPref_gnFa_gff  prot_aln.evm.gff3  [est_aln.evm.gff3]
+bash $0  makerGff_prefix  list.gnPref_mkPref_gnFa_gff  prot_aln.evm.gff3  [est_aln.evm.gff3]
 ################################################################################
 "
   exit 1;

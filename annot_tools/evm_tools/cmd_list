@@ -1,3 +1,106 @@
-cat list.gnPref_mkPref_gnFa_gff | perl -e ' use fileSunhh; while (<>) { chomp; my @ta=split(/\t/, $_); -e "run_$ta[0]" or mkdir("run_$ta[0]"); &fileSunhh::write2file("run_$ta[0]/c1_runEVM", "nohup bash /data/Sunhh/wmhifi/analysis/gene_prediction/07_evm/run_evm_wiEVMpipe.sh $ta[1] $ta[2] /data/Sunhh/wmhifi/analysis/gene_prediction/07_evm/list.gnPref_mkPref_gnFa_gff > scrn.run_evm_wiEVMpipe\n", ">"); } '
-cat list.gnPref_mkPref_gnFa_gff | perl -e ' while (<>) { chomp; my @ta=split(/\t/, $_); print "cd run_$ta[0]; bash c1_runEVM\n"; }' > c1_runAllEVM
+#
+# Run EVM to combine genes.
+#
+
+cat list.toAnnot | perl -e ' use fileSunhh; while (<>) { chomp; my @ta=split(/\t/, $_); -e "run_$ta[0]" or mkdir("run_$ta[0]"); 
+ my $cmd = "cat /data/Sunhh/wmhifi/analysis/gene_prediction/03_aln_prot/run_$ta[1]/*.spaln.s2.4maker.gff3 > prot_aln.forEVM.gff3";
+ system "$cmd";
+ # Provide "est_aln.forEVM.gff3" too if we have it.
+ &fileSunhh::write2file("run_$ta[0]/c1_runEVM", "nohup bash run_evm_wiEVMpipe.sh $ta[1] /data/Sunhh/wmhifi/analysis/gene_prediction/07_evm/list.gnPref_mkPref_gnFa_gff prot_aln.forEVM.gff3 > scrn.run_evm_wiEVMpipe\n", ">");
+}'
+cat list.toAnnot | perl -e ' while (<>) { chomp; my @ta=split(/\t/, $_); print "cd run_$ta[0]; bash c1_runEVM\n"; }' > c1_runAllEVM
+
+#
+# In order to reduce fake gene models added from other gene predictions, remove bad novel genes.
+#
+### Basic gene prediction from maker: run_BC20/tmp/BC20_FalT1.trim2cds.gff3
+cat list.toAnnot | perl -e ' use LogInforSunhh;
+while (<>) {
+  chomp; my @ta=split(/\t/, $_); my $cmd = "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl ";
+  $cmd .= " -inGff run_$ta[0]/evmMerged.gff3 -compare2gffC run_$ta[0]/tmp/$ta[1].trim2cds.gff3 ";
+  $cmd .= " -rmOvlap -rmOvlapLen 1 -rmOvlapType CDS -rmOvlapStrand Single > run_$ta[0]/evmMerged_novel.gff3 ";
+  &runCmd($cmd);
+  $cmd = "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -inGff run_$ta[0]/evmMerged_novel.gff3 -getJnLoc > run_$ta[0]/evmMerged_novel.gff3.JnLoc";
+  &runCmd($cmd);
+  &runCmd("deal_fasta.pl run_$ta[0]/evmMerged.p.fa -drawByList -drawList run_$ta[0]/evmMerged_novel.gff3.JnLoc -drawWhole -drawLcol 0 > run_$ta[0]/evmMerged_novel.p.fa");
+  &runCmd("deal_fasta.pl run_$ta[0]/evmMerged.c.fa -drawByList -drawList run_$ta[0]/evmMerged_novel.gff3.JnLoc -drawWhole -drawLcol 0 > run_$ta[0]/evmMerged_novel.c.fa");
+}
+'
+
+cat run_*/evmMerged_novel.p.fa | deal_fasta.pl -rmTailX_prot | perl -e 'my $cnt = 0; while (<>) { chomp; m!^\s*\>! and do {$cnt++; s!^\>(\S+)!>$cnt $1! or die "$_\n"; s!^(\S+ \S+)\s.*$!$1!;}; print "$_\n"; }' > all_extra.p.fa
+grep \> all_extra.p.fa | perl -e 'while (<>) { m!^\>(\S+) (\S+)! or die "$_\n"; print "$1\t$2\n"; }' > all_extra.newID_oldID
+cat run_*/evmMerged_novel.c.fa | perl -e 'my $cnt = 0; while (<>) { chomp; m!^\s*\>! and do { $cnt++; s!^\>(\S+)!>$cnt $1! or die "$_\n"; s!^(\S+ \S+)\s.*$!$1!; }; print "$_\n"; }' > all_extra.c.fa
+
+### Do AHRD annotation on novel genes to find bad genes.
+[[ -e all_extra_ahrd/ ]] || mkdir all_extra_ahrd/
+deal_fasta.pl all_extra.p.fa -rmDefinition > all_extra_ahrd/all_extra.p.fa
+##### Prepare all_extra_ahrd/annot.cfg and then run AHRD
+echo "cd all_extra_ahrd/; perl /home/Sunhh/tools/github/NGS_data_processing/project/watermelon_pan_phaseI/pipe_for_functional_annotation.pl annot.cfg -onlyAHRD -noCds" > c2_runBl_onlyAHRD
+# run_cmd_in_batch.pl c2_runBl_onlyAHRD
+[[ -e all_extra_ahrd/04.AHRD/v1/ ]] || mkdir -p all_extra_ahrd/04.AHRD/v1/
+printf "cd all_extra_ahrd/04.AHRD/; " > c3_runAHRD
+printf "bash /data/Sunhh/wmhifi/analysis/gene_functional_annotation/generate_ahrd_yml.sh ../all_extra.p.fa ./v1/ahrd_output_v1.csv > ahrd_in_v1.yml; " >> c3_runAHRD
+printf "java -Xmx10G -jar /data/Sunhh/src/annotation/ahrd/AHRD/dist/ahrd.jar ahrd_in_v1.yml; " >> c3_runAHRD
+printf "perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/trim_orphan_right_brack.pl ./v1/ahrd_output_v1.csv > ./v1/ahrd_output_v1.csv_trim; " >> c3_runAHRD
+printf "deal_table.pl -column 0-5 ./v1/ahrd_output_v1.csv_trim > ./v1/ahrd_output_v1.final.csv; " >> c3_runAHRD
+printf "deal_table.pl -column 0,3 ./v1/ahrd_output_v1.final.csv > ./v1/ahrd_output_v1.final.csv.2col;" >> c3_runAHRD
+# run_cmd_in_batch.pl c3_runAHRD
+### Find bad genes.
+ColLink.pl all_extra.newID_oldID -f1 all_extra_ahrd/04.AHRD/v1/ahrd_output_v1.final.csv.2col -keyC1 0 -keyC2 0 -add -Col1 1 -fill NNNNN | deal_table.pl -column 1,2,0 > all_extra.oldID_ahrd_newID
+deal_table.pl -col_repCount 1  all_extra.oldID_ahrd_newID | tail -n +2 | deal_table.pl -col_sort 0 | deal_table.pl -reverse > all_extra.oldID_ahrd_newID.rcnt
+awk -F"\t" '$1 >= 30 ' all_extra.oldID_ahrd_newID.rcnt > all_extra.oldID_ahrd_newID.rcnt.tochk1
+awk -F"\t" '$1 <  30 ' all_extra.oldID_ahrd_newID.rcnt | perl -e 'while (<>) { m!retro|reverse|transpos|gag\b|polyprotein!i and print; }' > all_extra.oldID_ahrd_newID.rcnt.tochk2
+# retro|reverse|transpos|gag\b|polyprotein
+### Revise file /home/Sunhh/tools/github/NGS_data_processing/annot_tools/evm_tools/chk_pcTE_ahrd;
+awk '$1 == "bad" || $1 == "suspect" ' chk_pcTE_ahrd > torm_type_ahrd
+deal_table.pl all_extra.oldID_ahrd_newID -kSrch_srcCol 1 -kSrch_idx torm_type_ahrd -kSrch_idxCol 2 > all_extra.oldID_ahrd_newID.toRM
+deal_fasta.pl all_extra.c.fa -drawByList -drawList all_extra.oldID_ahrd_newID.toRM -drawWhole -drawLcol 2 > all_extra.oldID_ahrd_newID.toRM.c.fa
+makeblastdb -in all_extra.oldID_ahrd_newID.toRM.c.fa -dbtype nucl
+cat list.toAnnot | perl -e 'while (<>) { chomp; my @ta=split(/\t/, $_); my $cmd = "blastn ";
+ $cmd .= " -query run_$ta[0]/evmMerged.c.fa ";
+ $cmd .= " -out run_$ta[0]/evmMerged.c.fa.toBad.bn6 ";
+ $cmd .= " -db all_extra.oldID_ahrd_newID.toRM.c.fa ";
+ $cmd .= " -num_threads 20 ";
+ $cmd .= " -outfmt \"6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen sstrand\" ";
+ $cmd .= " -task blastn -evalue 1e-5 -dust no -max_target_seqs 20 -max_hsps 10 ";
+ print "$cmd\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/evm_tools/filter_cds2Bad_bn6.pl run_$ta[0]/evmMerged.c.fa.toBad.bn6 > run_$ta[0]/evmMerged.c.fa.toBad.bn6.toRM\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -inGff run_$ta[0]/evmMerged.gff3 -getJnLoc > run_$ta[0]/evmMerged.gff3.JnLoc\n";
+ print "deal_table.pl run_$ta[0]/evmMerged.gff3.JnLoc -kSrch_idx run_$ta[0]/evmMerged.c.fa.toBad.bn6.toRM -kSrch_drop > run_$ta[0]/good.JnLoc\n";
+ print "deal_fasta.pl run_$ta[0]/evmMerged.p.fa -drawByList -drawList run_$ta[0]/good.JnLoc -drawWhole -drawLcol 0 | deal_fasta.pl -rmTailX_prot | deal_fasta.pl -rmDefinition > run_$ta[0]/good.p.fa\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -inGff run_$ta[0]/evmMerged.gff3 -gffret run_$ta[0]/good.JnLoc -idType mRNA > run_$ta[0]/good.gff3\n";
+}' > c4a_runBl2BadrmBad
+# run_cmd_in_batch.pl c4a_runBl2BadrmBad
+
+#
+# Do AHRD annotation to remove TE further within each genome.
+#
+cat list.toAnnot | perl -e 'while (<>) {chomp; my @ta=split(/\t/,$_); my $cmd = "mkdir -p run_$ta[0]/annot/04.AHRD/v1/; ";
+  $cmd .= " cp -p annot_good.cfg run_$ta[0]/good.p.fa run_$ta[0]/annot/; ";
+  $cmd .= " cd run_$ta[0]/annot/; ";
+  $cmd .= " perl /home/Sunhh/tools/github/NGS_data_processing/project/watermelon_pan_phaseI/pipe_for_functional_annotation.pl annot_good.cfg -onlyAHRD -noCds; ";
+  $cmd .= " cd 04.AHRD/; ";
+  $cmd .= " bash /data/Sunhh/wmhifi/analysis/gene_functional_annotation/generate_ahrd_yml.sh ../good.p.fa ./v1/ahrd_output_v1.csv > ahrd_in_v1.yml; ";
+  $cmd .= " java -Xmx10G -jar /data/Sunhh/src/annotation/ahrd/AHRD/dist/ahrd.jar ahrd_in_v1.yml; ";
+  $cmd .= " perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/trim_orphan_right_brack.pl ./v1/ahrd_output_v1.csv > ./v1/ahrd_output_v1.csv_trim; ";
+  $cmd .= " deal_table.pl -column 0-5 ./v1/ahrd_output_v1.csv_trim > ./v1/ahrd_output_v1.final.csv; ";
+  $cmd .= " deal_table.pl -column 0,3 ./v1/ahrd_output_v1.final.csv > ./v1/ahrd_output_v1.final.csv.2col; ";
+  print "$cmd\n";
+}' > c5a_sepAHRD
+# bash c5a_sepAHRD
+cat run_*/annot/04.AHRD/v1/ahrd_output_v1.final.csv.2col | deal_table.pl -col_repCount 1 | tail -n +2 | deal_table.pl -col_sort 0 | deal_table.pl -reverse > all_good.ahrd.rcnt
+[[ -e good_desc ]] ||  cp -p /home/Sunhh/tools/github/NGS_data_processing/annot_tools/evm_tools/good_desc ./
+cat all_good.ahrd.rcnt | perl -e 'while (<>) { chomp; m!retro|reverse|transpos|gag\b|polyprotein|RNase\sH\s|Ribonuclease H\b!i and print "$_\n";}' | deal_table.pl -kSrch_idx good_desc -kSrch_drop -kSrch_srcCol 1 > all_good.TE_cnt_desc
+### Check if there are highly frequent TE-related genes remained.
+deal_table.pl all_good.ahrd.rcnt -kSrch_idx all_good.TE_cnt_desc -kSrch_idxCol 1 -kSrch_srcCol 1 -kSrch_drop | less -S
+### Remove TE-related genes and short genes (<= 30 AA) from 'good.JnLoc', resulting 'rmTE.gff3'
+cat list.toAnnot | perl -e 'while (<>) {chomp; my @ta=split(/\t/, $_);
+  print "deal_table.pl -kSrch_idx all_good.TE_cnt_desc -kSrch_idxCol 1 -kSrch_srcCol 1 run_$ta[0]/annot/04.AHRD/v1/ahrd_output_v1.final.csv.2col > run_$ta[0]/annot/04.AHRD/v1/ahrd_output_v1.final.csv.2col.TE\n";
+  print "deal_fasta.pl run_$ta[0]/good.p.fa -rmTailX_prot | deal_fasta.pl -keep_len 30- | deal_fasta.pl -attr key > run_$ta[0]/good.longID\n";
+  print "deal_table.pl run_$ta[0]/good.JnLoc -kSrch_drop -kSrch_idx run_$ta[0]/annot/04.AHRD/v1/ahrd_output_v1.final.csv.2col.TE | deal_table.pl -kSrch_idx run_$ta[0]/good.longID > run_$ta[0]/rmTE.JnLoc\n";
+  print "deal_fasta.pl run_$ta[0]/evmMerged.p.fa -drawByList -drawWhole -drawLcol 0 -drawList run_$ta[0]/rmTE.JnLoc | deal_fasta.pl -rmTailX_prot | deal_fasta.pl -rmDefinition > run_$ta[0]/rmTE.p.fa\n";
+  print "deal_fasta.pl run_$ta[0]/evmMerged.c.fa -drawByList -drawWhole -drawLcol 0 -drawList run_$ta[0]/rmTE.JnLoc | deal_fasta.pl -rmDefinition > run_$ta[0]/rmTE.c.fa\n";
+  print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -inGff run_$ta[0]/evmMerged.gff3 -gffret run_$ta[0]/rmTE.JnLoc -idType mRNA > run_$ta[0]/rmTE.gff3\n";
+}' > c5b_rmTE
+
 

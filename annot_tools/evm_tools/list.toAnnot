@@ -5,6 +5,3 @@
 21TJS6	21TJS6_FalT1	/data/Sunhh/wmhifi/analysis/gene_prediction/in_genomes/21TJS6.fa	/data/Sunhh/wmhifi/analysis/gene_prediction/06_maker/maker_results/21TJS6_FalT1/iprscan/comb_maker_noFa.gff3
 BC19	BC19_FalT1	/data/Sunhh/wmhifi/analysis/gene_prediction/in_genomes/BC19.fa	/data/Sunhh/wmhifi/analysis/gene_prediction/06_maker/maker_results/BC19_FalT1/iprscan/comb_maker_noFa.gff3
 BC20	BC20_FalT1	/data/Sunhh/wmhifi/analysis/gene_prediction/in_genomes/BC20.fa	/data/Sunhh/wmhifi/analysis/gene_prediction/06_maker/maker_results/BC20_FalT1/iprscan/comb_maker_noFa.gff3
-97103	WM97v2p5	/data/Sunhh/wmhifi/analysis/try_graph/data/genomes/ASM1002_97103.ref.fa	/data/Sunhh/wmhifi/analysis/try_graph/data/annotation/ASM1002_97103.gff3
-USVL531	USVL531new	/data/Sunhh/wmhifi/analysis/try_graph/data/genomes/ASM1004_USVL531.ref.fa	/data/Sunhh/wmhifi/analysis/try_graph/data/annotation/ASM1004_USVL531.gff3
-Cord	Cordnew	/data/Sunhh/wmhifi/analysis/try_graph/data/genomes/cordophanusV1.5.ref.fa	/data/Sunhh/wmhifi/analysis/try_graph/data/annotation/cordophanusV1.5.gff3
