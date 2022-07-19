@@ -13,7 +13,7 @@ while (<>) {
     $tb =~ m!^(\d+)\,(\d+)$! or die "$tb\n";
     push(@cds, [$ta[1], "blk", "CDS", $1, $2, ".", $ta[2], ".", "Parent=$ta[0]"]);
     $cS //= $1; $cS > $1 and $cS = $1;
-    $cE //= $1; $cE < $2 and $cS = $2;
+    $cE //= $2; $cE < $2 and $cE = $2;
   }
   print join("\t", $ta[1], "blk", "gene", $cS, $cE, ".", $ta[2], ".", "ID=$ta[0]-G")."\n";
   print join("\t", $ta[1], "blk", "mRNA", $cS, $cE, ".", $ta[2], ".", "ID=$ta[0];Parent=$ta[0]-G")."\n";
