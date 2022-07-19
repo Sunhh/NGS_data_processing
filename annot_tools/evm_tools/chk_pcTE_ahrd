@@ -1,4 +1,13 @@
-bad	Various-unknown	Unknown protein
+bad	TE-related	Ribonuclease H-like domain containing protein
+bad	TE-related	Reverse transcriptase, putative; 100033-105622
+bad	TE-related	Retrotransposon-like protein
+bad	TE-related	RNA-directed DNA polymerase, eukaryota, reverse transcriptase zinc-binding domain protein
+bad	TE-related	Structural polyprotein
+bad	TE-related	Reverse transcriptase-like protein
+bad	TE-related	Gypsy/ty3 element polyprotein
+bad	TE-related	Gag-Pol polyprotein/retrotransposon
+bad	TE-related	Telomerase reverse transcriptase
+bad	TE-related	Retron-type RNA-directed DNA polymerase
 bad	TE-related	CACTA en-spm transposon protein
 bad	TE-related	CCHC-type domain-containing protein
 bad	TE-related	Enzymatic polyprotein
@@ -18,6 +27,7 @@ bad	TE-related	MuDR family transposase
 bad	TE-related	MuDRA-like transposase
 bad	TE-related	Plant transposase
 bad	TE-related	Polyprotein
+bad	TE-related	Retrovirus-related Pol polyprotein from transposon 17.6
 bad	TE-related	Retroelement pol polyprotein-like
 bad	TE-related	Retrotran_gag_3 domain-containing protein
 bad	TE-related	Retrotrans_gag domain-containing protein
@@ -48,6 +58,7 @@ bad	TE-related	BnaAnng22160D protein
 bad	TE-related	Ulp1-like peptidase
 bad	TE-related	Ribonuclease H
 bad	TE-related	RNase H domain-containing protein
+bad	Various uncharacterized	Unknown protein
 bad	chloroplast	30S ribosomal protein S3, chloroplastic
 bad	chloroplast	50S ribosomal protein L16, chloroplastic
 bad	chloroplast	ATPase_AAA_core domain-containing protein

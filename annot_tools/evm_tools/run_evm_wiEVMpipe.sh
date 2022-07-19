@@ -129,6 +129,7 @@ do
   then
     exe_cmd "$PL_trim2cds ${myArr[3]} > tmp/${myArr[1]}.trim2cds.gff3"
     echo -e "${myArr[1]}\t${myArr[2]}\t$PWD/tmp/${myArr[1]}.trim2cds.gff3\tNA\tNA" > ref_list
+    continue
   fi
   exe_cmd "$PL_trim2cds  ${myArr[3]} > tmp/${myArr[1]}.trim2cds.gff3"
   echo -e "${myArr[1]}\t${myArr[2]}\t$PWD/tmp/${myArr[1]}.trim2cds.gff3\tNA\tNA" >> add_list
