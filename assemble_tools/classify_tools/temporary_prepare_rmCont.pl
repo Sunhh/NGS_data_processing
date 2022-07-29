@@ -43,9 +43,9 @@ my $opref   = shift;
 
 &runCmd("deal_fasta.pl -keep_len 0-$max_len $ctgFa > $opref.tochk.fa");
 if ($opts{'bn_task'} eq 'blastx') {
-  &runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/run_seg_blastn.pl  $opref.tochk2Nt  1000   $opref.tochk.fa  $opts{'bn_db'}  -bn_task $opts{'bn_task'}");
+  &runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/assemble_tools/classify_tools/run_seg_blastn.pl  $opref.tochk2Nt  1000   $opref.tochk.fa  $opts{'bn_db'}  -bn_task $opts{'bn_task'}");
 } else {
-  &runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/classify_tools/run_seg_blastn.pl  $opref.tochk2Nt  10000  $opref.tochk.fa  $opts{'bn_db'}  -bn_task $opts{'bn_task'}");
+  &runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/assemble_tools/classify_tools/run_seg_blastn.pl  $opref.tochk2Nt  10000  $opref.tochk.fa  $opts{'bn_db'}  -bn_task $opts{'bn_task'}");
 }
 {
   # I'd like to keep rDNA as good assembly for contamination removal. 
