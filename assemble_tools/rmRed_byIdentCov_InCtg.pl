@@ -16,7 +16,8 @@ GetOptions(\%opts,
   "maxLen2Chk:i", # 300e3
   "bn_eval:f",    # 1e-10
   "bn_wordsize:i", # 100
-  "bn_ident:f",    # 0 
+  "bn_ident:f",    # 0
+  "skip_long2long!",
   "help!"
 ); 
 
@@ -44,6 +45,7 @@ perl $0 X20.ctg.fa
 -bn_wordsize [$bn_wordsize]
 -bn_eval     [$bn_eval]
 -bn_ident    [$bn_ident]
+-skip_long2long 
 
 HH
 
@@ -119,7 +121,7 @@ my @incl_1; # ([long_id, short_id, long_len, short_len])
 
 # Step 2: Remove long contigs (> $max_seqlen) that are covered by any longer contigs.
 my @incl_2;
-{
+unless ($opts{'skip_long2long'}) {
   open O3,'>',"$fn.long.fa" or &stopErr("[Err] [$fn.long.fa]\n");
   for my $id (grep { defined $seqs{$_} } keys %{$grp{'long'}}) {
     print O3 ">$id\n$seqs{$id}{'seq'}\n";
