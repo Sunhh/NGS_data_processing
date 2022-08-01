@@ -47,7 +47,7 @@ while (<>) {
   $ta[ $opts{'ncol_score'} ] >= (1-$opts{'max_diffR'}) * $ss{$ta[$opts{'ncol_index'}]}{'topScore'} or next; 
   push(@{$ss{$ta[$opts{'ncol_index'}]}{'ele'}}, [ $_, $ta[ $opts{'ncol_score'} ] ]); 
 }
-for my $i1 (sort { $ss{$a} <=> $ss{$b} } keys %ss) {
+for my $i1 (sort { $ss{$a}{'rank'} <=> $ss{$b}{'rank'} } keys %ss) {
   my @a1; 
   for my $e1 (@{$ss{$i1}{'ele'}}) {
     $e1->[1] >= $ss{$i1}{'topScore'} * (1-$opts{'max_diffR'}) or next; 
