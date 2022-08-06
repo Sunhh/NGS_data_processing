@@ -48,7 +48,8 @@ GetOptions(\%opts,
   "getLoc:s", "joinLoc!", # Doing. Could be mRNA/CDS/gene/intron, others may work but not guaranteed. 
   "getJnLoc!", # Doing. 
   
-  "addFaToGff!", # Finished. 
+  "addFaToGff!", # Finished.
+  "rmFaInMakerGff!",
   
   "list_intron!",  # Finished. 
    "intron_byFeat:s", # [CDS], could be 'CDS|Exon'. 
@@ -102,6 +103,8 @@ sub usage {
 #   -sortTopIDBy    ['raw'] raw/lineNum/position. In fact, raw should be equal to lineNum. 
 #----------------------------------------------------------------------------------------------------
 # -addFaToGff       [Boolean] Add -scfFa to the tail of -inGff . 
+#----------------------------------------------------------------------------------------------------
+# -rmFaInMakerGff   [Boolean] Remove fasta sequence information from maker.gff3 file.
 #----------------------------------------------------------------------------------------------------
 # -seqret           [Boolean] Retrieve fasta sequence. Not used yet. 
 #   -extractFeat    [] Could be CDS. Not used yet. 
@@ -270,7 +273,11 @@ if ( $opts{'getJnLoc'} ) {
 } elsif ( $opts{'add_cds_phase'} ) {
   &action_add_cds_phase();
   exit();
+} elsif ( $opts{'rmFaInMakerGff'} ) {
+  &action_rmFaInMakerGff();
+  exit();
 }
+
 
 # Step1. Read in gff file and sequence files. 
 my (%in_gff, %in_seq ); 
@@ -313,6 +320,14 @@ if ( $opts{'sort'} ) {
 ################################################################################
 ############### StepX. action sub-routines here. 
 ################################################################################
+sub action_rmFaInMakerGff {
+  while (<$iFh>) {
+    m!^\s*#+\s*FASTA\s*$! and last;
+    print {$oFh} $_;
+  }
+  close ($iFh);
+}# action_rmFaInMakerGff()
+
 sub action_add_cds_phase {
   my @lines;
   my %m2cds;
