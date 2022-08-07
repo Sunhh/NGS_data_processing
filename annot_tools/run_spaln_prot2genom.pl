@@ -67,7 +67,7 @@ if ( $opts{'needIndex'} ) {
 	my $db_path = abs_path($opts{'db'}); 
 	$aln_dbs eq '' and &stopErr("[Err] No \$ALN_DBS assigned in environment.\n"); 
 	my $tmp_dbID = 'tmpDB0001'; 
-	while ( -e "$tmp_dbID.mfa" ) {
+	while ( -e "$aln_dbs/$tmp_dbID.mfa" ) {
 		$tmp_dbID ++; 
 	}
 	&runCmd("cd $aln_dbs; ln -s $db_path ./$tmp_dbID.mfa; ./makeidx.pl -inp $tmp_dbID.mfa; cd -;", $opts{'printCmd'}); 
