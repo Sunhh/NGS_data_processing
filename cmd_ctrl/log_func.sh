@@ -7,6 +7,7 @@ function exe_cmd {
     echo "[$(date)][CMD_done] $1"
   else
     echo "[$(date)][CMD_err] $1"
+    exit 1
   fi
 }
 
