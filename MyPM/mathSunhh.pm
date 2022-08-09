@@ -866,14 +866,18 @@ sub ins_calc {
 	}
 	my $min_val_number = shift // 1; 
 	my %back; 
-	if ( (! defined $r_arr) or scalar(@$r_arr) < $min_val_number) {
+	my @clean_num;
+	if (defined $r_arr and scalar(@$r_arr) > 0) {
+		@clean_num = grep { !(m!^[+-]?nan$!i) } @$r_arr;
+	}
+	if ( (! defined $r_arr) or scalar(@clean_num) < $min_val_number) {
 		for my $ta (qw/SUM COUNT MEAN MEDIAN Q1 Q3 interval_low interval_high interval_mean interval_median interval_var interval_stdev limit_low limit_high/) {
 			$back{$ta} = ''; 
 		}
 		return \%back; 
 	}
 	my $stat = Statistics::Descriptive::Full->new();
-	$stat->add_data(@$r_arr); 
+	$stat->add_data(@clean_num);
 	$back{'SUM'} = $stat->sum(); 
 	$back{'COUNT'} = $stat->count(); 
 	$back{'MEAN'} = $stat->mean(); 
@@ -888,7 +892,7 @@ sub ins_calc {
 	$stat->clear(); 
 	my @sub_arr; 
 	my $ti = -1; 
-	for my $ta (@$r_arr) {
+	for my $ta (@clean_num) {
 		$ti ++; 
 		$ta >= $back{'interval_low'} and $ta <= $back{'interval_high'} and do { push(@sub_arr, $ta); push(@{$back{'interval_idx'}}, $ti); }; 
 	}
