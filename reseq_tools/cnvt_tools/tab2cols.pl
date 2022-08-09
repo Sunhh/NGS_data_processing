@@ -62,13 +62,13 @@ my %b2dlist;
 	}
 }
 
-my $fh = \*STDOUT; 
+my $fh = \*STDIN; 
 @ARGV and $fh = &openFH($ARGV[0]); 
 
 
 unless ( defined $opts{'noHeader'} ) {
 	my $l = <$fh>; 
-	$l =~ s!^#CHROM\tPOS\t!chr\tpos\t!i; 
+	$l =~ s!^#CHROM\tPOS\t!chr\tpos\t!i or &stopErr("[Err] Bad header of input file: $l\n"); 
 	print STDOUT $l; 
 }
 

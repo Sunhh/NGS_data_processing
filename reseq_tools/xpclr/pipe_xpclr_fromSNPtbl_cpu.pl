@@ -154,7 +154,7 @@ if ( !($opts{'runAfterXPCLR'}) and !($opts{'getCmdXPCLR'}) ) {
 		&fileSunhh::write2file( "$wrk_dir/lis_B", join("\n", map { "$_\t$lis{'grpIDs'}[0]"; } @{$lis{'IDs'}{ $lis{'grpIDs'}[0] }})."\n" ); 
 	}
 	mkdir("$wrk_dir/input/"); 
-	&exeCmd_1cmd("$glob{'prepare_xpclr_input_wiGmP.pl'} $wrk_dir/input/input $fn_snp_wiGmP $wrk_dir/lis_A $wrk_dir/lis_B $fn_chrID2num $opts{'cpuN'}") and &stopErr("[Err] here.\n"); 
+	&exeCmd_1cmd("$glob{'prepare_xpclr_input_wiGmP.pl'} $wrk_dir/input/input $fn_snp_wiGmP $wrk_dir/lis_A $wrk_dir/lis_B \'$fn_chrID2num\' $opts{'cpuN'}") and &stopErr("[Err] here.\n"); 
 }
 
 $glob{'fh_o_wXPCLR'} = &openFH( "$wrk_dir/xpclr_$glob{'windTag'}" , '>' ) if ( !($opts{'stopBeforeXPCLR'}) ) ; 
