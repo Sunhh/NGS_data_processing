@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# [8/9/2022] Compress .log files.
 use strict;
 use warnings;
 use LogInforSunhh;
@@ -17,6 +18,9 @@ for my $dd (@ARGV) {
       -e "$dd/$f1/metaeuk_output/" and &fileSunhh::_rmtree("$dd/$f1/metaeuk_output/");
     }
   }
+  for my $a1 (qw/busco hmmsearch_out metaeuk_out hmmsearch_err metaeuk_err/) {
+    -e "$dd/logs/$a1.log" and &runCmd("bgzip -@ 10 $dd/logs/$a1.log");
+  }
 }
 
 # rm -rf prot_*/run_embryophyta_odb10/hmmer_output/
@@ -24,6 +28,7 @@ for my $dd (@ARGV) {
 # rm -rf genom_*/run_embryophyta_odb10/hmmer_output/
 # rm -rf genom_*/run_embryophyta_odb10/busco_sequences/
 # rm -rf genom_*/run_embryophyta_odb10/metaeuk_output/
-# 
+# gzip genom_*/logs/*.log
+
 
 
