@@ -95,7 +95,7 @@ my @oFiles;
 for my $inFa ( @{$opts{'inFa'}} ) {
 	$inFa = abs_path($inFa); 
 	my $outFile = $opts{'out'} // "$inFa.spaln.gff3";
-	&runCmd("spaln $opts{'para_spaln'} -o $outFile -d$dbID $inFa 2> $outFile.stderr 1> $outFile.stdout", $opts{'printCmd'}); 
+	&runCmd("spaln $opts{'para_spaln'} -o $outFile -d$dbID $inFa 2> $outFile.err 1> $outFile.std", $opts{'printCmd'}); 
 	if ($opts{'cnvt2maker'}) {
 		if ( $opts{'aln_type'} eq 'prot2genome') {
 			&runCmd("perl $pl_cnvt2maker $outFile > $outFile.maker", $opts{'printCmd'}); 
