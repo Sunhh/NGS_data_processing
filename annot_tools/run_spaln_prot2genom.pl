@@ -121,6 +121,3 @@ if ( $opts{'needIndex'} ) {
 	&runCmd("cd $aln_dbs ; rm $idx_str ; cd -", $opts{'printCmd'}); 
 }
 
-sub runCmd {
-	&exeCmd_1cmd($_[0]) and &stopErr("[Err] Failed to run CMD:$_[0]\n");
-}
