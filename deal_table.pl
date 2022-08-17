@@ -1264,7 +1264,7 @@ sub colStat{
 			chomp; 
 			my @temp = &splitL($symbol, $_); 
 			chomp; chomp($temp[-1]); 
-			(defined $temp[$col] and $temp[$col] =~ m/^[\d.\-e]+$/) or next; 
+			(defined $temp[$col] and $temp[$col] =~ m/^[\d.\-eE]+$/) or next; 
 			$useful_count ++; 
 			push(@Data,$temp[$col]); 
 			$total += $temp[$col]; 
