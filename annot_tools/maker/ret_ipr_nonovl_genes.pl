@@ -136,7 +136,7 @@ if ($opts{'getFa'}) {
 }
 unless ($opts{'noClean'}) {
   &fileSunhh::_rmtree("$inf{'genome_pre'}.maker.output/");
-  for my $k2 (qw/maker.ab-err maker.ab-log maker_opts.ab.ctl maker_bopts.ctl maker_evm.ctl maker_exe.ctl maker_opts.ctl temp/) {
+  for my $k2 (qw/maker.ab-err maker.ab-log maker_opts.ab.ctl maker_bopts.ctl maker_evm.ctl maker_exe.ctl maker_opts.ctl temp m2.tsv.wiIPR.0.gff3/) {
     &fileSunhh::_rmtree($k2);
   }
 }
