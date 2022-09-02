@@ -20,7 +20,8 @@ GetOptions(\%opts,
 	"minProt_len:i", 
 	"para_trimal:s", "notTrimmed!", 
 	"sepAln!", 
-	"keep_tmp!", 
+	"keep_tmp!",
+	"musclev5!",
 ); 
 $opts{'startColN'} //= 0; 
 $opts{'startRowN'} //= 1; 
@@ -55,6 +56,8 @@ Format of -tax_list : tax1 \\n tax2 \\n tax3 ...
 -out_aln_pep    [filename] Output .fasta file with protein sequences. This has been trimmed with trimal. 
 
 -sepAln         [Boolean] Separate alignments by each gene. 
+
+-musclev5       [Boolean] The parameters of MUSCLE V 5.1 is different from those of V3.8;
 
 HH
 
@@ -98,8 +101,12 @@ for ( my $i=0; $i<@grp_list; $i++ ) {
 	if ( $opts{'min2max_var'} >= 0 ) {
 		$max <= $min * (1+$opts{'min2max_var'}) or do { &_rmdir($tmp_dir); next GRP; }; 
 	}
-	chdir($tmp_dir); 
-	&exeCmd_1cmd("muscle -in input.fa -out aln.fa") and do { &tsmsg("[Err] Skip bad group [$i]: @$tg\n"); chdir($cwd); &_rmdir($tmp_dir); next GRP;}; 
+	chdir($tmp_dir);
+	if ($opts{'musclev5'}) {
+		&exeCmd_1cmd("muscle -align input.fa -output aln.fa") and do { &tsmsg("[Err] Skip bad group [$i]: @$tg\n"); chdir($cwd); &_rmdir($tmp_dir); next GRP;}; 
+	} else {
+		&exeCmd_1cmd("muscle -in input.fa -out aln.fa") and do { &tsmsg("[Err] Skip bad group [$i]: @$tg\n"); chdir($cwd); &_rmdir($tmp_dir); next GRP;}; 
+	}
 	my %raw_aln_pep = %{ $fs_obj->save_seq_to_hash( 'faFile'=>'aln.fa', 'has_head'=>1 ) }; 
 	for my $tk (keys %raw_aln_pep) { $raw_aln_pep{$tk}{'seq'} =~ s!\s!!g; } 
 
