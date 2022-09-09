@@ -21,10 +21,10 @@ while (<$ofh2>) {
   my @ta=split(/\t/, $_);
   my $is_out = 0;
   if ($ta[2] =~ m!^match$!i) {
-    $ta[8] =~ m!;Name=([^\s;]+)!i or die "[Err] Bad ta8 [$ta[8]]\n";
+    $ta[8] =~ m!;Name=([^\s;]+)!i or die "[Err] Bad ta8 [$ta[8]] in line: $_\n";
     defined $h{$1} and $is_out = 1;
   } elsif ($ta[2] =~ m!^match_part$!i) {
-    $ta[8] =~ m!;Target=([^\s;]+)!i or die "[Err] Bad ta8 [$ta[8]]\n";
+    $ta[8] =~ m!;Target=([^\s;]+)!i or die "[Err] Bad ta8 [$ta[8]] in line: $_\n";
     defined $h{$1} and $is_out = 1;
   }
   $is_out == 1 and print "$_\n";
