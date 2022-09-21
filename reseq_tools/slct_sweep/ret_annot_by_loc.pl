@@ -86,6 +86,9 @@ while (<$inAnnFh>) {
 		push(@ovl_locs, @{$loc2tag{$loc_ID}}); 
 	}
 	if ($is_in == 1) {
+		my (@o1,%h1);
+		for my $a1 (@ovl_locs) { defined $h1{$a1} and next; $h1{$a1} = 1; push(@o1, $a1); }
+		@ovl_locs = @o1;
 		print STDOUT join("\t", $_, join(";", @ovl_locs))."\n"; 
 	}
 }
