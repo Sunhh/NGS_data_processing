@@ -19,7 +19,8 @@ GetOptions(\%opts,
 	"para_samse:s", 
 	"para_bamSort:s", # -@ $cpuN -m $mem_limit 
 	"para_sam2bam:s", 
-	"printCmd!", 
+	"printCmd!",
+	"bgzip!",
 
 	"aln_type:s", # PE
 	"inFq1:s", "inFq2:s", 

@@ -282,7 +282,8 @@ sub bwaPE {
 	$parm{'para_bamSort'} //= ''; # Recommanded : -@ $cpuN -m $mem_limit
 	$parm{'para_sam2bam'} //= ''; 
 	$parm{'oBamPre'} //= 'bwaPEOutPre'; 
-	$parm{'printCmd'} //= 0; 
+	$parm{'printCmd'} //= 0;
+	$parm{'bgzip'}    //= 0;
 
 	%parm = %{ $self->version_samtools( %parm ) }; 
 
@@ -300,9 +301,17 @@ sub bwaPE {
 		$t_step eq 'all' and @steps = (qw/aln_r1 aln_r2 sampe bam_sort bam_index rm_sai rm_rawbam/); 
 		for my $c_step ( @steps ) {
 			if      ( $c_step eq 'aln_r1' ) {
-				&exeCmd_1cmd("$parm{'exe_bwa'} aln $parm{'para_aln'} -f $oSai1 $db $inFq1", $parm{'printCmd'}); 
+				if ( $parm{'bgzip'} ) {
+					&exeCmd_1cmd("bgzip -cd -@ 10 $inFq1 | $parm{'exe_bwa'} aln $parm{'para_aln'} -f $oSai1 $db - ", $parm{'printCmd'}); 
+				} else {
+					&exeCmd_1cmd("$parm{'exe_bwa'} aln $parm{'para_aln'} -f $oSai1 $db $inFq1", $parm{'printCmd'}); 
+				}
 			} elsif ( $c_step eq 'aln_r2' ) {
-				&exeCmd_1cmd("$parm{'exe_bwa'} aln $parm{'para_aln'} -f $oSai2 $db $inFq2", $parm{'printCmd'}); 
+				if ( $parm{'bgzip'} ) {
+					&exeCmd_1cmd("bgzip -cd -@ 10 $inFq2 | $parm{'exe_bwa'} aln $parm{'para_aln'} -f $oSai2 $db - ", $parm{'printCmd'}); 
+				} else {
+					&exeCmd_1cmd("$parm{'exe_bwa'} aln $parm{'para_aln'} -f $oSai2 $db $inFq2", $parm{'printCmd'}); 
+				}
 			} elsif ( $c_step eq 'sampe' ) { 
 				&exeCmd_1cmd("$parm{'exe_bwa'} sampe $parm{'para_sampe'} $db $oSai1 $oSai2 $inFq1 $inFq2 | $parm{'exe_samtools'} view $parm{'para_sam2bam'} -bSh -o $oBamPre.bam -", $parm{'printCmd'}); 
 			} elsif ( $c_step eq 'sampe2bam' ) {
@@ -382,6 +391,7 @@ sub bwaSE {
 	$parm{'para_sam2bam'} //= ''; 
 	$parm{'oBamPre'} //= 'bwaSEOutPre'; 
 	$parm{'printCmd'} //= 0; 
+	$parm{'bgzip'}    //= 0;
 
 	%parm = %{ $self->version_samtools( %parm ) }; 
 
@@ -397,7 +407,11 @@ sub bwaSE {
 		$t_step eq 'all' and @steps = (qw/aln_r1 samse bam_sort bam_index rm_sai rm_rawbam/); 
 		for my $c_step ( @steps ) {
 			if      ( $c_step eq 'aln_r1' ) {
-				&exeCmd_1cmd("$parm{'exe_bwa'} aln $parm{'para_aln'} -f $oSai1 $db $inFq1", $parm{'printCmd'}); 
+				if ( $parm{'bgzip'} ) {
+					&exeCmd_1cmd("bgzip -cd -@ 10 $inFq1 | $parm{'exe_bwa'} aln $parm{'para_aln'} -f $oSai1 $db - ", $parm{'printCmd'});
+				} else {
+					&exeCmd_1cmd("$parm{'exe_bwa'} aln $parm{'para_aln'} -f $oSai1 $db $inFq1", $parm{'printCmd'}); 
+				}
 			} elsif ( $c_step eq 'samse' ) { 
 				&exeCmd_1cmd("$parm{'exe_bwa'} samse $parm{'para_samse'} $db $oSai1 $inFq1 | $parm{'exe_samtools'} view $parm{'para_sam2bam'} -bSh -o $oBamPre.bam -", $parm{'printCmd'}); 
 			} elsif ( $c_step eq 'samse2bam' ) {
