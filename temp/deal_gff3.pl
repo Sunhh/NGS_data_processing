@@ -598,7 +598,7 @@ sub action_getJnLoc {
     print O $_; 
   }
   close O; 
-  open I1,'-|',"perl $0 -getLoc mRNA -inGff $wrk_dir/in.gff" or die; 
+  open I1,'-|',"perl $0 -getLoc mRNA,transcript -inGff $wrk_dir/in.gff" or die; 
   open O1,'>',"$wrk_dir/in.gff.loc_mrna" or die; 
   while (&wantLineC( \*I1 )) {
     if ($. == 1) {
