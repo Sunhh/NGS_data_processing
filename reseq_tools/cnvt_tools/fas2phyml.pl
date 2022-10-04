@@ -49,35 +49,35 @@ print STDOUT "$seq_num $seq_len\n";
 my %used_ID; 
 
 if ($opts{'fmt'} == 0) {
-open O,'>',"$opts{'out_id_list'}" or &stopErr("$!\n"); 
-for (my $i=0; $i<$seq_len; $i+=$charN_per_line) {
-  if ($i==0) {
-    for (@seq_IDs) {
-      my $new_ID = substr($_, 0, $opts{'shrt_len'}); 
-      $new_ID =~ s/[\s();:]/_/g; 
-      my $tk = $new_ID; 
-      my $suff = 'a'; 
-      while ( defined $used_ID{$tk} ) {
-        $suff eq 'z' and &stopErr("[Err] Too many repeat names [$new_ID]\n"); 
-        $suff ++; 
-        $tk = "$new_ID$suff"; 
+  open O,'>',"$opts{'out_id_list'}" or &stopErr("$!\n"); 
+  for (my $i=0; $i<$seq_len; $i+=$charN_per_line) {
+    if ($i==0) {
+      for (@seq_IDs) {
+        my $new_ID = substr($_, 0, $opts{'shrt_len'}); 
+        $new_ID =~ s/[\s();:]/_/g; 
+        my $tk = $new_ID; 
+        my $suff = 'a'; 
+        while ( defined $used_ID{$tk} ) {
+          $suff eq 'z' and &stopErr("[Err] Too many repeat names [$new_ID]\n"); 
+          $suff ++; 
+          $tk = "$new_ID$suff"; 
+        }
+        $used_ID{$tk} = 1; 
+        $new_ID = $tk; 
+        print O "$tk\t$_\n"; 
+        my $l2 = $opts{'shrt_len'}+1; 
+        $new_ID = sprintf("%-${l2}s", $new_ID); 
+        print STDOUT join(' ', $new_ID, @{ &arr_by_seg( substr($fas_hash{$_}{'seq'}, $i, $charN_per_line), 10 ) })."\n"; 
       }
-      $used_ID{$tk} = 1; 
-      $new_ID = $tk; 
-      print O "$tk\t$_\n"; 
-      my $l2 = $opts{'shrt_len'}+1; 
-      $new_ID = sprintf("%-${l2}s", $new_ID); 
-      print STDOUT join(' ', $new_ID, @{ &arr_by_seg( substr($fas_hash{$_}{'seq'}, $i, $charN_per_line), 10 ) })."\n"; 
+      print STDOUT "\n"; 
+      next; 
+    }
+    for (@seq_IDs) {
+      print STDOUT join(' ', ' ' x 10, @{ &arr_by_seg( substr($fas_hash{$_}{'seq'}, $i, $charN_per_line), 10 ) })."\n"; 
     }
     print STDOUT "\n"; 
-    next; 
   }
-  for (@seq_IDs) {
-    print STDOUT join(' ', ' ' x 10, @{ &arr_by_seg( substr($fas_hash{$_}{'seq'}, $i, $charN_per_line), 10 ) })."\n"; 
-  }
-  print STDOUT "\n"; 
-}
-close (O); 
+  close (O); 
 
 }
 sub arr_by_seg {
