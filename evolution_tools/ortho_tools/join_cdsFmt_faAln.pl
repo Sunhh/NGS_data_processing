@@ -27,7 +27,7 @@ my $inFas = shift;
 my %s1=%{$fs->save_seq_to_hash("faFile"=>$inFas)};
 my (@tax, %alnID_inTax, %geneID2alnID);
 for my $k1 (sort { $s1{$a}{'Order'} <=> $s1{$b}{'Order'} } keys %s1) {
-  $s1{$k1}{'head'} =~ m!^(\S+)\.(\d+)\s\[(\S+)\](\s\d+)?\s*$! or die "[Err] k1 [$k1] header: $s1{$k1}{'head'}\n";
+  $s1{$k1}{'head'} =~ m!^(\S+)\.(\d+)\s(?:\S+\s+)*\[(\S+)\](\s\d+)?\s*$! or die "[Err] k1 [$k1] header: $s1{$k1}{'head'}\n";
   my ($taxID, $gRank, $geneID) = ($1, $2, $3);
   $s1{$k1}{'seq'} =~ s!\s!!g;
   defined $alnID_inTax{$taxID} or push(@tax, $taxID);
