@@ -26,8 +26,13 @@ while (<>) {
     push(@{$rec{$mID}{'mLine'}}, [@ta]);
     push(@{$rec{$mID}{'str'}}, $ta[6]);
     $rec{$mID}{'cLine'} //= [];
-    $ta[8] =~ m!(?:^|;\s*)Parent=([^\s;]+)!i or die "mrna:$ta[8]\n";
-    $rec{$mID}{'gID'} = $1;
+    if ($ta[8] =~ m!(?:^|;\s*)Parent=([^\s;]+)!i) {
+      $rec{$mID}{'gID'} = $1;
+    } elsif (!defined $rec{$mID}{'gID'}) {
+      $rec{$mID}{'gID'} = "${mID}_hsG";
+    } else {
+      die "mrna:$ta[8]\n";
+    }
   } elsif ($ta[2] =~ m!^CDS$!i) {
     $ta[8] =~ m!(?:^|;\s*)Parent=([^\s;]+)!i or die "cds:$ta[8]\n";
     my $c_mID = $1;
