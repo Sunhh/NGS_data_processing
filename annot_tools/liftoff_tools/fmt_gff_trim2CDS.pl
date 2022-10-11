@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 # [3/26/2022] There are genes/mRNAs with exons on different chromosomes. I want to choose only one with longest CDS as representative in cross-species analysis.
 # [5/24/2022] Ignore those mRNAs with conflicting strands.
+# [10/11/2022] Pad parent IDs of mRNA if they are missing.
 use strict;
 use warnings;
 
@@ -80,6 +81,10 @@ for my $mID (sort {$rec{$a}{'rank'} <=> $rec{$b}{'rank'}} keys %rec) {
       last;
     }
     scalar(@mLine) == 0 and do { @mLine = ($best_chrID, "fit", "mRNA", $chrInfo{$best_chrID}[0], $chrInfo{$best_chrID}[1], ".", $chrInfo{$best_chrID}[2], ".", "ID=$mID;Parent=$gID"); };
+    # Add parent information if it doesn't exist;
+    unless ($mLine[8] =~ m!Parent=!) {
+      $mLine[8] =~ s!(ID=[^;\s]+)!${1};Parent=$gID! or &stopErr("[Err] Failed to pad Parent ID to line: @mLine\n");
+    }
     @gLine[3,4] = ($chrInfo{$best_chrID}[0], $chrInfo{$best_chrID}[1]);
     @mLine[3,4] = ($chrInfo{$best_chrID}[0], $chrInfo{$best_chrID}[1]);
   }
