@@ -25,7 +25,8 @@ while (<>) {
   my @ta=split(/\t/, $_);
   my (%l_cont);
   for my $tb (@ta[2..$#ta]) {
-    $tb =~ s!^([^\s:]{1,5}):!! or die "|$tb|\n";
+    # $tb =~ s!^([^\s:]{1,5}):!! or die "|$tb|\n";
+    $tb =~ s!^([^\s:]+):!! or die "Bad name |$tb|\n";
     my $sp_tag = $1;
     defined $tag2spec{$sp_tag} or die "bad tag [$sp_tag] in $tb\n";
     my $sp_txt = $tag2spec{$sp_tag};
