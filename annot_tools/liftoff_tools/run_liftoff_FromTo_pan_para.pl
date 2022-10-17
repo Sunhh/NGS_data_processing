@@ -3,6 +3,7 @@
 # [3/22/2022] The output gff3 of liftoff needs to be filtered because there are still gene models with gene coverage lower than required.
 #             Strand-specific overlapping has been fixed.
 # [3/23/2022] I decide not to filter coverage in this program, but I'll output the coverage bases in the output intersection file.
+# [10/11/2022] Duplicate input files of Liftoff to avoid using of a single file by multiple Liftoff processes.
 use strict;
 use warnings;
 use LogInforSunhh;
@@ -64,8 +65,16 @@ $dta{'out_tbl'}   = "$dta{'out_dir'}/mapCDS.$dta{'from_tag'}.to.$dta{'to_tag'}.t
 $dta{'out_unmap'} = "$dta{'out_dir'}/mapCDS.$dta{'from_tag'}.to.$dta{'to_tag'}.unmapped";
 $dta{'toRM'} = [];
 
-&runCmd("$dta{'exe_liftoff'} $dta{'para_liftoff'} -dir $dta{'tmp_dir'} -g $dta{'from_gff3'} -o $dta{'out_gff3'} -u $dta{'out_unmap'} $dta{'to_fas'} $dta{'from_fas'}");
-&runCmd("$dta{'pl_cntR2Q'}   $dta{'from_gff3'}  $dta{'to_gff3'}  $dta{'out_gff3'} > $dta{'out_tbl'}");
+# Copy input files of Liftoff to 'tmp_dir' to avoid conflicts between different processes.
+&fileSunhh::_copy($dta{'from_gff3'}, "$dta{'tmp_dir'}/from.gff3");
+&fileSunhh::_copy($dta{'from_fas'}, "$dta{'tmp_dir'}/from.fas");
+&fileSunhh::_copy($dta{'to_gff3'}, "$dta{'tmp_dir'}/to.gff3");
+&fileSunhh::_copy($dta{'to_fas'}, "$dta{'tmp_dir'}/to.fas");
+
+# &runCmd("$dta{'exe_liftoff'} $dta{'para_liftoff'} -dir $dta{'tmp_dir'} -g $dta{'from_gff3'} -o $dta{'out_gff3'} -u $dta{'out_unmap'} $dta{'to_fas'} $dta{'from_fas'}");
+&runCmd("$dta{'exe_liftoff'} $dta{'para_liftoff'} -dir $dta{'tmp_dir'} -g $dta{'tmp_dir'}/from.gff3 -o $dta{'out_gff3'} -u $dta{'out_unmap'} $dta{'tmp_dir'}/to.fas $dta{'tmp_dir'}/from.fas");
+# &runCmd("$dta{'pl_cntR2Q'}   $dta{'from_gff3'}  $dta{'to_gff3'}  $dta{'out_gff3'} > $dta{'out_tbl'}");
+&runCmd("$dta{'pl_cntR2Q'}   $dta{'tmp_dir'}/from.gff3  $dta{'tmp_dir'}/to.gff3  $dta{'out_gff3'} > $dta{'out_tbl'}");
 push(@{$dta{'toRM'}}, $dta{'tmp_dir'});
 
 for (@{$dta{'toRM'}}) {

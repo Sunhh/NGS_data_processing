@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 # [3/23/2022] From liftoff output gff3 file, retrieve old mRNA ID, new mRNA ID, coverage_by_liftoff, cds length on target genome, strand on target genome.
+# [10/11/2022] Allow other sections between "ID" and "Parent" in gff3 $ta[8] field.
 use strict;
 use warnings;
 use fileSunhh;
@@ -24,7 +25,7 @@ while (<>) {
     defined $g{$tgt_geneID} and die "repeat G $tgt_geneID: $ta[8]\n";
     $g{$tgt_geneID} = [$ref_geneID, $lo_cov, $lo_ident, $lo_cpN];
   } elsif ($ta[2] =~ m!^mRNA$!i) {
-    $ta[8] =~ m!^ID=([^\s;]+);Parent=([^\s;]+);.*extra_copy_number=(\d+)(?:;|$)! or die "bad mrna ta8: $_\n";
+    $ta[8] =~ m!^ID=([^\s;]+);(?:[^\s;]+=[^\s;]+;)*Parent=([^\s;]+);.*extra_copy_number=(\d+)(?:;|$)! or die "bad mrna ta8: $_\n";
     my ($tgt_mrnaID, $tgt_geneID, $lo_cpN) = ($1, $2, $3);
     my $ref_mrnaID = $tgt_mrnaID;
     if ($lo_cpN > 0) {
