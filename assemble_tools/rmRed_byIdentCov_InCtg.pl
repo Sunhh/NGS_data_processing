@@ -17,14 +17,16 @@ GetOptions(\%opts,
   "bn_eval:f",    # 1e-10
   "bn_wordsize:i", # 100
   "bn_ident:f",    # 0
+  "bn_wordsizeL2L:i", # 1000
   "skip_long2long!",
   "help!"
 ); 
 
 $opts{'min_ident'} //= 0.99; 
 $opts{'min_cover'} //= 0.99; 
-$opts{'maxLen2Chk'}  //= 300e3; 
-$opts{'bn_wordsize'} //= 100; 
+$opts{'maxLen2Chk'}     //= 300e3; 
+$opts{'bn_wordsize'}    //= 100; 
+$opts{'bn_wordsizeL2L'} //= 1e3;
 $opts{'bn_eval'}     //= 1e-10; 
 $opts{'bn_ident'}    //= 0; 
 
@@ -32,7 +34,8 @@ my $min_identR = $opts{'min_ident'};
 my $min_covR   = $opts{'min_cover'}; 
 
 my $max_seqlen  = $opts{'maxLen2Chk'}; # 300kb is a good length maximum to remove redundancy. 
-my $bn_wordsize = $opts{'bn_wordsize'}; 
+my $bn_wordsize = $opts{'bn_wordsize'};
+my $bn_wordsizeL2L = $opts{'bn_wordsizeL2L'};
 my $bn_eval     = $opts{'bn_eval'}; 
 my $bn_ident    = $opts{'bn_ident'}; 
 
@@ -45,6 +48,7 @@ perl $0 X20.ctg.fa
 -bn_wordsize [$bn_wordsize]
 -bn_eval     [$bn_eval]
 -bn_ident    [$bn_ident]
+-bn_wordsizeL2L [$bn_wordsizeL2L]
 -skip_long2long 
 
 HH
@@ -134,7 +138,7 @@ unless ($opts{'skip_long2long'}) {
   }
   my $cmd = "blastn -task megablast ";
   $cmd .= " -outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen sstrand' ";
-  $cmd .= " -num_threads 50 -word_size $bn_wordsize -perc_identity $bn_ident -evalue $bn_eval ";
+  $cmd .= " -num_threads 50 -word_size $bn_wordsizeL2L -perc_identity $bn_ident -evalue $bn_eval ";
   $cmd .= " -max_hsps 5 -max_target_seqs 5 -dust no ";
   $cmd .= " -db $fn.long.fa ";
   $cmd .= " -query $fn.long.fa ";
