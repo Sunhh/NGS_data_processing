@@ -160,7 +160,7 @@ Usage: $0  <fasta_file | STDIN>
   -replaceIDadd       [Boolean] keep old ID in head line if given. 
 
   -replaceSeq         [Boolean] Replace fasta sequence
-  -replaceSeqList     [filename]
+  -replaceSeqList     [filename] In table with 'seqID, start, end, sequence_to_use'.
 
   -chop_seq           [Boolean] Chop each sequences to small pieces. 
   -chop_len           [100] Length of small pieces. 
