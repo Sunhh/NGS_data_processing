@@ -160,7 +160,7 @@ Usage: $0  <fasta_file | STDIN>
   -replaceIDadd       [Boolean] keep old ID in head line if given. 
 
   -replaceSeq         [Boolean] Replace fasta sequence
-  -replaceSeqList     [filename] In table with 'seqID, start, end, sequence_to_use'.
+  -replaceSeqList     [filename] In table with 'seqID, start, end, new_seqID, sequence_to_use'.
 
   -chop_seq           [Boolean] Chop each sequences to small pieces. 
   -chop_len           [100] Length of small pieces. 
@@ -778,8 +778,10 @@ sub replaceSeq {
   my %old2new;
   while (<$lisFh>) {
     chomp; m/^\s*$/ and next; 
-    my @ta = split(/\t/, $_); # (seqID, start, end, sequence_to_use)
-    push(@{$old2new{$ta[0]}}, [@ta[1,2,3]]);
+    my @ta = split(/\t/, $_); # (seqID, start, end, new_seqID, sequence_to_use)
+    $ta[3] //= $ta[0];
+    $ta[4] //= '';
+    push(@{$old2new{$ta[0]}}, [@ta[1,2,3,4]]);
   }
   close($lisFh); 
   for (keys %old2new) {
@@ -799,12 +801,15 @@ sub replaceSeq {
         next;
       }
       $ss{$k1}{'seq'} =~ s!\s!!g;
+      my $newID;
       for my $a1 (@{$old2new{$k1}}) {
-        substr($ss{$k1}{'seq'}, $a1->[0]-1, $a1->[1]-$a1->[0]+1) = $a1->[2];
+        $a1->[3] //= '';
+        substr($ss{$k1}{'seq'}, $a1->[0]-1, $a1->[1]-$a1->[0]+1) = $a1->[3];
+        $newID //= $a1->[2];
       }
       $ss{$k1}{'seq'} =~ s!(.{60})!$1\n!g;
       chomp($ss{$k1}{'seq'});
-      print STDOUT ">$ss{$k1}{'head'}\n$ss{$k1}{'seq'}\n";
+      print STDOUT ">$newID\n$ss{$k1}{'seq'}\n";
     }
   }
 }#End sub replaceID
