@@ -50,6 +50,7 @@
 ### 2022-01-19 Change the meaning of '-frame', and use -blastx_frame to fit blastx and transeq.
 ###   Without -blastx_frame, it fits my deal_gff3.pl output CDS.
 ###   With -blastx_frame, it fits the blastx and transeq output.
+### 2022-10-26 Add -replaceSeq to change sequence according to a list.
 
 use strict;
 use warnings; 
@@ -158,6 +159,9 @@ Usage: $0  <fasta_file | STDIN>
   -replaceIDcol       [0,1] "oldID_col,newID_col"
   -replaceIDadd       [Boolean] keep old ID in head line if given. 
 
+  -replaceSeq         [Boolean] Replace fasta sequence
+  -replaceSeqList     [filename] In table with 'seqID, start, end, new_seqID, sequence_to_use'.
+
   -chop_seq           [Boolean] Chop each sequences to small pieces. 
   -chop_len           [100] Length of small pieces. 
   -chop_step          [chop_len] Distance of two closest pieces' start position. 
@@ -212,7 +216,8 @@ GetOptions(\%opts,"help!",
 	"keep_len:s", 
 	"baseCount!", "baseCountByWind:s", 
 	"fa2fq!", "fa2fqQChar:s", "fq2fa!", 
-	"replaceID!", "replaceIDlist:s", "replaceIDcol:s", "replaceIDadd!", 
+	"replaceID!", "replaceIDlist:s", "replaceIDcol:s", "replaceIDadd!",
+        "replaceSeq!", "replaceSeqList:s",
 	"reorderByList:s", 
 	"chop_seq!", "chop_len:i", "chop_step:i", "chop_min:i", "chop_noPos!", "chop_info!", "chop_agp!", 
 	"joinR12!", 
@@ -291,6 +296,7 @@ $opts{'frame'} //= 1;
 &fa2fq() if ( $opts{fa2fq} ); 
 &fq2fa() if ( $opts{fq2fa} ); 
 &replaceID() if ( $opts{'replaceID'} ); 
+&replaceSeq() if ( $opts{'replaceSeq'} ); 
 &reorderSeq($opts{'reorderByList'}) if ( defined $opts{'reorderByList'} ); 
 &chop_seq() if ( $opts{'chop_seq'} ); 
 &joinR12() if ( $opts{'joinR12'} ); 
@@ -737,7 +743,7 @@ sub reorderSeq {
 
 
 # 2015-02-26
-#	"replaceID!", "replaceIDlist:s", "replaceIDcol:s", 
+#  "replaceID!", "replaceIDlist:s", "replaceIDcol:s", 
 sub replaceID {
 	my $lisFh = &openFH( $opts{'replaceIDlist'}, '<' ); 
 	$opts{'replaceIDcol'} = $opts{'replaceIDcol'} // '0,1'; 
@@ -764,6 +770,48 @@ sub replaceID {
 			print STDOUT ">$relHR->{'head'}\n$relHR->{'seq'}\n"; 
 		}
 	}
+}#End sub replaceID
+
+# 10/26/2022
+sub replaceSeq {
+  my $lisFh = &openFH( $opts{'replaceSeqList'}, '<' ); 
+  my %old2new;
+  while (<$lisFh>) {
+    chomp; m/^\s*$/ and next; 
+    my @ta = split(/\t/, $_); # (seqID, start, end, new_seqID, sequence_to_use)
+    $ta[3] //= $ta[0];
+    $ta[4] //= '';
+    push(@{$old2new{$ta[0]}}, [@ta[1,2,3,4]]);
+  }
+  close($lisFh); 
+  for (keys %old2new) {
+    @{$old2new{$_}} = sort { $a->[0]<=>$b->[0] } @{$old2new{$_}};
+    for (my $i=1; $i<@{$old2new{$_}}; $i++) {
+      $old2new{$_}[$i][0] > $old2new{$_}[$i-1][1] or &stopErr("[Err] [replaceSeq] Overlapped regions: $old2new{$_}[$i][0] > $old2new{$_}[$i-1][1]\n");
+    }
+    @{$old2new{$_}} = reverse(@{$old2new{$_}});
+  }
+  my $fs_obj = fastaSunhh->new();
+  for my $fh ( @InFp ) {
+    my %ss = %{$fs_obj->save_seq_to_hash('faFh'=>$fh)};
+    for my $k1 (sort {$ss{$a}{'Order'} <=> $ss{$b}{'Order'}} keys %ss) {
+      unless (defined $old2new{$k1}) {
+        chomp($ss{$k1}{'seq'});
+        print STDOUT ">$ss{$k1}{'head'}\n$ss{$k1}{'seq'}\n";
+        next;
+      }
+      $ss{$k1}{'seq'} =~ s!\s!!g;
+      my $newID;
+      for my $a1 (@{$old2new{$k1}}) {
+        $a1->[3] //= '';
+        substr($ss{$k1}{'seq'}, $a1->[0]-1, $a1->[1]-$a1->[0]+1) = $a1->[3];
+        $newID //= $a1->[2];
+      }
+      $ss{$k1}{'seq'} =~ s!(.{60})!$1\n!g;
+      chomp($ss{$k1}{'seq'});
+      print STDOUT ">$newID\n$ss{$k1}{'seq'}\n";
+    }
+  }
 }#End sub replaceID
 
 # 2014-03-18
