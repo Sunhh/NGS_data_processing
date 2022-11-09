@@ -45,12 +45,12 @@ my $stepL = int($segL/2); $stepL < 1 and $stepL = 1;
   # my $cmd = "blastn -query $opref.seg.fa -out $opref.seg.toDb.bn6 -db $dbfn -task dc-megablast ";
   my $cmd = '';
   if ($opts{'bn_task'} eq 'blastx') {
-    $cmd = "diamond blastx --masking none -e 1e-5 -k 50 --max-hsps 50 -p 80 ";
+    $cmd = "diamond blastx --masking none -e 1e-5 -k 50 --max-hsps 50 -p 60 ";
     $cmd .= " -f 6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen qstrand staxids sscinames sskingdoms stitle ";
     $cmd .= " -q $opref.seg.fa -d $dbfn -o $opref.seg.toDb.bn6"; # I keep the file name although it should be .bx6.
   } else {
     $cmd = "blastn -query $opref.seg.fa -out $opref.seg.toDb.bn6 -db $dbfn -task $opts{'bn_task'} ";
-    $cmd .= " -evalue 1e-5 -num_threads 80 -max_hsps 20 -max_target_seqs 20  ";
+    $cmd .= " -evalue 1e-5 -num_threads 60 -max_hsps 20 -max_target_seqs 20  ";
     $cmd .= " -outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen sstrand staxids sscinames sskingdoms stitle' ";
   }
   &runCmd($cmd); push(@torm, "$opref.seg.toDb.bn6");
