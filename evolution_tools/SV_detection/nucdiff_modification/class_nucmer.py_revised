@@ -71,13 +71,12 @@ class Nucmer:
            
 
        
-        call_line_list=[]
         if filter_opt == "hs_none":
           # [HS: 12/16/2022. Set delta-fitler parameter as 'hs_none' to stop using delta-fitler]
-          call_line_list.append("cp")
-          call_line_list.append(self.delta_file)
-          call_line_list.append(self.prefix+'.filter')
+          call_line = 'cp ' + self.delta_file + ' ' + self.prefix + '.filter'
+          subprocess.check_call(call_line, shell=True)
         else:
+          call_line_list=[]
           f=open(self.prefix+'.filter','w')
           call_line_list.append('delta-filter')
           for entry in filter_opt.split(' '):
@@ -87,13 +86,11 @@ class Nucmer:
 
           # call_line_list.append(self.prefix+'.delta')
           call_line_list.append(self.delta_file) # [HS: 6/22/2022. Fix this bug to make "--delta_file" option work well.]
-
-        try:
-            subprocess.check_call(call_line_list,stdout=f)
-        except subprocess.CalledProcessError:
-            sys.exit('\nCould not run delta-filter. Please, check delta-filter input parameters values.')        
-        
-        f.close()
+          try:
+              subprocess.check_call(call_line_list, stdout=f)
+          except subprocess.CalledProcessError:
+              sys.exit('\nCould not run delta-filter. Please, check delta-filter input parameters values.')        
+          f.close()
 
                 
 
