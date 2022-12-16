@@ -28,6 +28,7 @@ GetOptions(\%opts,
   "bestModel:s",   # longCDS
   "keepTmp!",
   "no_est!",
+  "onlyLiftoff!",
   "help!",
 );
 
@@ -47,6 +48,7 @@ my $htxt = <<HHH;
 #   -keepTmp           [Boolean]
 #
 #   -no_est            [Boolean] No est alignments are provided.
+#   -onlyLiftoff       [Boolean] Only run Liftoff.
 ####################################################################################################
 HHH
 
@@ -115,6 +117,10 @@ for (my $i=0; $i<@fn_add; $i++) {
   $cmd_1 = "$par{'pl_ret_good_model'} $wdir/on.$i.ori.gff3 > $wdir/on.$i.good.gff3";
   &runCmd($cmd_1);
   &fileSunhh::write2file("$wdir/gff_list", "$wdir/on.$i.good.gff3\n", '>>');
+}
+
+if ($opts{'onlyLiftoff'}) {
+  exit();
 }
 
 # Section: Find the best gene model if there are overlapping ones.
