@@ -3,7 +3,8 @@
 use strict; 
 use warnings; 
 BEGIN {
-	use lib "/usr/local/share/perl5/"; 
+  use lib "/usr/local/share/perl5/";
+  use lib "/usr/local/lib/perl5/site_perl/5.24.2/";
 }
 use LogInforSunhh; 
 use Parallel::ForkManager; 
