@@ -1,5 +1,6 @@
 #!/bin/python
 # [6/22/2022]: HS modified from RaGoo 1.2 script sam2delta.py, adding --ref_fa and --qry_fa to assign fasta files path.
+# [1/10/2023]: HS revised cigar-related output for reverse complement (is_rc) alignments.
 import argparse
 from collections import defaultdict
 
@@ -152,6 +153,8 @@ def write_delta(in_alns, in_file_name, f1, f2):
                 # Continue with the cigar string
                 offsets = []
                 cigar = i.parsed_cigar
+                if i.is_rc:
+                  cigar = cigar[::-1]
                 if cigar[0][-1] == 'S' or cigar[0][-1] == 'H':
                     cigar = cigar[1:-1]
                 else:
