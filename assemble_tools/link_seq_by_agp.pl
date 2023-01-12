@@ -14,8 +14,10 @@ GetOptions(\%opts,
 	"noAddRest!", 
 	"Nchar:s", "Uchar:s", 
 ); 
-$opts{'Nchar'} //= 'n'; 
-$opts{'Uchar'} //= 'n'; 
+$opts{'Nchar'} //= 'n';
+$opts{'Uchar'} //= 'n';
+length($opts{'Nchar'}) == 1 or &stopErr("[Err] -Nchar must be assigned with a character.\n");
+length($opts{'Uchar'}) == 1 or &stopErr("[Err] -Uchar must be assigned with a character.\n");
 
 my $help_txt = <<HH; 
 
