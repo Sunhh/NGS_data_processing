@@ -59,6 +59,8 @@ while (<$fhGff>) {
     $refInf{'pos'} = $ta[3];
     $refInf{'base'} = $h8->{'ref_bases'};
     $qryInf{'base'} = $h8->{'query_bases'};
+    ( defined $refInf{'base'} and $refInf{'base'} ne '' ) or &stopErr("[Err] No ref_bases found: $_\n");
+    ( defined $qryInf{'base'} and $qryInf{'base'} ne '' ) or &stopErr("[Err] No query_bases found: $_\n");
     # query_dir=-1 doesn't change base information
   } elsif ($h8->{'Name'} =~ m!^insertion$!i) {
     $refInf{'pos'} = $ta[3];
