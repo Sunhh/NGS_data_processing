@@ -49,6 +49,10 @@ print STDOUT <<'HHHS';
 ##INFO=<ID=IMPRECISE,Number=0,Type=Flag,Description="Imprecise structural variation">
 HHHS
 
+for (sort keys %refSeq) {
+  print STDOUT "##contig=<ID=$_,length=$refSeq{$_}{'len'}>\n";
+}
+
 print STDOUT join("\t", "#CHROM", qw/POS ID REF ALT QUAL INFO FORMAT/, $samID)."\n";
 while (<$fhGff>) {
   chomp;
