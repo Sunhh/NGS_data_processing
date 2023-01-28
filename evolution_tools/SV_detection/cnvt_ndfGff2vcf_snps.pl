@@ -47,13 +47,15 @@ print STDOUT <<'HHHS';
 ##INFO=<ID=ALGORITHMS,Number=.,Type=String,Description="Source algorithms">
 ##INFO=<ID=END,Number=1,Type=Integer,Description="End position of the variant described in this record">
 ##INFO=<ID=IMPRECISE,Number=0,Type=Flag,Description="Imprecise structural variation">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype quality">
 HHHS
 
 for (sort keys %refSeq) {
   print STDOUT "##contig=<ID=$_,length=$refSeq{$_}{'len'}>\n";
 }
 
-print STDOUT join("\t", "#CHROM", qw/POS ID REF ALT QUAL INFO FORMAT/, $samID)."\n";
+print STDOUT join("\t", "#CHROM", qw/POS ID REF ALT QUAL FILTER INFO FORMAT/, $samID)."\n";
 while (<$fhGff>) {
   chomp;
   m!^\s*#! and next;
