@@ -114,7 +114,7 @@ if ( defined $opts{'outMerge'} ) {
 }
 if ( $opts{'needIndex'} ) {
 	my @idx_files; 
-	for my $suff (qw/.mfa .seq .idx .grp .ent .bkn .bkp/) {
+	for my $suff (qw/.mfa .seq .idx .grp .ent .bkn .bkp .odr/) {
 		push(@idx_files, "${dbID}$suff"); 
 	}
 	my $idx_str = join(' ', @idx_files); 
