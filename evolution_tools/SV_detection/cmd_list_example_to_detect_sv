@@ -13,7 +13,7 @@ anchorwave proali -i ref.cds.gff3 -r ref.chr.fa -a  rCds_toQryGenom.sam -as ref.
 perl /home/Sunhh/tools/github/NGS_data_processing/software_fix/anchorwave/fix_awMAF.pl align1.maf > align1_fix.maf
 maf-convert sam -r "ID:qry" -f ref.chr.dict align1_fix.maf > align1_fix.sam
 maf-convert blasttab align1_fix.maf > align1_fix.maf.blasttab
-perl /home/Sunhh/tools/github/NGS_data_processing/evolution_tools/SV_detection/sam2delta.py align1_fix.sam --ref_fa ref.chr.fa --qry_fa qry.chr.fa
+perl /home/Sunhh/tools/github/NGS_data_processing/evolution_tools/SV_detection/sam2delta.py align1_fix.sam --ref_fa /abs_path_to/ref.chr.fa --qry_fa /abs_path_to/qry.chr.fa
 
 nucdiff --proc 10 --filter_opt hs_none --delta_file align1_fix.sam.delta ref.chr.fa qry.chr.fa ./ qry_awSV
 
