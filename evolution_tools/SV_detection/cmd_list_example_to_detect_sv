@@ -17,3 +17,13 @@ perl /home/Sunhh/tools/github/NGS_data_processing/evolution_tools/SV_detection/s
 
 nucdiff --proc 10 --filter_opt hs_none --delta_file align1_fix.sam.delta ref.chr.fa qry.chr.fa ./ qry_awSV
 
+### Make VCF files.
+perl /home/Sunhh/tools/github/NGS_data_processing/evolution_tools/SV_detection/cnvt_ndfGff2vcf_snps.pl ref.chr.fa qry.chr.fa qrySampleID qry_awSV_ref_snps.gff > qry_awSV_ref_snps.vcf
+perl /home/Sunhh/tools/github/NGS_data_processing/evolution_tools/SV_detection/cnvt_ndfGff2vcf_struct.pl ref.chr.fa qry.chr.fa qrySampleID qry_awSV_ref_struct.gff > qry_awSV_ref_struct.vcf
+
+
+### Summarize SVs
+cat qry_awSV_ref_snps.vcf | perl /home/Sunhh/tools/github/NGS_data_processing/evolution_tools/SV_detection/summary_svs.pl -small_indel_max 19 > qry_awSV_ref_snps.vcf.summary
+cat qry_awSV_ref_struct.vcf | perl /home/Sunhh/tools/github/NGS_data_processing/evolution_tools/SV_detection/summary_svs.pl -small_indel_max 19 > qry_awSV_ref_struct.vcf.summary
+
+

@@ -87,7 +87,7 @@ while (<>) {
         &add_small_del($len_ref);
         &add_small_ins($len_alt);
       }
-      if ($ta[7] =~ m!(SVTYPE=[^;]+)! and $ta[7] !~ m!SVTYPE=(?:DEL|SUB)\s*(?:;|$)!) {
+      if ($ta[7] =~ m!(SVTYPE=[^;]+)! and $ta[7] !~ m!SVTYPE=(?:DEL|SUB|CPX)\s*(?:;|$)!) {
         warn "[Wrn] Expected DEL/SUB SV at [$ta[0] $ta[1]] [refLen=$len_ref altLen=$len_alt] $1\n";
       }
     } elsif ($len_ref < $len_alt) {
@@ -97,13 +97,13 @@ while (<>) {
         &add_small_del($len_ref);
         &add_small_ins($len_alt);
       }
-      if ($ta[7] =~ m!(SVTYPE=[^;]+)! and $ta[7] !~ m!SVTYPE=(?:INS|SUB)\s*(?:;|$)!) {
+      if ($ta[7] =~ m!(SVTYPE=[^;]+)! and $ta[7] !~ m!SVTYPE=(?:INS|SUB|CPX)\s*(?:;|$)!) {
         warn "[Wrn] Expected INS/SUB SV at [$ta[0] $ta[1]] [refLen=$len_ref altLen=$len_alt] $1\n";
       }
     } else {
       &add_small_del($len_ref);
       &add_small_ins($len_alt);
-      if ($ta[7] =~ m!(SVTYPE=[^;]+)! and $ta[7] !~ m!SVTYPE=(?:SUB)\s*(?:;|$)!) {
+      if ($ta[7] =~ m!(SVTYPE=[^;]+)! and $ta[7] !~ m!SVTYPE=(?:SUB|CPX)\s*(?:;|$)!) {
         warn "[Wrn] Expected SUB SV at [$ta[0] $ta[1]] [refLen=$len_ref altLen=$len_alt] $1\n";
       }
     }
