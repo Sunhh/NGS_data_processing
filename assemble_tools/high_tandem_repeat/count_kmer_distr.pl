@@ -40,7 +40,7 @@ $opts{'window_len'} //= 10e3;
 $opts{'kmer_len'}   //= 3;
 $opts{'out_dir'}    //= 'out';
 
--e $opts{'out_dir'} or -l $opts{'out_dir'} or mkdir($opts{'out_dir'}, 0755);
+-e $opts{'out_dir'} or -l $opts{'out_dir'} or system("mkdir -p $opts{'out_dir'}");
 
 $opts{'kmer_len'} > 0 or &stopErr("[Err] -kmer_len should be larger than 0\n");
 $opts{'window_len'} >= $opts{'kmer_len'} or &stopErr("[Err] -window_len should not be smaller than -kmer_len\n");
