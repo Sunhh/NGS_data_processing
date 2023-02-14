@@ -60,7 +60,7 @@ if (defined $opts{'fn_grpList'}) {
   }
   my (@a3, @a4);
   for (my $i=0; $i<@tax2gene; $i++) {
-    $taxID_txt[$i] eq '' and next;
+    (defined $taxID_txt[$i] and $taxID_txt[$i] ne '') or next;
     #for my $g1 (@{$tax2gene[$i]}) {
     #  defined $geneID2alnID{$taxID_txt[$i]}{$g1} or die "[Err] No alnID found for [$g1]\n";
     #}
@@ -71,6 +71,7 @@ if (defined $opts{'fn_grpList'}) {
   # @tax2gene  = @a3;
   @tax2txt = @a4;
   @tax2gene = ();
+  scalar(@a3) > 0 or do { &tsmsg("[Wrn] No sequence found.\n"); exit;};
   for (my $j=0; $j<@{$a3[0]}; $j++) {
     my $is_allAln = 1;
     my @toadd;
