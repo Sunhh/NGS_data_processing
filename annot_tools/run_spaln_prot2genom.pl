@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# [2/18/2023] Go on SPALN even one of them failed.
 use strict; 
 use warnings; 
 use Cwd 'abs_path'; 
@@ -95,22 +96,22 @@ my @oFiles;
 for my $inFa ( @{$opts{'inFa'}} ) {
 	$inFa = abs_path($inFa); 
 	my $outFile = $opts{'out'} // "$inFa.spaln.gff3";
-	&runCmd("spaln $opts{'para_spaln'} -o $outFile -d$dbID $inFa 2> $outFile.err 1> $outFile.std", $opts{'printCmd'}); 
+	&exeCmd_1cmd("spaln $opts{'para_spaln'} -o $outFile -d$dbID $inFa 2> $outFile.err 1> $outFile.std", $opts{'printCmd'}) and next;
 	if ($opts{'cnvt2maker'}) {
 		if ( $opts{'aln_type'} eq 'prot2genome') {
-			&runCmd("perl $pl_cnvt2maker $outFile > $outFile.maker", $opts{'printCmd'}); 
+			&exeCmd_1cmd("perl $pl_cnvt2maker $outFile > $outFile.maker", $opts{'printCmd'}); 
 		} elsif ( $opts{'aln_type'} eq 'est2genome' ) {
-			&runCmd("perl $pl_cnvt2maker $outFile | perl -pe ' s!\\tprotein_match\\t!\\tmatch\\t!; ' > $outFile.maker", $opts{'printCmd'}); 
+			&exeCmd_1cmd("perl $pl_cnvt2maker $outFile | perl -pe ' s!\\tprotein_match\\t!\\tmatch\\t!; ' > $outFile.maker", $opts{'printCmd'}); 
 		} else {
-			&runCmd("perl $pl_cnvt2maker $outFile > $outFile.maker", $opts{'printCmd'}); 
+			&exeCmd_1cmd("perl $pl_cnvt2maker $outFile > $outFile.maker", $opts{'printCmd'}); 
 		}
-		&runCmd("mv $outFile.maker $outFile", $opts{'printCmd'}); 
+		&exeCmd_1cmd("mv $outFile.maker $outFile", $opts{'printCmd'}); 
 	}
 	push(@oFiles, $outFile); 
 }
 if ( defined $opts{'outMerge'} ) {
 	my $in_str = join(' ', @oFiles); 
-	&runCmd("gff3_merge -l -o $opts{'outMerge'} $in_str", $opts{'printCmd'}); 
+	&exeCmd_1cmd("gff3_merge -l -o $opts{'outMerge'} $in_str", $opts{'printCmd'}); 
 }
 if ( $opts{'needIndex'} ) {
 	my @idx_files; 
@@ -118,6 +119,6 @@ if ( $opts{'needIndex'} ) {
 		push(@idx_files, "${dbID}$suff"); 
 	}
 	my $idx_str = join(' ', @idx_files); 
-	&runCmd("cd $aln_dbs ; rm $idx_str ; cd -", $opts{'printCmd'}); 
+	&exeCmd_1cmd("cd $aln_dbs ; rm $idx_str ; cd -", $opts{'printCmd'}); 
 }
 
