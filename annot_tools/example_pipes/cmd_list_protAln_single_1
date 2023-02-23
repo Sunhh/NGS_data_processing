@@ -1,0 +1,80 @@
+deal_fasta.pl -attr key:len ../db/in_genome/22CEXU44.chr.fa > scaffold_kl
+cp -p ../protein_kl ./
+rm -f lis_prot
+cp -p ../in_fa/Araport11.p.fa ./
+echo Araport11.p.fa >> lis_prot
+cp -p ../in_fa/ASM1002_97103.prot.fa ./
+echo ASM1002_97103.prot.fa >> lis_prot
+cp -p ../in_fa/ASM1003_PI537277.prot.fa ./
+echo ASM1003_PI537277.prot.fa >> lis_prot
+cp -p ../in_fa/ASM1004_USVL531.prot.fa ./
+echo ASM1004_USVL531.prot.fa >> lis_prot
+cp -p ../in_fa/ASM1005_PI482246.prot.fa ./
+echo ASM1005_PI482246.prot.fa >> lis_prot
+cp -p ../in_fa/Chayote.p.fa ./
+echo Chayote.p.fa >> lis_prot
+cp -p ../in_fa/CmaxiV1p1.p.fa ./
+echo CmaxiV1p1.p.fa >> lis_prot
+cp -p ../in_fa/CmeloV4.p.fa ./
+echo CmeloV4.p.fa >> lis_prot
+cp -p ../in_fa/CmoshV1.p.fa ./
+echo CmoshV1.p.fa >> lis_prot
+cp -p ../in_fa/cordophanusV1.5.prot.fa ./
+echo cordophanusV1.5.prot.fa >> lis_prot
+cp -p ../in_fa/CsatiV3.p.fa ./
+echo CsatiV3.p.fa >> lis_prot
+cp -p ../in_fa/snakegourd.p.fa ./
+echo snakegourd.p.fa >> lis_prot
+cp -p ../in_fa/sprot220404.p.fa ./
+echo sprot220404.p.fa >> lis_prot
+cp -p ../in_fa/waxgourd.p.fa ./
+echo waxgourd.p.fa >> lis_prot
+cp -p ../in_fa/WCGv2.prot.fa ./
+echo WCGv2.prot.fa >> lis_prot
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/run_spaln_prot2genom.pl  -aln_type prot2genome  -needIndex  -db ../db/in_genome/22CEXU44.chr.fa  -inFaLis lis_prot  -para_spaln " -t1 -M4 -Q7 -O0 -LS "  -cpuN 100 -cnvt2maker -pl_cnvt2maker /home/Sunhh/tools/github/NGS_data_processing/annot_tools/cnvt_spaln2makerAln_prot_gff3.pl
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/rmShrtExon_spaln_prot2genom.pl Araport11.p.fa.spaln.gff3 > Araport11.p.fa.s1.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/cnvt_spaln2makerAln_prot_gff3.pl -protKLfile protein_kl -trimOverflow -scafKLfile scaffold_kl Araport11.p.fa.s1.gff3 -outFile Araport11.p.fa.s2.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/pasa_gff_to_alnGff.pl -notPasa -addTag "3.1:prot:" Araport11.p.fa.s2.gff3 > Araport11.p.fa.s2.4maker.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/rmShrtExon_spaln_prot2genom.pl ASM1002_97103.prot.fa.spaln.gff3 > ASM1002_97103.prot.fa.s1.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/cnvt_spaln2makerAln_prot_gff3.pl -protKLfile protein_kl -trimOverflow -scafKLfile scaffold_kl ASM1002_97103.prot.fa.s1.gff3 -outFile ASM1002_97103.prot.fa.s2.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/pasa_gff_to_alnGff.pl -notPasa -addTag "3.2:prot:" ASM1002_97103.prot.fa.s2.gff3 > ASM1002_97103.prot.fa.s2.4maker.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/rmShrtExon_spaln_prot2genom.pl ASM1003_PI537277.prot.fa.spaln.gff3 > ASM1003_PI537277.prot.fa.s1.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/cnvt_spaln2makerAln_prot_gff3.pl -protKLfile protein_kl -trimOverflow -scafKLfile scaffold_kl ASM1003_PI537277.prot.fa.s1.gff3 -outFile ASM1003_PI537277.prot.fa.s2.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/pasa_gff_to_alnGff.pl -notPasa -addTag "3.3:prot:" ASM1003_PI537277.prot.fa.s2.gff3 > ASM1003_PI537277.prot.fa.s2.4maker.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/rmShrtExon_spaln_prot2genom.pl ASM1004_USVL531.prot.fa.spaln.gff3 > ASM1004_USVL531.prot.fa.s1.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/cnvt_spaln2makerAln_prot_gff3.pl -protKLfile protein_kl -trimOverflow -scafKLfile scaffold_kl ASM1004_USVL531.prot.fa.s1.gff3 -outFile ASM1004_USVL531.prot.fa.s2.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/pasa_gff_to_alnGff.pl -notPasa -addTag "3.4:prot:" ASM1004_USVL531.prot.fa.s2.gff3 > ASM1004_USVL531.prot.fa.s2.4maker.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/rmShrtExon_spaln_prot2genom.pl ASM1005_PI482246.prot.fa.spaln.gff3 > ASM1005_PI482246.prot.fa.s1.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/cnvt_spaln2makerAln_prot_gff3.pl -protKLfile protein_kl -trimOverflow -scafKLfile scaffold_kl ASM1005_PI482246.prot.fa.s1.gff3 -outFile ASM1005_PI482246.prot.fa.s2.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/pasa_gff_to_alnGff.pl -notPasa -addTag "3.5:prot:" ASM1005_PI482246.prot.fa.s2.gff3 > ASM1005_PI482246.prot.fa.s2.4maker.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/rmShrtExon_spaln_prot2genom.pl Chayote.p.fa.spaln.gff3 > Chayote.p.fa.s1.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/cnvt_spaln2makerAln_prot_gff3.pl -protKLfile protein_kl -trimOverflow -scafKLfile scaffold_kl Chayote.p.fa.s1.gff3 -outFile Chayote.p.fa.s2.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/pasa_gff_to_alnGff.pl -notPasa -addTag "3.6:prot:" Chayote.p.fa.s2.gff3 > Chayote.p.fa.s2.4maker.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/rmShrtExon_spaln_prot2genom.pl CmaxiV1p1.p.fa.spaln.gff3 > CmaxiV1p1.p.fa.s1.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/cnvt_spaln2makerAln_prot_gff3.pl -protKLfile protein_kl -trimOverflow -scafKLfile scaffold_kl CmaxiV1p1.p.fa.s1.gff3 -outFile CmaxiV1p1.p.fa.s2.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/pasa_gff_to_alnGff.pl -notPasa -addTag "3.7:prot:" CmaxiV1p1.p.fa.s2.gff3 > CmaxiV1p1.p.fa.s2.4maker.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/rmShrtExon_spaln_prot2genom.pl CmeloV4.p.fa.spaln.gff3 > CmeloV4.p.fa.s1.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/cnvt_spaln2makerAln_prot_gff3.pl -protKLfile protein_kl -trimOverflow -scafKLfile scaffold_kl CmeloV4.p.fa.s1.gff3 -outFile CmeloV4.p.fa.s2.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/pasa_gff_to_alnGff.pl -notPasa -addTag "3.8:prot:" CmeloV4.p.fa.s2.gff3 > CmeloV4.p.fa.s2.4maker.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/rmShrtExon_spaln_prot2genom.pl CmoshV1.p.fa.spaln.gff3 > CmoshV1.p.fa.s1.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/cnvt_spaln2makerAln_prot_gff3.pl -protKLfile protein_kl -trimOverflow -scafKLfile scaffold_kl CmoshV1.p.fa.s1.gff3 -outFile CmoshV1.p.fa.s2.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/pasa_gff_to_alnGff.pl -notPasa -addTag "3.9:prot:" CmoshV1.p.fa.s2.gff3 > CmoshV1.p.fa.s2.4maker.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/rmShrtExon_spaln_prot2genom.pl cordophanusV1.5.prot.fa.spaln.gff3 > cordophanusV1.5.prot.fa.s1.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/cnvt_spaln2makerAln_prot_gff3.pl -protKLfile protein_kl -trimOverflow -scafKLfile scaffold_kl cordophanusV1.5.prot.fa.s1.gff3 -outFile cordophanusV1.5.prot.fa.s2.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/pasa_gff_to_alnGff.pl -notPasa -addTag "3.10:prot:" cordophanusV1.5.prot.fa.s2.gff3 > cordophanusV1.5.prot.fa.s2.4maker.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/rmShrtExon_spaln_prot2genom.pl CsatiV3.p.fa.spaln.gff3 > CsatiV3.p.fa.s1.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/cnvt_spaln2makerAln_prot_gff3.pl -protKLfile protein_kl -trimOverflow -scafKLfile scaffold_kl CsatiV3.p.fa.s1.gff3 -outFile CsatiV3.p.fa.s2.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/pasa_gff_to_alnGff.pl -notPasa -addTag "3.11:prot:" CsatiV3.p.fa.s2.gff3 > CsatiV3.p.fa.s2.4maker.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/rmShrtExon_spaln_prot2genom.pl snakegourd.p.fa.spaln.gff3 > snakegourd.p.fa.s1.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/cnvt_spaln2makerAln_prot_gff3.pl -protKLfile protein_kl -trimOverflow -scafKLfile scaffold_kl snakegourd.p.fa.s1.gff3 -outFile snakegourd.p.fa.s2.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/pasa_gff_to_alnGff.pl -notPasa -addTag "3.12:prot:" snakegourd.p.fa.s2.gff3 > snakegourd.p.fa.s2.4maker.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/rmShrtExon_spaln_prot2genom.pl sprot220404.p.fa.spaln.gff3 > sprot220404.p.fa.s1.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/cnvt_spaln2makerAln_prot_gff3.pl -protKLfile protein_kl -trimOverflow -scafKLfile scaffold_kl sprot220404.p.fa.s1.gff3 -outFile sprot220404.p.fa.s2.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/pasa_gff_to_alnGff.pl -notPasa -addTag "3.13:prot:" sprot220404.p.fa.s2.gff3 > sprot220404.p.fa.s2.4maker.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/rmShrtExon_spaln_prot2genom.pl waxgourd.p.fa.spaln.gff3 > waxgourd.p.fa.s1.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/cnvt_spaln2makerAln_prot_gff3.pl -protKLfile protein_kl -trimOverflow -scafKLfile scaffold_kl waxgourd.p.fa.s1.gff3 -outFile waxgourd.p.fa.s2.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/pasa_gff_to_alnGff.pl -notPasa -addTag "3.14:prot:" waxgourd.p.fa.s2.gff3 > waxgourd.p.fa.s2.4maker.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/rmShrtExon_spaln_prot2genom.pl WCGv2.prot.fa.spaln.gff3 > WCGv2.prot.fa.s1.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/cnvt_spaln2makerAln_prot_gff3.pl -protKLfile protein_kl -trimOverflow -scafKLfile scaffold_kl WCGv2.prot.fa.s1.gff3 -outFile WCGv2.prot.fa.s2.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/pasa_gff_to_alnGff.pl -notPasa -addTag "3.15:prot:" WCGv2.prot.fa.s2.gff3 > WCGv2.prot.fa.s2.4maker.gff3
+

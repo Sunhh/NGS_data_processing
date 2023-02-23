@@ -1,0 +1,119 @@
+#
+# Environment.
+#
+export PATH=/data/Sunhh/src/align/spaln/spaln2.1.4.linux64/bin:$PATH
+export ALN_DBS=/data/Sunhh/src/align/spaln/spaln2.1.4.linux64/seqdb
+export ALN_TAB=/data/Sunhh/src/align/spaln/spaln2.1.4.linux64/table
+
+#
+# Alignment.
+#
+########
+ls in_fa/* | sed -e 's!^in_fa/!!g' > lis_prot
+ln -s /home/Sunhh/tools/github/NGS_data_processing/annot_tools/ ./annot_tools
+
+# Generate files: protein_kl
+cat lis_prot | perl -e 'use LogInforSunhh; my @ta; while (<>) { chomp; push(@ta, "in_fa/$_"); } &runCmd(join(" ", "deal_fasta.pl -attr key:len ", @ta, " | tail -n +2 > protein_kl"));'
+deal_fasta.pl -attr key:len in_fa/sprot220404.p.fa | tail -n +2 | perl -e 'while (<>) {s!^sp\|\S+\|([^|\s]+)\t!$1\t! or die "$_\n"; print;}' >> protein_kl
+
+cat ../list.in_genome_20221005 | perl -e 'use fileSunhh; while (<>) {chomp; my $gID = $_;
+  my $fn_cmd = "run_$gID/c1_protAln";
+  -d "run_$gID/" or -l "run_$gID/" or system "mkdir run_$gID/";
+  &fileSunhh::write2file($fn_cmd, "deal_fasta.pl -attr key:len ../db/in_genome/$gID.chr.fa > scaffold_kl\n", ">");
+  &fileSunhh::write2file($fn_cmd, "cp -p ../protein_kl ./\n", ">>");
+  my @protLis = map {$_->[0]} &fileSunhh::load_tabFile("lis_prot");
+  &fileSunhh::write2file($fn_cmd, "rm -f lis_prot\n", ">>");
+  for my $protF (@protLis) {
+    &fileSunhh::write2file($fn_cmd, "cp -p ../in_fa/$protF ./\n", ">>");
+    &fileSunhh::write2file($fn_cmd, "echo $protF >> lis_prot\n", ">>");
+  }
+  my $txt_c1 = "perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/run_spaln_prot2genom.pl ";
+  $txt_c1 .= " -aln_type prot2genome ";
+  $txt_c1 .= " -needIndex ";
+  $txt_c1 .= " -db ../db/in_genome/$gID.chr.fa ";
+  $txt_c1 .= " -inFaLis lis_prot ";
+  $txt_c1 .= " -para_spaln \" -t1 -M4 -Q7 -O0 -LS \" ";
+  $txt_c1 .= " -cpuN 100 -cnvt2maker -pl_cnvt2maker /home/Sunhh/tools/github/NGS_data_processing/annot_tools/cnvt_spaln2makerAln_prot_gff3.pl\n";
+  &fileSunhh::write2file($fn_cmd, $txt_c1, ">>");
+
+  my $b=3; my $n=0;
+  for my $protF (@protLis) {
+    &fileSunhh::write2file($fn_cmd, "perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/rmShrtExon_spaln_prot2genom.pl $protF.spaln.gff3 > $protF.s1.gff3\n", ">>");
+    &fileSunhh::write2file($fn_cmd, "perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/cnvt_spaln2makerAln_prot_gff3.pl -protKLfile protein_kl -trimOverflow -scafKLfile scaffold_kl $protF.s1.gff3 -outFile $protF.s2.gff3\n", ">>");
+    $n++;
+    &fileSunhh::write2file($fn_cmd, "perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/pasa_gff_to_alnGff.pl -notPasa -addTag \"$b.$n:prot:\" $protF.s2.gff3 > $protF.s2.4maker.gff3\n", ">>");
+  }
+  &fileSunhh::write2file($fn_cmd, "\n", ">>");
+  print STDOUT "cd run_$gID/; nohup run_cmd_in_batch.pl c1_protAln > scrn.c1_protAln; cd -\n";
+}
+' > c1a_alnProt_20230217_SW
+
+# 8/16/2022: Some RUNs failed, so I re-aligned them with spaln 2.4.12.
+mkdir torm_failed/
+cat list.in_genome.fail1 | perl -e 'while (<>) {chomp;system "mv run_$_/ torm_failed/";}'
+cat list.in_genome.fail1 | perl -e 'use fileSunhh; while (<>) {chomp; my $gID = $_;
+  print "mkdir run_$gID/\n";
+  print "deal_fasta.pl -attr key:len ../db/in_genome/$gID.chr.fa > run_$gID/scaffold_kl\n";
+  print "cp -p protein_kl run_$gID/\n";
+  my @protLis = map {$_->[0]} &fileSunhh::load_tabFile("lis_prot");
+  print "rm -f run_$gID/lis_prot\n";
+  for my $protF (@protLis) {
+    print "cp -p in_fa/$protF ./run_$gID/\n";
+    print "echo run_$gID/$protF >> run_$gID/lis_prot\n";
+  }
+  print "perl annot_tools/run_spaln_prot2genom.pl ";
+  print " -aln_type prot2genome ";
+  print " -needIndex ";
+  print " -db ../db/in_genome/$gID.chr.fa ";
+  print " -inFaLis run_$gID/lis_prot ";
+  print " -para_spaln \" -t1 -M4 -Q7 -O0 -LS \" ";
+  print " -cpuN 20 -cnvt2maker -pl_cnvt2maker /home/Sunhh/tools/github/NGS_data_processing/annot_tools/cnvt_spaln2makerAln_prot_gff3.pl\n";
+  my $b=3; my $n=0;
+  for my $protF (@protLis) {
+    print "perl annot_tools/rmShrtExon_spaln_prot2genom.pl run_$gID/$protF.spaln.gff3 > run_$gID/$protF.s1.gff3\n";
+    print "perl annot_tools/cnvt_spaln2makerAln_prot_gff3.pl -protKLfile run_$gID/protein_kl -trimOverflow -scafKLfile run_$gID/scaffold_kl run_$gID/$protF.s1.gff3 -outFile run_$gID/$protF.s2.gff3\n";
+    $n++;
+    print "perl annot_tools/pasa_gff_to_alnGff.pl -notPasa -addTag \"$b.$n:prot:\" run_$gID/$protF.s2.gff3 > run_$gID/$protF.s2.4maker.gff3\n";
+  }
+  print "\n";
+}
+' > c1b_alnProt
+# nohup run_cmd_in_batch.pl c1b_alnProt -grpLn 81 -cpuN 4 -wait_sec 6 -nprocF nproc.c1b_alnProt > scrn.c1b_alnProt
+
+# Run SpALN one by one.
+cat list.in_genome.fail1 | perl -e 'use fileSunhh; while (<>) {chomp; my $gID = $_;
+  my @protLis = map {$_->[0]} &fileSunhh::load_tabFile("run_$gID/lis_prot");
+  for (my $i=0; $i<@protLis; $i++) {
+    &fileSunhh::write2file("run_$gID/lis_prot.$i", "$protLis[$i]\n", ">");
+    print "perl annot_tools/run_spaln_prot2genom.pl ";
+    print " -aln_type prot2genome ";
+    print " -needIndex ";
+    print " -db ../db/in_genome/$gID.chr.fa ";
+    print " -inFaLis run_$gID/lis_prot.$i ";
+    print " -para_spaln \" -t1 -M4 -Q7 -O0 -LS \" ";
+    print " -cpuN 20 -cnvt2maker -pl_cnvt2maker /home/Sunhh/tools/github/NGS_data_processing/annot_tools/cnvt_spaln2makerAln_prot_gff3.pl\n";
+  }
+  # print "\n";
+}
+' > c1d_alnProt
+
+# perl -e 'my $d="run_21QDX601"; -e "../good.$d" or mkdir("../good.$d"); while (<>) { chomp; system "mv $_* ../good.$d/"; print "$d/$_\n";}' a1 > a2
+# rm -f *.gff3*
+# mv lis_prot lis_prot_ori
+# deal_table.pl lis_prot_ori -kSrch_idx a2 -kSrch_drop > lis_prot
+
+# [8/18/2022] Again, some failed, then I align them with spaln v2.4.9b again. The previous run was done by spaln v2.4.12.
+### It worked! I chose this instead of splitting the sequences into small batches.
+perl annot_tools/run_spaln_prot2genom.pl -aln_type prot2genome  -db 21QDX554  -inFa run_21QDX554/CmaxiV1p1.p.fa \
+ -para_spaln " -M4 -Q7 -O0 -LS -po "  -cpuN 20 \
+ -cnvt2maker -pl_cnvt2maker /home/Sunhh/tools/github/NGS_data_processing/annot_tools/cnvt_spaln2makerAln_prot_gff3.pl
+
+# [8/18/2022] v2.4.9b works for Swiss-Prot database too!
+perl annot_tools/run_spaln_prot2genom.pl -aln_type prot2genome  -db 21QDX839  -inFa run_21QDX839/sprot220404.p.fa \
+ -para_spaln " -t1 -M4 -Q7 -O0 -LS -po "  -cpuN 40 \
+ -cnvt2maker -pl_cnvt2maker /home/Sunhh/tools/github/NGS_data_processing/annot_tools/cnvt_spaln2makerAln_prot_gff3.pl
+
+cat run_*/lis_prot | perl -e 'use LogInforSunhh; while (<>) { chomp; &runCmd("rm -f $_ $_.s1.gff3 $_.s2.gff3"); }'
+ls run_*/*.s2.4maker.gff3 | perl -e 'use LogInforSunhh; while (<>) {chomp; &runCmd("bgzip -@ 10 $_");}'
+ls run_*/*.spaln.gff3 | perl -e 'use LogInforSunhh; while (<>) {chomp; &runCmd("bgzip -@ 10 $_");}'
+

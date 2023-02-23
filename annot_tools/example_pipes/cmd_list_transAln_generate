@@ -1,0 +1,63 @@
+#
+# Environment.
+#
+export PATH=/data/Sunhh/src/align/spaln/spaln2.1.4.linux64/bin:$PATH
+export ALN_DBS=/data/Sunhh/src/align/spaln/spaln2.1.4.linux64/seqdb
+export ALN_TAB=/data/Sunhh/src/align/spaln/spaln2.1.4.linux64/table
+
+#
+# Alignment.
+#
+########
+ls in_fa/* | sed -e 's!^in_fa/!!g' > lis_cds
+cat ../list.in_genome_20221005 | perl -e 'use fileSunhh; while (<>) { chomp; my $gID = $_;
+  -d "run_$gID/" or -l "run_$gID" or system "mkdir run_$gID/\n";
+  my $fn_cmd = "run_$gID/c1_transAln";
+  &fileSunhh::write2file($fn_cmd, "", ">");
+  my @cdsLis= map {$_->[0]} &fileSunhh::load_tabFile("lis_cds");
+  &fileSunhh::write2file($fn_cmd, "rm -f lis_est\n", ">>");
+  for my $cdsF (@cdsLis) {
+    &fileSunhh::write2file($fn_cmd, "cp -p ../in_fa/$cdsF ./\n", ">>");
+    &fileSunhh::write2file($fn_cmd, "echo $cdsF >> lis_est\n", ">>");
+  }
+  &fileSunhh::write2file($fn_cmd, "perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/run_spaln_prot2genom.pl ", ">>");
+  &fileSunhh::write2file($fn_cmd, " -aln_type  est2genome ", ">>");
+  &fileSunhh::write2file($fn_cmd, " -needIndex ", ">>");
+  &fileSunhh::write2file($fn_cmd, " -db        ../../db/in_genome/$gID.chr.fa ", ">>");
+  &fileSunhh::write2file($fn_cmd, " -inFaLis   lis_est ", ">>");
+  &fileSunhh::write2file($fn_cmd, " -cpuN 100 -cnvt2maker -pl_cnvt2maker /home/Sunhh/tools/github/NGS_data_processing/annot_tools/cnvt_spaln2makerAln_prot_gff3.pl\n", ">>");
+
+  my $b=2; my $n=0; 
+  for my $cdsF (@cdsLis) { $n++;
+    &fileSunhh::write2file($fn_cmd, "perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/pasa_gff_to_alnGff.pl ", ">>");
+    &fileSunhh::write2file($fn_cmd, " -notPasa -addTag \"$b.$n:est:\" $cdsF.spaln.gff3 > $cdsF.4maker.gff3\n", ">>");
+  }
+  &fileSunhh::write2file($fn_cmd, "\n", ">>");
+  print STDOUT "cd run_$gID/; nohup run_cmd_in_batch.pl c1_transAln > scrn.c1_transAln; cd -\n";
+}
+' > c1a_alnCds_20230217
+
+mkdir by_spaln2.1.4/
+mv run_*/ by_spaln2.1.4/
+
+### Stop here.
+
+# https://github.com/lh3/minimap2/issues/455
+minimap2 -t 30 --cs -a -x splice:hq -u f ../in_genomes/21QDX551.fa  data/WM97_pbIsoSeq_rd.fasta     > data/WM97_pbIsoSeq_rd.fasta.21QDX551.sam
+bedtools bamtobed -bed12 -i data/WM97_pbIsoSeq_rd.fasta.21QDX551.sam > data/WM97_pbIsoSeq_rd.fasta.21QDX551.bed
+/data/Sunhh/src/general/ucsc/bin/bedToGenePred data/WM97_pbIsoSeq_rd.fasta.21QDX551.bed data/WM97_pbIsoSeq_rd.fasta.21QDX551.genepred
+/data/Sunhh/src/general/ucsc/bin/genePredToGtf 'file' data/WM97_pbIsoSeq_rd.fasta.21QDX551.genepred data/WM97_pbIsoSeq_rd.fasta.21QDX551.gtf
+
+minimap2 -t 30 --cs -a -x splice:hq      ../in_genomes/21QDX551.fa  data/W97_pasa.assemblies.fasta  > data/W97_pasa.assemblies.fasta.21QDX551.sam
+
+# Align sequences and convert to BAM
+minimap2 -ax splice --cs target.fa query.fa | samtools sort -O BAM - > alignments.bam
+# Convert to BED12 using BEDtools
+bedtools bamtobed -bed12 -i alignments.bam > alignments.bed
+# Convert to genePred using UCSC tools
+bedToGenePred alignments.bed alignments.genepred
+# Convert to GTF2 using UCSC tools
+genePredToGtf "file" alignments.genepred alignments.gtf
+# genePredToGtf has additional options that might be useful in specific use cases.
+# All of these tools are available in Bioconda.
+

@@ -1,0 +1,27 @@
+rm -f lis_est
+cp -p ../in_fa/ASM1002_97103.cds.fa ./
+echo ASM1002_97103.cds.fa >> lis_est
+cp -p ../in_fa/ASM1003_PI537277.cds.fa ./
+echo ASM1003_PI537277.cds.fa >> lis_est
+cp -p ../in_fa/ASM1004_USVL531.cds.fa ./
+echo ASM1004_USVL531.cds.fa >> lis_est
+cp -p ../in_fa/ASM1005_PI482246.cds.fa ./
+echo ASM1005_PI482246.cds.fa >> lis_est
+cp -p ../in_fa/cordophanusV1.5.cds.fa ./
+echo cordophanusV1.5.cds.fa >> lis_est
+cp -p ../in_fa/W97_pasa.assemblies.fasta ./
+echo W97_pasa.assemblies.fasta >> lis_est
+cp -p ../in_fa/WCGv2.cds.fa ./
+echo WCGv2.cds.fa >> lis_est
+cp -p ../in_fa/WM97_pbIsoSeq_rd.fasta ./
+echo WM97_pbIsoSeq_rd.fasta >> lis_est
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/run_spaln_prot2genom.pl  -aln_type  est2genome  -needIndex  -db        ../../db/in_genome/22CEXU24.chr.fa  -inFaLis   lis_est  -cpuN 100 -cnvt2maker -pl_cnvt2maker /home/Sunhh/tools/github/NGS_data_processing/annot_tools/cnvt_spaln2makerAln_prot_gff3.pl
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/pasa_gff_to_alnGff.pl  -notPasa -addTag "2.1:est:" ASM1002_97103.cds.fa.spaln.gff3 > ASM1002_97103.cds.fa.4maker.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/pasa_gff_to_alnGff.pl  -notPasa -addTag "2.2:est:" ASM1003_PI537277.cds.fa.spaln.gff3 > ASM1003_PI537277.cds.fa.4maker.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/pasa_gff_to_alnGff.pl  -notPasa -addTag "2.3:est:" ASM1004_USVL531.cds.fa.spaln.gff3 > ASM1004_USVL531.cds.fa.4maker.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/pasa_gff_to_alnGff.pl  -notPasa -addTag "2.4:est:" ASM1005_PI482246.cds.fa.spaln.gff3 > ASM1005_PI482246.cds.fa.4maker.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/pasa_gff_to_alnGff.pl  -notPasa -addTag "2.5:est:" cordophanusV1.5.cds.fa.spaln.gff3 > cordophanusV1.5.cds.fa.4maker.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/pasa_gff_to_alnGff.pl  -notPasa -addTag "2.6:est:" W97_pasa.assemblies.fasta.spaln.gff3 > W97_pasa.assemblies.fasta.4maker.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/pasa_gff_to_alnGff.pl  -notPasa -addTag "2.7:est:" WCGv2.cds.fa.spaln.gff3 > WCGv2.cds.fa.4maker.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/pasa_gff_to_alnGff.pl  -notPasa -addTag "2.8:est:" WM97_pbIsoSeq_rd.fasta.spaln.gff3 > WM97_pbIsoSeq_rd.fasta.4maker.gff3
+

@@ -1,0 +1,11 @@
+# Re-align on SWIFT server.
+cd /data/Sunhh/src/align/spaln/spaln2.1.4.linux64/seqdb; ln -s /data/Sunhh/wmhifi/analysis/gene_prediction/db/in_genome/22CEXU3.chr.fa ./22CEXU3.mfa; ./makeidx.pl -inp 22CEXU3.mfa; cd -;
+
+deal_fasta.pl CmoshV1.p.fa -nres CmoCh01G021080.1 > CmoshV1.p_fixed.fa
+ls CmoshV1.p_fixed.fa > lis_prot_r2
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/run_spaln_prot2genom.pl  -aln_type prot2genome  -db 22CEXU3  -inFaLis lis_prot_r2  -para_spaln " -t1 -M4 -Q7 -O0 -LS "  -cpuN 100 -cnvt2maker -pl_cnvt2maker /home/Sunhh/tools/github/NGS_data_processing/annot_tools/cnvt_spaln2makerAln_prot_gff3.pl
+
+mv CmoshV1.p_fixed.fa.spaln.gff3 CmoshV1.p.fa.spaln.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/rmShrtExon_spaln_prot2genom.pl CmoshV1.p.fa.spaln.gff3 > CmoshV1.p.fa.s1.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/cnvt_spaln2makerAln_prot_gff3.pl -protKLfile protein_kl -trimOverflow -scafKLfile scaffold_kl CmoshV1.p.fa.s1.gff3 -outFile CmoshV1.p.fa.s2.gff3
+perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/pasa_gff_to_alnGff.pl -notPasa -addTag "3.9:prot:" CmoshV1.p.fa.s2.gff3 > CmoshV1.p.fa.s2.4maker.gff3
