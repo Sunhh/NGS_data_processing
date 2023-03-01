@@ -97,6 +97,12 @@ while (<$fhGff>) {
     $qryInf{'base'} = $h8->{'query_bases'};
     ( defined $refInf{'base'} and $refInf{'base'} ne '' ) or &stopErr("[Err] No ref_bases found: $_\n");
     ( defined $qryInf{'base'} and $qryInf{'base'} ne '' ) or &stopErr("[Err] No query_bases found: $_\n");
+    if ($refInf{'base'} eq $qryInf{'base'}) {
+      # There must be something wrong, and I want to ignore this line.
+      $errCnt{'err_sub'} ++;
+      &tsmsg("[Wrn] problem line err_sub:$errCnt{'err_sub'}:ref [$refInf{'base'}], qry [$qryInf{'base'}]:\t$_\n");
+      next;
+    }
     # query_dir=-1 doesn't change base information
   } elsif ($h8->{'Name'} =~ m!^insertion$!i) {
     push(@inf, "SVTYPE=INS");
