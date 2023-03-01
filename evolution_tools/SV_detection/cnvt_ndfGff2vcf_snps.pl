@@ -127,7 +127,7 @@ sub sepTA8 {
     $back{$1} = $2;
   }
   defined $back{'ref_bases'} and $back{'ref_bases'} = uc($back{'ref_bases'});
-  defined $back{'query_bases'} and $back{'ref_bases'} = uc($back{'query_bases'});
+  defined $back{'query_bases'} and $back{'query_bases'} = uc($back{'query_bases'});
   return(\%back);
 }# sepTA8
 
