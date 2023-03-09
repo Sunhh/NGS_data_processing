@@ -1,6 +1,13 @@
 #!/usr/bin/perl
 # 2/1/2023: Count deletion/insertion in vcf file. Always use the first allele to determine SV type.
 #           Allele label '.' is not accepted.
+# 3/9/2023: Update the code, providing same results. Sizes for -small_indel_max filtering:
+#             alternative allele: longest - alternative allele;
+#             MNP : length(ref_allele)
+#             SV size 1 : index(base_ref, base_alt)==0: len_ref-len_alt;
+#             SV size 2 : index(base_alt, base_ref)==0: len_alt-len_ref;
+#             SV size 3 : max(len_ref, len_alt)
+
 use strict;
 use warnings;
 use Getopt::Long;
@@ -67,75 +74,52 @@ while (<>) {
   my @ta=split(/\t/, $_);
   $ta[3] = uc($ta[3]);
   $ta[4] = uc($ta[4]);
-
   $ta[3] =~ m!^[ATGCN]+$! or die "[Err] allele should be ATGCN. here is |$ta[3]|\n";
+  my $base_ref = $ta[3];
   my $len_ref = length($ta[3]);
   # Fix to use the first allele.
   my @tb = split(/,/, $ta[4]);
-  $tb[0] =~ m!^[ATGCN]+$! or die "[Err] allele should be ATGCN. here is |$tb[0]|\n";
-  my $len_alt = length($tb[0]);
+  my ($base_alt, $len_alt);
+  for my $b1 (@tb) {
+    $base_alt //= $b1;
+    $len_alt //= length($b1);
+    $len_alt < length($b1) and do { $len_alt=length($b1); $base_alt=$b1; };
+  }
+  $base_ref = uc($base_ref);
+  $base_alt = uc($base_alt);
+  unless ( $base_alt =~ m!^[ATGCN]+$!i) {
+    warn "[Err] allele should be ATGCN. here is |$base_alt! in: @tb\n";
+    next;
+  }
 
   if ($len_ref == 1 and $len_alt == 1) {
     &add_snp(1);
     next;
   }
-  if ($len_ref <= $opts{'small_indel_max'} and $len_alt <= $opts{'small_indel_max'}) {
-    if ($len_ref > $len_alt) {
-      if (index($ta[3], $tb[0])==0) {
-        &add_small_del($len_ref - $len_alt);
-      } else {
-        &add_small_del($len_ref);
-        &add_small_ins($len_alt);
-      }
-      if ($ta[7] =~ m!(SVTYPE=[^;]+)! and $ta[7] !~ m!SVTYPE=(?:DEL|SUB|CPX)\s*(?:;|$)!) {
-        warn "[Wrn] Expected DEL/SUB SV at [$ta[0] $ta[1]] [refLen=$len_ref altLen=$len_alt] $1\n";
-      }
-    } elsif ($len_ref < $len_alt) {
-      if (index($tb[0], $ta[3])==0) {
-        &add_small_ins($len_alt - $len_ref);
-      } else {
-        &add_small_del($len_ref);
-        &add_small_ins($len_alt);
-      }
-      if ($ta[7] =~ m!(SVTYPE=[^;]+)! and $ta[7] !~ m!SVTYPE=(?:INS|SUB|CPX)\s*(?:;|$)!) {
-        warn "[Wrn] Expected INS/SUB SV at [$ta[0] $ta[1]] [refLen=$len_ref altLen=$len_alt] $1\n";
-      }
+  if      (index($base_ref, $base_alt) == 0) {
+    if ($len_ref-$len_alt <= $opts{'small_indel_max'}) {
+      &add_small_del($len_ref-$len_alt);
     } else {
-      &add_small_del($len_ref);
-      &add_small_ins($len_alt);
-      if ($ta[7] =~ m!(SVTYPE=[^;]+)! and $ta[7] !~ m!SVTYPE=(?:SUB|CPX)\s*(?:;|$)!) {
-        warn "[Wrn] Expected SUB SV at [$ta[0] $ta[1]] [refLen=$len_ref altLen=$len_alt] $1\n";
-      }
+      &add_del($len_ref-$len_alt);
     }
-    next;
-  }
-
-  if ($len_ref > $len_alt) {
-    if (index($ta[3], $tb[0])==0) {
-      &add_del($len_ref - $len_alt);
-    } else {
-      &add_del($len_ref);
-      &add_ins($len_alt);
-    }
-    if ($ta[7] =~ m!(SVTYPE=[^;]+)! and $ta[7] !~ m!SVTYPE=(?:DEL|SUB)\s*(?:;|$)!) {
+    if ($ta[7] =~ m!(SVTYPE=[^;]+)! and $ta[7] !~ m!SVTYPE=(?:DEL|SUB|CPX)\s*(?:;|$)!) {
       warn "[Wrn] Expected DEL/SUB SV at [$ta[0] $ta[1]] [refLen=$len_ref altLen=$len_alt] $1\n";
     }
-  } elsif ($len_ref < $len_alt) {
-    if (index($tb[0], $ta[3])==0) {
-      &add_ins($len_alt - $len_ref);
+  } elsif (index($base_alt, $base_ref) == 0) {
+    if ($len_alt-$len_ref <= $opts{'small_indel_max'}) {
+      &add_small_ins($len_alt-$len_ref);
     } else {
-      &add_del($len_ref);
-      &add_ins($len_alt);
+      &add_ins($len_alt-$len_ref);
     }
-    if ($ta[7] =~ m!(SVTYPE=[^;]+)! and $ta[7] !~ m!SVTYPE=(?:INS|SUB)\s*(?:;|$)!) {
+    if ($ta[7] =~ m!(SVTYPE=[^;]+)! and $ta[7] !~ m!SVTYPE=(?:INS|SUB|CPX)\s*(?:;|$)!) {
       warn "[Wrn] Expected INS/SUB SV at [$ta[0] $ta[1]] [refLen=$len_ref altLen=$len_alt] $1\n";
     }
-  } else {
+  } elsif ($len_ref <= $opts{'small_indel_max'} and $len_alt <= $opts{'small_indel_max'}) {
+    &add_small_del($len_ref);
+    &add_small_ins($len_alt);
+  }else {
     &add_del($len_ref);
     &add_ins($len_alt);
-    if ($ta[7] =~ m!(SVTYPE=[^;]+)! and $ta[7] !~ m!SVTYPE=(?:SUB)\s*(?:;|$)!) {
-      warn "[Wrn] Expected SUB SV at [$ta[0] $ta[1]] [refLen=$len_ref altLen=$len_alt] $1\n";
-    }
   }
 }
 
