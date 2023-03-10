@@ -1,29 +1,153 @@
-# Input: ref.chr.fa ref.prot.gff3
-# Input: qry.chr.fa
-# Software: anchorwave, minimap2, picard, nucdiff
+export PATH="/data/Sunhh/src/Align/last/install/v869/bin/:$PATH"
+conda activate anchorwave
 
-anchorwave gff2seq -r ref.chr.fa -i ref.chr.fa -i ref.prot.gff3 -o ref.cds.fa
-minimap2 -x splice -t 60 -k 12 -a -p 0.4 -N 20 ref.chr.fa ref.cds.fa > rCds_toRef.sam
-java -jar /path/to/picard.jar CreateSequenceDictionary R=ref.chr.fa O=ref.chr.dict
+# /data/Sunhh/temp/wmhifi_aw/db/in_gene/97103v3trans.gff3
+# /data/Sunhh/temp/wmhifi_aw/db/in_genome/
+anchorwave gff2seq -r /data/Sunhh/temp/wmhifi_aw/db/in_genome/97103v3.chr.fa -i /data/Sunhh/temp/wmhifi_aw/db/in_gene/97103v3trans.gff3 -o /data/Sunhh/temp/wmhifi_aw/db/in_gene/97103v3trans_cds.fa
+minimap2 -x splice -t 60 -k 12 -a -p 0.4 -N 20 /data/Sunhh/temp/wmhifi_aw/db/in_genome/97103v3.chr.fa /data/Sunhh/temp/wmhifi_aw/db/in_gene/97103v3trans_cds.fa > /data/Sunhh/temp/wmhifi_aw/db/in_gene/97103v3trans_cds.to97103v3.sam
+java -jar /data/Sunhh/src/Align/picard/picard/build/libs/picard.jar CreateSequenceDictionary \
+ R=/data/Sunhh/temp/wmhifi_aw/db/in_genome/97103v3.chr.fa \
+ O=/data/Sunhh/temp/wmhifi_aw/db/in_genome/97103v3.chr.dict
+### 1.2.1 Overview the genome assemblies
+### samtools faidx 97103v3.chr.fa
+### samtools faidx 22CEXU14.chr.fa
 
-minimap2 -x splice -t 10 -k 12 -a -p 0.4 -N 20 qry.chr.fa ref.cds.fa > rCds_toQryGenom.sam
-perl /path/to/anchorwave/scripts/alignmentToDotplot.pl ref.prot.gff3 rCds_toQryGenom.sam > rCds_toQryGenom.tab
-anchorwave proali -i ref.cds.gff3 -r ref.chr.fa -a  rCds_toQryGenom.sam -as ref.cds.fa -ar rCds_toRef.sam -s qry.chr.fa -n align1.anchors -o align1.maf -t 10 -R 1 -Q 1 -w 3800
+cat list.asmID_tax | perl -e 'while (<>) {chomp; my @a=split;
+ $a[0] =~ m!^(97103v3|22CEXU43)$!i and next;
+ -e "run/$a[1]/$a[0]/anchorwave/" or system "mkdir -p run/$a[1]/$a[0]/anchorwave/";
+ open O1, ">run/$a[1]/$a[0]/anchorwave/c1a_aw" or die "O1: $!\n";
+ print O1 "# minimap2 -x splice -t 10 -k 12 -a -p 0.4 -N 20 /data/Sunhh/temp/wmhifi_aw/db/in_genome/$a[0].chr.fa /data/Sunhh/temp/wmhifi_aw/db/in_gene/97103v3trans_cds.fa > Rcds2Qgenom.sam\n";
+ print O1 "# perl /data/Sunhh/src/Align/anchorwave/anchorwave/scripts/alignmentToDotplot.pl /data/Sunhh/temp/wmhifi_aw/db/in_gene/97103v3trans.gff3 Rcds2Qgenom.sam > Rcds2Qgenom.tab\n";
+ print O1 "## Rscript plot1.r\n";
+ print O1 "# anchorwave proali -i /data/Sunhh/temp/wmhifi_aw/db/in_gene/97103v3trans.gff3 -r /data/Sunhh/temp/wmhifi_aw/db/in_genome/97103v3.chr.fa -a Rcds2Qgenom.sam -as /data/Sunhh/temp/wmhifi_aw/db/in_gene/97103v3trans_cds.fa -ar /data/Sunhh/temp/wmhifi_aw/db/in_gene/97103v3trans_cds.to97103v3.sam -s /data/Sunhh/temp/wmhifi_aw/db/in_genome/$a[0].chr.fa -n align1.anchors -o align1.maf -t 10 -R 1 -Q 1 -w 38000\n";
+ print O1 "## Rscript plot2.r\n";
+ print O1 "# perl /home/Sunhh/tools/github/NGS_data_processing/software_fix/anchorwave/fix_awMAF.pl align1.maf > align1_fix.maf\n";
+ print O1 "maf-convert sam -r \"ID:$a[0]\" -f /data/Sunhh/wmhifi/analysis/sv_detection/db/in_genome/97103v3.chr.dict align1_fix.maf > align1_fix.sam\n";
+ print O1 "# maf-convert blasttab align1_fix.maf > align1_fix.maf.blasttab\n";
+ print O1 "python /home/Sunhh/tools/github/NGS_data_processing/evolution_tools/SV_detection/sam2delta.py align1_fix.sam --ref_fa /data/Sunhh/wmhifi/analysis/sv_detection/db/in_genome/97103v3.chr.fa --qry_fa /data/Sunhh/wmhifi/analysis/sv_detection/db/in_genome/$a[0].chr.fa\n";
+ print O1 "nucdiff --proc 10 --filter_opt hs_none --delta_file align1_fix.sam.delta /data/Sunhh/wmhifi/analysis/sv_detection/db/in_genome/97103v3.chr.fa /data/Sunhh/wmhifi/analysis/sv_detection/db/in_genome/$a[0].chr.fa ./ $a[0].aw\n";
+ print O1 "\n";
+ close O1;
+}'
 
-perl /home/Sunhh/tools/github/NGS_data_processing/software_fix/anchorwave/fix_awMAF.pl align1.maf > align1_fix.maf
-maf-convert sam -r "ID:qry" -f ref.chr.dict align1_fix.maf > align1_fix.sam
-maf-convert blasttab align1_fix.maf > align1_fix.maf.blasttab
-perl /home/Sunhh/tools/github/NGS_data_processing/evolution_tools/SV_detection/sam2delta.py align1_fix.sam --ref_fa /abs_path_to/ref.chr.fa --qry_fa /abs_path_to/qry.chr.fa
+cat list.asmID_tax | perl -e 'while (<>) {chomp; my @a=split;
+ $a[0] =~ m!^(97103v3|22CEXU43)$!i and next;
+ print "cd run/$a[1]/$a[0]/anchorwave/ ; nohup run_cmd_in_batch.pl c1a_aw > scrn.c1a_aw ; cd - ; echo -e \"Done with $a[0] run/$a[1]/$a[0]/anchorwave/\" >> done_list_c1a\n";
+}' > c1a_runAw
+split --numeric-suffixes=1 -l 22 c1a_runAw c1a_runAw_p
 
-nucdiff --proc 10 --filter_opt hs_none --delta_file align1_fix.sam.delta ref.chr.fa qry.chr.fa ./ qry_awSV
+# Convert NucDiff_snps.gff to VCF
+cat list.asmID_tax | perl -e 'while (<>) {chomp;my @a=split;
+ $a[0] =~ m!^(97103v3|22CEXU43)$!i and next;
+ print "perl cnvt_ndfGff2vcf_snps.pl /data/Sunhh/wmhifi/analysis/sv_detection/db/in_genome/97103v3.chr.fa /data/Sunhh/wmhifi/analysis/sv_detection/db/in_genome/$a[0].chr.fa $a[0] run/$a[1]/$a[0]/anchorwave/results/$a[0].aw_ref_snps.gff > run/$a[1]/$a[0]/anchorwave/results/$a[0].aw_ref_snps.vcf\n";
+ print "bcftools sort -O z -o run/$a[1]/$a[0]/anchorwave/results/$a[0].aw_ref_snps.vcf.gz run/$a[1]/$a[0]/anchorwave/results/$a[0].aw_ref_snps.vcf\n";
+ print "bcftools index --tbi --threads 10 run/$a[1]/$a[0]/anchorwave/results/$a[0].aw_ref_snps.vcf.gz\n";
+ print "\n";
+}' > c2a_snpsGff2Vcf
 
-### Make VCF files.
-perl /home/Sunhh/tools/github/NGS_data_processing/evolution_tools/SV_detection/cnvt_ndfGff2vcf_snps.pl ref.chr.fa qry.chr.fa qrySampleID qry_awSV_ref_snps.gff > qry_awSV_ref_snps.vcf
-perl /home/Sunhh/tools/github/NGS_data_processing/evolution_tools/SV_detection/cnvt_ndfGff2vcf_struct.pl ref.chr.fa qry.chr.fa qrySampleID qry_awSV_ref_struct.gff > qry_awSV_ref_struct.vcf
+# After genrating scrn.c2a_snpsGff2Vcf
+cat scrn.c2a_snpsGff2Vcf | perl -e 'my %h; my $id; while (<>) { chomp; m!cnvt_ndfGff2vcf_snps.pl.+run/(\S+anchorwave/results/\S+\.aw_\S+.vcf)\s*$! and $id = $1; m!(err_\S+):(\d+):! and do { $h{$id}{$1}=$2 ;  print join("\t", $id, $1, $h{$id}{$1}, $_)."\n"; }; }' > scrn.c2a_snpsGff2Vcf.tbl
+less -S scrn.c2a_snpsGff2Vcf.tbl | deal_table.pl -best_uniqCol 0,1 -select_col 2 -select_rule 1 > scrn.c2a_snpsGff2Vcf.tbl.s
+
+# Normalize and dedup VARs.
+cat list.asmID_tax | awk '$1 != "97103v3" && $1 != "22CEXU43"' | \
+ perl -e 'while (<>) {chomp;my @ta=split(/\t/,$_); my ($id,$sp)=@ta[0,1];
+ my $d1="run/$sp/$id/anchorwave/results/";
+ my $f1snps = "$d1/$id.aw_ref_snps.vcf.gz";
+ -f $f1snps or -l $f1snps or die "Failed to find file [$f1snps]\n";
+ my $fo1snps = "$d1/$id.aw_ref_snps.norm.vcf.gz";
+ my $f2stru = "$d1/$id.aw_ref_struct.vcf.gz";
+ print "bcftools norm -m-both $f1snps | ";
+ print "  bcftools norm -d none -c e --fasta-ref db/97103v3.chr.fa | ";
+ print "  bcftools sort | bgzip -@ 5 > $fo1snps\n";
+ print "tabix -f -p vcf $fo1snps\n";
+ print "\n";
+}' > c2b_normMultAllele
+
+cat list.asmID_tax | awk '$1 != "97103v3" && $1 != "22CEXU43"' | \
+ perl -e 'while (<>) {chomp;my @ta=split(/\t/, $_); my ($id,$sp)=@ta[0,1];
+ print "gzip -cd run/$sp/$id/anchorwave/results/$id.aw_ref_snps.norm.vcf.gz | perl rmdup_fromNormVcf.pl | bgzip -@ 5 > run/$sp/$id/anchorwave/results/$id.aw_ref_snps.dedup.vcf.gz\n";
+ print "tabix -f -p vcf run/$sp/$id/anchorwave/results/$id.aw_ref_snps.dedup.vcf.gz\n";
+ print "bcftools index -s run/$sp/$id/anchorwave/results/$id.aw_ref_snps.dedup.vcf.gz > run/$sp/$id/anchorwave/results/$id.aw_ref_snps.dedup.vcf.gz.stats\n";
+ print "\n";
+}' > c2c_dedup
+
+# Summarize SVs.
+cat list.asmID_tax | awk '$1 != "97103v3" && $1 != "22CEXU43"' | perl -e 'while (<>) {chomp;my @a=split;
+ print "bcftools view run/$a[1]/$a[0]/anchorwave/results/$a[0].aw_ref_snps.dedup.vcf.gz | perl summary_svs.pl -small_indel_max 19 > run/$a[1]/$a[0]/anchorwave/results/$a[0].aw_ref_snps.dedup.vcf.gz.summary\n";
+}' > c2d_snpsVcfSummary
+
+more run/*/*/anchorwave/results/*.aw_ref_snps.dedup.vcf.gz.summary | perl -e 'my $hd;my $ish=0; while (<>) {m!^:! and next;
+ m!^Class_limit! and do {$ish==0 and print "species\taccession\t$_"; $ish=1; next; };
+ m!^run/(\S+)/(\S+)/anchorwave/results/\2.aw_ref_snps.dedup.vcf.gz.summary$! and do { $hd="$1\t$2"; next;}; print "$hd\t$_";
+}' > snps_sv_summary.big_table
+
+# Currently the struct.vcf are not used.
+# Convert NucDiff_struct.gff to VCF
+cat list.asmID_tax | perl -e 'while (<>) {chomp;my @a=split;
+ $a[0] =~ m!^(97103v3|22CEXU43)$!i and next;
+ print "perl cnvt_ndfGff2vcf_struct.pl /data/Sunhh/wmhifi/analysis/sv_detection/db/in_genome/97103v3.chr.fa /data/Sunhh/wmhifi/analysis/sv_detection/db/in_genome/$a[0].chr.fa $a[0] run/$a[1]/$a[0]/anchorwave/results/$a[0].aw_ref_struct.gff > run/$a[1]/$a[0]/anchorwave/results/$a[0].aw_ref_struct.vcf\n";
+ print "bcftools sort -O z -o run/$a[1]/$a[0]/anchorwave/results/$a[0].aw_ref_struct.vcf.gz run/$a[1]/$a[0]/anchorwave/results/$a[0].aw_ref_struct.vcf\n";
+ print "bcftools index --tbi --threads 10 run/$a[1]/$a[0]/anchorwave/results/$a[0].aw_ref_struct.vcf.gz\n";
+ print "\n";
+}' > c2c_structGff2Vcf
+
+#
+# Prepare merged VCF.
+#
+mkdir mergedVCF/
+# I replace "-N" with "--fasta-ref db/97103v3.chr.fa" to activate normalization, although it may not change anything and "-N" is used in the reference scripts of "giraffe-sv-paper/scripts/sv/merge-svs/README.md".
+cat list.asmID_tax | awk '$1 != "97103v3" && $1 != "22CEXU43"' | \
+ perl -e 'my @ins;while (<>) {chomp;my @ta=split(/\t/,$_); my ($id,$sp)=@ta[0,1];
+ my $d1="run/$sp/$id/anchorwave/results/";
+ my $fo1snps = "$d1/$id.aw_ref_snps.dedup.vcf.gz";
+ push(@ins, $fo1snps);
+}
+my $cmd1 = "bcftools merge ";
+$cmd1 .= join(" ", @ins, "");
+$cmd1 .= " | bcftools norm -m-any --fasta-ref db/97103v3.chr.fa ";
+$cmd1 .= " | bcftools norm -d none -c e --fasta-ref db/97103v3.chr.fa ";
+$cmd1 .= " | bcftools sort ";
+$cmd1 .= " | bgzip -@ 5 ";
+$cmd1 .= "> mergedVCF/merged.2.vcf.gz";
+print "$cmd1\n";
+print "tabix -f -p vcf mergedVCF/merged.2.vcf.gz\n";
+print "bcftools norm -m+any --fasta-ref db/97103v3.chr.fa mergedVCF/merged.2.vcf.gz | bcftools sort | bgzip -@ 5 > mergedVCF/merged.2a.vcf.gz\n";
+print "tabix -f -p vcf mergedVCF/merged.2a.vcf.gz\n";
+print "bcftools index -s mergedVCF/merged.2a.vcf.gz > mergedVCF/merged.2a.vcf.gz.stats\n";
+print "gzip -cd mergedVCF/merged.2a.vcf.gz | perl get_sv_inVCF.pl 20 | bgzip -@ 20 > mergedVCF/merged.2b.vcf.gz\n";
+print "tabix -f -p vcf mergedVCF/merged.2b.vcf.gz\n";
+print "bcftools index -s mergedVCF/merged.2b.vcf.gz > mergedVCF/merged.2b.vcf.gz.stats\n";
+' > c3a_merge
+### merged.2.vcf  : Input for Giraffe with all SNPs and SVs; Separated alleles.
+### merged.2a.vcf : Overlapping alleles are merged.
+### merged.2b.vcf : Only large InDels and MNPs (>= 20 bp) are accepted. (Large SVs only)
+# Has this VCF captured the TST2 CNV?
+#   97103v3_Chr02:18962920-18986262 : No. This may be caused by the bad transfeur of ClTST2 genes.
+
+# Characterize these variants.
+bcftools view mergedVCF/merged.2a.vcf.gz -Oz --threads 30 -M 2 -o mergedVCF/merged.2a_biallelic.vcf.gz
+bcftools view mergedVCF/merged.2a.vcf.gz -Oz --threads 30 -m 3 -o mergedVCF/merged.2a_muallelic.vcf.gz
+bcftools view mergedVCF/merged.2a_biallelic.vcf.gz -Oz --threads 30 -v snps -o mergedVCF/merged.2a_biallelic_snps.vcf.gz
+bcftools view mergedVCF/merged.2a_biallelic.vcf.gz -Oz --threads 30 -V snps -o mergedVCF/merged.2a_biallelic_other.vcf.gz
+### In multi-allelic VCF, "-v snps" will return any site with SNP variants no matter if there are InDels in it.
+###   -v/V, --types/--exclude-types: Select/exclude comma-separated list of variant types: snps,indels,mnps,ref,bnd,other [null]
+bcftools view mergedVCF/merged.2a_muallelic.vcf.gz -V indels,bnd,other,mnps --threads 30 | \
+ bcftools view --threads 30 -v snps -Oz -o mergedVCF/merged.2a_muallelic_snps.vcf.gz
+bcftools view mergedVCF/merged.2a_muallelic.vcf.gz -V indels,bnd,other,snps --threads 30 | \
+ bcftools view --threads 30 -v mnps -Oz -o mergedVCF/merged.2a_muallelic_mnps.vcf.gz
+bcftools view mergedVCF/merged.2a_muallelic.vcf.gz -v indels --threads 30 -Oz -o mergedVCF/merged.2a_muallelic_indels.vcf.gz
+
+perl tools/fmt_insCnt.pl snps_sv_summary.big_table > inscnt
+perl tools/fmt_insLen.pl snps_sv_summary.big_table > inslen
+perl tools/fmt_delLen.pl snps_sv_summary.big_table > dellen
+
+gzip -cd mergedVCF/merged.2b.vcf.gz | perl summary_svs.pl -small_indel_max 19 > mergedVCF/merged.2b.vcf.gz.summary
 
 
-### Summarize SVs
-cat qry_awSV_ref_snps.vcf | perl /home/Sunhh/tools/github/NGS_data_processing/evolution_tools/SV_detection/summary_svs.pl -small_indel_max 19 > qry_awSV_ref_snps.vcf.summary
-cat qry_awSV_ref_struct.vcf | perl /home/Sunhh/tools/github/NGS_data_processing/evolution_tools/SV_detection/summary_svs.pl -small_indel_max 19 > qry_awSV_ref_struct.vcf.summary
-
+#
+# Common commands.
+#
+ls mergedVCF/*.vcf.gz | perl -e ' while (<>) {chomp; -f "$_.tbi" and next; system "tabix -f -p vcf $_";}'
+ls mergedVCF/*.vcf.gz | perl -e ' while (<>) {chomp; -f "$_.stats" and next; -f "$_.tbi" or next; system "bcftools index -s $_ > $_.stats";}'
 
