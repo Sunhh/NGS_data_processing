@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# 3/10/2023: Better count SV size.
 use strict;
 use warnings;
 
@@ -13,6 +14,8 @@ while (<>) {
   }
   chomp;
   my @ta=split(/\t/, $_);
+  $ta[3] = uc($ta[3]);
+  $ta[4] = uc($ta[4]);
   my $refA = $ta[3];
   my $refLen = length($ta[3]);
   my $type;
@@ -23,37 +26,26 @@ while (<>) {
     my $j = $i+1;
     my $altA = $altAlleles[$i];
     my $altLen = length($altA);
-    if ($refLen == 1) {
-      $altLen == 1 and do { $type //= 'SNP'; $alN2N{$j} = '.'; };
-      if ($altLen-1 >= $minLen) {
-        $type = 'long_SV'; $newAlN++; $alN2N{$j} = $newAlN;
+    if (index($refA, $altA)==0) {
+      if ($refLen-$altLen >= $minLen) {
+        $type = 'good'; $newAlN++; $alN2N{$j} = $newAlN;
       } else {
-        (defined $type and $type =~ m!^(long_SV|long_MNP)$!) or $type = 'short_SV';
-        $alN2N{$j} = '.';
+        (defined $type and $type =~ m!^good$!) or $type = 'bad'; $alN2N{$j} = '.';
       }
-    } elsif ($altLen == 1) {
-      if ($refLen-1 >= $minLen) {
-        $type = 'long_SV'; $newAlN++; $alN2N{$j} = $newAlN;
+    } elsif (index($altA, $refA)==0) {
+      if ($altLen-$refLen >= $minLen) {
+        $type = 'good'; $newAlN++; $alN2N{$j} = $newAlN;
       } else {
-        (defined $type and $type =~ m!^(long_SV|long_MNP)$!) or $type = 'short_SV';
-        $alN2N{$j} = '.';
-      }
-    } elsif ($refLen == $altLen) {
-      if ($refLen >= $minLen) {
-        (defined $type and $type eq 'long_SV') or $type = 'long_MNP';
-        $newAlN++; $alN2N{$j} = $newAlN;
-      } else {
-        (defined $type and $type =~ m!^(long_SV|long_MNP)$!) or $type = 'short_MNP';
-        $alN2N{$j} = '.';
+        (defined $type and $type =~ m!^good$!) or $type = 'bad'; $alN2N{$j} = '.';
       }
     } elsif ($refLen >= $minLen or $altLen >= $minLen) {
-      $type = 'long_SV'; $newAlN++; $alN2N{$j} = $newAlN;
+      $type = 'good'; $newAlN++; $alN2N{$j} = $newAlN; # long_MNP is also OK here.
     } else {
-      (defined $type and $type =~ m!^(long_SV|long_MNP)$!) or $type = 'short_SV';
-      $alN2N{$j} = '.';
+      # 'short_MNP' and 'SNP' can here too.
+      (defined $type and $type =~ m!^good$!) or $type = 'bad'; $alN2N{$j} = '.';
     }
   }# End for ()
-  if ($type eq "long_SV" or $type eq "long_MNP") {
+  if ($type eq "good") {
     if ($newAlN < scalar(@altAlleles)) {
       my @tb;
       for (my $i=0; $i<@altAlleles; $i++) {
