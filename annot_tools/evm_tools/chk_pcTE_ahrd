@@ -1,82 +1,86 @@
-bad	TE-related:zinc-binding in reverse transcriptase	zf-RVT domain-containing protein
-bad	TE-related	Protein FAR1-RELATED SEQUENCE 2-like
-bad	TE-related	Protein FAR1-RELATED SEQUENCE
-bad	TE-related:tnp2	DUF4218 domain-containing protein
-bad	TE-related:GAG_prot_signature	UBN2_3 domain-containing protein
-bad	TE-related:GAG_prot_signature	UBN2 domain-containing protein
-bad	TE-related	DBD_Tnp_Mut domain-containing protein
-bad	TE-related	Pol protein
-bad	TE-related	DDE Tnp4 domain-containing protein
-bad	TE-related	Integrase_H2C2 domain-containing protein
-bad	TE-related	Integrase core domain containing protein
-bad	TE-related	Integrase
-bad	TE-related	Integrase, catalytic core
-bad	TE-related	Ribonuclease H protein
-bad	TE-related	Pol polyprotein
-bad	TE-related	Gag-Pol polyprotein
-bad	TE-related	Retrotransposon protein, putative, Ty1-copia subclass
-bad	TE-related	Transposable element protein
-bad	TE-related	Ribonuclease H-like domain containing protein
-bad	TE-related	Reverse transcriptase, putative; 100033-105622
-bad	TE-related	Retrotransposon-like protein
-bad	TE-related	RNA-directed DNA polymerase, eukaryota, reverse transcriptase zinc-binding domain protein
-bad	TE-related	Structural polyprotein
-bad	TE-related	Reverse transcriptase-like protein
-bad	TE-related	Gypsy/ty3 element polyprotein
-bad	TE-related	Gag-Pol polyprotein/retrotransposon
-bad	TE-related	Telomerase reverse transcriptase
-bad	TE-related	Retron-type RNA-directed DNA polymerase
+bad	TE-related	BnaAnng22160D protein
 bad	TE-related	CACTA en-spm transposon protein
 bad	TE-related	CCHC-type domain-containing protein
-bad	TE-related	Zf-CCHC domain-containing protein
-bad	TE-related	Enzymatic polyprotein
+bad	TE-related	DBD_Tnp_Mut domain-containing protein
+bad	TE-related	DDE Tnp4 domain-containing protein
 bad	TE-related	Envelope-like protein
+bad	TE-related	Enzymatic polyprotein
 bad	TE-related	Gag
 bad	TE-related	Gag protease polyprotein
-bad	TE-related	Gag-pol polyprotein
+bad	TE-related	Gag-Pol polyprotein
+bad	TE-related	Gag-Pol polyprotein/retrotransposon
 bad	TE-related	Gag-asp_proteas domain-containing protein
+bad	TE-related	Gag-pol polyprotein
 bad	TE-related	Gag-pro-like protein
 bad	TE-related	Gag-protease polyprotein
 bad	TE-related	Gag-proteinase polyprotein
 bad	TE-related	Gag/pol protein
 bad	TE-related	Gypsy-like retrotransposase
+bad	TE-related	Gypsy/ty3 element polyprotein
 bad	TE-related	HERV-K_8p23.1 provirus ancestral Gag polyprotein
+bad	TE-related	Integrase
+bad	TE-related	Integrase core domain containing protein
+bad	TE-related	Integrase, catalytic core
+bad	TE-related	Integrase_H2C2 domain-containing protein
 bad	TE-related	LINE-1 retrotransposable element ORF2 protein
+bad	TE-related	LINE-1 reverse transcriptase-like
 bad	TE-related	MuDR family transposase
 bad	TE-related	MuDRA-like transposase
 bad	TE-related	Plant transposase
+bad	TE-related	Pol polyprotein
+bad	TE-related	Pol protein
 bad	TE-related	Polyprotein
-bad	TE-related	Retrovirus-related Pol polyprotein from transposon 17.6
+bad	TE-related	Protein FAR1-RELATED SEQUENCE
+bad	TE-related	Protein FAR1-RELATED SEQUENCE 2-like
+bad	TE-related	RNA-directed DNA polymerase, eukaryota, reverse transcriptase zinc-binding domain protein
+bad	TE-related	RNase H domain-containing protein
 bad	TE-related	Retroelement pol polyprotein-like
+bad	TE-related	Retron-type RNA-directed DNA polymerase
 bad	TE-related	Retrotran_gag_3 domain-containing protein
 bad	TE-related	Retrotrans_gag domain-containing protein
 bad	TE-related	Retrotransposable element Tf2
 bad	TE-related	Retrotransposon gag protein
-bad	TE-related	Retrotransposon protein, putative, Ty3-gypsy subclass
 bad	TE-related	Retrotransposon protein
+bad	TE-related	Retrotransposon protein, putative, Ty1-copia subclass
+bad	TE-related	Retrotransposon protein, putative, Ty3-gypsy subclass
 bad	TE-related	Retrotransposon-derived protein PEG10, putative
+bad	TE-related	Retrotransposon-like protein
+bad	TE-related	Retrovirus-related Pol polyprotein from transposon 17.6
+bad	TE-related	Retrovirus-related Pol polyprotein from transposon 297
 bad	TE-related	Retrovirus-related Pol polyprotein from transposon RE1
 bad	TE-related	Retrovirus-related Pol polyprotein from transposon TNT 1-94
 bad	TE-related	Retrovirus-related pol polyprotein from transposon
+bad	TE-related	Retrovirus-related Pol polyprotein from transposon opus
 bad	TE-related	Reverse transcriptase
+bad	TE-related	Reverse transcriptase Ty1/copia-type domain-containing protein
 bad	TE-related	Reverse transcriptase domain-containing protein
 bad	TE-related	Reverse transcriptase, RNA-dependent DNA polymerase
+bad	TE-related	Reverse transcriptase, putative; 100033-105622
+bad	TE-related	Reverse transcriptase-like protein
+bad	TE-related	Ribonuclease H
+bad	TE-related	Ribonuclease H protein
+bad	TE-related	Ribonuclease H-like domain containing protein
+bad	TE-related	Structural polyprotein
+bad	TE-related	Telomerase reverse transcriptase
 bad	TE-related	Transpos_assoc domain-containing protein
+bad	TE-related	Transposable element protein
 bad	TE-related	Transposase
+bad	TE-related	Transposase_23 domain-containing protein
 bad	TE-related	Transposon TX1 uncharacterized 149 kDa protein
 bad	TE-related	Transposon Tf2-1 polyprotein isoform X1
+bad	TE-related	Transposon Tf2-6 polyprotein
 bad	TE-related	Transposon Tf2-8 polyprotein
 bad	TE-related	Transposon Ty3-I Gag-Pol polyprotein
 bad	TE-related	Transposon Ty3-I Gag-Pol polyprotein isoform X1
-bad	TE-related	Retrovirus-related Pol polyprotein from transposon
-bad	TE-related	Ty3/gypsy retrotransposon protein
-bad	TE-related	Ty3-gypsy retrotransposon protein
-bad	TE-related	Reverse transcriptase Ty1/copia-type domain-containing protein
 bad	TE-related	Ty1-copia retrotransposon protein
-bad	TE-related	BnaAnng22160D protein
+bad	TE-related	Ty3-gypsy retrotransposon protein
+bad	TE-related	Ty3/gypsy retrotransposon protein
 bad	TE-related	Ulp1-like peptidase
-bad	TE-related	Ribonuclease H
-bad	TE-related	RNase H domain-containing protein
+bad	TE-related	Zf-CCHC domain-containing protein
+bad	TE-related:GAG_prot_signature	UBN2 domain-containing protein
+bad	TE-related:GAG_prot_signature	UBN2_3 domain-containing protein
+bad	TE-related:tnp2	DUF4218 domain-containing protein
+bad	TE-related:zinc-binding in reverse transcriptase	zf-RVT domain-containing protein
 bad	Various uncharacterized	Unknown protein
 bad	chloroplast	30S ribosomal protein S3, chloroplastic
 bad	chloroplast	50S ribosomal protein L16, chloroplastic
@@ -84,10 +88,11 @@ bad	chloroplast	ATPase_AAA_core domain-containing protein
 bad	chloroplast	DNA-directed RNA polymerase
 bad	chloroplast	DNA-directed RNA polymerase subunit beta''
 bad	chloroplast	Integrase catalytic domain-containing protein
-bad	chloroplast	NAD(P)H-quinone oxidoreductase subunit H, chloroplastic
 bad	chloroplast	NAD(P)H-quinone oxidoreductase chain 4, chloroplastic
+bad	chloroplast	NAD(P)H-quinone oxidoreductase subunit H, chloroplastic
 bad	chloroplast	ORF43m
 bad	chloroplast	Photosystem II CP43 reaction center protein
+bad	microorg	Protein MNN4-like
 bad	mitochondrion	30S ribosomal protein S11, chloroplastic
 bad	mitochondrion	ATP synthase subunit 9, mitochondrial
 bad	mitochondrion	ATP synthase subunit a
@@ -119,36 +124,35 @@ bad	mitochondrion	Ribosomal_L2_C domain-containing protein
 bad	mitochondrion	S-acyltransferase
 bad	mitochondrion	Serine-type D-Ala-D-Ala carboxypeptidase
 bad	mitochondrion	Succinate dehydrogenase subunit 3
-bad	microorg	Protein MNN4-like
 bad	rDNA	Senescence-associated protein
 bad	rRNA-gene-related	Regulator of rDNA transcription protein 15
-bad	rRNA-gene-related	SANT domain-containing protein
 bad	rRNA-gene-related	Rrna intron-encoded homing endonuclease
-suspect	TE-related	Beta-galactosidase
-suspect	TE-related	SWIM-type domain-containing protein
-suspect	TE-related	Chromo domain-containing protein
-suspect	TE-related	DNA polymerase, beta-like region
-suspect	TE-related:part	DNA/RNA polymerases superfamily protein
-suspect	TE-related:part	CRIB domain-containing protein
-suspect	TE-related:hAT	DUF659 domain-containing protein
-suspect	TE-sometimes	DUF4216 domain-containing protein
-good	superfamily-TE-CACTA	Neprosin domain-containing protein
-good	short-motif	ankyrin repeat-containing protein NPR4-like
-good	unknown	Exonuclease domain-containing protein
-good	unknown	Ribonuclease
+bad	rRNA-gene-related	SANT domain-containing protein
 good	TE-contaminated	Serine/threonine-protein phosphatase 7 long form-like protein
-good	plant-TE-derived	BED-type domain-containing protein
-good	plant-TE-derived	Zinc finger BED domain-containing protein DAYSLEEPER-like
-good	plant-TE-derived	Zinc finger BED domain-containing protein RICESLEEPER 2-like
-good	plant-TE-derived	Zinc finger BED domain-containing protein RICESLEEPER 3-like
-good	plant-TE-derived	Zinc finger BED domain-containing protein RICESLEEPER 2
-good	plant-TE-derived	zinc finger BED domain-containing protein RICESLEEPER 2-like
-good	plant-TE-derived	PMD domain-containing protein
-good	plant	S-protein homolog
-good	plant	DUF4283 domain-containing protein
-good	plant	WD_REPEATS_REGION domain-containing protein
-good	plant	Pentatricopeptide repeat-containing protein
 good	XXXXX	Transmembrane protein
 good	plant	DNA-directed RNA polymerase subunit beta
+good	plant	DUF4283 domain-containing protein
+good	plant	Pentatricopeptide repeat-containing protein
+good	plant	S-protein homolog
+good	plant	WD_REPEATS_REGION domain-containing protein
+good	plant-TE-derived	BED-type domain-containing protein
+good	plant-TE-derived	PMD domain-containing protein
+good	plant-TE-derived	Zinc finger BED domain-containing protein DAYSLEEPER-like
+good	plant-TE-derived	Zinc finger BED domain-containing protein RICESLEEPER 2
+good	plant-TE-derived	Zinc finger BED domain-containing protein RICESLEEPER 2-like
+good	plant-TE-derived	Zinc finger BED domain-containing protein RICESLEEPER 3-like
+good	plant-TE-derived	zinc finger BED domain-containing protein RICESLEEPER 2-like
 good	plant-TE-homo	Phosphate transporter PHO1-like protein 9-like
 good	plant:C48_TE	ULP_PROTEASE domain-containing protein
+good	short-motif	ankyrin repeat-containing protein NPR4-like
+good	superfamily-TE-CACTA	Neprosin domain-containing protein
+good	unknown	Exonuclease domain-containing protein
+good	unknown	Ribonuclease
+suspect	TE-related	Beta-galactosidase
+suspect	TE-related	Chromo domain-containing protein
+suspect	TE-related	DNA polymerase, beta-like region
+suspect	TE-related	SWIM-type domain-containing protein
+suspect	TE-related:hAT	DUF659 domain-containing protein
+suspect	TE-related:part	CRIB domain-containing protein
+suspect	TE-related:part	DNA/RNA polymerases superfamily protein
+suspect	TE-sometimes	DUF4216 domain-containing protein
