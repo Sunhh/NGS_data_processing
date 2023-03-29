@@ -1,6 +1,7 @@
 bad	TE-related	BnaAnng22160D protein
 bad	TE-related	CACTA en-spm transposon protein
 bad	TE-related	CCHC-type domain-containing protein
+bad	TE-related	Copia protein
 bad	TE-related	DBD_Tnp_Mut domain-containing protein
 bad	TE-related	DDE Tnp4 domain-containing protein
 bad	TE-related	Envelope-like protein
@@ -30,6 +31,7 @@ bad	TE-related	Plant transposase
 bad	TE-related	Pol polyprotein
 bad	TE-related	Pol protein
 bad	TE-related	Polyprotein
+bad	TE-related	Protein NYNRIN-like
 bad	TE-related	Protein FAR1-RELATED SEQUENCE
 bad	TE-related	Protein FAR1-RELATED SEQUENCE 2-like
 bad	TE-related	RNA-directed DNA polymerase, eukaryota, reverse transcriptase zinc-binding domain protein
@@ -153,6 +155,7 @@ suspect	TE-related	Chromo domain-containing protein
 suspect	TE-related	DNA polymerase, beta-like region
 suspect	TE-related	SWIM-type domain-containing protein
 suspect	TE-related:hAT	DUF659 domain-containing protein
+suspect	TE-related:hAT	Dimer_Tnp_hAT domain-containing protein
 suspect	TE-related:part	CRIB domain-containing protein
 suspect	TE-related:part	DNA/RNA polymerases superfamily protein
 suspect	TE-sometimes	DUF4216 domain-containing protein
