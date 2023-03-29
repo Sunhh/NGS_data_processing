@@ -11,15 +11,15 @@ function tsmsg {
 
 # Specify for each server
 dir_NGS=$HOME/tools/github/NGS_data_processing/
-dir_aug='/data/Sunhh/src/Annotation/maker/maker.3.01.03/exe/augustus/'
-AUGUSTUS_CONFIG_PATH=${dir_aug}/config/
+dir_aug='/data/Sunhh/src/annotation/augustus/Augustus-3.4.0/'
+export AUGUSTUS_CONFIG_PATH=${dir_aug}/config/
 dir_braker=/Data/Sunhh/src/annotation/braker/BRAKER_v2.0.4/
-exe_maker2zff=/data/Sunhh/src/Annotation/maker/maker.3.01.03/bin/maker2zff
-exe_fathom=/data/Sunhh/src/Annotation/maker/maker.3.01.03/exe/snap/fathom
+exe_maker2zff=/data/Sunhh/src/annotation/maker/maker/bin/maker2zff
+exe_fathom=/data/Sunhh/src/annotation/maker/maker/exe/SNAP/fathom
 
 # Specify for each run
-doRmRed='n'   # If we want to remove redundancy in proteins. 
-doOpt='n' # If we want to optimize the parameters. 
+doRmRed='y'   # If we want to remove redundancy in proteins. 
+doOpt='y' # If we want to optimize the parameters.
 in_type=$1    # "export|gff". export for snap output, gff for gff3 file input. 
 orgRef=$2  # generic or some other old species model ID. 
 orgName=$3 # New model ID. 
@@ -87,7 +87,7 @@ if [ $in_type == "gff" ]; then
   echo "##FASTA" >> $in_wiFa_gff
   cat $in_genom_fa >> $in_wiFa_gff
   exe_cmd "$exe_maker2zff -n $in_wiFa_gff"
-  exe_cmd "fathom -export $ovl_len -plus genome.ann genome.dna"
+  exe_cmd "$exe_fathom -export $ovl_len -plus genome.ann genome.dna"
 fi
 ### Remove redundancy
 para_rmLis=""
@@ -132,7 +132,7 @@ exe_cmd "perl $pl_accuracy train_firsttest.out"
 
 # Section 3. Optimization. 
 if [ $doOpt == "y" ]; then
-  exe_cmd "perl $pl_optPara --cpus=60 --rounds=5 --AUGUSTUS_CONFIG_PATH=${AUGUSTUS_CONFIG_PATH} --species=$orgName  ${in_gb}.train  1>opt_train.std 2>opt_train.err"
+  exe_cmd "perl $pl_optPara --cpus=100 --rounds=5 --AUGUSTUS_CONFIG_PATH=${AUGUSTUS_CONFIG_PATH} --species=$orgName  ${in_gb}.train  1>opt_train.std 2>opt_train.err"
   # exe_cmd "perl $pl_optPara --cpus=50 --kfold=25 --species=$orgName  ${in_gb}.train 1>opt_train_utr.std 2>opt_train_utr.err"
   # exe_cmd "perl $pl_optPara --cpus=50 --kfold=25 --UTR=on --species=$orgName  ${in_gb}.train 1>opt_train_utr.std 2>opt_train_utr.err"
   exe_cmd "$exe_etrain --species=$orgName --stopCodonExcludedFromCDS=false --AUGUSTUS_CONFIG_PATH=${AUGUSTUS_CONFIG_PATH} ${in_gb}.train 1>etrain_trainOpt.std 2>etrain_trainOpt.err"
