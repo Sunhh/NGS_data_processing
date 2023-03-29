@@ -9,24 +9,30 @@ function tsmsg {
 	echo "[$(date)]$1"
 }
 
-pl_goodWrn="$HOME/tools/github/NGS_data_processing/annot_tools/snap_good_wrn_by_valid.pl"
-dir_snap='/Data/Sunhh/src/annotation/maker/maker/exe/snap/'
-export PATH="$PATH:$dir_snap"
+# Example command: bash train_snap1.sh in_genome.fa  in_genome.pep.gff3  taxID roundID
 
+# Specify for each server. 
+dir_NGS=$HOME/tools/github/NGS_data_processing/
+dir_snap='/data/Sunhh/src/Annotation/maker/maker.3.01.03/exe/snap'
+
+# Specify for each run
 ovl_len=2000
-# ln -s ../../../05.run_maker/result/r4/02.fullIntron/r4_finalUse.gff3 ./
+genom_fa=$1 # in_genome.fa
+woFa_gff=$2 # r4_finalUse.gff3
+org_name=$3 # P1Genom
+useTag=$4   # r5FullIntronIsland2kb
 
-in_gff=r5_maker_fullIntron_Island2kb_wiFa.gff3
-# woFa_gff=r4_finalUse.gff3
-# genom_fa=/Data/Sunhh/seldom/forWushan/rose_genome/gene_prediction/db/samantha_ctg.fasta
-# in_gff="${woFa_gff}.wiFa.gff"
-org_name=P1Genom
-useTag="r5FullIntronIsland2kb"
+### No need to change. 
 ohmm_name=${org_name}.${useTag}.hmm
 
+in_gff="wiFa.gff" # r5_maker_fullIntron_Island2kb_wiFa.gff3
 cat $woFa_gff > $in_gff
 echo "##FASTA" >> $in_gff
 cat $genom_fa >> $in_gff
+
+# Paths 
+export PATH="$PATH:$dir_snap"
+pl_goodWrn="$dir_NGS/annot_tools/snap_good_wrn_by_valid.pl"
 
 exe_cmd "maker2zff -n $in_gff"
 # exe_cmd "maker2zff -x 0 -o 1 -c 1 -l 30 $in_gff"
