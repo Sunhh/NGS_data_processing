@@ -175,4 +175,5 @@ fi
 ##### Delete empty files by CMD: find  output_dir/  -empty
 ##### Done. 
 
+cp -pr $AUGUSTUS_CONFIG_PATH/species/$orgName/ ./
 
