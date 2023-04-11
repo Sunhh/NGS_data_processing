@@ -32,6 +32,12 @@ printf "" > evm_weight.txt
 # echo -e "ABINITIO_PREDICTION\tLiftoff\t5" >> evm_weight.txt
 #echo -e "OTHER_PREDICTION\ttransdecoder\t3" >> evm_weight.txt
 echo -e "PROTEIN\tspliced_protein_alignments\t1" >> evm_weight.txt
+if [[ $evmEstGff == "" ]];
+then
+  :
+else
+  echo -e "TRANSCRIPT\tEST_match\t1" >> evm_weight.txt
+fi
 #echo -e "TRANSCRIPT\tblat-DB_pasa\t1" >> evm_weight.txt
 #echo -e "TRANSCRIPT\tgmap-DB_pasa\t1" >> evm_weight.txt
 #echo -e "TRANSCRIPT\tassembler-DB_pasa" >> evm_weight.txt
@@ -156,4 +162,12 @@ fi
 exe_cmd "$CONDA_activate_liftoff"
 exe_cmd "$PL_pipeEVM -in_cfg ./param.cfg  -bestModel evm -in_refList ref_list -in_addList add_list -out_pref evmMerged"
 exe_cmd "$CONDA_deactivate"
+
+# Clean temporary data.
+exe_cmd "rm -f est_aln.evm.gff3 prot_aln.evm.gff3"
+while IFS=$'\t' read -r -a myArr
+do
+  exe_cmd "bgzip -@ 10 tmp/${myArr[1]}.trim2cds.gff3"
+done < "$fnList"
+
 
