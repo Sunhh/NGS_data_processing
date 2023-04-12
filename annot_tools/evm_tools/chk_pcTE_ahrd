@@ -82,6 +82,8 @@ bad	TE-related	Zf-CCHC domain-containing protein
 bad	TE-related:GAG_prot_signature	UBN2 domain-containing protein
 bad	TE-related:GAG_prot_signature	UBN2_3 domain-containing protein
 bad	TE-related:tnp2	DUF4218 domain-containing protein
+bad	TE-related:Retrotran_gag_2	DUF4219 domain-containing protein
+bad	TE-related:Retrotran_gag_2	DUF4219 domain-containing protein/UBN2 domain-containing protein
 bad	TE-related:zinc-binding in reverse transcriptase	zf-RVT domain-containing protein
 bad	Various uncharacterized	Unknown protein
 bad	chloroplast	30S ribosomal protein S3, chloroplastic
@@ -130,6 +132,7 @@ bad	rDNA	Senescence-associated protein
 bad	rRNA-gene-related	Regulator of rDNA transcription protein 15
 bad	rRNA-gene-related	Rrna intron-encoded homing endonuclease
 bad	rRNA-gene-related	SANT domain-containing protein
+good	TE-contaminated	arginine and glutamate-rich protein 1-like
 good	TE-contaminated	Serine/threonine-protein phosphatase 7 long form-like protein
 good	XXXXX	Transmembrane protein
 good	plant	DNA-directed RNA polymerase subunit beta
@@ -138,6 +141,8 @@ good	plant	Pentatricopeptide repeat-containing protein
 good	plant	S-protein homolog
 good	plant	WD_REPEATS_REGION domain-containing protein
 good	plant-TE-derived	BED-type domain-containing protein
+good	plant-TE-derived	Protein of unknown function (DUF1218)
+good	plant-TE-derived	MATH domain-containing protein
 good	plant-TE-derived	PMD domain-containing protein
 good	plant-TE-derived	Zinc finger BED domain-containing protein DAYSLEEPER-like
 good	plant-TE-derived	Zinc finger BED domain-containing protein RICESLEEPER 2
@@ -150,6 +155,7 @@ good	short-motif	ankyrin repeat-containing protein NPR4-like
 good	superfamily-TE-CACTA	Neprosin domain-containing protein
 good	unknown	Exonuclease domain-containing protein
 good	unknown	Ribonuclease
+good	unknown	Poly(A)-specific ribonuclease
 suspect	TE-related	Beta-galactosidase
 suspect	TE-related	Chromo domain-containing protein
 suspect	TE-related	DNA polymerase, beta-like region
