@@ -152,7 +152,7 @@ sub usage {
 #     -rmOvlapLen     [1/-1] bps. Value '-1' means not considering by overlapped length. 
 #     -rmOvlapRatio1  [-1] 0-1 (1 is 100%)
 #     -rmOvlapRatio2  [-1] 0-1 (1 is 100%)
-#     -rmOvlapType    [exon,CDS,mRNA]
+#     -rmOvlapType    [exon,CDS,match_part]
 #     -rmOvlapStrand  ['Both'] Could be 'Single'. 
 #----------------------------------------------------------------------------------------------------
 # -ovlapLongest     [Boolean] Keep only the longest overlapped genes. 
