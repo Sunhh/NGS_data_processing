@@ -132,11 +132,24 @@ sub write_gff3File {
 	my $lineN_group_href = $gff3_href->{'lineN_group'}; 
 	my $lineN2line_href = $gff3_href->{'lineN2line'}; 
 	### Step2. Group_topIDs are sorted by line number in default. 
-	###   If we want to sort Group_topIDs by other method such as chromID/position, 
-	###   we should sort it out of this subroutine, and define {'topIDs_aref'}. 
-	my $topIDs_aref = $parm{'topIDs_aref'} // [ sort { $lineN_group_href->{$a}{'curLn'}[0]<=>$lineN_group_href->{$b}{'curLn'}[0] } keys %$lineN_group_href ]; 
+	###   If we want to sort Group_topIDs by other method such as chromID/position, try 'position'
+	my $topIDs_aref;
 	$parm{'sort_by'} = $parm{'sort_by'} // 'lineNum'; # Could be Raw/lineNum/str_posi/position
-	$parm{'sort_by'} = lc($parm{'sort_by'}); 
+	$parm{'sort_by'} = lc($parm{'sort_by'});
+	if ($parm{'sort_by'} =~ m!^(raw|linenum)$!i) {
+		$topIDs_aref = $parm{'topIDs_aref'} // [ sort { $lineN_group_href->{$a}{'curLn'}[0]<=>$lineN_group_href->{$b}{'curLn'}[0] } keys %$lineN_group_href ]; 
+	} elsif ($parm{'sort_by'} =~ m!^(str_posi|position)$!i) {
+		$topIDs_aref = $parm{'topIDs_aref'} // [ sort {
+			my $lnA = $lineN_group_href->{$a}{'curLn'}[0];
+			my $lnB = $lineN_group_href->{$b}{'curLn'}[0];
+			$gff3_href->{'lineN2hash'}{$lnA}{'seqID'} cmp $gff3_href->{'lineN2hash'}{$lnB}{'seqID'}
+			|| $gff3_href->{'lineN2hash'}{$lnA}{'start'} <=> $gff3_href->{'lineN2hash'}{$lnB}{'start'}
+			|| $gff3_href->{'lineN2hash'}{$lnA}{'end'}   <=> $gff3_href->{'lineN2hash'}{$lnB}{'end'}
+			|| $lnA <=> $lnB
+		} keys %$lineN_group_href ]; 
+	} else {
+		&stopErr("[Err] unknown sort_by [$parm{'sort_by'}]\n");
+	}
 	
 	for my $topID ( @$topIDs_aref ) {
 		### Step3. Use $parm{'sort_by'} to control the way to sort lines within groups. 
