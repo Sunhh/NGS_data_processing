@@ -198,9 +198,9 @@ sub write_gff3File {
 			sort {  
 			     $gff3_href->{'lineN2hash'}{$a->[1]}{'seqID'} cmp $gff3_href->{'lineN2hash'}{$b->[1]}{'seqID'}
 			  || $gff3_href->{'lineN2hash'}{$a->[1]}{'start'} <=> $gff3_href->{'lineN2hash'}{$b->[1]}{'start'}
+			  || &_featType2Num( $gff3_href->{'lineN2hash'}{$a->[1]}{'type'} )  <=> &_featType2Num( $gff3_href->{'lineN2hash'}{$b->[1]}{'type'} )
 			  || $gff3_href->{'lineN2hash'}{$a->[1]}{'end'}   <=> $gff3_href->{'lineN2hash'}{$b->[1]}{'end'}
 			  || $a->[1] <=> $b->[1]
-			  || &_featType2Num( $gff3_href->{'lineN2hash'}{$a->[1]}{'type'} )  <=> &_featType2Num( $gff3_href->{'lineN2hash'}{$b->[1]}{'type'} )
 			  || $gff3_href->{'lineN2hash'}{$a->[1]}{'type'}  cmp $gff3_href->{'lineN2hash'}{$b->[1]}{'type'}
 			} @grp_lines; 
 		} else {
