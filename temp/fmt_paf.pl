@@ -10,7 +10,7 @@ while (<>) {
   # $ta[11] >= 20 or next;
   my $ident1 = sprintf("%0.1f", $ta[9]/($ta[3]-$ta[2])*100);
   my $ident2 = sprintf("%0.1f", $ta[9]/($ta[8]-$ta[7])*100);
-  my $Ident3 = sprintf("%0.1f", $ta[9]/$ta[10]*100);
+  my $ident3 = sprintf("%0.1f", $ta[9]/$ta[10]*100);
   print join("\t", @ta[0..11], $ident1, $ident2, $ident3)."\n";
 }
 
