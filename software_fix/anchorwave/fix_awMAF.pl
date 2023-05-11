@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 # [12/21/2022] Fix out.maf output from AnchorWave.
+### http://genomewiki.ucsc.edu/index.php/Coordinate_Transforms
 use strict;
 use warnings;
 
