@@ -38,7 +38,8 @@ for (my $i=0; $i<@f1; $i++) {
   my $rsubID = join("_", $rid, $rs, $re);
   &fileSunhh::write2file("$wd/q.$i.fa", ">$qsubID\n$qsubSeq\n", '>');
   &fileSunhh::write2file("$wd/r.$i.fa", ">$rsubID\n$rsubSeq\n", '>');
-  &runCmd("minimap2 -a -x asm20 -t 3 -N 20 $wd/r.$i.fa $wd/q.$i.fa | samtools view -h -q 20 > $wd/o.$i.sam");
+  # &runCmd("minimap2 -a -x asm20 -t 3 -N 20 $wd/r.$i.fa $wd/q.$i.fa | samtools view -h -q 20 > $wd/o.$i.sam");
+  &runCmd("minimap2 -a -x asm20 -t 3 -N 20 $wd/r.$i.fa $wd/q.$i.fa > $wd/o.$i.sam");
   $pm->finish;
 }
 $pm->wait_all_children;
