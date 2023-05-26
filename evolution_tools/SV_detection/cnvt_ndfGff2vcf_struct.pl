@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# 5/26/2023: Updated to include 'tandem_duplication', 'simple relocation' (relocation), and 'collapsed_tandem_repeat'.
 use strict;
 use warnings;
 use LogInforSunhh;
@@ -25,12 +26,14 @@ my $fnGff = shift;
 #
 my %goodName;
 for (qw/deletion collapsed_repeat insertion duplication relocation-insertion inversion substitution/) {$goodName{$_}=1;}
+$goodName{'tandem_duplication'} = 1;
+$goodName{'collapsed_tandem_repeat'} = 1;
+$goodName{'relocation'} = 1;
 my %badName; # reshuffuling should be removed too.
 for (qw/translocation translocation-insertion translocation-inserted_gap translocation-insertion_ATGCN translocation-overlap/) {$badName{$_} = 1;}
-for (qw/relocation relocation-inserted_gap relocation-insertion_ATGCN relocation-overlap/) {$badName{$_} = 1;}
-for (qw/unaligned_beginning unaligned_end gap/) {$badName{$_} = 1;}
+for (qw/relocation-inserted_gap relocation-insertion_ATGCN relocation-overlap/) {$badName{$_} = 1;}
+for (qw/unaligned_beginning unaligned_end gap inserted_gap/) {$badName{$_} = 1;}
 my %otherName;
-for (qw/collapsed_tandem_repeat tandem_duplication/) {$otherName{$_}=1;}
 my %restName;
 
 my %refSeq = %{$fs_obj->save_seq_to_hash('faFile' => $fnRFa)};
@@ -56,6 +59,7 @@ print STDOUT <<'HHHS';
 ##ALT=<ID=INS:ME:LINE1,Description="LINE1 element insertion">
 ##ALT=<ID=INS:ME:SVA,Description="SVA element insertion">
 ##ALT=<ID=INS:UNK,Description="Sequence insertion of unspecified origin">
+##ALT=<ID=REL,Description="Relocation">
 ##ALT=<ID=RIN,Description="Relocation-insertion">
 ##ALT=<ID=INV,Description="Inversion">
 ##CPX_TYPE_NDstruct_DEL="Deletion in ref_struct.gff generated from NucDiff"
@@ -126,6 +130,12 @@ while (<$fhGff>) {
     ($refS, $refE) = ($1, $2); # They should be updated later, which should be always the left flank's end position.
     $h8{'breakpoint_query'} =~ m!^(\d+)\-(\d+)$! or die "Fk 6\n";
     ($qryS, $qryE) = ($1, $2);
+  } elsif ($svType eq 'relocation') {
+    $strN = 0;
+    $h8{'blk_ref'} =~ m!^(\d+)\-(\d+)$! or die "Fk 3a\n";
+    ($refS, $refE) = ($1, $2); # They should be updated later, which should be always the left flank's end position.
+    $h8{'breakpoint_query'} =~ m!^(\d+)\-(\d+)$! or die "Fk 6a\n";
+    ($qryS, $qryE) = ($1, $2);
   } elsif ($svType eq 'inversion') {
     $refS=$ta[3]; $refE=$ta[4]; $strN=$h8{'query_dir'}; # The strand doesn't affect positions.
     $h8{'query_coord'} =~ m!^(\d+)\-(\d+)$! or die "Fk 7\n";
@@ -134,6 +144,13 @@ while (<$fhGff>) {
     ($refS, $refE) = @ta[3,4]; $strN=$h8{'query_dir'};
     $h8{'query_coord'} =~ m!^(\d+)\-(\d+)$! or die "Fk 8\n";
     ($qryS, $qryE) = ($1, $2);
+  } elsif ($svType eq 'tandem_duplication') {
+    $refS=$refE=$ta[3]; $strN=$h8{'query_dir'};
+    $h8{'query_coord'} =~ m!^(\d+)\-(\d+)$! or die "Fk 10\n"; # strand should not matter.
+    ($qryS, $qryE) = ($1, $2);
+  } elsif ($svType eq 'collapsed_tandem_repeat') {
+    $refS=$ta[3]; $refE=$ta[4]; $strN=$h8{'query_dir'};
+    $qryS=$qryE=$h8{'query_coord'};
   } else {
     defined $restName{$h8{'Name'}} or &tsmsg("[Wrn] Skip Name [$h8{'Name'}].\n");
     next;
@@ -163,13 +180,16 @@ for my $svType (keys %svPool) {
 #   SUB: substitution + insertion : Re-align.
 #   INS: 'relocation-insertion': SV_XX.1 + SV_XX.2
 for my $refID (sort keys %allRefID) {
-  my (@del_svIDs, @cor_svIDs, @sub_svIDs, @dup_svIDs, @ins_svIDs, @rin_svIDs);
+  my (@del_svIDs, @cor_svIDs, @sub_svIDs, @dup_svIDs, @ins_svIDs, @rin_svIDs, @rel_svIDs);
   defined $refID2svID{'deletion'}{$refID} and @del_svIDs = @{$refID2svID{'deletion'}{$refID}};
   defined $refID2svID{'collapsed_repeat'}{$refID} and @cor_svIDs = @{$refID2svID{'collapsed_repeat'}{$refID}};
   defined $refID2svID{'substitution'}{$refID} and @sub_svIDs = @{$refID2svID{'substitution'}{$refID}};
   defined $refID2svID{'substitution'}{$refID} and @dup_svIDs = @{$refID2svID{'duplication'}{$refID}};
   defined $refID2svID{'insertion'}{$refID} and @ins_svIDs = @{$refID2svID{'insertion'}{$refID}};
-  defined $refID2svID{'relocation-insertion'}{$refID} and @rin_svIDs = map { s!\.1!!; $_; } grep { $_ =~ m!\.1$! } @{$refID2svID{'relocation-insertion'}{$refID}};
+  defined $refID2svID{'relocation-insertion'}{$refID} and @rin_svIDs = grep { $_ =~ m!\.1$! } @{$refID2svID{'relocation-insertion'}{$refID}};
+  @rin_svIDs = map { s!\.1!!; $_; } @rin_svIDs;
+  defined $refID2svID{'relocation'}{$refID} and @rel_svIDs = grep { $_ =~ m!\.1$! } @{$refID2svID{'relocation'}{$refID}};
+  @rel_svIDs = map { s!\.1!!; $_; } @rel_svIDs;
   my %rm_del_idx;
   my %rm_ins_idx;
   # DEL: deletion     + collapsed_repeat
@@ -185,6 +205,23 @@ for my $refID (sort keys %allRefID) {
       $cor_str == -1 and $del_str == -1 and $del_rE == $cor_rE and do {$rm_del_idx{$i}=1; last;};
     }
   }
+  # DEL: 'relocation': SV_XX.1 + SV_XX.2. Update location and strand.
+  for my $rel_ID (@rel_svIDs) {
+    my $rel_ID1 = "$rel_ID.1";
+    my $rel_ID2 = "$rel_ID.2";
+    my ($r1_rS, $r1_rE, $r1_qID, $r1_qS, $r1_qE, $r1_str) = @{$svPool{'relocation'}{$refID}{$rel_ID1}};
+    my ($r2_rS, $r2_rE, $r2_qID, $r2_qS, $r2_qE, $r2_str) = @{$svPool{'relocation'}{$refID}{$rel_ID2}};
+    if ($r1_rS > $r2_rS) {
+      # Deleted ref region should be [$r2_rE+1, $r1_rS-1]
+      $svPool{'relocation'}{$refID}{$rel_ID1}[5] = -1;
+      $svPool{'relocation'}{$refID}{$rel_ID2}[5] = -1;
+    } else {
+      # Deleted ref region should be [$r1_rE+1, $r2_rS-1]
+      $svPool{'relocation'}{$refID}{$rel_ID1}[5] = 1;
+      $svPool{'relocation'}{$refID}{$rel_ID2}[5] = 1;
+    }
+  }
+
   
   # INS: insertion    + duplication
   for my $dup_ID (@dup_svIDs) {
@@ -249,7 +286,6 @@ for my $refID (sort keys %allRefID) {
       $svPool{'relocation-insertion'}{$refID}{$rin_ID2}[5] = 1;
     }
   }
-
   # Clean deletion/insertion SVs.
   my (@new_del, @new_ins);
   for (my $i=0; $i<@del_svIDs; $i++) {
@@ -274,7 +310,6 @@ for my $refID (sort keys %allRefID) {
 # Process all VARs and output the VCF file.
 #
 
-# for (qw/deletion collapsed_repeat insertion duplication relocation-insertion inversion substitution/) {$goodName{$_}=1;}
 for my $refID (sort keys %allRefID) {
   # Output deletion
   for my $var_ID (@{$refID2svID{'deletion'}{$refID}}) {
@@ -292,6 +327,26 @@ for my $refID (sort keys %allRefID) {
     my $infoTxt = "ALGORITHMS=NucDiff_struct;SVTYPE=DEL;END=$rE;SVLEN=-".($rE-$rS+1);
     print STDOUT join("\t", $refID, $rS-1, '.', $baseRef, $baseAlt, '.', 'PASS', $infoTxt, "GT", "1/1")."\n";
   }
+  # Output collapsed_tandem_repeat (DEL)
+  for my $var_ID (@{$refID2svID{'collapsed_tandem_repeat'}{$refID}}) {
+    my ($rS, $rE, $qryID, $qS, $qE, $strN) = @{$svPool{'collapsed_tandem_repeat'}{$refID}{$var_ID}};
+    my $baseRef = substr($refSeq{$refID}{'seq'}, $rS-2, $rE-$rS+2);
+    my $baseAlt = substr($baseRef, 0, 1);
+    my $infoTxt = "ALGORITHMS=NucDiff_struct;SVTYPE=DEL;END=$rE;SVLEN=-".($rE-$rS+1);
+    print STDOUT join("\t", $refID, $rS-1, '.', $baseRef, $baseAlt, '.', 'PASS', $infoTxt, "GT", "1/1")."\n";
+  }
+  # Output relocation (DEL)
+  for my $var_ID (grep { $_ =~ m!\.1$! } @{$refID2svID{'relocation'}{$refID}}) {
+    my ($rS, $rE, $qryID, $qS, $qE, $strN) = @{$svPool{'relocation'}{$refID}{$var_ID}};
+    my $rel_ID2 = $var_ID; $rel_ID2 =~ s!\.1$!.2!;
+    my ($rS2, $rE2, $qryID2, $qS2, $qE2, $strN2) = @{$svPool{'relocation'}{$refID}{$rel_ID2}};
+    my ($rSx, $rEx) = ($rE+1, $rS2-1);
+    $strN == -1 and ($rSx, $rEx) = ($rE2+1, $rS-1);
+    my $baseRef = substr($refSeq{$refID}{'seq'}, $rSx-2, $rEx-$rSx+2);
+    my $baseAlt = substr($baseRef, 0, 1);
+    my $infoTxt = "ALGORITHMS=NucDiff_struct;SVTYPE=REL;END=$rEx;SVLEN=-".($rEx-$rSx+1);
+    print STDOUT join("\t", $refID, $rSx-1, '.', $baseRef, $baseAlt, '.', 'PASS', $infoTxt, "GT", "1/1")."\n";
+  }
   # Output insertion
   for my $var_ID (@{$refID2svID{'insertion'}{$refID}}) {
     my ($rS, $rE, $qryID, $qS, $qE, $strN) = @{$svPool{'insertion'}{$refID}{$var_ID}};
@@ -305,6 +360,16 @@ for my $refID (sort keys %allRefID) {
   # Output duplication
   for my $var_ID (@{$refID2svID{'duplication'}{$refID}}) {
     my ($rS, $rE, $qryID, $qS, $qE, $strN) = @{$svPool{'duplication'}{$refID}{$var_ID}};
+    my $baseRef = substr($refSeq{$refID}{'seq'}, $rS-1, 1);
+    my $baseAlt = substr($qrySeq{$qryID}{'seq'}, $qS-1, $qE-$qS+1);
+    $strN == -1 and &fastaSunhh::rcSeq(\$baseAlt, 'rc');
+    $baseAlt = $baseRef . $baseAlt;
+    my $infoTxt = "ALGORITHMS=NucDiff_struct;SVTYPE=INS;END=".($rS+1).";SVLEN=".($qE-$qS+1);
+    print STDOUT join("\t", $refID, $rS, '.', $baseRef, $baseAlt, '.', 'PASS', $infoTxt, "GT", "1/1")."\n";
+  }
+  # Output tandem_duplication (INS)
+  for my $var_ID (@{$refID2svID{'tandem_duplication'}{$refID}}) {
+    my ($rS, $rE, $qryID, $qS, $qE, $strN) = @{$svPool{'tandem_duplication'}{$refID}{$var_ID}};
     my $baseRef = substr($refSeq{$refID}{'seq'}, $rS-1, 1);
     my $baseAlt = substr($qrySeq{$qryID}{'seq'}, $qS-1, $qE-$qS+1);
     $strN == -1 and &fastaSunhh::rcSeq(\$baseAlt, 'rc');

@@ -47,7 +47,8 @@ while (<>) {
     next;
   }
   my @ta=split(/\t/, $_);
-  defined $rsub2whole{$ta[2]} or die "bad 3: RID: $ta[2]\n";
+  $ta[2] eq '*' and next;
+  defined $rsub2whole{$ta[2]} or die "bad 3: RID: $ta[2] in line: $_\n";
   defined $flag2str{$ta[1]} or die "bad 4: flag: $ta[1]\n";
   unless (defined $qsub2whole{$ta[0]}) {
     $ta[0] =~ m!^(\S+)_(\d+)_(\d+)$! or die "bad 5: QID: $ta[0]\n";
@@ -59,7 +60,7 @@ while (<>) {
     $ta[3] = $ta[3] + $rWS - 1;
     if ($ta[5] =~ s!^(\d+)S!!) {
       $ta[5] = ($1+$qWS-1)."H$ta[5]";
-      substr($ta[9], 0, $1) = '';
+      $ta[9] eq '*' or substr($ta[9], 0, $1) = '';
     } elsif ($ta[5] =~ s!^(\d+)H!!) {
       $ta[5] = ($1+$qWS-1)."H$ta[5]";
     } elsif ($qWS-1 > 0) {
@@ -67,7 +68,7 @@ while (<>) {
     }
     if ($ta[5] =~ s!(\d+)S$!!) {
       $ta[5] = $ta[5].($1+$qKL{'id2len'}{$qWID}-$qWE)."H";
-      substr($ta[9], -$1)='';
+      $ta[9] eq '*' or substr($ta[9], -$1)='';
     } elsif ($ta[5] =~ s!(\d+)H$!!) {
       $ta[5] = $ta[5].($1+$qKL{'id2len'}{$qWID}-$qWE)."H";
     } elsif ($qKL{'id2len'}{$qWID}-$qWE > 0) {
@@ -77,7 +78,7 @@ while (<>) {
     $ta[3] = $ta[3] + $rWS - 1;
     if ($ta[5] =~ s!^(\d+)S!!) {
       $ta[5] = ($1+$qKL{'id2len'}{$qWID}-$qWE)."H$ta[5]";
-      substr($ta[9], 0, $1) ='';
+      $ta[9] eq '*' or substr($ta[9], 0, $1) ='';
     } elsif ($ta[5] =~ s!^(\d+)H!!) {
       $ta[5] = ($1+$qKL{'id2len'}{$qWID}-$qWE)."H$ta[5]";
     } elsif ($qKL{'id2len'}{$qWID}-$qWE > 0) {
@@ -85,7 +86,7 @@ while (<>) {
     }
     if ($ta[5] =~ s!(\d+)S$!!) {
       $ta[5] = $ta[5].($1+$qWS-1)."H";
-      substr($ta[9], -$1) ='';
+      $ta[9] eq '*' or substr($ta[9], -$1) ='';
     } elsif ($ta[5] =~ s!(\d+)H$!!) {
       $ta[5] = $ta[5].($1+$qWS-1)."H";
     } elsif ($qWS-1 > 0) {
