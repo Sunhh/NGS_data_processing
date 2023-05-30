@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# 5/30/2023 Merge SAM files with small batches.
 use strict;
 use warnings;
 use LogInforSunhh;
@@ -43,8 +44,22 @@ for (my $i=0; $i<@f1; $i++) {
   $pm->finish;
 }
 $pm->wait_all_children;
-my $list_sam = join(" ", map { "$wd/o.$_.sam" } (0 .. $#f1));
-&runCmd("samtools merge -O SAM ${opre}.sam $list_sam");
+my @list_sam_arr = map { "$wd/o.$_.sam" } (0 .. $#f1);
+my @list_sam_2;
+for (my $i=0; $i*100 < @list_sam_arr; $i++) {
+  my $iS = $i*100;
+  my $iE = $iS+100-1;
+  $iE > $#list_sam_arr and $iE = $#list_sam_arr;
+  my $l1 = join(" ", @list_sam_arr[$iS .. $iE]);
+  &runCmd("samtools merge -O SAM $wd/m.$i.sam $l1");
+  push(@list_sam_2, "$wd/m.$i.sam");
+}
+if (scalar(@list_sam_2) > 1) {
+  my $list_sam_2txt = join(" ", @list_sam_2);
+  &runCmd("samtools merge -O SAM ${opre}.sam $list_sam_2txt");
+} else {
+  &runCmd("mv $list_sam_2[0] ${opre}.sam");
+}
 
 &fileSunhh::_rmtree($wd);
 
