@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 # 5/4/2023 Query must be aligned.
+# 5/30/2023 Remove ending insertions/deletions which may cause problem in NucDiff.
+
 use strict;
 use warnings;
 use fileSunhh;
@@ -57,7 +59,10 @@ while (<>) {
   my ($qWID, $qWS, $qWE) = @{$qsub2whole{$ta[0]}};
   my ($rWID, $rWS, $rWE) = @{$rsub2whole{$ta[2]}};
   if ($flag2str{$ta[1]} eq 'f') {
+    # Forward alignment.
     $ta[3] = $ta[3] + $rWS - 1;
+    # Read left;
+    ### Fix S/H.
     if ($ta[5] =~ s!^(\d+)S!!) {
       $ta[5] = ($1+$qWS-1)."H$ta[5]";
       $ta[9] eq '*' or substr($ta[9], 0, $1) = '';
@@ -66,6 +71,24 @@ while (<>) {
     } elsif ($qWS-1 > 0) {
       $ta[5] = ($qWS-1)."H$ta[5]";
     }
+    ### Fix I.
+    if ($ta[5] =~ s!^(\d+)H(\d+)I!!) {
+      $ta[5] = ($1+$2)."H$ta[5]";
+      $ta[9] eq '*' or substr($ta[9], 0, $2)='';
+    } elsif ($ta[5] =~ s!^(\d+)I!!) {
+      $ta[5] = $1."H$ta[5]";
+      $ta[9] eq '*' or substr($ta[9], 0, $1)='';
+    }
+    ### Fix D.
+    if ($ta[5] =~ s!^(\d+)H(\d+)D!!) {
+      $ta[5] = $1."H$ta[5]";
+      $ta[3] += $2;
+    } elsif ($ta[5] =~ s!^(\d+)D!!) {
+      $ta[5] = $1."H$ta[5]";
+      $ta[3] += $1;
+    }
+    # Read right.
+    ### Fix S/H.
     if ($ta[5] =~ s!(\d+)S$!!) {
       $ta[5] = $ta[5].($1+$qKL{'id2len'}{$qWID}-$qWE)."H";
       $ta[9] eq '*' or substr($ta[9], -$1)='';
@@ -74,8 +97,25 @@ while (<>) {
     } elsif ($qKL{'id2len'}{$qWID}-$qWE > 0) {
       $ta[5] = $ta[5].($qKL{'id2len'}{$qWID}-$qWE)."H";
     }
+    ### Fix I.
+    if ($ta[5] =~ s!(\d+)I(\d+)H$!!) {
+      $ta[5] = $ta[5] . ($1+$2) . "H";
+      $ta[9] eq '*' or substr($ta[9], -$1)='';
+    } elsif ($ta[5] =~ s!(\d+)I$!!) {
+      $ta[5] = $ta[5] . $1 . "H";
+      $ta[9] eq '*' or substr($ta[9], -$1)='';
+    }
+    ### Fix D.
+    if ($ta[5] =~ s!(\d+)D(\d+)H$!!) {
+      $ta[5] = $ta[5].($1+$2)."H";
+    } elsif ($ta[5] =~ s!(\d+)D$!!) {
+      $ta[5] = $ta[5].$1."H";
+    }
   } else {
+    # Reverse alignment.
     $ta[3] = $ta[3] + $rWS - 1;
+    # Read left.
+    ### Fix S/H.
     if ($ta[5] =~ s!^(\d+)S!!) {
       $ta[5] = ($1+$qKL{'id2len'}{$qWID}-$qWE)."H$ta[5]";
       $ta[9] eq '*' or substr($ta[9], 0, $1) ='';
@@ -84,6 +124,24 @@ while (<>) {
     } elsif ($qKL{'id2len'}{$qWID}-$qWE > 0) {
       $ta[5] = ($qKL{'id2len'}{$qWID}-$qWE)."H$ta[5]";
     }
+    ### Fix I.
+    if ($ta[5] =~ s!^(\d+)H(\d+)I!!) {
+      $ta[5] = ($1+$2)."H$ta[5]";
+      $ta[9] eq '*' or substr($ta[9], 0, $2)='';
+    } elsif ($ta[5] =~ s!^(\d+)I!!) {
+      $ta[5] = $1."H$ta[5]";
+      $ta[9] eq '*' or substr($ta[9], 0, $1)='';
+    }
+    ### Fix D.
+    if ($ta[5] =~ s!^(\d+)H(\d+)D!!) {
+      $ta[5] = ($1+$2)."H$ta[5]";
+      $ta[3] += $2;
+    } elsif ($ta[5] =~ s!^(\d+)D!!) {
+      $ta[5] = $1."H$ta[5]";
+      $ta[3] += $2;
+    }
+    # Read right.
+    ### Fix S/H.
     if ($ta[5] =~ s!(\d+)S$!!) {
       $ta[5] = $ta[5].($1+$qWS-1)."H";
       $ta[9] eq '*' or substr($ta[9], -$1) ='';
@@ -91,6 +149,20 @@ while (<>) {
       $ta[5] = $ta[5].($1+$qWS-1)."H";
     } elsif ($qWS-1 > 0) {
       $ta[5] = $ta[5].($qWS-1)."H";
+    }
+    ### Fix I.
+    if ($ta[5] =~ s!(\d+)I(\d+)H$!!) {
+      $ta[5] = ($1+$2)."H$ta[5]";
+      $ta[9] eq '*' or substr($ta[9], -$1)='';
+    } elsif ($ta[5] =~ s!(\d+)I$!!) {
+      $ta[5] = $1."H$ta[5]";
+      $ta[9] eq '*' or substr($ta[9], -$1)='';
+    }
+    ### Fix D.
+    if ($ta[5] =~ s!(\d+)D(\d+)H$!!) {
+      $ta[5] = $ta[5] . ($1+$2) . "H";
+    } elsif ($ta[5] =~ s!(\d+)D$!!) {
+      $ta[5] = $ta[5] . $1 . "H";
     }
   }
   $ta[0] = $qWID;
