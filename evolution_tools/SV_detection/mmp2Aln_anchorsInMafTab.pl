@@ -57,7 +57,7 @@ for (my $i=0; $i*100 < @list_sam_arr; $i++) {
 if (scalar(@list_sam_2) > 1) {
   my $list_sam_2txt = join(" ", @list_sam_2);
   &runCmd("samtools merge -O SAM ${opre}.sam $list_sam_2txt");
-} else {
+} elsif (scalar(@list_sam_2) == 1) {
   &runCmd("mv $list_sam_2[0] ${opre}.sam");
 }
 
