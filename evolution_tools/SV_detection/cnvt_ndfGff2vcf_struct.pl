@@ -184,7 +184,7 @@ for my $refID (sort keys %allRefID) {
   defined $refID2svID{'deletion'}{$refID} and @del_svIDs = @{$refID2svID{'deletion'}{$refID}};
   defined $refID2svID{'collapsed_repeat'}{$refID} and @cor_svIDs = @{$refID2svID{'collapsed_repeat'}{$refID}};
   defined $refID2svID{'substitution'}{$refID} and @sub_svIDs = @{$refID2svID{'substitution'}{$refID}};
-  defined $refID2svID{'substitution'}{$refID} and @dup_svIDs = @{$refID2svID{'duplication'}{$refID}};
+  defined $refID2svID{'duplication'}{$refID} and @dup_svIDs = @{$refID2svID{'duplication'}{$refID}};
   defined $refID2svID{'insertion'}{$refID} and @ins_svIDs = @{$refID2svID{'insertion'}{$refID}};
   defined $refID2svID{'relocation-insertion'}{$refID} and @rin_svIDs = grep { $_ =~ m!\.1$! } @{$refID2svID{'relocation-insertion'}{$refID}};
   @rin_svIDs = map { s!\.1!!; $_; } @rin_svIDs;
