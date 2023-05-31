@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 # 5/2/2023: Generate 'conserved' anchors for use in anchorwave.
+# 5/30/2023: Fix a bug to get unique blocks on query.
 use strict;
 use warnings;
 use LogInforSunhh;
@@ -57,10 +58,10 @@ for my $a1 (@aln1) {
   }
   $stime >= 2 and next;
   my $qtime = 0;
-  for my $a2 (@{$loc1Q{$a1->[0]}}) {
-    $a1->[3] > $a2->[1] and next;
-    $a1->[4] < $a2->[0] and last;
-    my ($ovlLen, $ovlAH) = $ms_obj->ovl_region($a1->[3], $a1->[4], $a2->[0], $a2->[1]);
+  for my $a2 (@{$loc1Q{$a1->[3]}}) {
+    $a1->[4] > $a2->[1] and next;
+    $a1->[5] < $a2->[0] and last;
+    my ($ovlLen, $ovlAH) = $ms_obj->ovl_region($a1->[4], $a1->[5], $a2->[0], $a2->[1]);
     $ovlLen >= $maxOvlLen or next;
     $qtime ++;
     $qtime >= 2 and last;
