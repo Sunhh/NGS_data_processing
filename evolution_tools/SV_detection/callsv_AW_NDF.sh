@@ -1,11 +1,13 @@
 rFa=$1
 rGff=$2
 qFa=$3
+sampleID='SAMPLE'
 
 cp -p $rFa ./r.fa
 cp -p $rGff ./r.p.gff3
 cp -p $qFa ./q.fa
 
+# On Cheetah server.
 export PATH=/data/Sunhh/src/align/anchorwave/anchorwave:$PATH
 export PATH=/data/Sunhh/src/align/last/install/v869/bin:$PATH
 export PATH=/data/Sunhh/src/align/mummer/install/v4.0.0rc/bin:$PATH
@@ -39,14 +41,17 @@ perl hs_tool/restore_sam_position.pl q.fa.kl r.fa.kl t1_mmp.sam > t1_mmp_res.sam
 perl hs_tool/filter_maf_by_tab.pl t1_anc.maf.blasttab.good q.fa.kl t1_anc.maf > t1_anc_good.maf
 perl hs_tool/join_maf_blk.pl t1_anc_good.maf > t1_anc_jn.maf
 perl hs_tool/rm_0span_maf.pl t1_anc_jn.maf > t1_anc_jn1.maf
-maf-convert sam -r "ID:q" -f r.dict t1_anc_jn1.maf > t1_anc_jn1.sam
+maf-convert sam -r "ID:q" -f r.dict t1_anc_jn1.maf | perl hs_tool/fix_sam_cigarID.pl > t1_anc_jn1.sam
 samtools merge -f -O SAM t2.sam t1_anc_jn1.sam t1_mmp_res.sam
-perl hs_tool/fix_sam_cigarID.pl t2.sam > t2_fix.sam
-mv t2_fix.sam t2.sam
+# perl hs_tool/fix_sam_cigarID.pl t2.sam > t2_fix.sam
+# mv t2_fix.sam t2.sam
 python hs_tool/sam2delta.py t2.sam --ref_fa $PWD/r.fa  --qry_fa $PWD/q.fa
 samtools sort -@ 10 -o t2.bam t2.sam
 samtools index t2.bam
 rm -f q2r.paf s0.anchor* s0* s1.to*sam t1_anc.maf t1_mmp* t1_anc*maf t1_anc*sam r.dict r.fa.kl q.fa.kl
 nucdiff --proc 1 --delta_file t2.sam.delta $PWD/r.fa $PWD/q.fa ./ o
-rm -f q.fa r.fa r.p.gff3
+perl hs_tool/cnvt_ndfGff2vcf_snps.pl r.fa q.fa $sampleID results/o_ref_snps.gff > results/o_ref_snps.vcf 2>results/o_ref_snps.vcf.err
+perl hs_tool/cnvt_ndfGff2vcf_struct.pl r.fa q.fa $sampleID results/o_ref_struct.gff > results/o_ref_struct.vcf 2> results/o_ref_struct.vcf.err
+gzip q.fa r.fa results/o_ref_snps.gff results/o_ref_struct.gff
+# rm -f q.fa r.fa r.p.gff3
 
