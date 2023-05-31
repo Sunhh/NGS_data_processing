@@ -2,6 +2,8 @@
 use strict;
 use warnings;
 
+!@ARGV and die "perl $0 in.sam > chk_tbl\n";
+
 my $f=shift;
 open F,'<',"$f" or die;
 my $is=0;
