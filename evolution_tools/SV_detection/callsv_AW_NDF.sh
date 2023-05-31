@@ -41,6 +41,8 @@ perl hs_tool/join_maf_blk.pl t1_anc_good.maf > t1_anc_jn.maf
 perl hs_tool/rm_0span_maf.pl t1_anc_jn.maf > t1_anc_jn1.maf
 maf-convert sam -r "ID:q" -f r.dict t1_anc_jn1.maf > t1_anc_jn1.sam
 samtools merge -f -O SAM t2.sam t1_anc_jn1.sam t1_mmp_res.sam
+perl hs_tool/fix_sam_cigarID.pl t2.sam > t2_fix.sam
+mv t2_fix.sam t2.sam
 python hs_tool/sam2delta.py t2.sam --ref_fa $PWD/r.fa  --qry_fa $PWD/q.fa
 samtools sort -@ 10 -o t2.bam t2.sam
 samtools index t2.bam
