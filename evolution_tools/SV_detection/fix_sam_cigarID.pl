@@ -40,7 +40,6 @@ while (<>) {
       $ta[5] = $1."H$ta[5]";
       $ta[3] += $2;
     } elsif ($ta[5] =~ s!^(\d+)D!!) {
-      $ta[5] = $1."H$ta[5]";
       $ta[3] += $1;
     }
     # Read right.
@@ -54,9 +53,9 @@ while (<>) {
     }
     ### Fix D.
     if ($ta[5] =~ s!(\d+)D(\d+)H$!!) {
-      $ta[5] = $ta[5].($1+$2)."H";
+      $ta[5] = $ta[5].$2."H";
     } elsif ($ta[5] =~ s!(\d+)D$!!) {
-      $ta[5] = $ta[5].$1."H";
+      ;
     }
   } else {
     # Reverse alignment.
@@ -71,10 +70,9 @@ while (<>) {
     }
     ### Fix D.
     if ($ta[5] =~ s!^(\d+)H(\d+)D!!) {
-      $ta[5] = ($1+$2)."H$ta[5]";
+      $ta[5] = $1."H$ta[5]";
       $ta[3] += $2;
     } elsif ($ta[5] =~ s!^(\d+)D!!) {
-      $ta[5] = $1."H$ta[5]";
       $ta[3] += $2;
     }
     # Read right.
@@ -88,9 +86,9 @@ while (<>) {
     }
     ### Fix D.
     if ($ta[5] =~ s!(\d+)D(\d+)H$!!) {
-      $ta[5] = $ta[5] . ($1+$2) . "H";
+      $ta[5] = $ta[5] . $2 . "H";
     } elsif ($ta[5] =~ s!(\d+)D$!!) {
-      $ta[5] = $ta[5] . $1 . "H";
+      ;
     }
   }
   print join("\t",@ta)."\n";
