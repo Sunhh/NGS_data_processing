@@ -7,7 +7,7 @@ use warnings;
 use fileSunhh;
 use SeqAlnSunhh;
 
-!@ARGV and die "perl $0 in.sam > restored.sam\n";
+-t and !@ARGV and die "perl $0 in.sam > restored.sam\n";
 
 my $rev_flag = &SeqAlnSunhh::mk_flag('keep'=>'2=0,4=1');
 my $fwd_flag = &SeqAlnSunhh::mk_flag('keep'=>'2=0,4=0');
