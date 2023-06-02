@@ -1,6 +1,14 @@
 #!/usr/bin/perl
 # 5/4/2023 Query must be aligned.
 # 5/30/2023 Remove ending insertions/deletions which may cause problem in NucDiff.
+# 6/2/2023: 'maf-convert'-derived SAM files may have bad Cigar in the following case:
+### MAF alignment:
+# s r 0 50 + 50 AATGGTTCTTTTTTTGGATTTAGCATGTCATTTTGTTTAACAGGTTCAAC-----
+# s q 0 49 + 49 -----TTCTTTTTTTGGATTTAGCATGTCATTTT-TTTAACAGGTTCAACCAGAA
+### Converted SAM:
+# q  0 r  1  255  5D29M1D15M5I  *  0  0  TTCTTTTTTTGGATTTAGCATGTCATTTTTTTAACAGGTTCAACCAGAA  *  NM:i:11  AS:i:36  EV:Z:2.8e-18
+### In this SAM file, the ^'5D' and '5I'$ cigar strings need to be removed, and the 'NM' number should be reduced by 10 (5+5).
+
 
 use strict;
 use warnings;
@@ -73,18 +81,23 @@ while (<>) {
     }
     ### Fix I.
     if ($ta[5] =~ s!^(\d+)H(\d+)I!!) {
-      $ta[5] = ($1+$2)."H$ta[5]";
-      $ta[9] eq '*' or substr($ta[9], 0, $2)='';
+      my ($vH,$vV)=($1,$2);
+      $ta[5] = ($vH+$vV)."H$ta[5]"; $ta[9] eq '*' or substr($ta[9], 0, $vV)='';
+      for my $tb (@ta) { $tb =~ m!^NM:i:(\d+)$! and $tb = "NM:i:".($1-$vV); }
     } elsif ($ta[5] =~ s!^(\d+)I!!) {
-      $ta[5] = $1."H$ta[5]";
-      $ta[9] eq '*' or substr($ta[9], 0, $1)='';
+      my $vV=$1;
+      $ta[5] = $vV."H$ta[5]"; $ta[9] eq '*' or substr($ta[9], 0, $vV)='';
+      for my $tb (@ta) { $tb =~ m!^NM:i:(\d+)$! and $tb = "NM:i:".($1-$vV); }
     }
     ### Fix D.
     if ($ta[5] =~ s!^(\d+)H(\d+)D!!) {
-      $ta[5] = $1."H$ta[5]";
-      $ta[3] += $2;
+      my ($vH,$vV)=($1,$2);
+      $ta[5] = $vH."H$ta[5]"; $ta[3] += $vV;
+      for my $tb (@ta) { $tb =~ m!^NM:i:(\d+)$! and $tb = "NM:i:".($1-$vV); }
     } elsif ($ta[5] =~ s!^(\d+)D!!) {
-      $ta[3] += $1;
+      my $vV=$1; 
+      $ta[3] += $vV;
+      for my $tb (@ta) { $tb =~ m!^NM:i:(\d+)$! and $tb = "NM:i:".($1-$vV); }
     }
     # Read right.
     ### Fix S/H.
@@ -98,17 +111,22 @@ while (<>) {
     }
     ### Fix I.
     if ($ta[5] =~ s!(\d+)I(\d+)H$!!) {
-      $ta[5] = $ta[5] . ($1+$2) . "H";
-      $ta[9] eq '*' or substr($ta[9], -$1)='';
+      my ($vV,$vH)=($1,$2);
+      $ta[5] = $ta[5] . ($vH+$vV) . "H"; $ta[9] eq '*' or substr($ta[9], -$vV)='';
+      for my $tb (@ta) { $tb =~ m!^NM:i:(\d+)$! and $tb = "NM:i:".($1-$vV); }
     } elsif ($ta[5] =~ s!(\d+)I$!!) {
-      $ta[5] = $ta[5] . $1 . "H";
-      $ta[9] eq '*' or substr($ta[9], -$1)='';
+      my $vV = $1;
+      $ta[5] = $ta[5] . $vV . "H"; $ta[9] eq '*' or substr($ta[9], -$vV)='';
+      for my $tb (@ta) { $tb =~ m!^NM:i:(\d+)$! and $tb = "NM:i:".($1-$vV); }
     }
     ### Fix D.
     if ($ta[5] =~ s!(\d+)D(\d+)H$!!) {
-      $ta[5] = $ta[5].$2."H";
+      my ($vV,$vH)=($1,$2);
+      $ta[5] = $ta[5].$vH."H";
+      for my $tb (@ta) { $tb =~ m!^NM:i:(\d+)$! and $tb = "NM:i:".($1-$vV); }
     } elsif ($ta[5] =~ s!(\d+)D$!!) {
-      ;
+      my $vV=$1;
+      for my $tb (@ta) { $tb =~ m!^NM:i:(\d+)$! and $tb = "NM:i:".($1-$vV); }
     }
   } else {
     # Reverse alignment.
@@ -125,18 +143,23 @@ while (<>) {
     }
     ### Fix I.
     if ($ta[5] =~ s!^(\d+)H(\d+)I!!) {
-      $ta[5] = ($1+$2)."H$ta[5]";
-      $ta[9] eq '*' or substr($ta[9], 0, $2)='';
+      my ($vH,$vV)=($1,$2);
+      $ta[5] = ($vH+$vV)."H$ta[5]"; $ta[9] eq '*' or substr($ta[9], 0, $vV)='';
+      for my $tb (@ta) { $tb =~ m!^NM:i:(\d+)$! and $tb = "NM:i:".($1-$vV); }
     } elsif ($ta[5] =~ s!^(\d+)I!!) {
-      $ta[5] = $1."H$ta[5]";
-      $ta[9] eq '*' or substr($ta[9], 0, $1)='';
+      my $vV = $1;
+      $ta[5] = $vV."H$ta[5]"; $ta[9] eq '*' or substr($ta[9], 0, $vV)='';
+      for my $tb (@ta) { $tb =~ m!^NM:i:(\d+)$! and $tb = "NM:i:".($1-$vV); }
     }
     ### Fix D.
     if ($ta[5] =~ s!^(\d+)H(\d+)D!!) {
-      $ta[5] = $1."H$ta[5]";
-      $ta[3] += $2;
+      my ($vH,$vV)=($1,$2);
+      $ta[5] = $vH."H$ta[5]"; $ta[3] += $vV;
+      for my $tb (@ta) { $tb =~ m!^NM:i:(\d+)$! and $tb = "NM:i:".($1-$vV); }
     } elsif ($ta[5] =~ s!^(\d+)D!!) {
-      $ta[3] += $2;
+      my $vV = $1;
+      $ta[3] += $vV;
+      for my $tb (@ta) { $tb =~ m!^NM:i:(\d+)$! and $tb = "NM:i:".($1-$vV); }
     }
     # Read right.
     ### Fix S/H.
@@ -150,17 +173,22 @@ while (<>) {
     }
     ### Fix I.
     if ($ta[5] =~ s!(\d+)I(\d+)H$!!) {
-      $ta[5] = ($1+$2)."H$ta[5]";
-      $ta[9] eq '*' or substr($ta[9], -$1)='';
+      my ($vV,$vH)=($1,$2);
+      $ta[5] = ($vV+$vH)."H$ta[5]"; $ta[9] eq '*' or substr($ta[9], -$vV)='';
+      for my $tb (@ta) { $tb =~ m!^NM:i:(\d+)$! and $tb = "NM:i:".($1-$vV); }
     } elsif ($ta[5] =~ s!(\d+)I$!!) {
-      $ta[5] = $1."H$ta[5]";
-      $ta[9] eq '*' or substr($ta[9], -$1)='';
+      my $vV = $1;
+      $ta[5] = $vV."H$ta[5]"; $ta[9] eq '*' or substr($ta[9], -$vV)='';
+      for my $tb (@ta) { $tb =~ m!^NM:i:(\d+)$! and $tb = "NM:i:".($1-$vV); }
     }
     ### Fix D.
     if ($ta[5] =~ s!(\d+)D(\d+)H$!!) {
-      $ta[5] = $ta[5] . $2 . "H";
+      my ($vV,$vH)=($1,$2);
+      $ta[5] = $ta[5] . $vH . "H";
+      for my $tb (@ta) { $tb =~ m!^NM:i:(\d+)$! and $tb = "NM:i:".($1-$vV); }
     } elsif ($ta[5] =~ s!(\d+)D$!!) {
-      ;
+      my $vV=$1;
+      for my $tb (@ta) { $tb =~ m!^NM:i:(\d+)$! and $tb = "NM:i:".($1-$vV); }
     }
   }
   $ta[0] = $qWID;
