@@ -1,5 +1,8 @@
 #!/usr/bin/perl
 # 5/26/2023: Updated to include 'tandem_duplication', 'simple relocation' (relocation), and 'collapsed_tandem_repeat'.
+# 6/2/2023: Remove any VARs that are around 'reshuffling' boundaries (10 bp).
+#           VARs around N gaps (10 bp) are also removed.
+
 use strict;
 use warnings;
 use LogInforSunhh;
@@ -13,6 +16,8 @@ my $fnRFa = shift;
 my $fnQFa = shift;
 my $samID = shift;
 my $fnGff = shift;
+
+my $maxDist = 10;
 
 # Possible Names:
 ###  Accept: substitution;
@@ -35,6 +40,7 @@ for (qw/relocation-inserted_gap relocation-insertion_ATGCN relocation-overlap/) 
 for (qw/unaligned_beginning unaligned_end gap inserted_gap/) {$badName{$_} = 1;}
 my %otherName;
 my %restName;
+my %bad_loc;
 
 my %refSeq = %{$fs_obj->save_seq_to_hash('faFile' => $fnRFa)};
 for (keys %refSeq) { $refSeq{$_}{'seq'} =~ s!\s!!g; $refSeq{$_}{'len'}=length($refSeq{$_}{'seq'}); $refSeq{$_}{'seq'} = uc($refSeq{$_}{'seq'}); }
@@ -43,6 +49,21 @@ for (keys %refSeq) { $refSeq{$_}{'seq'} =~ s!\s!!g; $refSeq{$_}{'len'}=length($r
 my %qrySeq = %{$fs_obj->save_seq_to_hash('faFile' => $fnQFa)};
 for (keys %qrySeq) { $qrySeq{$_}{'seq'} =~ s!\s!!g; $qrySeq{$_}{'len'}=length($qrySeq{$_}{'seq'}); $qrySeq{$_}{'seq'} = uc($qrySeq{$_}{'seq'}); }
 # &tsmsg("[Msg] Loaded qry fa [$fnQFa]\n");
+
+{
+# Add N gap list to %bad_loc;
+my $ntxt = '[nNuU]+';
+for my $k1 (keys %refSeq) {
+  for my $a1 (&siteList(\$ntxt, \$refSeq{$k1}{'seq'}, 'Min')) {
+    push(@{$bad_loc{'r'}{$k1}}, [$a1->[0], $a1->[1]]);
+  }
+}
+for my $k1 (keys %qrySeq) {
+  for my $a1 (&siteList(\$ntxt, \$qrySeq{$k1}{'seq'}, 'Min')) {
+    push(@{$bad_loc{'q'}{$k1}}, [$a1->[0], $a1->[1]]);
+  }
+}
+}
 
 my $fhGff = &openFH($fnGff);
 print STDOUT <<'HHHS';
@@ -94,7 +115,13 @@ while (<$fhGff>) {
   my %h8 = %{ &sepTA8($ta[8]) };
   defined $badName{$h8{'Name'}} and next;
   defined $otherName{$h8{'Name'}} and do { &tsmsg("[Wrn] Skip Name [$h8{'Name'}].\n"); next; };
-  $h8{'Name'} =~ m!^reshuffling! and next;
+  if ($h8{'Name'} =~ m!^reshuffling!) {
+    push(@{$bad_loc{'r'}{$ta[0]}}, [@ta[3,4]]);
+    $h8{'query_coord'} =~ m!^(\d+)\-(\d+)$! or die "bad 1: $_\n";
+    my ($qs,$qe) = ($1, $2);
+    push(@{$bad_loc{'q'}{$h8{'query_sequence'}}}, [$qs, $qe]);
+    next;
+  }
   defined $goodName{$h8{'Name'}} or do { &tsmsg("[Wrn] Skip unrecognized Name [$h8{'Name'}]\n"); next; };
 
   my ($refID, $refS, $refE);
@@ -309,7 +336,6 @@ for my $refID (sort keys %allRefID) {
 #
 # Process all VARs and output the VCF file.
 #
-
 for my $refID (sort keys %allRefID) {
   # Output deletion
   for my $var_ID (@{$refID2svID{'deletion'}{$refID}}) {
@@ -317,6 +343,7 @@ for my $refID (sort keys %allRefID) {
     my $baseRef = substr($refSeq{$refID}{'seq'}, $rS-2, $rE-$rS+2);
     my $baseAlt = substr($baseRef, 0, 1);
     my $infoTxt = "ALGORITHMS=NucDiff_struct;SVTYPE=DEL;END=$rE;SVLEN=-".($rE-$rS+1);
+    &boundary_inBad($refID, $rS, $rE, $qryID, $qS, $qE, $maxDist) and next;
     print STDOUT join("\t", $refID, $rS-1, '.', $baseRef, $baseAlt, '.', 'PASS', $infoTxt, "GT", "1/1")."\n";
   }
   # Output collapsed_repeat
@@ -325,6 +352,7 @@ for my $refID (sort keys %allRefID) {
     my $baseRef = substr($refSeq{$refID}{'seq'}, $rS-2, $rE-$rS+2);
     my $baseAlt = substr($baseRef, 0, 1);
     my $infoTxt = "ALGORITHMS=NucDiff_struct;SVTYPE=DEL;END=$rE;SVLEN=-".($rE-$rS+1);
+    &boundary_inBad($refID, $rS, $rE, $qryID, $qS, $qE, $maxDist) and next;
     print STDOUT join("\t", $refID, $rS-1, '.', $baseRef, $baseAlt, '.', 'PASS', $infoTxt, "GT", "1/1")."\n";
   }
   # Output collapsed_tandem_repeat (DEL)
@@ -333,6 +361,7 @@ for my $refID (sort keys %allRefID) {
     my $baseRef = substr($refSeq{$refID}{'seq'}, $rS-2, $rE-$rS+2);
     my $baseAlt = substr($baseRef, 0, 1);
     my $infoTxt = "ALGORITHMS=NucDiff_struct;SVTYPE=DEL;END=$rE;SVLEN=-".($rE-$rS+1);
+    &boundary_inBad($refID, $rS, $rE, $qryID, $qS, $qE, $maxDist) and next;
     print STDOUT join("\t", $refID, $rS-1, '.', $baseRef, $baseAlt, '.', 'PASS', $infoTxt, "GT", "1/1")."\n";
   }
   # Output relocation (DEL)
@@ -345,6 +374,7 @@ for my $refID (sort keys %allRefID) {
     my $baseRef = substr($refSeq{$refID}{'seq'}, $rSx-2, $rEx-$rSx+2);
     my $baseAlt = substr($baseRef, 0, 1);
     my $infoTxt = "ALGORITHMS=NucDiff_struct;SVTYPE=REL;END=$rEx;SVLEN=-".($rEx-$rSx+1);
+    &boundary_inBad($refID, $rS, $rE, $qryID, $qS, $qE, $maxDist) and next;
     print STDOUT join("\t", $refID, $rSx-1, '.', $baseRef, $baseAlt, '.', 'PASS', $infoTxt, "GT", "1/1")."\n";
   }
   # Output insertion
@@ -355,6 +385,7 @@ for my $refID (sort keys %allRefID) {
     $strN == -1 and &fastaSunhh::rcSeq(\$baseAlt, 'rc');
     $baseAlt = $baseRef . $baseAlt;
     my $infoTxt = "ALGORITHMS=NucDiff_struct;SVTYPE=INS;END=".($rS+1).";SVLEN=".($qE-$qS+1);
+    &boundary_inBad($refID, $rS, $rE, $qryID, $qS, $qE, $maxDist) and next;
     print STDOUT join("\t", $refID, $rS, '.', $baseRef, $baseAlt, '.', 'PASS', $infoTxt, "GT", "1/1")."\n";
   }
   # Output duplication
@@ -365,6 +396,7 @@ for my $refID (sort keys %allRefID) {
     $strN == -1 and &fastaSunhh::rcSeq(\$baseAlt, 'rc');
     $baseAlt = $baseRef . $baseAlt;
     my $infoTxt = "ALGORITHMS=NucDiff_struct;SVTYPE=INS;END=".($rS+1).";SVLEN=".($qE-$qS+1);
+    &boundary_inBad($refID, $rS, $rE, $qryID, $qS, $qE, $maxDist) and next;
     print STDOUT join("\t", $refID, $rS, '.', $baseRef, $baseAlt, '.', 'PASS', $infoTxt, "GT", "1/1")."\n";
   }
   # Output tandem_duplication (INS)
@@ -375,20 +407,23 @@ for my $refID (sort keys %allRefID) {
     $strN == -1 and &fastaSunhh::rcSeq(\$baseAlt, 'rc');
     $baseAlt = $baseRef . $baseAlt;
     my $infoTxt = "ALGORITHMS=NucDiff_struct;SVTYPE=INS;END=".($rS+1).";SVLEN=".($qE-$qS+1);
+    &boundary_inBad($refID, $rS, $rE, $qryID, $qS, $qE, $maxDist) and next;
     print STDOUT join("\t", $refID, $rS, '.', $baseRef, $baseAlt, '.', 'PASS', $infoTxt, "GT", "1/1")."\n";
   }
   # Output relocation-insertion
   for my $var_ID (grep { $_ =~ m!\.1$! } @{$refID2svID{'relocation-insertion'}{$refID}}) {
     my ($rS, $rE, $qryID, $qS, $qE, $strN) = @{$svPool{'relocation-insertion'}{$refID}{$var_ID}};
-    if ($strN == -1) {
-      my $rin_ID2 = $var_ID; $rin_ID2 =~ s!\.1$!.2!;
-      ($rS, $rE, $qryID, $qS, $qE, $strN) = @{$svPool{'relocation-insertion'}{$refID}{$rin_ID2}};
-    }
+    my ($rS1, $rE1, $qryID1, $qS1, $qE1, $strN1) = ($rS, $rE, $qryID, $qS, $qE, $strN);
+    my $rin_ID2 = $var_ID; $rin_ID2 =~ s!\.1$!.2!;
+    my ($rS2, $rE2, $qryID2, $qS2, $qE2, $strN2) = @{$svPool{'relocation-insertion'}{$refID}{$rin_ID2}};
+    $strN == -1 and ($rS, $rE, $qryID, $qS, $qE, $strN) = ($rS2, $rE2, $qryID2, $qS2, $qE2, $strN2);
     my $baseRef = substr($refSeq{$refID}{'seq'}, $rS-1, 1);
     my $baseAlt = substr($qrySeq{$qryID}{'seq'}, $qS-1, $qE-$qS+1);
     $strN == -1 and &fastaSunhh::rcSeq(\$baseAlt, 'rc');
     $baseAlt = $baseRef . $baseAlt;
     my $infoTxt = "ALGORITHMS=NucDiff_struct;SVTYPE=RIN;END=".($rS+1).";SVLEN=".($qE-$qS+1);
+    &boundary_inBad($refID, $rS1, $rE1, $qryID, $qS1, $qE1, $maxDist) and next;
+    &boundary_inBad($refID, $rS2, $rE2, $qryID, $qS2, $qE2, $maxDist) and next;
     print STDOUT join("\t", $refID, $rS, '.', $baseRef, $baseAlt, '.', 'PASS', $infoTxt, "GT", "1/1")."\n";
   }
   # Output inversion
@@ -398,6 +433,7 @@ for my $refID (sort keys %allRefID) {
     my $baseRef = substr($refSeq{$refID}{'seq'}, $rS-1, 1);
     my $baseAlt = '<INV>';
     my $infoTxt = "ALGORITHMS=NucDiff_struct;SVTYPE=INV;END=$rE;SVLEN=0";
+    &boundary_inBad($refID, $rS, $rE, $qryID, $qS, $qE, $maxDist) and next;
     print STDOUT join("\t", $refID, $rS, '.', $baseRef, $baseAlt, '.', 'PASS', $infoTxt, "GT", "1/1")."\n";
   }
   # Output substitution
@@ -407,6 +443,7 @@ for my $refID (sort keys %allRefID) {
     my $baseAlt = substr($qrySeq{$qryID}{'seq'}, $qS-1, $qE-$qS+1);
     $strN == -1 and &fastaSunhh::rcSeq(\$baseAlt, 'rc');
     my $infoTxt = "ALGORITHMS=NucDiff_struct;SVTYPE=SUB;END=$rE;SVLEN=".($qE-$qS-$rE+$rS);
+    &boundary_inBad($refID, $rS, $rE, $qryID, $qS, $qE, $maxDist) and next;
     print STDOUT join("\t", $refID, $rS, '.', $baseRef, $baseAlt, '.', 'PASS', $infoTxt, "GT", "1/1")."\n";
   }
 }
@@ -436,4 +473,25 @@ sub sepTA8 {
   defined $back{'query_bases'} and $back{'query_bases'} = uc($back{'query_bases'});
   return(\%back);
 }# sepTA8
+
+sub boundary_inBad {
+  my ($rID, $rS, $rE, $qID, $qS, $qE, $dist) = @_;
+  if (defined $bad_loc{'r'}{$rID}) {
+    for my $a1 (@{$bad_loc{'r'}{$rID}}) {
+      for my $b1 ($rS, $rE) {
+        $a1->[0]-$dist <= $b1 and $a1->[0]+$dist >= $b1 and do {return 1;};
+        $a1->[1]-$dist <= $b1 and $a1->[1]+$dist >= $b1 and do {return 1;};
+      }
+    }
+  }
+  if (defined $bad_loc{'q'}{$qID}) {
+    for my $a1 (@{$bad_loc{'q'}{$qID}}) {
+      for my $b1 ($qS, $qE) {
+        $a1->[0]-$dist <= $b1 and $a1->[0]+$dist >= $b1 and do {return 1;};
+        $a1->[1]-$dist <= $b1 and $a1->[1]+$dist >= $b1 and do {return 1;};
+      }
+    }
+  }
+  return(undef());
+}# boundary_inBad
 
