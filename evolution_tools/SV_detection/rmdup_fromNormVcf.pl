@@ -12,6 +12,7 @@ while (<>) {
   chomp;
   my @ta=split(/\t/, $_);
   my $currLen = abs(length($ta[3])-length($ta[4]));
+  $ta[4] eq '<INV>' and $currLen = 1e9;
   if ($ta[0] eq $prevID and $ta[1] == $prevPos) {
     # dup
     if ($currLen > $prevLen) {

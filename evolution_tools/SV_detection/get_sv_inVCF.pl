@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 # 3/10/2023: Better count SV size.
+# 6/6/2023: Accept '<INV>' no matter how long it is.
 use strict;
 use warnings;
 
@@ -26,6 +27,7 @@ while (<>) {
     my $j = $i+1;
     my $altA = $altAlleles[$i];
     my $altLen = length($altA);
+    $altA eq '<INV>' and $altLen = 1e9;
     if (index($refA, $altA)==0) {
       if ($refLen-$altLen >= $minLen) {
         $type = 'good'; $newAlN++; $alN2N{$j} = $newAlN;

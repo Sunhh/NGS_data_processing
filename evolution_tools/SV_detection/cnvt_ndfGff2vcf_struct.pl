@@ -2,6 +2,7 @@
 # 5/26/2023: Updated to include 'tandem_duplication', 'simple relocation' (relocation), and 'collapsed_tandem_repeat'.
 # 6/2/2023: Remove any VARs that are around 'reshuffling' boundaries (10 bp).
 #           VARs around N gaps (10 bp) are also removed.
+# 6/6/2023: I don't know why, but sometimes the reference base is same as query base in substitution.
 
 use strict;
 use warnings;
@@ -442,6 +443,7 @@ for my $refID (sort keys %allRefID) {
     my $baseRef = substr($refSeq{$refID}{'seq'}, $rS-1, $rE-$rS+1);
     my $baseAlt = substr($qrySeq{$qryID}{'seq'}, $qS-1, $qE-$qS+1);
     $strN == -1 and &fastaSunhh::rcSeq(\$baseAlt, 'rc');
+    $baseRef eq $baseAlt and next;
     my $infoTxt = "ALGORITHMS=NucDiff_struct;SVTYPE=SUB;END=$rE;SVLEN=".($qE-$qS-$rE+$rS);
     &boundary_inBad($refID, $rS, $rE, $qryID, $qS, $qE, $maxDist) and next;
     print STDOUT join("\t", $refID, $rS, '.', $baseRef, $baseAlt, '.', 'PASS', $infoTxt, "GT", "1/1")."\n";
