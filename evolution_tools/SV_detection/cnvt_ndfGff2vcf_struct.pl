@@ -3,6 +3,7 @@
 # 6/2/2023: Remove any VARs that are around 'reshuffling' boundaries (10 bp).
 #           VARs around N gaps (10 bp) are also removed.
 # 6/6/2023: I don't know why, but sometimes the reference base is same as query base in substitution.
+# 6/8/2023: Shift <INV> REF position to 1 bp left in VCF.
 
 use strict;
 use warnings;
@@ -431,11 +432,11 @@ for my $refID (sort keys %allRefID) {
   for my $var_ID (@{$refID2svID{'inversion'}{$refID}}) {
     my ($rS, $rE, $qryID, $qS, $qE, $strN) = @{$svPool{'inversion'}{$refID}{$var_ID}};
     # my $baseRef = substr($refSeq{$refID}{'seq'}, $rS-1, $rE-$rS+1);
-    my $baseRef = substr($refSeq{$refID}{'seq'}, $rS-1, 1);
+    my $baseRef = substr($refSeq{$refID}{'seq'}, $rS-2, 1); # Inverted region is [$rS, $rE], labeled at $rS-1.
     my $baseAlt = '<INV>';
     my $infoTxt = "ALGORITHMS=NucDiff_struct;SVTYPE=INV;END=$rE;SVLEN=0";
     &boundary_inBad($refID, $rS, $rE, $qryID, $qS, $qE, $maxDist) and next;
-    print STDOUT join("\t", $refID, $rS, '.', $baseRef, $baseAlt, '.', 'PASS', $infoTxt, "GT", "1/1")."\n";
+    print STDOUT join("\t", $refID, $rS-1, '.', $baseRef, $baseAlt, '.', 'PASS', $infoTxt, "GT", "1/1")."\n";
   }
   # Output substitution
   for my $var_ID (@{$refID2svID{'substitution'}{$refID}}) {

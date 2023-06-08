@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# 6/8/2023: Ignore variants with N in REF/ALT.
 use strict;
 use warnings;
 use LogInforSunhh;
@@ -121,6 +122,8 @@ while (<$fhGff>) {
   }
   defined $qryInf{'base'} or die "q_base: $_\n";
   scalar(@inf) == 0 and @inf = (".");
+  $refInf{'base'} =~ m![nN]! and next;
+  $qryInf{'base'} =~ m![nN]! and next;
   print STDOUT join("\t", $refInf{'chr'}, $refInf{'pos'}, '.', $refInf{'base'}, $qryInf{'base'}, '.', '.', join(";", @inf), 'GT', '1/1')."\n";
 }
 close ($fhGff);

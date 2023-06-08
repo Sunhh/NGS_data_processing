@@ -7,6 +7,7 @@
 #             SV size 1 : index(base_ref, base_alt)==0: len_ref-len_alt;
 #             SV size 2 : index(base_alt, base_ref)==0: len_alt-len_ref;
 #             SV size 3 : max(len_ref, len_alt)
+# 6/7/2023: Skip <INV> allele.
 
 use strict;
 use warnings;
@@ -81,10 +82,12 @@ while (<>) {
   my @tb = split(/,/, $ta[4]);
   my ($base_alt, $len_alt);
   for my $b1 (@tb) {
+    $b1 eq '<INV>' and next;
     $base_alt //= $b1;
     $len_alt //= length($b1);
     $len_alt < length($b1) and do { $len_alt=length($b1); $base_alt=$b1; };
   }
+  defined $base_alt or next;
   $base_ref = uc($base_ref);
   $base_alt = uc($base_alt);
   unless ( $base_alt =~ m!^[ATGCN]+$!i) {
