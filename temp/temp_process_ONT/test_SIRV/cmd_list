@@ -1,0 +1,25 @@
+# https://github.com/ksahlin/isONcorrect#Using-conda
+conda create -n isoncorrect python=3 pip
+conda activate isoncorrect
+pip install isONcorrect
+conda install -c bioconda spoa
+# isONcorrect --help
+pip install isONclust
+conda install -c bioconda "hmmer>=3.0"
+conda install -c bioconda "pychopper>=2.0"
+
+
+# wget https://raw.githubusercontent.com/ksahlin/isONcorrect/master/test_data/isoncorrect/0.fastq 
+# wget https://raw.githubusercontent.com/ksahlin/isONcorrect/master/scripts/correction_pipeline.sh 
+
+# 
+nohup bash correction_pipeline.sh /data/Sunhh/temp/ont/reads/ERR3588903_1.fastq  /data/Sunhh/temp/ont/out_SIRV/  60 > scrn.SIRV_test
+
+nohup bash correction_pipeline.sh /data/wushan/Cnr_RNA_ONT/01.err_correction/01.raw_reads/cnr_breaker.fastq  /data/Sunhh/temp/ont/o_cnr_breaker/  60 > scrn.o_cnr_breaker
+
+
+
+##
+run_isoncorrect --t 40 --fastq_folder ./01.raw/ --outfolder ./02.corrected/ --split_wrt_batches
+
+

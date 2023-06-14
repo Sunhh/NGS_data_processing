@@ -1,0 +1,2 @@
+InFile	Total_size	Total_Rd_num	Mean_Rd_size	Range_Rd_size	PhredCut	Time
+reads/ERR3588903_1.fastq.gz	1418512089	1680000	844.352433928571	83-5919	Phred33	Mon Dec 19 11:47:05 2022

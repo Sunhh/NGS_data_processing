@@ -1,0 +1,1 @@
+Usage: correction_pipeline.sh  <raw_reads.fq>  <outfolder>  <num_cores> 
