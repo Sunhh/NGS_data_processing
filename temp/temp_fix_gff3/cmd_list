@@ -1,0 +1,17 @@
+perl ~/tools/github/NGS_data_processing/temp/deal_gff3.pl -inGff Grif_1614.gff3 -simpleSort > Grif_1614.gff3.1
+perl fix_gff.pl Grif_1614.gff3.1 > Grif_1614.fix.gff3
+cat Grif_1614.fix.gff3 | grep Cpu00g00930 
+gffread -y Grif_1614.fix.p.fa -g Grif_1614_genome.fa Grif_1614.fix.gff3
+gffread -x Grif_1614.fix.c.fa -g Grif_1614_genome.fa Grif_1614.fix.gff3
+deal_fasta.pl -attr key:seq_line Grif_1614.fix.p.fa | perl -e 'while (<>) { s!\.$!!; m!\t\S*\.! and print; }' | less -S
+deal_fasta.pl -attr key:seq_line Grif_1614.fix.p.fa |tail -n +2 | perl -e 'while (<>) { chomp; s!\.$!!;  my @a=split(/\t/,$_); print ">$a[0]\n$a[1]\n"; }' > Grif_1614.fix.p.fa.1
+
+
+perl ~/tools/github/NGS_data_processing/temp/deal_gff3.pl -inGff PI_632928.gff3 -simpleSort > PI_632928.gff3.1
+perl fix_gff.pl PI_632928.gff3.1 > PI_632928.fix.gff3
+# cat PI_632928.fix.gff3 | grep Cpu00g00930 
+gffread -y PI_632928.fix.p.fa -g PI_632928_genome.fa PI_632928.fix.gff3
+gffread -x PI_632928.fix.c.fa -g PI_632928_genome.fa PI_632928.fix.gff3
+deal_fasta.pl -attr key:seq_line PI_632928.fix.p.fa | perl -e 'while (<>) { s!\.$!!; m!\t\S*\.! and print; }' | less -S
+deal_fasta.pl -attr key:seq_line PI_632928.fix.p.fa |tail -n +2 | perl -e 'while (<>) { chomp; s!\.$!!;  my @a=split(/\t/,$_); print ">$a[0]\n$a[1]\n"; }' > PI_632928.fix.p.fa.1
+
