@@ -35,6 +35,8 @@ bad	TE-related	Protein NYNRIN-like
 bad	TE-related	Protein FAR1-RELATED SEQUENCE
 bad	TE-related	Protein FAR1-RELATED SEQUENCE 2-like
 bad	TE-related	RNA-directed DNA polymerase, eukaryota, reverse transcriptase zinc-binding domain protein
+bad	TE-related	RNA-directed DNA polymerase (Reverse transcriptase), Ribonuclease H-like protein
+bad	TE-related	Reverse transcriptase-beet retrotransposon, putative
 bad	TE-related	RNase H domain-containing protein
 bad	TE-related	Retroelement pol polyprotein-like
 bad	TE-related	Retron-type RNA-directed DNA polymerase
@@ -149,6 +151,7 @@ good	plant-TE-derived	Zinc finger BED domain-containing protein RICESLEEPER 2
 good	plant-TE-derived	Zinc finger BED domain-containing protein RICESLEEPER 2-like
 good	plant-TE-derived	Zinc finger BED domain-containing protein RICESLEEPER 3-like
 good	plant-TE-derived	zinc finger BED domain-containing protein RICESLEEPER 2-like
+good	plant-TE-derived	Myb/SANT-like domain, Harbinger transposase-derived nuclease domain protein
 good	plant-TE-homo	Phosphate transporter PHO1-like protein 9-like
 good	plant:C48_TE	ULP_PROTEASE domain-containing protein
 good	short-motif	ankyrin repeat-containing protein NPR4-like
@@ -156,6 +159,20 @@ good	superfamily-TE-CACTA	Neprosin domain-containing protein
 good	unknown	Exonuclease domain-containing protein
 good	unknown	Ribonuclease
 good	unknown	Poly(A)-specific ribonuclease
+good	unknown	Proline-rich protein HaeIII subfamily 1-like
+good	unknown	F-box domain-containing protein
+good	unknown	AAI domain-containing protein
+good	unknown	S locus-related glycoprotein 1 binding pollen coat
+good	unknown	Protein TIC 214
+good	unknown	Glial fibrillary acidic protein-like
+good	unknown	Protein kinase domain-containing protein
+good	unknown	L10-interacting MYB domain-containing protein-like
+good	unknown	Flocculation protein FLO11-like
+good	unknown	Myb_DNA-bind_3 domain-containing protein
+good	unknown	NAC domain-containing protein
+good	unknown	Ankyrin repeat protein
+good	unknown	transcription elongation factor B polypeptide 3
+suspect	unknown	RING-type domain-containing protein
 suspect	TE-related	Beta-galactosidase
 suspect	TE-related	Chromo domain-containing protein
 suspect	TE-related	DNA polymerase, beta-like region
