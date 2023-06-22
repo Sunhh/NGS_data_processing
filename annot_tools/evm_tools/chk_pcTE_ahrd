@@ -34,16 +34,18 @@ bad	TE-related	Polyprotein
 bad	TE-related	Protein NYNRIN-like
 bad	TE-related	Protein FAR1-RELATED SEQUENCE
 bad	TE-related	Protein FAR1-RELATED SEQUENCE 2-like
+bad	TE-related	RNA-directed DNA polymerase homolog
 bad	TE-related	RNA-directed DNA polymerase, eukaryota, reverse transcriptase zinc-binding domain protein
 bad	TE-related	RNA-directed DNA polymerase (Reverse transcriptase), Ribonuclease H-like protein
+bad	TE-related	Retron-type RNA-directed DNA polymerase
 bad	TE-related	Reverse transcriptase-beet retrotransposon, putative
 bad	TE-related	RNase H domain-containing protein
 bad	TE-related	Retroelement pol polyprotein-like
-bad	TE-related	Retron-type RNA-directed DNA polymerase
 bad	TE-related	Retrotran_gag_3 domain-containing protein
 bad	TE-related	Retrotrans_gag domain-containing protein
 bad	TE-related	Retrotransposable element Tf2
 bad	TE-related	Retrotransposon gag protein
+bad	TE-related	gag_pre-integrs domain-containing protein
 bad	TE-related	Retrotransposon protein
 bad	TE-related	Retrotransposon protein, putative, Ty1-copia subclass
 bad	TE-related	Retrotransposon protein, putative, Ty3-gypsy subclass
@@ -87,12 +89,14 @@ bad	TE-related:tnp2	DUF4218 domain-containing protein
 bad	TE-related:Retrotran_gag_2	DUF4219 domain-containing protein
 bad	TE-related:Retrotran_gag_2	DUF4219 domain-containing protein/UBN2 domain-containing protein
 bad	TE-related:zinc-binding in reverse transcriptase	zf-RVT domain-containing protein
+bad	TE-RT	Maturase
 bad	Various uncharacterized	Unknown protein
 bad	chloroplast	30S ribosomal protein S3, chloroplastic
 bad	chloroplast	50S ribosomal protein L16, chloroplastic
 bad	chloroplast	ATPase_AAA_core domain-containing protein
 bad	chloroplast	DNA-directed RNA polymerase
 bad	chloroplast	DNA-directed RNA polymerase subunit beta''
+bad	something	DNA-directed RNA polymerase subunit beta'
 bad	chloroplast	Integrase catalytic domain-containing protein
 bad	chloroplast	NAD(P)H-quinone oxidoreductase chain 4, chloroplastic
 bad	chloroplast	NAD(P)H-quinone oxidoreductase subunit H, chloroplastic
@@ -146,6 +150,7 @@ good	plant-TE-derived	BED-type domain-containing protein
 good	plant-TE-derived	Protein of unknown function (DUF1218)
 good	plant-TE-derived	MATH domain-containing protein
 good	plant-TE-derived	PMD domain-containing protein
+good	plant-TE-derived	Zinc finger BED domain-containing protein
 good	plant-TE-derived	Zinc finger BED domain-containing protein DAYSLEEPER-like
 good	plant-TE-derived	Zinc finger BED domain-containing protein RICESLEEPER 2
 good	plant-TE-derived	Zinc finger BED domain-containing protein RICESLEEPER 2-like
@@ -155,10 +160,13 @@ good	plant-TE-derived	Myb/SANT-like domain, Harbinger transposase-derived nuclea
 good	plant-TE-homo	Phosphate transporter PHO1-like protein 9-like
 good	plant:C48_TE	ULP_PROTEASE domain-containing protein
 good	short-motif	ankyrin repeat-containing protein NPR4-like
+good	inPlant-TE	LigB domain-containing protein
 good	superfamily-TE-CACTA	Neprosin domain-containing protein
 good	unknown	Exonuclease domain-containing protein
 good	unknown	Ribonuclease
 good	unknown	Poly(A)-specific ribonuclease
+good	unknown	Vacuolar protein sorting-associated protein 35
+good	unknown	RING-type domain-containing protein
 good	unknown	Proline-rich protein HaeIII subfamily 1-like
 good	unknown	F-box domain-containing protein
 good	unknown	AAI domain-containing protein
@@ -172,13 +180,15 @@ good	unknown	Myb_DNA-bind_3 domain-containing protein
 good	unknown	NAC domain-containing protein
 good	unknown	Ankyrin repeat protein
 good	unknown	transcription elongation factor B polypeptide 3
-suspect	unknown	RING-type domain-containing protein
 suspect	TE-related	Beta-galactosidase
 suspect	TE-related	Chromo domain-containing protein
 suspect	TE-related	DNA polymerase, beta-like region
+suspect	TE-related	DNA polymerase
+suspect	TE-related:part	DNA/RNA polymerases superfamily protein
 suspect	TE-related	SWIM-type domain-containing protein
 suspect	TE-related:hAT	DUF659 domain-containing protein
 suspect	TE-related:hAT	Dimer_Tnp_hAT domain-containing protein
 suspect	TE-related:part	CRIB domain-containing protein
-suspect	TE-related:part	DNA/RNA polymerases superfamily protein
+suspect	TE-related:AT1G19090	Cysteine-rich RLK (RECEPTOR-like protein kinase) 8
+suspect	TE-related:AT1G19090	Cysteine-rich RLK (Receptor-like protein kinase) 8
 suspect	TE-sometimes	DUF4216 domain-containing protein
