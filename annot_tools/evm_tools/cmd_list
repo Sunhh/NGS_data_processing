@@ -1,0 +1,417 @@
+#
+# Prepare lists.
+#
+
+cut -f 2 list1 > list.mkPref
+perl -e 'use fileSunhh; use LogInforSunhh; while (<>) { chomp; m!^(\S+)_(\S\S\d)$! or die "$_\n"; my $id=$1;
+  my @ta=($id, $_, &fileSunhh::_abs_path("../06_maker/src_data/in_genomes/$id.fa"), &fileSunhh::_abs_path("../06_maker/maker_results/$_/comb.gff3"));
+  print join("\t", @ta)."\n";
+  -e "input/run_$ta[0]/" or system("mkdir -p input/run_$ta[0]/");
+  &runCmd("cat ../06_maker/src_data/protein/by_spaln2.1.4/run_$ta[0]/*.4maker.gff3 > input/run_$ta[0]/pep.gff3"); 
+  &runCmd("cat ../06_maker/src_data/est/by_spaln2.1.4/run_$ta[0]/*.4maker.gff3 > input/run_$ta[0]/est.gff3");
+  &runCmd("cat list.ref > input/run_$ta[0]/list.gnPref_mkPref_gnFa_gff");
+  &fileSunhh::write2file("input/run_$ta[0]/list.gnPref_mkPref_gnFa_gff", join("\t", @ta)."\n", ">>");
+}' list.mkPref > list.toAnnot
+
+#
+# Run EVM to combine genes.
+#
+[[ -e running/ ]] || mkdir running/
+cat list.toAnnot | perl -e 'use fileSunhh; while (<>) { chomp; my @ta=split(/\t/, $_);
+  -e "running/run_$ta[0]" or mkdir("running/run_$ta[0]");
+  my $sh_evm = "/home/Sunhh/tools/github/NGS_data_processing/annot_tools/evm_tools/run_evm_wiEVMpipe.sh";
+  my $fn_1   = &fileSunhh::_abs_path("input/run_$ta[0]/list.gnPref_mkPref_gnFa_gff");
+  my $fn_2   = &fileSunhh::_abs_path("input/run_$ta[0]/pep.gff3");
+  my $fn_3   = &fileSunhh::_abs_path("input/run_$ta[0]/est.gff3");
+  &fileSunhh::write2file("running/run_$ta[0]/c1_runEVM", 
+    "nohup bash $sh_evm  $ta[1]  $fn_1  $fn_2  $fn_3 > scrn.run_evm\n",
+  ">");
+}'
+
+cat list.toAnnot | perl -e 'while (<>) {chomp; my @ta=split(/\t/,$_); print "cd running/run_$ta[0]; bash c1_runEVM; cd -;\n";}' > c1
+bash c1
+
+#
+# In order to reduce fake gene models added from other gene predictions, remove bad novel genes.
+#
+[[ -e all_combined ]] || mkdir all_combined/
+### Basic gene prediction from maker: run_$ta[0]/tmp/$ta[1].trim2cds.gff3.gz
+cat list.toAnnot | perl -e 'use LogInforSunhh;
+ my $pl_dealGff="perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl";
+while (<>) { chomp; my @ta=split(/\t/, $_);
+  my $cmd = "$pl_dealGff -inGff running/run_$ta[0]/evmMerged.gff3  -compare2gffC running/run_$ta[0]/tmp/$ta[1].trim2cds.gff3.gz ";
+  $cmd .= " -rmOvlap -rmOvlapLen 1 -rmOvlapType CDS -rmOvlapStrand Single > running/run_$ta[0]/evmMerged_novel.gff3 ";
+  &runCmd($cmd);
+  &runCmd("$pl_dealGff -inGff running/run_$ta[0]/evmMerged_novel.gff3 -getJnLoc > running/run_$ta[0]/evmMerged_novel.gff3.JnLoc");
+  &runCmd("deal_fasta.pl running/run_$ta[0]/evmMerged.p.fa -drawByList -drawList running/run_$ta[0]/evmMerged_novel.gff3.JnLoc -drawWhole -drawLcol 0 > running/run_$ta[0]/evmMerged_novel.p.fa");
+  &runCmd("deal_fasta.pl running/run_$ta[0]/evmMerged.c.fa -drawByList -drawList running/run_$ta[0]/evmMerged_novel.gff3.JnLoc -drawWhole -drawLcol 0 > running/run_$ta[0]/evmMerged_novel.c.fa");
+}'
+
+# ls -t running/run_*/evmMerged_novel.p.fa > xx1
+cut -f 1 list.toAnnot | perl -e 'while (<>) {chomp; print "running/run_$_/evmMerged_novel.p.fa\n";}' > xx1
+cat  xx1 | perl -e 'my @a; while (<>) {chomp; push(@a, $_);} system "cat @a ";' | \
+ deal_fasta.pl -rmTailX_prot | perl -e 'my $cnt=0; while (<>) {chomp;
+  m!^\s*\>! and do {$cnt++; s!^\>(\S+)!>$cnt $1! or die "$_\n"; s!^(\S+ \S+)\s.*$!$1!; };
+  print "$_\n";
+}' > all_combined/all_extra.p.fa
+grep \> all_combined/all_extra.p.fa | perl -e 'while (<>) { m!^\>(\S+) (\S+)! or die "$_\n"; print "$1\t$2\n"; }' > all_combined/all_extra.newID_oldID
+cat xx1 | perl -e 'my @a; while (<>) {chomp; s!\.p.fa$!.c.fa!; push(@a, $_);} system "cat @a ";' | \
+ perl -e 'my $cnt=0; while (<>) { chomp;
+  m!^\s*\>! and do {$cnt++; s!^\>(\S+)!>$cnt $1! or die "$_\n"; s!^(\S+ \S+)\s.*$!$1!; };
+  print "$_\n";
+}' > all_combined/all_extra.c.fa
+
+### Find bad genes.
+### Do AHRD annotation on novel genes to find bad genes.
+[[ -e all_combined/ahrd/ ]] || mkdir all_combined/ahrd/
+deal_fasta.pl all_combined/all_extra.p.fa -rmDefinition > all_combined/ahrd/all_extra.p.fa
+##### Prepare the file "all_combined/ahrd/annot.cfg"
+#####   and then run AHRD
+printf "cd all_combined/ahrd/; " > c2_runBl_onlyAHRD
+echo "perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/ahrd/pipe_for_functional_annotation.pl annot.cfg -onlyAHRD -noCds" >> c2_runBl_onlyAHRD
+# nohup run_cmd_in_batch.pl c2_runBl_onlyAHRD > scrn.c2_runBl_onlyAHRD
+[[ -e all_combined/ahrd/04.AHRD/v1/ ]] || mkdir -p all_combined/ahrd/04.AHRD/v1/
+printf "cd all_combined/ahrd/04.AHRD/; " > c3_runAHRD
+printf "bash /home/Sunhh/tools/github/NGS_data_processing/annot_tools/ahrd/generate_ahrd_yml.sh ../all_extra.p.fa ./v1/ahrd_output_v1.csv > ahrd_in_v1.yml; " >> c3_runAHRD
+printf "java -Xmx100G -jar /data/Sunhh/src/annotation/ahrd/AHRD/dist/ahrd.jar ahrd_in_v1.yml; " >> c3_runAHRD
+printf "perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/ahrd/trim_orphan_right_brack.pl ./v1/ahrd_output_v1.csv > ./v1/ahrd_output_v1.csv_trim; " >> c3_runAHRD
+printf "deal_table.pl -column 0-5 ./v1/ahrd_output_v1.csv_trim > ./v1/ahrd_output_v1.final.csv; " >> c3_runAHRD
+printf "deal_table.pl -column 0,3 ./v1/ahrd_output_v1.final.csv > ./v1/ahrd_output_v1.final.csv.2col;" >> c3_runAHRD
+# nohup run_cmd_in_batch.pl c3_runAHRD > scrn.c3_runAHRD
+ColLink.pl all_combined/all_extra.newID_oldID \
+ -f1 all_combined/ahrd/04.AHRD/v1/ahrd_output_v1.final.csv.2col \
+ -keyC1 0 -keyC2 0 -add -Col1 1 -fill NNNNN | \
+ deal_table.pl -column 1,2,0 > all_combined/all_extra.oldID_ahrd_newID
+deal_table.pl -col_repCount 1  all_combined/all_extra.oldID_ahrd_newID | tail -n +2 | deal_table.pl -col_sort 0 | deal_table.pl -reverse > all_combined/all_extra.oldID_ahrd_newID.rcnt
+awk -F"\t" '$1 >= 3*2 ' all_combined/all_extra.oldID_ahrd_newID.rcnt > all_combined/all_extra.oldID_ahrd_newID.rcnt.tochk1
+awk -F"\t" '$1 <  3*2 ' all_combined/all_extra.oldID_ahrd_newID.rcnt | perl -e 'while (<>) { m!retro|reverse|transpos|gag\b|polyprotein|\bpol protein|RNase\sH\s|Ribonuclease H\b|integrase|\bDDE\b|DBD_Tnp_Mut\b!i and print; }' > all_combined/all_extra.oldID_ahrd_newID.rcnt.tochk2
+# retro|reverse|transpos|gag\b|polyprotein
+cp -p /home/Sunhh/tools/github/NGS_data_processing/annot_tools/evm_tools/chk_pcTE_ahrd all_combined/chk_pcTE_ahrd.use
+### Revise file "all_combined/chk_pcTE_ahrd.use"
+deal_table.pl all_combined/all_extra.oldID_ahrd_newID.rcnt.tochk1 -kSrch_idx all_combined/chk_pcTE_ahrd.use -kSrch_idxCol 2 -kSrch_srcCol 1 -kSrch_drop > all_combined/all_extra.oldID_ahrd_newID.rcnt.tochk1.1
+deal_table.pl all_combined/all_extra.oldID_ahrd_newID.rcnt.tochk2 -kSrch_idx all_combined/chk_pcTE_ahrd.use -kSrch_idxCol 2 -kSrch_srcCol 1 -kSrch_drop > all_combined/all_extra.oldID_ahrd_newID.rcnt.tochk2.1
+##### Run iprscan for genes.
+deal_table.pl all_combined/all_extra.oldID_ahrd_newID -kSrch_idx all_combined/chk_pcTE_ahrd.use -kSrch_idxCol 2 -kSrch_srcCol 1 -kSrch_drop > all_combined/all_extra.oldID_ahrd_newID.ipr.ID
+deal_fasta.pl all_combined/all_extra.p.fa -drawByList -drawWhole -drawList all_combined/all_extra.oldID_ahrd_newID.ipr.ID -drawLcol 2 > all_combined/all_extra.oldID_ahrd_newID.ipr.p.fa
+[[ -e all_combined/iprscanAll/ ]] || mkdir all_combined/iprscanAll/
+printf "cd all_combined/iprscanAll/; \$IPRSCAN_HOME/interproscan.sh -iprlookup -goterms -pa -etra -cpu 48 -i ../all_extra.oldID_ahrd_newID.ipr.p.fa -b ipr -f tsv,gff3,xml\n" > c4b_runIPR
+bash c4b_runIPR
+cat all_combined/iprscanAll/ipr.tsv | perl -e 'while (<>) { m!retro|reverse|transpos|gag\b|polyprotein|\bpol protein|RNase\sH\s|Ribonuclease H\b|integrase|\bDDE\b|DBD_Tnp_Mut\b!i and print; }' > all_combined/iprscanAll/ipr.tsv.te_related
+deal_table.pl all_combined/all_extra.oldID_ahrd_newID.ipr.ID -kSrch_idx all_combined/iprscanAll/ipr.tsv.te_related -kSrch_srcCol 2 > all_combined/all_extra.oldID_ahrd_newID.ipr.te_related
+##### Manual curation of file all_combined/chk_pcTE_ahrd.use;
+
+awk '$1 == "bad" || $1 == "suspect" ' all_combined/chk_pcTE_ahrd.use > all_combined/torm_type_ahrd
+deal_table.pl all_combined/all_extra.oldID_ahrd_newID -kSrch_srcCol 1 -kSrch_idx all_combined/torm_type_ahrd -kSrch_idxCol 2 > all_combined/all_extra.oldID_ahrd_newID.toRM
+deal_fasta.pl all_combined/all_extra.c.fa -drawByList -drawList all_combined/all_extra.oldID_ahrd_newID.toRM -drawWhole -drawLcol 2 > all_combined/all_extra.oldID_ahrd_newID.toRM.c.fa
+
+makeblastdb -in all_combined/all_extra.oldID_ahrd_newID.toRM.c.fa -dbtype nucl
+cat list.toAnnot | perl -e 'while (<>) { chomp; my @ta=split(/\t/, $_); my $cmd = "blastn ";
+ $cmd .= " -query running/run_$ta[0]/evmMerged.c.fa ";
+ $cmd .= " -out   running/run_$ta[0]/evmMerged.c.fa.toBad.bn6 ";
+ $cmd .= " -db    all_combined/all_extra.oldID_ahrd_newID.toRM.c.fa ";
+ $cmd .= " -num_threads 20 ";
+ $cmd .= " -outfmt \"6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen sstrand\" ";
+ $cmd .= " -task blastn -evalue 1e-5 -dust no -max_target_seqs 20 -max_hsps 10 ";
+ print "$cmd\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/evm_tools/filter_cds2Bad_bn6.pl running/run_$ta[0]/evmMerged.c.fa.toBad.bn6 > running/run_$ta[0]/evmMerged.c.fa.toBad.bn6.toRM\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -inGff running/run_$ta[0]/evmMerged.gff3 -getJnLoc > running/run_$ta[0]/evmMerged.gff3.JnLoc\n";
+ print "deal_table.pl running/run_$ta[0]/evmMerged.gff3.JnLoc -kSrch_idx running/run_$ta[0]/evmMerged.c.fa.toBad.bn6.toRM -kSrch_drop > running/run_$ta[0]/good.JnLoc\n";
+ print "deal_fasta.pl running/run_$ta[0]/evmMerged.p.fa -drawByList -drawList running/run_$ta[0]/good.JnLoc -drawWhole -drawLcol 0 | deal_fasta.pl -rmTailX_prot | deal_fasta.pl -rmDefinition > running/run_$ta[0]/good.p.fa\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -inGff running/run_$ta[0]/evmMerged.gff3 -gffret running/run_$ta[0]/good.JnLoc -idType mRNA > running/run_$ta[0]/good.gff3\n";
+ print "\n";
+}' > c5a_runBl2BadrmBad
+# Select pep.fa length >= 50 (May include '*') to be consistent with apple genome annotation in our Lab.
+
+#
+# Do AHRD annotation to remove TE further within each genome.
+#
+cat list.toAnnot | perl -e 'while (<>) {chomp; my @ta=split(/\t/,$_); my $cmd = "mkdir -p running/run_$ta[0]/annot/04.AHRD/v1/; ";
+  $cmd .= " cp -p annot_good.cfg running/run_$ta[0]/good.p.fa running/run_$ta[0]/annot/; ";
+  $cmd .= " cd running/run_$ta[0]/annot/; ";
+  $cmd .= " perl /home/Sunhh/tools/github/NGS_data_processing/project/watermelon_pan_phaseI/pipe_for_functional_annotation.pl annot_good.cfg -onlyAHRD -noCds; ";
+  $cmd .= " cd 04.AHRD/; ";
+  $cmd .= " bash /home/Sunhh/tools/github/NGS_data_processing/annot_tools/ahrd/generate_ahrd_yml.sh ../good.p.fa ./v1/ahrd_output_v1.csv > ahrd_in_v1.yml; ";
+  $cmd .= " java -Xmx10G -jar /data/Sunhh/src/annotation/ahrd/AHRD/dist/ahrd.jar ahrd_in_v1.yml; ";
+  $cmd .= " perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/trim_orphan_right_brack.pl ./v1/ahrd_output_v1.csv > ./v1/ahrd_output_v1.csv_trim; ";
+  $cmd .= " deal_table.pl -column 0-5 ./v1/ahrd_output_v1.csv_trim > ./v1/ahrd_output_v1.final.csv; ";
+  $cmd .= " deal_table.pl -column 0,3 ./v1/ahrd_output_v1.final.csv > ./v1/ahrd_output_v1.final.csv.2col; ";
+  print "$cmd\n";
+}' > c6a_sepAHRD
+
+cat list.toAnnot | perl -e 'while (<>) {chomp; my @a=split; system "cat running/run_$a[0]/annot/04.AHRD/v1/ahrd_output_v1.final.csv.2col";}' | \
+ deal_table.pl -col_repCount 1 | tail -n +2 | deal_table.pl -col_sort 0 | deal_table.pl -reverse \
+> all_combined/all_good.ahrd.rcnt
+[[ -e "all_combined/good_desc" ]] || cp -p /home/Sunhh/tools/github/NGS_data_processing/annot_tools/evm_tools/good_desc all_combined/good_desc
+cat all_combined/all_good.ahrd.rcnt | perl -e 'while (<>) { chomp; m!retro|reverse|transpos|gag\b|polyprotein|RNase\sH\s|Ribonuclease H\b!i and print "$_\n";}' | deal_table.pl -kSrch_idx all_combined/good_desc -kSrch_drop -kSrch_srcCol 1 > all_combined/all_good.TE_cnt_desc
+### [10/12/2022: Skip this step to save time] Check if there are highly frequent TE-related genes remained.
+# deal_table.pl all_combined/all_good.ahrd.rcnt -kSrch_idx all_combined/all_good.TE_cnt_desc -kSrch_idxCol 1 -kSrch_srcCol 1 -kSrch_drop | less -S
+### Remove TE-related genes and short genes (<= 30 AA) from 'good.JnLoc', resulting 'rmTE.gff3'
+cat list.toAnnot | perl -e 'while (<>) {chomp; my @ta=split(/\t/, $_);
+  print "deal_table.pl -kSrch_idx all_combined/all_good.TE_cnt_desc -kSrch_idxCol 1 -kSrch_srcCol 1 running/run_$ta[0]/annot/04.AHRD/v1/ahrd_output_v1.final.csv.2col > running/run_$ta[0]/annot/04.AHRD/v1/ahrd_output_v1.final.csv.2col.TE\n";
+  print "deal_fasta.pl running/run_$ta[0]/good.p.fa -rmTailX_prot | deal_fasta.pl -keep_len 50- | deal_fasta.pl -attr key > running/run_$ta[0]/good.longID\n";
+  print "deal_table.pl running/run_$ta[0]/good.JnLoc -kSrch_drop -kSrch_idx running/run_$ta[0]/annot/04.AHRD/v1/ahrd_output_v1.final.csv.2col.TE | deal_table.pl -kSrch_idx running/run_$ta[0]/good.longID > running/run_$ta[0]/rmTE.JnLoc\n";
+  print "deal_fasta.pl running/run_$ta[0]/evmMerged.p.fa -drawByList -drawWhole -drawLcol 0 -drawList running/run_$ta[0]/rmTE.JnLoc | deal_fasta.pl -rmTailX_prot | deal_fasta.pl -rmDefinition > running/run_$ta[0]/rmTE.p.fa\n";
+  print "deal_fasta.pl running/run_$ta[0]/evmMerged.c.fa -drawByList -drawWhole -drawLcol 0 -drawList running/run_$ta[0]/rmTE.JnLoc | deal_fasta.pl -rmDefinition > running/run_$ta[0]/rmTE.c.fa\n";
+  print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -inGff running/run_$ta[0]/evmMerged.gff3 -gffret running/run_$ta[0]/rmTE.JnLoc -idType mRNA > running/run_$ta[0]/rmTE.gff3\n";
+  print "deal_table.pl running/run_$ta[0]/annot/04.AHRD/v1/ahrd_output_v1.final.csv.2col -kSrch_idx running/run_$ta[0]/rmTE.JnLoc > running/run_$ta[0]/rmTE.ahrd\n";
+  print "\n";
+}' > c6b_sepRmTE
+
+#
+# Remove genes that are only supported by assembled transcripts, which may be antisense of TE-related genes.
+#
+
+# There are total 10 protein databases used as protein evidence, which are: 
+#   (set 1) sprot220404, Araport11, peach, and pear.
+#   (set 2) strawberry.
+#   (set 3) apple.GDDH13 and apple.HFTH1.
+#   (set 4) Gala_diploid_v2, Msieversii_diploid_v2, and Msylvestris_diploid_v2.
+# There are 55695 rmTE genes before this removal. When:
+#   (1 - f2 ) All 10 databases are used, 52164 genes left as supported.
+#   (2 - f3 ) Only set 1 are used, 33755 genes left.
+#   (3 - f4 ) Set 1+  3                      are used, 44714 genes left.
+#   (4 - f5 ) Set 1+3+2                      are used, 45200 genes left.
+#   (5 - f6a) Set 1+3+Gala_diploid_v2        are used, 48233 genes left.
+#   (6 - f6b) Set 1+3+Msieversii_diploid_v2  are used, 48701 genes left.
+#   (7 - f6c) Set 1+3+Msylvestris_diploid_v2 are used, 48728 genes left.
+#   (8 - f6d) Set 1+3+4                      are used, 51977 genes left.
+#   (9 - f6e) Set 1+  4                      are used, 50173 genes left.
+# Comparing f3 (set 1) and f4 (1+3), set 3 adds 10959 genes that may be specific in apple.
+# Comparing f4 (1+3) and f6e (1+4), set 4 in total adds 5459 genes than set 3.
+# Comparing f4 (1+3) and f5 (1+3+2), set 2 (strawberry) doesn't contribute a lot to the gene number increase.
+# Comparing f6a-f6d, individual genome annotation contribute similarly to the gene number increase.
+# Finally I prefer the result of 'f5' (set 1+3+2). Although some of the removed genes are annotated as Myb-like or NB-ARC domain-containing, their matched region is short and fragmented.
+
+cat list.toAnnot | perl -e 'while (<>) {chomp; my @ta=split(/\t/, $_);
+ my $rdir = "running/run_$ta[0]/";
+ my $wdir = "running/run_$ta[0]/rm_bad_unkown/";
+ print "mkdir -p $wdir/\n";
+ print "# Prepare protein evidence. I should remove some proteomes if they have a lot of bad predicted genes.\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -sortGffBy str_posi -sort -inGff input/run_$ta[0]/pep.gff3 -out $wdir/pepEvi.srt.gff3\n";
+ print "# Prepare protein prediction.\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -sortGffBy str_posi -sort -inGff $rdir/rmTE.gff3 -out $wdir/rmTE.srt.gff3\n";
+ print "echo \"mRNA\" > $wdir/t1\n";
+ print "echo \"CDS\" >> $wdir/t1\n";
+ print "deal_table.pl $wdir/rmTE.srt.gff3 -kSrch_idx $wdir/t1 -kSrch_srcCol 2 > $wdir/rmTE.s1.gff3\n";
+ print "grep \"Unknown protein\" $rdir/rmTE.ahrd > $wdir/rmTE.ahrd.unk\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -inGff $wdir/rmTE.s1.gff3 -gffret $wdir/rmTE.ahrd.unk -out $wdir/rmTE.s1_unk.gff3\n";
+ print "# Look for un-supported \"Unknown protein\" genes.\n";
+ print "echo \"+\" > $wdir/t2\n";
+ print "echo \"match_part\" > $wdir/t3\n";
+ print "deal_table.pl $wdir/rmTE.s1_unk.gff3 -kSrch_srcCol 6 -kSrch_idx $wdir/t2 > $wdir/rmTE.s1_unk.p.gff3\n";
+ print "deal_table.pl $wdir/pepEvi.srt.gff3 -kSrch_srcCol 6 -kSrch_idx $wdir/t2 | deal_table.pl -kSrch_srcCol 2 -kSrch_idx $wdir/t3 > $wdir/pepEvi.srt.p.gff3\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/rm_ovlap_gene_model.pl -srcGff $wdir/rmTE.s1_unk.p.gff3 -idxGff $wdir/pepEvi.srt.p.gff3 -ovl_ratio 0.5 > $wdir/rmTE.s1_unk.p_ovl.gff3\n";
+ print "echo \"-\" > $wdir/t2m\n";
+ print "deal_table.pl $wdir/rmTE.s1_unk.gff3 -kSrch_srcCol 6 -kSrch_idx $wdir/t2m > $wdir/rmTE.s1_unk.m.gff3\n";
+ print "deal_table.pl $wdir/pepEvi.srt.gff3 -kSrch_srcCol 6 -kSrch_idx $wdir/t2m | deal_table.pl -kSrch_srcCol 2 -kSrch_idx $wdir/t3 > $wdir/pepEvi.srt.m.gff3\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/rm_ovlap_gene_model.pl -srcGff $wdir/rmTE.s1_unk.m.gff3 -idxGff $wdir/pepEvi.srt.m.gff3 -ovl_ratio 0.5 > $wdir/rmTE.s1_unk.m_ovl.gff3\n"; 
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -getJnLoc -inGff $wdir/rmTE.s1_unk.p_ovl.gff3 > $wdir/rmTE.s1_unk.p_ovl.gff3.JnLoc\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -getJnLoc -inGff $wdir/rmTE.s1_unk.m_ovl.gff3 > $wdir/rmTE.s1_unk.m_ovl.gff3.JnLoc\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -getJnLoc -inGff $wdir/rmTE.s1.gff3 >$wdir/rmTE.s1.gff3.JnLoc\n";
+ print "deal_table.pl -kSrch_drop $wdir/rmTE.s1.gff3.JnLoc -kSrch_idx $wdir/rmTE.s1_unk.p_ovl.gff3.JnLoc | ";
+ print " deal_table.pl -kSrch_drop -kSrch_idx $wdir/rmTE.s1_unk.m_ovl.gff3.JnLoc | ";
+ print " cut -f 1 > $wdir/rmTE.s1.gff3.JnLoc_keptID\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -inGff $wdir/rmTE.s1.gff3 -gffret $wdir/rmTE.s1.gff3.JnLoc_keptID -out $wdir/rmTE.s1_filt1.gff3\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -add_cds_phase -inGff $wdir/rmTE.s1_filt1.gff3 -out $rdir/rmTE_f1.gff3\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -getJnLoc -inGff $rdir/rmTE_f1.gff3 -out $rdir/rmTE_f1.gff3.JnLoc\n";
+ print "deal_fasta.pl -drawByList -drawLcol 0 -drawWhole -drawList $wdir/rmTE.s1.gff3.JnLoc_keptID $rdir/rmTE.p.fa > $rdir/rmTE_f1.p.fa\n";
+ print "deal_fasta.pl -drawByList -drawLcol 0 -drawWhole -drawList $wdir/rmTE.s1.gff3.JnLoc_keptID $rdir/rmTE.c.fa > $rdir/rmTE_f1.c.fa\n";
+ print "deal_table.pl $rdir/rmTE.ahrd -kSrch_idx $wdir/rmTE.s1.gff3.JnLoc_keptID > $rdir/rmTE_f1.ahrd\n";
+ print "\n";
+}' > c6c_requireUnkPepSupport
+
+cat list.toAnnot | perl -e 'while (<>) {chomp; my @ta=split(/\t/, $_);
+ my $rdir = "running/run_$ta[0]/";
+ my $wdir = "running/run_$ta[0]/rm_bad_any/";
+ print "mkdir -p $wdir/\n";
+ print "# Prepare protein evidence. I should remove some proteomes if they have a lot of bad predicted genes.\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -sortGffBy str_posi -sort -inGff input/run_$ta[0]/pepEvi.gff3 -out $wdir/pepEvi.srt.gff3\n";
+ print "# Prepare protein prediction.\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -sortGffBy str_posi -sort -inGff $rdir/rmTE.gff3 -out $wdir/rmTE.srt.gff3\n";
+ print "echo \"mRNA\" > $wdir/t1\n";
+ print "echo \"CDS\" >> $wdir/t1\n";
+ print "deal_table.pl $wdir/rmTE.srt.gff3 -kSrch_idx $wdir/t1 -kSrch_srcCol 2 > $wdir/rmTE.s1.gff3\n";
+ print "cat $rdir/rmTE.ahrd > $wdir/rmTE.ahrd.any\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -inGff $wdir/rmTE.s1.gff3 -gffret $wdir/rmTE.ahrd.any -out $wdir/rmTE.s1_any.gff3\n";
+ print "# Look for un-supported genes.\n";
+ print "echo \"+\" > $wdir/t2\n";
+ print "echo \"match_part\" > $wdir/t3\n";
+ print "deal_table.pl $wdir/rmTE.s1_any.gff3 -kSrch_srcCol 6 -kSrch_idx $wdir/t2 > $wdir/rmTE.s1_any.p.gff3\n";
+ print "deal_table.pl $wdir/pepEvi.srt.gff3 -kSrch_srcCol 6 -kSrch_idx $wdir/t2 | deal_table.pl -kSrch_srcCol 2 -kSrch_idx $wdir/t3 > $wdir/pepEvi.srt.p.gff3\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/rm_ovlap_gene_model.pl -srcGff $wdir/rmTE.s1_any.p.gff3 -idxGff $wdir/pepEvi.srt.p.gff3 -ovl_ratio 0.5 > $wdir/rmTE.s1_any.p_ovl.gff3\n";
+ print "echo \"-\" > $wdir/t2m\n";
+ print "deal_table.pl $wdir/rmTE.s1_any.gff3 -kSrch_srcCol 6 -kSrch_idx $wdir/t2m > $wdir/rmTE.s1_any.m.gff3\n";
+ print "deal_table.pl $wdir/pepEvi.srt.gff3 -kSrch_srcCol 6 -kSrch_idx $wdir/t2m | deal_table.pl -kSrch_srcCol 2 -kSrch_idx $wdir/t3 > $wdir/pepEvi.srt.m.gff3\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/rm_ovlap_gene_model.pl -srcGff $wdir/rmTE.s1_any.m.gff3 -idxGff $wdir/pepEvi.srt.m.gff3 -ovl_ratio 0.5 > $wdir/rmTE.s1_any.m_ovl.gff3\n"; 
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -getJnLoc -inGff $wdir/rmTE.s1_any.p_ovl.gff3 > $wdir/rmTE.s1_any.p_ovl.gff3.JnLoc\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -getJnLoc -inGff $wdir/rmTE.s1_any.m_ovl.gff3 > $wdir/rmTE.s1_any.m_ovl.gff3.JnLoc\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -getJnLoc -inGff $wdir/rmTE.s1.gff3 >$wdir/rmTE.s1.gff3.JnLoc\n";
+ print "deal_table.pl -kSrch_drop $wdir/rmTE.s1.gff3.JnLoc -kSrch_idx $wdir/rmTE.s1_any.p_ovl.gff3.JnLoc | ";
+ print " deal_table.pl -kSrch_drop -kSrch_idx $wdir/rmTE.s1_any.m_ovl.gff3.JnLoc | ";
+ print " cut -f 1 > $wdir/rmTE.s1.gff3.JnLoc_keptID\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -inGff $wdir/rmTE.s1.gff3 -gffret $wdir/rmTE.s1.gff3.JnLoc_keptID -out $wdir/rmTE.s1_filt1.gff3\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -add_cds_phase -inGff $wdir/rmTE.s1_filt1.gff3 -out $rdir/rmTE_f2.gff3\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -getJnLoc -inGff $rdir/rmTE_f2.gff3 -out $rdir/rmTE_f2.gff3.JnLoc\n";
+ print "deal_fasta.pl -drawByList -drawLcol 0 -drawWhole -drawList $wdir/rmTE.s1.gff3.JnLoc_keptID $rdir/rmTE.p.fa > $rdir/rmTE_f2.p.fa\n";
+ print "deal_fasta.pl -drawByList -drawLcol 0 -drawWhole -drawList $wdir/rmTE.s1.gff3.JnLoc_keptID $rdir/rmTE.c.fa > $rdir/rmTE_f2.c.fa\n";
+ print "deal_table.pl $rdir/rmTE.ahrd -kSrch_idx $wdir/rmTE.s1.gff3.JnLoc_keptID > $rdir/rmTE_f2.ahrd\n";
+ print "\n";
+}' > c6d_requireAnyPepSupport
+
+cat list.toAnnot | perl -e 'while (<>) {chomp; my @ta=split(/\t/, $_);
+ my $rdir = "running/run_$ta[0]/";
+ my $wdir = "running/run_$ta[0]/rm_bad_f3/";
+ print "mkdir -p $wdir/\n";
+ print "# Prepare protein evidence. I should remove some proteomes if they have a lot of bad predicted genes.\n";
+ print "cat ../03_aln_prot/by_spaln2.1.4/run_$ta[0]/Araport11.fix_p.fa.s2.4maker.gff3 ";
+ print " ../03_aln_prot/by_spaln2.1.4/run_$ta[0]/sprot220404.fix_p.fa.s2.4maker.gff3 ";
+ print " ../03_aln_prot/by_spaln2.1.4/run_$ta[0]/peach.CN14.pep.fa.s2.4maker.gff3 ";
+ print " ../03_aln_prot/by_spaln2.1.4/run_$ta[0]/pear.Prunus_persica_v2.0.a1.allTrs.pep.fa.s2.4maker.gff3 ";
+ print " > $wdir/pepEvi.gff3\n ";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -sortGffBy str_posi -sort -inGff $wdir/pepEvi.gff3 -out $wdir/pepEvi.srt.gff3\n";
+ print "# Prepare protein prediction.\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -sortGffBy str_posi -sort -inGff $rdir/rmTE.gff3 -out $wdir/rmTE.srt.gff3\n";
+ print "echo \"mRNA\" > $wdir/t1\n";
+ print "echo \"CDS\" >> $wdir/t1\n";
+ print "deal_table.pl $wdir/rmTE.srt.gff3 -kSrch_idx $wdir/t1 -kSrch_srcCol 2 > $wdir/rmTE.s1.gff3\n";
+ print "cat $rdir/rmTE.ahrd > $wdir/rmTE.ahrd.any\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -inGff $wdir/rmTE.s1.gff3 -gffret $wdir/rmTE.ahrd.any -out $wdir/rmTE.s1_any.gff3\n";
+ print "# Look for un-supported genes.\n";
+ print "echo \"+\" > $wdir/t2\n";
+ print "echo \"match_part\" > $wdir/t3\n";
+ print "deal_table.pl $wdir/rmTE.s1_any.gff3 -kSrch_srcCol 6 -kSrch_idx $wdir/t2 > $wdir/rmTE.s1_any.p.gff3\n";
+ print "deal_table.pl $wdir/pepEvi.srt.gff3 -kSrch_srcCol 6 -kSrch_idx $wdir/t2 | deal_table.pl -kSrch_srcCol 2 -kSrch_idx $wdir/t3 > $wdir/pepEvi.srt.p.gff3\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/rm_ovlap_gene_model.pl -srcGff $wdir/rmTE.s1_any.p.gff3 -idxGff $wdir/pepEvi.srt.p.gff3 -ovl_ratio 0.5 > $wdir/rmTE.s1_any.p_ovl.gff3\n";
+ print "echo \"-\" > $wdir/t2m\n";
+ print "deal_table.pl $wdir/rmTE.s1_any.gff3 -kSrch_srcCol 6 -kSrch_idx $wdir/t2m > $wdir/rmTE.s1_any.m.gff3\n";
+ print "deal_table.pl $wdir/pepEvi.srt.gff3 -kSrch_srcCol 6 -kSrch_idx $wdir/t2m | deal_table.pl -kSrch_srcCol 2 -kSrch_idx $wdir/t3 > $wdir/pepEvi.srt.m.gff3\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/rm_ovlap_gene_model.pl -srcGff $wdir/rmTE.s1_any.m.gff3 -idxGff $wdir/pepEvi.srt.m.gff3 -ovl_ratio 0.5 > $wdir/rmTE.s1_any.m_ovl.gff3\n"; 
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -getJnLoc -inGff $wdir/rmTE.s1_any.p_ovl.gff3 > $wdir/rmTE.s1_any.p_ovl.gff3.JnLoc\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -getJnLoc -inGff $wdir/rmTE.s1_any.m_ovl.gff3 > $wdir/rmTE.s1_any.m_ovl.gff3.JnLoc\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -getJnLoc -inGff $wdir/rmTE.s1.gff3 >$wdir/rmTE.s1.gff3.JnLoc\n";
+ print "deal_table.pl -kSrch_drop $wdir/rmTE.s1.gff3.JnLoc -kSrch_idx $wdir/rmTE.s1_any.p_ovl.gff3.JnLoc | ";
+ print " deal_table.pl -kSrch_drop -kSrch_idx $wdir/rmTE.s1_any.m_ovl.gff3.JnLoc | ";
+ print " cut -f 1 > $wdir/rmTE.s1.gff3.JnLoc_keptID\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -inGff $wdir/rmTE.s1.gff3 -gffret $wdir/rmTE.s1.gff3.JnLoc_keptID -out $wdir/rmTE.s1_filt1.gff3\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -add_cds_phase -inGff $wdir/rmTE.s1_filt1.gff3 -out $rdir/rmTE_f3.gff3\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -getJnLoc -inGff $rdir/rmTE_f3.gff3 -out $rdir/rmTE_f3.gff3.JnLoc\n";
+ print "deal_fasta.pl -drawByList -drawLcol 0 -drawWhole -drawList $wdir/rmTE.s1.gff3.JnLoc_keptID $rdir/rmTE.p.fa > $rdir/rmTE_f3.p.fa\n";
+ print "deal_fasta.pl -drawByList -drawLcol 0 -drawWhole -drawList $wdir/rmTE.s1.gff3.JnLoc_keptID $rdir/rmTE.c.fa > $rdir/rmTE_f3.c.fa\n";
+ print "deal_table.pl $rdir/rmTE.ahrd -kSrch_idx $wdir/rmTE.s1.gff3.JnLoc_keptID > $rdir/rmTE_f3.ahrd\n";
+ print "\n";
+}' > c6e_requireAnyPepSupport3
+
+cat list.toAnnot | perl -e 'while (<>) {chomp; my @ta=split(/\t/, $_);
+ my $rdir = "running/run_$ta[0]/";
+ my $wdir = "running/run_$ta[0]/rm_bad_f4/";
+ print "mkdir -p $wdir/\n";
+ print "# Prepare protein evidence. I should remove some proteomes if they have a lot of bad predicted genes.\n";
+ print "cat ../03_aln_prot/by_spaln2.1.4/run_$ta[0]/Araport11.fix_p.fa.s2.4maker.gff3 ";
+ print " ../03_aln_prot/by_spaln2.1.4/run_$ta[0]/sprot220404.fix_p.fa.s2.4maker.gff3 ";
+ print " ../03_aln_prot/by_spaln2.1.4/run_$ta[0]/peach.CN14.pep.fa.s2.4maker.gff3 ";
+ print " ../03_aln_prot/by_spaln2.1.4/run_$ta[0]/pear.Prunus_persica_v2.0.a1.allTrs.pep.fa.s2.4maker.gff3 ";
+ print " ../03_aln_prot/by_spaln2.1.4/run_$ta[0]/apple.GDDH13.pep.fa.s2.4maker.gff3 ";
+ print " ../03_aln_prot/by_spaln2.1.4/run_$ta[0]/apple.HFTH1.pep.fa.s2.4maker.gff3 ";
+ print " > $wdir/pepEvi.gff3\n ";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -sortGffBy str_posi -sort -inGff $wdir/pepEvi.gff3 -out $wdir/pepEvi.srt.gff3\n";
+ print "# Prepare protein prediction.\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -sortGffBy str_posi -sort -inGff $rdir/rmTE.gff3 -out $wdir/rmTE.srt.gff3\n";
+ print "echo \"mRNA\" > $wdir/t1\n";
+ print "echo \"CDS\" >> $wdir/t1\n";
+ print "deal_table.pl $wdir/rmTE.srt.gff3 -kSrch_idx $wdir/t1 -kSrch_srcCol 2 > $wdir/rmTE.s1.gff3\n";
+ print "cat $rdir/rmTE.ahrd > $wdir/rmTE.ahrd.any\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -inGff $wdir/rmTE.s1.gff3 -gffret $wdir/rmTE.ahrd.any -out $wdir/rmTE.s1_any.gff3\n";
+ print "# Look for un-supported genes.\n";
+ print "echo \"+\" > $wdir/t2\n";
+ print "echo \"match_part\" > $wdir/t3\n";
+ print "deal_table.pl $wdir/rmTE.s1_any.gff3 -kSrch_srcCol 6 -kSrch_idx $wdir/t2 > $wdir/rmTE.s1_any.p.gff3\n";
+ print "deal_table.pl $wdir/pepEvi.srt.gff3 -kSrch_srcCol 6 -kSrch_idx $wdir/t2 | deal_table.pl -kSrch_srcCol 2 -kSrch_idx $wdir/t3 > $wdir/pepEvi.srt.p.gff3\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/rm_ovlap_gene_model.pl -srcGff $wdir/rmTE.s1_any.p.gff3 -idxGff $wdir/pepEvi.srt.p.gff3 -ovl_ratio 0.5 > $wdir/rmTE.s1_any.p_ovl.gff3\n";
+ print "echo \"-\" > $wdir/t2m\n";
+ print "deal_table.pl $wdir/rmTE.s1_any.gff3 -kSrch_srcCol 6 -kSrch_idx $wdir/t2m > $wdir/rmTE.s1_any.m.gff3\n";
+ print "deal_table.pl $wdir/pepEvi.srt.gff3 -kSrch_srcCol 6 -kSrch_idx $wdir/t2m | deal_table.pl -kSrch_srcCol 2 -kSrch_idx $wdir/t3 > $wdir/pepEvi.srt.m.gff3\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/rm_ovlap_gene_model.pl -srcGff $wdir/rmTE.s1_any.m.gff3 -idxGff $wdir/pepEvi.srt.m.gff3 -ovl_ratio 0.5 > $wdir/rmTE.s1_any.m_ovl.gff3\n"; 
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -getJnLoc -inGff $wdir/rmTE.s1_any.p_ovl.gff3 > $wdir/rmTE.s1_any.p_ovl.gff3.JnLoc\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -getJnLoc -inGff $wdir/rmTE.s1_any.m_ovl.gff3 > $wdir/rmTE.s1_any.m_ovl.gff3.JnLoc\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -getJnLoc -inGff $wdir/rmTE.s1.gff3 >$wdir/rmTE.s1.gff3.JnLoc\n";
+ print "deal_table.pl -kSrch_drop $wdir/rmTE.s1.gff3.JnLoc -kSrch_idx $wdir/rmTE.s1_any.p_ovl.gff3.JnLoc | ";
+ print " deal_table.pl -kSrch_drop -kSrch_idx $wdir/rmTE.s1_any.m_ovl.gff3.JnLoc | ";
+ print " cut -f 1 > $wdir/rmTE.s1.gff3.JnLoc_keptID\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -inGff $wdir/rmTE.s1.gff3 -gffret $wdir/rmTE.s1.gff3.JnLoc_keptID -out $wdir/rmTE.s1_filt1.gff3\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -add_cds_phase -inGff $wdir/rmTE.s1_filt1.gff3 -out $rdir/rmTE_f4.gff3\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -getJnLoc -inGff $rdir/rmTE_f4.gff3 -out $rdir/rmTE_f4.gff3.JnLoc\n";
+ print "deal_fasta.pl -drawByList -drawLcol 0 -drawWhole -drawList $wdir/rmTE.s1.gff3.JnLoc_keptID $rdir/rmTE.p.fa > $rdir/rmTE_f4.p.fa\n";
+ print "deal_fasta.pl -drawByList -drawLcol 0 -drawWhole -drawList $wdir/rmTE.s1.gff3.JnLoc_keptID $rdir/rmTE.c.fa > $rdir/rmTE_f4.c.fa\n";
+ print "deal_table.pl $rdir/rmTE.ahrd -kSrch_idx $wdir/rmTE.s1.gff3.JnLoc_keptID > $rdir/rmTE_f4.ahrd\n";
+ print "\n";
+}' > c6f_requireAnyPepSupport4
+
+cat list.toAnnot | perl -e 'while (<>) {chomp; my @ta=split(/\t/, $_);
+ my $rdir = "running/run_$ta[0]/";
+ my $wdir = "running/run_$ta[0]/rm_bad_f5/";
+ print "mkdir -p $wdir/\n";
+ print "# Prepare protein evidence. I should remove some proteomes if they have a lot of bad predicted genes.\n";
+ print "cat ../03_aln_prot/by_spaln2.1.4/run_$ta[0]/Araport11.fix_p.fa.s2.4maker.gff3 ";
+ print " ../03_aln_prot/by_spaln2.1.4/run_$ta[0]/sprot220404.fix_p.fa.s2.4maker.gff3 ";
+ print " ../03_aln_prot/by_spaln2.1.4/run_$ta[0]/peach.CN14.pep.fa.s2.4maker.gff3 ";
+ print " ../03_aln_prot/by_spaln2.1.4/run_$ta[0]/pear.Prunus_persica_v2.0.a1.allTrs.pep.fa.s2.4maker.gff3 ";
+ print " ../03_aln_prot/by_spaln2.1.4/run_$ta[0]/apple.GDDH13.pep.fa.s2.4maker.gff3 ";
+ print " ../03_aln_prot/by_spaln2.1.4/run_$ta[0]/apple.HFTH1.pep.fa.s2.4maker.gff3 ";
+ print " ../03_aln_prot/by_spaln2.1.4/run_$ta[0]/strawberry.Fxa_v1.2.pep.fa.s2.4maker.gff3 ";
+ print " > $wdir/pepEvi.gff3\n ";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -sortGffBy str_posi -sort -inGff $wdir/pepEvi.gff3 -out $wdir/pepEvi.srt.gff3\n";
+ print "# Prepare protein prediction.\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -sortGffBy str_posi -sort -inGff $rdir/rmTE.gff3 -out $wdir/rmTE.srt.gff3\n";
+ print "echo \"mRNA\" > $wdir/t1\n";
+ print "echo \"CDS\" >> $wdir/t1\n";
+ print "deal_table.pl $wdir/rmTE.srt.gff3 -kSrch_idx $wdir/t1 -kSrch_srcCol 2 > $wdir/rmTE.s1.gff3\n";
+ print "cat $rdir/rmTE.ahrd > $wdir/rmTE.ahrd.any\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -inGff $wdir/rmTE.s1.gff3 -gffret $wdir/rmTE.ahrd.any -out $wdir/rmTE.s1_any.gff3\n";
+ print "# Look for un-supported genes.\n";
+ print "echo \"+\" > $wdir/t2\n";
+ print "echo \"match_part\" > $wdir/t3\n";
+ print "deal_table.pl $wdir/rmTE.s1_any.gff3 -kSrch_srcCol 6 -kSrch_idx $wdir/t2 > $wdir/rmTE.s1_any.p.gff3\n";
+ print "deal_table.pl $wdir/pepEvi.srt.gff3 -kSrch_srcCol 6 -kSrch_idx $wdir/t2 | deal_table.pl -kSrch_srcCol 2 -kSrch_idx $wdir/t3 > $wdir/pepEvi.srt.p.gff3\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/rm_ovlap_gene_model.pl -srcGff $wdir/rmTE.s1_any.p.gff3 -idxGff $wdir/pepEvi.srt.p.gff3 -ovl_ratio 0.5 > $wdir/rmTE.s1_any.p_ovl.gff3\n";
+ print "echo \"-\" > $wdir/t2m\n";
+ print "deal_table.pl $wdir/rmTE.s1_any.gff3 -kSrch_srcCol 6 -kSrch_idx $wdir/t2m > $wdir/rmTE.s1_any.m.gff3\n";
+ print "deal_table.pl $wdir/pepEvi.srt.gff3 -kSrch_srcCol 6 -kSrch_idx $wdir/t2m | deal_table.pl -kSrch_srcCol 2 -kSrch_idx $wdir/t3 > $wdir/pepEvi.srt.m.gff3\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/rm_ovlap_gene_model.pl -srcGff $wdir/rmTE.s1_any.m.gff3 -idxGff $wdir/pepEvi.srt.m.gff3 -ovl_ratio 0.5 > $wdir/rmTE.s1_any.m_ovl.gff3\n"; 
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -getJnLoc -inGff $wdir/rmTE.s1_any.p_ovl.gff3 > $wdir/rmTE.s1_any.p_ovl.gff3.JnLoc\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -getJnLoc -inGff $wdir/rmTE.s1_any.m_ovl.gff3 > $wdir/rmTE.s1_any.m_ovl.gff3.JnLoc\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -getJnLoc -inGff $wdir/rmTE.s1.gff3 >$wdir/rmTE.s1.gff3.JnLoc\n";
+ print "deal_table.pl -kSrch_drop $wdir/rmTE.s1.gff3.JnLoc -kSrch_idx $wdir/rmTE.s1_any.p_ovl.gff3.JnLoc | ";
+ print " deal_table.pl -kSrch_drop -kSrch_idx $wdir/rmTE.s1_any.m_ovl.gff3.JnLoc | ";
+ print " cut -f 1 > $wdir/rmTE.s1.gff3.JnLoc_keptID\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -inGff $wdir/rmTE.s1.gff3 -gffret $wdir/rmTE.s1.gff3.JnLoc_keptID -out $wdir/rmTE.s1_filt1.gff3\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -add_cds_phase -inGff $wdir/rmTE.s1_filt1.gff3 -out $rdir/rmTE_f5.gff3\n";
+ print "perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -getJnLoc -inGff $rdir/rmTE_f5.gff3 -out $rdir/rmTE_f5.gff3.JnLoc\n";
+ print "deal_fasta.pl -drawByList -drawLcol 0 -drawWhole -drawList $wdir/rmTE.s1.gff3.JnLoc_keptID $rdir/rmTE.p.fa > $rdir/rmTE_f5.p.fa\n";
+ print "deal_fasta.pl -drawByList -drawLcol 0 -drawWhole -drawList $wdir/rmTE.s1.gff3.JnLoc_keptID $rdir/rmTE.c.fa > $rdir/rmTE_f5.c.fa\n";
+ print "deal_table.pl $rdir/rmTE.ahrd -kSrch_idx $wdir/rmTE.s1.gff3.JnLoc_keptID > $rdir/rmTE_f5.ahrd\n";
+ print "\n";
+}' > c6e_requireAnyPepSupport5
+
+#
+# Remove genes that span two different contigs.
+#
+# I didn't do this because there isn't an AGP file available.
+cut -f 1 list1 | perl tools/rm_ctg_span_two_ctg.pl
+
+#
+# Collect results and run BUSCO for testing.
+#
+[[ -e final/ ]] || mkdir final/
+cat list.toAnnot | perl -e 'use LogInforSunhh; while (<>) {chomp;my @a=split;
+  my $resD="final/$a[0]"; -e $resD or mkdir($resD);
+  &runCmd("cp -p running/run_$a[0]/rmTE_f5.gff3  $resD/rmTE_f5.gff3");
+  &runCmd("cp -p running/run_$a[0]/rmTE_f5.p.fa  $resD/rmTE_f5.p.fa");
+  &runCmd("cp -p running/run_$a[0]/rmTE_f5.c.fa  $resD/rmTE_f5.c.fa");
+  # &runCmd("deal_table.pl running/run_$a[0]/rmTE.JnLoc -kSrch_idx running/run_$a[0]/rmTE.gff3.1.mID > running/run_$a[0]/rmTE_f5.gff3.JnLoc");
+  &runCmd("cp -p running/run_$a[0]/rmTE_f5.gff3.JnLoc $resD/rmTE_f5.gff3.JnLoc");
+  &runCmd("cp -p running/run_$a[0]/rmTE_f5.ahrd  $resD/rmTE_f5.ahrd");
+}'
+
+# [[ -e temp_pseq/ ]] || mkdir temp_pseq/
+# cat list.toAnnot | perl -e 'while (<>) {chomp;my @a=split; system "cp -p final/$a[0]/rmTE.p.fa temp_pseq/$a[0].rmTE.p.fa";}'
+
