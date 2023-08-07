@@ -807,7 +807,9 @@ sub action_ch_makerID {
     close($fh_g); 
   }
   
-  for my $line_txt (values %{$in_gff{'lineN2line'}}) {
+  my %cdsCnt;
+  for my $line_N (sort {$a <=> $b} keys %{$in_gff{'lineN2line'}}) {
+    my $line_txt = $in_gff{'lineN2line'}{$line_N};
     my @ta = &splitL("\t", $line_txt); 
     scalar(@ta) >= 9 or next; 
     my %attrHash = %{ $gff_obj->_getAttrHash( 'attribText'=>$ta[8] ) }; 
@@ -841,17 +843,25 @@ sub action_ch_makerID {
         }
       }
     } elsif ( lc($ta[2]) =~ m/^(exon|cds|five_prime_utr|three_prime_utr)$/i  ) {
-      if ( $ta[8] =~ m!(?:ID|Parent)=([^\s=;]+)!i ) {
-        my $s=$1; $s =~ s![\s;]+$!!; $s =~ s!:(exon|cds|five_prime_utr|three_prime_utr)(:\d+)?$!!i; 
-        my $v=$o2n_m{$s}; $v //= $s; 
+      my $fttype = lc($1);
+      if ( $ta[8] =~ m!(?:Parent)=([^\s=;]+)!i ) {
+        my $s=$1;
+        # $s =~ s![:.](exon|cds|five_prime_utr|three_prime_utr)([:.]?\d+)?$!!i;
+        # $s =~ s!^cds\d*\.!!i;
+        my $v=$o2n_m{$s}; $v //= $s;
         if ( $s ne $v ) {
-          $ta[8] =~ s!(ID|Parent|Name)=$s!$1=$v!ig; 
+          $cdsCnt{$v}{$fttype} //= 0; $cdsCnt{$v}{$fttype} ++;
+          $ta[8] =~ s!((?i:Parent))=$s!$1=$v!g;
+          $ta[8] =~ s!(^|[;\s])(?i:ID)=[^\s;]+;!$1!;
+          $ta[8] = "ID=$v-${fttype}$cdsCnt{$v}{$fttype};$ta[8]";
+        } else {
+          &tsmsg("[Wrn] No new ID found for old ID [$s]\n");
         }
       }
     } else {
       &stopErr("[Err] Unknown feature type [$ta[2]] in line $line_txt\n"); 
     }
-    $line_txt = join("\t", @ta); 
+    $in_gff{'lineN2line'}{$line_N} = join("\t", @ta);
   }
   
   $gff_obj->write_gff3File( 'outFH'=>$oFh, 'gff3_href'=>\%in_gff, 'sort_by'=>$opts{'sortGffBy'} ); 
