@@ -17,7 +17,6 @@ for my $k (keys %refSeq) { $refSeq{$k}{'seq'} =~ s!\s!!g; }
 while (<>) {
   chomp;
   m!^#! and do { print STDOUT "$_\n"; next; };
-  my $processed = 0;
   my @ta=split(/\t/, $_);
   $ta[4] eq '<INV>' and do { print STDOUT "$_\n"; next; };
   my $del_len = length($ta[3]);
@@ -53,7 +52,7 @@ while (<>) {
     $td[7] = join(";", @tf);
     print STDOUT join("\t", @td)."\n";
   } else {
-    $processed == 1 or print STDOUT "$_\n";
+    print STDOUT "$_\n";
   }
 }
 
