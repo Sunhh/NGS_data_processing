@@ -4,6 +4,7 @@ use warnings;
 
 -t and !@ARGV and die "perl $0 minimap2.paf > minimap2.paf.tbl\n";
 
+print STDOUT join("\t", qw/QID QLen QS QE Str SID SLen SS SE Match BlkLen MapQ QIdent SIdent Ident/)."\n";
 while (<>) {
   chomp;
   my @ta=split(/\t/,$_);
