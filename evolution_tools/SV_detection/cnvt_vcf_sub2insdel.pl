@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 # 6/6/2023: Change long SUBstitutions to INSertions on the left. I don't include DELetion because it cannot provide true junction sites and can introduce duplicated reference positions/alleles.
 # 8/9/2023: Update SVLEN and END. In the past, we determined to record only large insertions from large substitutions, but now I want to record large deletions, because without these deletions, the sizes of inserted bp and deleted bp are imbalanced and this problem exists after switching Ref and Qry genomes. 'SVTYPE=SUB' kept unchanged.
+# 8/11/2023: Fix a bug which duplicates a variant of original INS/DEL.
 use strict;
 use warnings;
 use fastaSunhh;
@@ -21,7 +22,7 @@ while (<>) {
   $ta[4] eq '<INV>' and do { print STDOUT "$_\n"; next; };
   my $del_len = length($ta[3]);
   my $ins_len = length($ta[4]);
-  if ($del_len > $maxLen or $ins_len > $maxLen) {
+  if (($del_len > $maxLen and $ins_len > 1) or ($ins_len > $maxLen and $del_len > 1)) {
     # Deleted sequence.
     my @tb = @ta;
     $tb[1] --;
