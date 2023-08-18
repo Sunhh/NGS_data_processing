@@ -13,13 +13,12 @@ my $fh = &openFH($vcfFn);
 my $has_header=0;
 while (<$fh>) {
   if (m!^#!) {
-    print STDOUT $_;
     m!^##INFO=\<ID=${covtag},! and $has_header=1;
+    if (m!^#CHROM\t!) {
+      $has_header == 0 and do {print STDOUT "##INFO=<ID=${covtag},Number=.,Type=Float,Description=\"Type of structural variant\">\n"; $has_header = 1;};
+    }
+    print STDOUT $_;
     next;
-  }
-  if ($has_header == 0) {
-    print STDOUT "##INFO=<ID=${covtag},Number=.,Type=Float,Description=\"Type of structural variant\">\n";
-    $has_header = 1;
   }
 
   chomp;
@@ -42,11 +41,13 @@ while (<$fh>) {
     # In insertion, only $qbamFn matters.
     my $cQ = &cnt_cov($qbamFn, $qID, $qS, $qE, $minDQ);
     $ta[7] .= ";$covtag=$cQ";
-  } elsif ($svtype =~ m!^(UNK:SUB|DEL:SUB|INS:SUB|UNK:ALN|INV)$!i) {
+  } elsif ($svtype =~ m!^(UNK:SUB|DEL:SUB|INS:SUB|INV)$!i) {
     # In substitution and inversions, both $rbamFn and $qbamFn matter.
     my $cR = &cnt_cov($rbamFn, $rID, $rS, $rE, $minDR);
     my $cQ = &cnt_cov($qbamFn, $qID, $qS, $qE, $minDQ);
     $ta[7] .= ";$covtag=$cR,$cQ";
+  } elsif ($svtype =~ m!^(UNK:ALN)$!i and length($ta[3]) <= 10 and length($ta[4]) <= 10) {
+    ;
   } else {
     &stopErr("[Err] Unknown svtype [$svtype]\n");
   }
