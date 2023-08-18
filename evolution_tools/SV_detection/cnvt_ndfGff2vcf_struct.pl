@@ -9,6 +9,7 @@
 # 8/16/2023: Return to previous version at 6/8/2023.
 # 8/16/2023: Change 'SVTYPE' information to ease further check.
 # 8/16/2023: Try to include query location for further check.
+# 8/17/2023: Trim substitutions with same leading/tailing bases.
 
 use strict;
 use warnings;
@@ -25,6 +26,10 @@ my $samID = shift;
 my $fnGff = shift;
 
 my $maxDist = 10;
+my $wdir = &fileSunhh::new_tmp_dir('create' => 1);
+my $pl_fmtPaf = "/home/Sunhh/tools/github/NGS_data_processing/evolution_tools/SV_detection/fmt_paf.pl";
+my $exe_stretcher = "stretcher";
+
 
 # Possible Names ($svType):
 ###  Accept INS+DEL: substitution;
@@ -87,17 +92,21 @@ print STDOUT <<'HHHS';
 ##ALT=<ID=DEL:TAN,Descirption="Collapsed tandem repeat">
 ##ALT=<ID=DEL:REL,Description="Relocation-shaped deletion">
 ##ALT=<ID=DEL:SUB,Description="Deletion-type substitution">
+##ALT=<ID=DEL:ALN,Description="Deletion-type substitution from stretcher alignment.">
 ##ALT=<ID=INS,Description="Insertion">
 ##ALT=<ID=INS:DUP,Description="Duplication and/or insertion">
 ##ALT=<ID=INS:TAN,Description="Tandem duplication">
 ##ALT=<ID=INS:REL,Description="Relocation-insertion">
 ##ALT=<ID=INS:SUB,Description="Insertion-type substitution">
+##ALT=<ID=INS:ALN,Description="Deletion-type substitution from stretcher alignment.">
 ##ALT=<ID=DUP,Description="Duplication">
 ##ALT=<ID=INS:ME,Description="Mobile element insertion of unspecified ME class">
 ##ALT=<ID=INS:ME:ALU,Description="Alu element insertion">
 ##ALT=<ID=INS:ME:LINE1,Description="LINE1 element insertion">
 ##ALT=<ID=INS:ME:SVA,Description="SVA element insertion">
 ##ALT=<ID=INS:UNK,Description="Sequence insertion of unspecified origin">
+##ALT=<ID=UNK:SUB,Description="Mostly equal length substitutions from ref_struct">
+##ALT=<ID=UNK:ALN,Description="Mostly equal length substitutions from re-aligned ref_struct">
 ##ALT=<ID=INV,Description="Inversion">
 ##CPX_TYPE_NDstruct_DEL="Deletion in ref_struct.gff generated from NucDiff"
 ##CPX_TYPE_NDstruct_INS="Insertion in ref_struct.gff generated from NucDiff"
@@ -412,7 +421,7 @@ for my $refID (sort keys %allRefID) {
     &boundary_inBad($refID, $rS, $rE, $qryID, $qS, $qE, $maxDist) and next;
     print STDOUT join("\t", $refID, $rSx-1, '.', $baseRef, $baseAlt, '.', 'PASS', $infoTxt, "GT", "1/1")."\n";
   }
-  # Output insertion
+  # Output insertion (INS)
   for my $var_ID (@{$refID2svID{'insertion'}{$refID}}) {
     my ($rS, $rE, $qryID, $qS, $qE, $strN) = @{$svPool{'insertion'}{$refID}{$var_ID}};
     my $baseRef = substr($refSeq{$refID}{'seq'}, $rS-1, 1);
@@ -481,13 +490,246 @@ for my $refID (sort keys %allRefID) {
     $strN == -1 and &fastaSunhh::rcSeq(\$baseAlt, 'rc');
     $baseRef eq $baseAlt and next;
     my $t1 = (defined $new_svType{$var_ID}) ? $new_svType{$var_ID} : 'UNK:SUB' ;
-    my $infoTxt = "ALGORITHMS=NucDiff_struct;SVTYPE=$t1;END=$rE;SVLEN=".($qE-$qS-$rE+$rS).";ALTPOS=$qryID:$qS-$qE";
-    &boundary_inBad($refID, $rS, $rE, $qryID, $qS, $qE, $maxDist) and next;
-    print STDOUT join("\t", $refID, $rS, '.', $baseRef, $baseAlt, '.', 'PASS', $infoTxt, "GT", "1/1")."\n";
+    # Try if minimap2 can map the them. If yes, go EMBOSS-stretcher. If no, keep it and remove leading/tailing same bases.
+    &fileSunhh::write2file("$wdir/r.fa", ">r\n$baseRef\n", '>');
+    &fileSunhh::write2file("$wdir/q.fa", ">q\n$baseAlt\n", '>');
+    my $is_good = 0;
+    open F1, '-|', "minimap2 $wdir/r.fa $wdir/q.fa -c 2> $wdir/stderr | perl $pl_fmtPaf" or &stopErr("[Err] Failed CMD: $!\n");
+    while (my $l1 = <F1>) {
+      chomp($l1);
+      my @tb=split(/\t/, $l1);
+      $tb[0] eq 'QID' and next;
+      ($tb[12] >= 80 and $tb[3]-$tb[2] >= 0.6 * $tb[1]) or 
+        ($tb[13] >= 80 and $tb[8]-$tb[7] >= 0.6 * $tb[6]) or next;
+      $is_good = 1;
+      last;
+    }
+    close F1;
+    if ($is_good == 0) {
+      my $pi=0;
+      while ( substr($baseRef, $pi, 1) eq substr($baseAlt, $pi, 1) and $pi < length($baseRef) and $pi < length($baseAlt)) {
+        $pi ++; $rS ++;
+        if ($strN == -1) {
+          $qE --;
+        } else {
+          $qS ++;
+        }
+      }
+      if ($rE+1 == $rS) {
+        ($rS, $rE) = ($rE, $rS);
+        $baseRef = substr($refSeq{$refID}{'seq'}, $rS-1, 1);
+        $baseAlt = substr($qrySeq{$qryID}{'seq'}, $qS-1, $qE-$qS+1);
+        $strN == -1 and &fastaSunhh::rcSeq(\$baseAlt, 'rc');
+        $baseAlt = $baseRef . $baseAlt;
+      } elsif ($qE+1 == $qS) {
+        ($qS, $qE) = ($qE, $qS);
+        $rS --; 
+        $baseRef = substr($refSeq{$refID}{'seq'}, $rS-1, $rE-$rS+1);
+        $baseAlt = substr($refSeq{$refID}{'seq'}, $rS-1, 1);
+      } elsif ($rE >= $rS and $qE >= $qS) {
+        $baseRef = substr($refSeq{$refID}{'seq'}, $rS-1, $rE-$rS+1);
+        $baseAlt = substr($qrySeq{$qryID}{'seq'}, $qS-1, $qE-$qS+1);
+        $strN == -1 and &fastaSunhh::rcSeq(\$baseAlt, 'rc');
+        $pi = -1;
+        while ( substr($baseRef, $pi, 1) eq substr($baseAlt, $pi, 1) and $pi*-1 > length($baseRef) and $pi*-1 > length($baseAlt)) {
+          $pi--; $rE--;
+          if ($strN == -1) {
+            $qS ++;
+          } else {
+            $qE --;
+          }
+        }
+        if ($rE+1 == $rS) {
+          ($rS, $rE) = ($rE, $rS);
+          $baseRef = substr($refSeq{$refID}{'seq'}, $rS-1, 1);
+          $baseAlt = substr($qrySeq{$qryID}{'seq'}, $qS-1, $qE-$qS+1);
+          $strN == -1 and &fastaSunhh::rcSeq(\$baseAlt, 'rc');
+          $baseAlt = $baseRef . $baseAlt;
+        } elsif ($qE+1 == $qS) {
+          ($qS, $qE) = ($qE, $qS);
+          $rS --; 
+          $baseRef = substr($refSeq{$refID}{'seq'}, $rS-1, $rE-$rS+1);
+          $baseAlt = substr($refSeq{$refID}{'seq'}, $rS-1, 1);
+        } elsif ($rE >= $rS and $qE >= $qS) {
+          $baseRef = substr($refSeq{$refID}{'seq'}, $rS-1, $rE-$rS+1);
+          $baseAlt = substr($qrySeq{$qryID}{'seq'}, $qS-1, $qE-$qS+1);
+          $strN == -1 and &fastaSunhh::rcSeq(\$baseAlt, 'rc');
+        } else {
+          &stopErr("[Err] Should not reach here 2: $var_ID $rS $rE $qS $qE\n");
+        }
+      } else {
+        &stopErr("[Err] Should not reach here 1: $var_ID $rS $rE $qS $qE\n");
+      }
+      my $infoTxt = "ALGORITHMS=NucDiff_struct;SVTYPE=$t1;END=$rE;SVLEN=".($qE-$qS-$rE+$rS).";ALTPOS=$qryID:$qS-$qE";
+      &boundary_inBad($refID, $rS, $rE, $qryID, $qS, $qE, $maxDist) and next;
+      print STDOUT join("\t", $refID, $rS, '.', $baseRef, $baseAlt, '.', 'PASS', $infoTxt, "GT", "1/1")."\n";
+    } else {
+      # Use EMBOSS-stretcher to re-calculate variants.
+      system("$exe_stretcher -asequence $wdir/r.fa -bsequence $wdir/q.fa -aformat fasta -outfile $wdir/stretcher.fa");
+      my %alnSeq = %{ $fs_obj->save_seq_to_hash('faFile' => "$wdir/stretcher.fa") };
+      $alnSeq{'r'}{'seq'} =~ s!\s!!g; my @rseq = split(//, uc($alnSeq{'r'}{'seq'}));
+      $alnSeq{'q'}{'seq'} =~ s!\s!!g; my @qseq = split(//, uc($alnSeq{'q'}{'seq'}));
+      my @prev = ('', '', '', 0, 0, 0, 0); # ['type', 'rseq', 'qseq', rS, rE, qS, qE] 1-based position;
+      my @blks;
+      for (my $pi=0; $pi<scalar(@rseq); $pi++) {
+        if ($rseq[$pi] eq $qseq[$pi]) {
+          if ($prev[0] eq 'same') {
+            $prev[4] ++; $prev[6] ++;
+          } else {
+            push(@blks, [@prev]);
+            @prev = ('same', '', '', $prev[4]+1, $prev[4]+1, $prev[6]+1, $prev[6]+1);
+          }
+        } elsif ($rseq[$pi] eq '-') {
+          if ($prev[0] eq 'ins') {
+            # Insert on the right of labeled position (rS==rE).
+            $prev[2] .= $qseq[$pi]; $prev[6] ++;
+          } else {
+            push(@blks, [@prev]);
+            @prev = ('ins', '', $qseq[$pi], $prev[4], $prev[4], $prev[6]+1, $prev[6]+1);
+          }
+        } elsif ($qseq[$pi] eq '-') {
+          if ($prev[0] eq 'del') {
+            # The QPOS should be always on the left of deleted RSEQ.
+            $prev[1] .= $rseq[$pi]; $prev[4] ++;
+          } else {
+            push(@blks, [@prev]);
+            @prev = ('del', $rseq[$pi], '', $prev[4]+1, $prev[4]+1, $prev[6], $prev[6]);
+          }
+        } else {
+          # Substitution (may have Ns)
+          if ($prev[0] eq 'sub') {
+            $prev[1] .= $rseq[$pi]; $prev[4]++;
+            $prev[2] .= $qseq[$pi]; $prev[6]++;
+          } else {
+            push(@blks, [@prev]);
+            @prev = ('sub', $rseq[$pi], $qseq[$pi], $prev[4]+1, $prev[4]+1, $prev[6]+1, $prev[6]+1);
+          }
+        }
+      }
+      $blks[0][0] eq '' and shift(@blks);
+      # Merge neighboring @blks:
+      #   sub+ins+sub / ins+sub+ins => INS:ALN;
+      #   sub+del+sub / del+sub+del => DEL:ALN;
+      my @var_blks;
+      for (my $j=0; $j<@blks; $j++) {
+        $blks[$j][0] eq 'same' and next;
+        if (scalar(@var_blks) == 0) {
+          @var_blks = ([@{$blks[$j]}, $j, $blks[$j][0], $blks[$j][0]]); next;
+        }
+        if (!($j == $var_blks[-1][7]+1)) {
+          push(@var_blks, [@{$blks[$j]}, $j, $blks[$j][0], $blks[$j][0]]); next;
+        }
+        if ($var_blks[-1][0] eq 'sub') {
+          if ($blks[$j][0] eq 'ins') {
+            $var_blks[-1][0] = 'ins';
+            $var_blks[-1][2] .= $blks[$j][2];
+            $var_blks[-1][6] = $blks[$j][6];
+            $var_blks[-1][9] = $blks[$j][0];
+          } elsif ($blks[$j][0] eq 'del') {
+            $var_blks[-1][0] = 'del';
+            $var_blks[-1][1] .= $blks[$j][1];
+            $var_blks[-1][4] = $blks[$j][4];
+            $var_blks[-1][9] = $blks[$j][0];
+          } else {
+            push(@var_blks, [@{$blks[$j]}, $j, $blks[$j][0], $blks[$j][0]]);
+          }
+        } elsif ($var_blks[-1][0] eq 'ins') {
+          # This ins can be ins_only, ins_sub, sub_ins, ...
+          if ($blks[$j][0] =~ m!^(sub|ins)$!i) {
+            $var_blks[-1][1] .= $blks[$j][1];
+            $var_blks[-1][2] .= $blks[$j][2];
+            $var_blks[-1][4]  = $blks[$j][4];
+            $var_blks[-1][6]  = $blks[$j][6];
+            $var_blks[-1][9] = $blks[$j][0];
+          } else {
+            push(@var_blks, [@{$blks[$j]}, $j, $blks[$j][0], $blks[$j][0]]);
+          }
+        } elsif ($var_blks[-1][0] eq 'del') {
+          # This del can be del_only, del_sub, sub_del, ...
+          if ($blks[$j][0] =~ m!^(sub|del)$!i) {
+            $var_blks[-1][1] .= $blks[$j][1];
+            $var_blks[-1][2] .= $blks[$j][2];
+            $var_blks[-1][4] = $blks[$j][4];
+            $var_blks[-1][6] = $blks[$j][6];
+            $var_blks[-1][9] = $blks[$j][0];
+          } else {
+            push(@var_blks, [@{$blks[$j]}, $j, $blks[$j][0], $blks[$j][0]]);
+          }
+        } else {
+          push(@var_blks, [@{$blks[$j]}, $j, $blks[$j][0], $blks[$j][0]]);
+        }
+      }
+      # Correct rS/rE/rSeq/qSeq/qS/qE.
+      for my $v1 (@var_blks) {
+        my $cor_rS = $rS + $v1->[3] - 1;
+        my $cor_rE = $rS + $v1->[4] - 1;
+        my $cor_qS = $qS + $v1->[5] - 1;
+        my $cor_qE = $qS + $v1->[6] - 1;
+        my $rev_qS = $qE - $v1->[6] + 1;
+        my $rev_qE = $qE - $v1->[5] + 1;
+        if      ($v1->[8] eq 'ins') {
+          if ($v1->[1] eq '') {
+            $v1->[1] = substr($refSeq{$refID}{'seq'}, $cor_rS-1, 1);
+            $v1->[2] = $v1->[1] . $v1->[2];
+            $v1->[3] = $cor_rS;   $v1->[4] = $cor_rS+1;
+            $v1->[5] = $cor_qS;   $v1->[6] = $cor_qE;
+            if ($strN == -1) {
+              $v1->[5] = $rev_qS; $v1->[6] = $rev_qE;
+            }
+          } else {
+            $v1->[3] = $cor_rS + 1; $v1->[4] = $cor_rE;
+            $v1->[5] = $cor_qS;     $v1->[6] = $cor_qE;
+            if ($strN == -1) {
+              $v1->[5] = $rev_qS;   $v1->[6] = $rev_qE;
+            }
+          }
+        } elsif ($v1->[8] eq 'del') {
+          if ($v1->[2] eq '') {
+            $v1->[2] = substr($refSeq{$refID}{'seq'}, $cor_rS-2, 1);
+            $v1->[1] = $v1->[2] . $v1->[1];
+            $v1->[3] = $cor_rS-1; $v1->[4] = $cor_rE;
+            $v1->[5] = $cor_qS;   $v1->[6] = $cor_qS+1;
+            if ($strN == -1) {
+              $v1->[5] = $rev_qS-1; $v1->[6] = $rev_qE;
+            }
+          } else {
+            $v1->[3] = $cor_rS;   $v1->[4] = $cor_rE;
+            $v1->[5] = $cor_qS+1; $v1->[6] = $cor_qE;
+            if ($strN == -1) {
+             $v1->[5] = $rev_qS;  $v1->[6] = $rev_qE-1;
+            }
+          }
+        } else {
+          $v1->[3] = $cor_rS; $v1->[4] = $cor_rE;
+          $v1->[5] = $cor_qS; $v1->[6] = $cor_qE;
+          if ($strN == -1) {
+            $v1->[5] = $rev_qS; $v1->[6] = $rev_qE;
+          }
+        }
+      }
+      # Output VCF record.
+      for my $v1 (@var_blks) {
+        my @v2=@$v1;
+        my $svlen = length($v2[2]) - length($v2[1]);
+        &boundary_inBad($refID, $v2[3], $v2[4], $qryID, $v2[5], $v2[6], $maxDist) and next;
+        if ($v2[0] eq 'sub') {
+          my $infoTxt = "ALGORITHMS=NucDiff_struct;SVTYPE=UNK:ALN;END=$v2[4];SVLEN=$svlen;ALTPOS=$qryID:$v2[5]-$v2[6]";
+          print STDOUT join("\t", $refID, $v2[3], '.', $v2[1], $v2[2], '.', 'PASS', $infoTxt, "GT", "1/1")."\n";
+        } elsif ($v2[0] eq 'ins') {
+          my $infoTxt = "ALGORITHMS=NucDiff_struct;SVTYPE=INS:ALN;END=$v2[4];SVLEN=$svlen;ALTPOS=$qryID:$v2[5]-$v2[6]";
+          print STDOUT join("\t", $refID, $v2[3], '.', $v2[1], $v2[2], '.', 'PASS', $infoTxt, "GT", "1/1")."\n";
+        } elsif ($v1->[0] eq 'del') {
+          my $infoTxt = "ALGORITHMS=NucDiff_struct;SVTYPE=DEL:ALN;END=$v2[4];SVLEN=$svlen;ALTPOS=$qryID:$v2[5]-$v2[6]";
+          print STDOUT join("\t", $refID, $v2[3], '.', $v2[1], $v2[2], '.', 'PASS', $infoTxt, "GT", "1/1")."\n";
+        } else {
+          &stopErr("[Err] Undefined VAR type [$v1->[0]] in [@$v1]\n");
+        }
+      }
+    }
   }
 }
 
-
+&fileSunhh::_rmtree($wdir);
 
 #
 # Subroutines.
