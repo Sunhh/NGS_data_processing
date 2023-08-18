@@ -33,16 +33,16 @@ while (<$fh>) {
   my $svtype = $1;
   # my $refL = length($ta[3]);
   # my $altL = length($ta[4]);
-  if ($svtype =~ m!^(DEL|DEL:REL|DEL:REL:UNK|DEL:REP|DEL:REP:UNK)$!i) {
+  if ($svtype =~ m!^(DEL|DEL:ALN|DEL:REL|DEL:REL:UNK|DEL:REP|DEL:REP:UNK)$!i) {
     $rS ++;
     # In deletion, only $rbamFn matters.
     my $cR = &cnt_cov($rbamFn, $rID, $rS, $rE, $minDR);
     $ta[7] .= ";$covtag=$cR";
-  } elsif ($svtype =~ m!^(INS|INS:REL|INS:REL:UNK|INS:DUP|INS:DUP:UNK|INS:TAN)$!i) {
+  } elsif ($svtype =~ m!^(INS|INS:ALN|INS:REL|INS:REL:UNK|INS:DUP|INS:DUP:UNK|INS:TAN)$!i) {
     # In insertion, only $qbamFn matters.
     my $cQ = &cnt_cov($qbamFn, $qID, $qS, $qE, $minDQ);
     $ta[7] .= ";$covtag=$cQ";
-  } elsif ($svtype =~ m!^(UNK:SUB|DEL:SUB|INS:SUB|INV)$!i) {
+  } elsif ($svtype =~ m!^(UNK:SUB|DEL:SUB|INS:SUB|UNK:ALN|INV)$!i) {
     # In substitution and inversions, both $rbamFn and $qbamFn matter.
     my $cR = &cnt_cov($rbamFn, $rID, $rS, $rE, $minDR);
     my $cQ = &cnt_cov($qbamFn, $qID, $qS, $qE, $minDQ);
