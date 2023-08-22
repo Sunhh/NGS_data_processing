@@ -48,6 +48,7 @@ while (<>) {
       $a1 =~ s!^SVLEN=([+-]?\d+)$!SVLEN=-$del_len!;
     }
     $tb[7] = join(";", @tc);
+    $tb[7] =~ m!SVTYPE=[^\s;]! or $tb[7] .= ";SVTYPE=DEL:MNP";
     print STDOUT join("\t", @tb)."\n";
 
     # Inserted sequence.
@@ -66,6 +67,7 @@ while (<>) {
       push(@tf, $a1);
     }
     $td[7] = join(";", @tf);
+    $td[7] =~ m!SVTYPE=[^\s;]! or $td[7] .= ";SVTYPE=INS:MNP";
     print STDOUT join("\t", @td)."\n";
   } else {
     print STDOUT "$_\n";
