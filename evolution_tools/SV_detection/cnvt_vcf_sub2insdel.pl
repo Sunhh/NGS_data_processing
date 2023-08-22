@@ -2,6 +2,7 @@
 # 6/6/2023: Change long SUBstitutions to INSertions on the left. I don't include DELetion because it cannot provide true junction sites and can introduce duplicated reference positions/alleles.
 # 8/9/2023: Update SVLEN and END. In the past, we determined to record only large insertions from large substitutions, but now I want to record large deletions, because without these deletions, the sizes of inserted bp and deleted bp are imbalanced and this problem exists after switching Ref and Qry genomes. 'SVTYPE=SUB' kept unchanged.
 # 8/11/2023: Fix a bug which duplicates a variant of original INS/DEL.
+# 8/17/2023: Correct '.' alleles in REF and ALT.
 use strict;
 use warnings;
 use fastaSunhh;
@@ -13,15 +14,29 @@ my $refFaFn = shift;
 my $maxLen = shift;
 
 my %refSeq = %{ $fs_obj->save_seq_to_hash( 'faFile'=>$refFaFn ) };
-for my $k (keys %refSeq) { $refSeq{$k}{'seq'} =~ s!\s!!g; }
+for my $k (keys %refSeq) { $refSeq{$k}{'seq'} =~ s!\s!!g; $refSeq{$k}{'seq'} = uc($refSeq{$k}{'seq'}); }
 
 while (<>) {
   chomp;
   m!^#! and do { print STDOUT "$_\n"; next; };
   my @ta=split(/\t/, $_);
   $ta[4] eq '<INV>' and do { print STDOUT "$_\n"; next; };
+  if ($ta[3] eq '.') {
+    $ta[3] = substr($refSeq{$ta[0]}{'seq'}, $ta[1]-1, 1);
+    $ta[4] = $ta[3] . $ta[4];
+    print STDOUT join("\t", @ta)."\n";
+    next;
+  }
+  if ($ta[4] eq '.') {
+    $ta[1] --;
+    $ta[4] = substr($refSeq{$ta[0]}{'seq'}, $ta[1]-1, 1);
+    $ta[3] = $ta[4] . $ta[3];
+    print STDOUT join("\t", @ta)."\n";
+    next;
+  }
   my $del_len = length($ta[3]);
   my $ins_len = length($ta[4]);
+  $del_len == 1 and $ins_len == 1 and do { print "$_\n"; next; };
   if (($del_len > $maxLen and $ins_len > 1) or ($ins_len > $maxLen and $del_len > 1)) {
     # Deleted sequence.
     my @tb = @ta;

@@ -32,7 +32,7 @@ while (<$fh>) {
   my $svtype = $1;
   # my $refL = length($ta[3]);
   # my $altL = length($ta[4]);
-  if ($svtype =~ m!^(DEL|DEL:ALN|DEL:REL|DEL:REL:UNK|DEL:REP|DEL:REP:UNK)$!i) {
+  if ($svtype =~ m!^(DEL|DEL:ALN|DEL:REL|DEL:REL:UNK|DEL:REP|DEL:REP:UNK|DEL:TAN)$!i) {
     $rS ++;
     # In deletion, only $rbamFn matters.
     my $cR = &cnt_cov($rbamFn, $rID, $rS, $rE, $minDR);
@@ -41,13 +41,13 @@ while (<$fh>) {
     # In insertion, only $qbamFn matters.
     my $cQ = &cnt_cov($qbamFn, $qID, $qS, $qE, $minDQ);
     $ta[7] .= ";$covtag=$cQ";
-  } elsif ($svtype =~ m!^(UNK:SUB|DEL:SUB|INS:SUB|INV)$!i) {
+  } elsif ($svtype =~ m!^(UNK:ALN)$!i and length($ta[3]) <= 10 and length($ta[4]) <= 10) {
+    ;
+  } elsif ($svtype =~ m!^(UNK:SUB|DEL:SUB|INS:SUB|INV|UNK:ALN)$!i) {
     # In substitution and inversions, both $rbamFn and $qbamFn matter.
     my $cR = &cnt_cov($rbamFn, $rID, $rS, $rE, $minDR);
     my $cQ = &cnt_cov($qbamFn, $qID, $qS, $qE, $minDQ);
     $ta[7] .= ";$covtag=$cR,$cQ";
-  } elsif ($svtype =~ m!^(UNK:ALN)$!i and length($ta[3]) <= 10 and length($ta[4]) <= 10) {
-    ;
   } else {
     &stopErr("[Err] Unknown svtype [$svtype]\n");
   }

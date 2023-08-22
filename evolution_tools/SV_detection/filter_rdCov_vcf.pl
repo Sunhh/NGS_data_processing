@@ -37,7 +37,7 @@ while (<$fh>) {
     }
   } elsif ($txt1 =~ m!^([\d.]+)$!) {
     my $cov = $1;
-    if ($ta[7] =~ m!SVTYPE=(INS|DEL);! and length($ta[3]) < 10e3 and length($ta[4]) < 10e3 ) {
+    if ($ta[7] =~ m!SVTYPE=(INS|DEL|UNK:ALN);! and length($ta[3]) < 10e3 and length($ta[4]) < 10e3 ) {
       print STDOUT "$_\n"; next;
     }
     $cov > $minC and next; # Some true short INS/DEL from tandem duplicates may be ignored!
