@@ -10,6 +10,7 @@
 # 8/16/2023: Change 'SVTYPE' information to ease further check.
 # 8/16/2023: Try to include query location for further check.
 # 8/17/2023: Trim substitutions with same leading/tailing bases.
+# 9/8/20923: Fixing a bug for 'relocation-insertion' on reverse strand.
 
 use strict;
 use warnings;
@@ -461,7 +462,7 @@ for my $refID (sort keys %allRefID) {
     my ($rS1, $rE1, $qryID1, $qS1, $qE1, $strN1) = ($rS, $rE, $qryID, $qS, $qE, $strN);
     my $rin_ID2 = $var_ID; $rin_ID2 =~ s!\.1$!.2!;
     my ($rS2, $rE2, $qryID2, $qS2, $qE2, $strN2) = @{$svPool{'relocation-insertion'}{$refID}{$rin_ID2}};
-    $strN == -1 and ($rS, $rE, $qryID, $qS, $qE, $strN) = ($rS2, $rE2, $qryID2, $qS2, $qE2, $strN2);
+    $strN == -1 and ($rS, $rE, $qryID, $qS, $qE, $strN) = ($rE2, $rE2, $qryID2, $qS2, $qE2, $strN2);
     my $baseRef = substr($refSeq{$refID}{'seq'}, $rS-1, 1);
     my $baseAlt = substr($qrySeq{$qryID}{'seq'}, $qS-1, $qE-$qS+1);
     $strN == -1 and &fastaSunhh::rcSeq(\$baseAlt, 'rc');
