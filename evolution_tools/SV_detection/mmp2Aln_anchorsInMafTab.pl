@@ -1,11 +1,19 @@
 #!/usr/bin/perl
 # 5/30/2023 Merge SAM files with small batches.
+# 9/8/2023: Add option to control minimap2 parameters.
 use strict;
 use warnings;
 use LogInforSunhh;
 use fileSunhh;
 use fastaSunhh;
+use Getopt::Long;
 use Parallel::ForkManager;
+my %opts;
+GetOptions(\%opts,
+  "mmp2para:s", # Default: -x asm20 -t 3 -N 20; '-a' is mandatory.
+  "help!",
+);
+$opts{'mmp2para'} //= '-x asm20 -t 3 -N 20';
 
 my $cpuN = 10;
 
@@ -40,7 +48,7 @@ for (my $i=0; $i<@f1; $i++) {
   &fileSunhh::write2file("$wd/q.$i.fa", ">$qsubID\n$qsubSeq\n", '>');
   &fileSunhh::write2file("$wd/r.$i.fa", ">$rsubID\n$rsubSeq\n", '>');
   # &runCmd("minimap2 -a -x asm20 -t 3 -N 20 $wd/r.$i.fa $wd/q.$i.fa | samtools view -h -q 20 > $wd/o.$i.sam");
-  &runCmd("minimap2 -a -x asm20 -t 3 -N 20 $wd/r.$i.fa $wd/q.$i.fa > $wd/o.$i.sam");
+  &runCmd("minimap2 -a $opts{'mmp2para'} $wd/r.$i.fa $wd/q.$i.fa > $wd/o.$i.sam");
   $pm->finish;
 }
 $pm->wait_all_children;
