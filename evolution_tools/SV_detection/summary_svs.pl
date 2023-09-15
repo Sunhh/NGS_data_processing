@@ -8,6 +8,8 @@
 #             SV size 2 : index(base_alt, base_ref)==0: len_alt-len_ref;
 #             SV size 3 : max(len_ref, len_alt)
 # 6/7/2023: Skip <INV> allele.
+# 9/13/2023: Summarize <INV> allele.
+# 9/13/2023: Summarize SNPs and MNPs which are excluded from insertions/deletions.
 
 use strict;
 use warnings;
@@ -81,12 +83,21 @@ while (<>) {
   # Fix to use the first allele.
   my @tb = split(/,/, $ta[4]);
   my ($base_alt, $len_alt);
-  for my $b1 (@tb) {
-    $b1 eq '<INV>' and next;
+  my $invL;
+  for (my $i=0; $i<@tb; $i++) {
+    my $b1 = $tb[$i];
+    if ($b1 eq '<INV>') {
+      $ta[7] =~ m!(?:^|;)\s*END=([\d,]+)\s*(?:$|;)! or die "[Err] No END information for <INV> in line: $_\n";
+      my $tc = (split(/,/, $1))[$i];
+      $invL //= $tc-$ta[1]+1;
+      $invL < $tc-$ta[1]+1 and $invL = $tc-$ta[1]+1;
+      next;
+    }
     $base_alt //= $b1;
     $len_alt //= length($b1);
     $len_alt < length($b1) and do { $len_alt=length($b1); $base_alt=$b1; };
   }
+  defined $invL and &add_inv($invL);
   defined $base_alt or next;
   $base_ref = uc($base_ref);
   $base_alt = uc($base_alt);
@@ -96,8 +107,10 @@ while (<>) {
   }
 
   if ($len_ref == 1 and $len_alt == 1) {
-    &add_snp(1);
-    next;
+    &add_snp(1); next;
+  }
+  if ($len_ref == $len_alt) {
+    &add_mnp($len_ref); next;
   }
   if      (index($base_ref, $base_alt) == 0) {
     if ($len_ref-$len_alt <= $opts{'small_indel_max'}) {
@@ -105,18 +118,18 @@ while (<>) {
     } else {
       &add_del($len_ref-$len_alt);
     }
-    if ($ta[7] =~ m!(SVTYPE=[^;]+)! and $ta[7] !~ m!SVTYPE=(?:DEL|SUB|CPX)\s*(?:;|$)!) {
-      warn "[Wrn] Expected DEL/SUB SV at [$ta[0] $ta[1]] [refLen=$len_ref altLen=$len_alt] $1\n";
-    }
+    #if ($ta[7] =~ m!(SVTYPE=[^;]+)! and $ta[7] !~ m!SVTYPE=(?:DEL|SUB|CPX)\s*(?:;|$)!) {
+    #  warn "[Wrn] Expected DEL/SUB SV at [$ta[0] $ta[1]] [refLen=$len_ref altLen=$len_alt] $1\n";
+    #}
   } elsif (index($base_alt, $base_ref) == 0) {
     if ($len_alt-$len_ref <= $opts{'small_indel_max'}) {
       &add_small_ins($len_alt-$len_ref);
     } else {
       &add_ins($len_alt-$len_ref);
     }
-    if ($ta[7] =~ m!(SVTYPE=[^;]+)! and $ta[7] !~ m!SVTYPE=(?:INS|SUB|CPX)\s*(?:;|$)!) {
-      warn "[Wrn] Expected INS/SUB SV at [$ta[0] $ta[1]] [refLen=$len_ref altLen=$len_alt] $1\n";
-    }
+    #if ($ta[7] =~ m!(SVTYPE=[^;]+)! and $ta[7] !~ m!SVTYPE=(?:INS|SUB|CPX)\s*(?:;|$)!) {
+    #  warn "[Wrn] Expected INS/SUB SV at [$ta[0] $ta[1]] [refLen=$len_ref altLen=$len_alt] $1\n";
+    #}
   } elsif ($len_ref <= $opts{'small_indel_max'} and $len_alt <= $opts{'small_indel_max'}) {
     &add_small_del($len_ref);
     &add_small_ins($len_alt);
@@ -126,10 +139,10 @@ while (<>) {
   }
 }
 
-print STDOUT join("\t", qw/Class_limit  INS_cnt INS_len DEL_cnt DEL_len SNP_cnt SNP_len INSsmall_cnt INSsmall_len DELsmall_cnt DELsmall_len/)."\n";
+print STDOUT join("\t", qw/Class_limit  INS_cnt INS_len DEL_cnt DEL_len SNP_cnt SNP_len MNP_cnt MNP_len INV_cnt INV_len INSsmall_cnt INSsmall_len DELsmall_cnt DELsmall_len/)."\n";
 for my $c1 ((map {$_->[2]} @cls_lim_arr), 'all') {
   my @o1 = (sprintf("%-${max_cls_lim_txt_len}s", $c1));
-  for my $type1 (qw/ins del snp small_ins small_del/) {
+  for my $type1 (qw/ins del snp mnp inv small_ins small_del/) {
     $cls_cnt{$type1}{$c1} //= { 'num'=> 0, 'len' =>0 };
     push(@o1, $cls_cnt{$type1}{$c1}{'num'}, $cls_cnt{$type1}{$c1}{'len'});
   }
@@ -201,5 +214,31 @@ sub add_del {
   $cls_cnt{'del'}{'all'}{'len'} += $size;
   return();
 }# add_del()
+
+sub add_inv {
+  my ($size) = @_;
+  for my $c1 (@cls_lim_arr) {
+    $c1->[0] <= $size or last;
+    $c1->[1] >= $size or $c1->[1] == -1 or next;
+    $cls_cnt{'inv'}{$c1->[2]}{'num'} ++;
+    $cls_cnt{'inv'}{$c1->[2]}{'len'} += $size;
+  }
+  $cls_cnt{'inv'}{'all'}{'num'} ++;
+  $cls_cnt{'inv'}{'all'}{'len'} += $size;
+  return();
+}# add_inv()
+
+sub add_mnp {
+  my ($size) = @_;
+  for my $c1 (@cls_lim_arr) {
+    $c1->[0] <= $size or last;
+    $c1->[1] >= $size or $c1->[1] == -1 or next;
+    $cls_cnt{'mnp'}{$c1->[2]}{'num'} ++;
+    $cls_cnt{'mnp'}{$c1->[2]}{'len'} += $size;
+  }
+  $cls_cnt{'mnp'}{'all'}{'num'} ++;
+  $cls_cnt{'mnp'}{'all'}{'len'} ++;
+  return();
+}# add_ins()
 
 
