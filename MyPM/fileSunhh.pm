@@ -370,7 +370,8 @@ sub new_tmp_dir {
 	$parm{'create'} //= 0; 
 
 	for (my $i=0; $i<=$parm{'maxNum'}; $i++) {
-		my $fname = "tmp$i"; 
+		my $rN = int(rand(999999));
+		my $fname = "tmp${i}_$rN"; 
 		-e $fname and next; 
 		if ( $parm{'create'} ) {
 			if (mkdir($fname)) {
@@ -379,7 +380,8 @@ sub new_tmp_dir {
 				while ( !mkdir($fname) ) {
 					$i++; 
 					$i > $parm{'maxNum'} and do { &stopErr("[Err] Failed to create new_tmp_dir\n"); }; 
-					$fname = "tmp$i"; 
+					$rN = int(rand(999999));
+					$fname = "tmp${i}_$rN"; 
 					-e $fname and next; 
 				}
 				return $fname; 
