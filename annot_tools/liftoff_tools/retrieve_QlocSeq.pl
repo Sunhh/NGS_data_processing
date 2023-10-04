@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 # [3/28/2022] Retrieve CDS sequences if they have not been predicted yet.
+# 10/4/2023: Allow gene-location IDs without group tag.
 use strict;
 use warnings;
 use fastaSunhh;
@@ -16,8 +17,8 @@ while (<>) {
   chomp;
   my @ta=split(/\t/, $_);
   $ta[0] eq 'ori_R_ID' and next;
-  # $ta[1] =~ m!^C[^\s:]+:\S+:\d+\-\d+:[+-]$! or next;
-  $ta[1] =~ m!^[^\s:]+:\S+:\d+\-\d+:[+-]$! or next;
+  # $ta[1] =~ m![^\s:]+:\S+:\d+\-\d+:[+-]$! or next;
+  $ta[1] =~ m!^(?:[^\s:]+:)?\S+:\d+\-\d+:[+-]$! or next;
   defined $h{$ta[1]} and next;
   $h{$ta[1]} = 1;
   my $chr_id  = $ta[4];
