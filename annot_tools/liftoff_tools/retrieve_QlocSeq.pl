@@ -25,6 +25,8 @@ while (<>) {
   my $chr_str = $ta[7];
   my $cds_seq = '';
   defined $seq{$chr_id} or die "$chr_id\n";
+  my @cdsP = split(/;/, $ta[17]);
+  $chr_str eq '-' and @cdsP = reverse(@cdsP);
   for my $tb (split(/;/, $ta[17])) {
     $tb =~ m!^(\d+)\,(\d+)$! or die "$tb\n";
     $cds_seq .= substr($seq{$chr_id}{'seq'}, $1-1, $2-$1+1);
