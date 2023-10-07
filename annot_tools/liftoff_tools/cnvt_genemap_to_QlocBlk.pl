@@ -32,6 +32,6 @@ while (<>) {
     $cds_seq .= substr($seq{$chr_id}{'seq'}, $1-1, $2-$1+1);
   }
   $chr_str eq '-' and &fastaSunhh::rcSeq(\$cds_seq, 'rc');
-  print STDOUT join("\t", $ta[1], $chr_id, $chr_str, $ta[17], $cds_seq)."\n";
+  print STDOUT join("\t", $ta[1], $chr_id, $chr_str, $ta[17], $cds_seq, length($cds_seq))."\n";
 }
 
