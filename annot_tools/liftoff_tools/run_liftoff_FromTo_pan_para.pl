@@ -74,6 +74,9 @@ $dta{'toRM'} = [];
 # &runCmd("$dta{'exe_liftoff'} $dta{'para_liftoff'} -dir $dta{'tmp_dir'} -g $dta{'from_gff3'} -o $dta{'out_gff3'} -u $dta{'out_unmap'} $dta{'to_fas'} $dta{'from_fas'}");
 &runCmd("$dta{'exe_liftoff'} $dta{'para_liftoff'} -dir $dta{'tmp_dir'} -g $dta{'tmp_dir'}/from.gff3 -o $dta{'out_gff3'} -u $dta{'out_unmap'} $dta{'tmp_dir'}/to.fas $dta{'tmp_dir'}/from.fas");
 # &runCmd("$dta{'pl_cntR2Q'}   $dta{'from_gff3'}  $dta{'to_gff3'}  $dta{'out_gff3'} > $dta{'out_tbl'}");
+if (-e "$dta{'out_gff3'}_polished") {
+  $dta{'out_gff3'} = "$dta{'out_gff3'}_polished";
+}
 &runCmd("$dta{'pl_cntR2Q'}   $dta{'tmp_dir'}/from.gff3  $dta{'tmp_dir'}/to.gff3  $dta{'out_gff3'} > $dta{'out_tbl'}");
 push(@{$dta{'toRM'}}, $dta{'tmp_dir'});
 
