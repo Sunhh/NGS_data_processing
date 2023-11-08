@@ -23,9 +23,11 @@ bad	TE-related	Gag-pro-like protein
 bad	TE-related	Gag-protease polyprotein
 bad	TE-related	Gag-proteinase polyprotein
 bad	TE-related	Gag/pol protein
+bad	TE-related	Gag-Pol
 bad	TE-related	Gypsy-like retrotransposase
 bad	TE-related	Gypsy/ty3 element polyprotein
 bad	TE-related	HAT transposon superfamily protein
+bad	TE-related	hAT transposon superfamily
 bad	TE-related	HERV-K_8p23.1 provirus ancestral Gag polyprotein
 bad	TE-related	Integrase
 bad	TE-related	Integrase core domain containing protein
@@ -64,14 +66,17 @@ bad	TE-related	Retrotrans_gag domain-containing protein
 bad	TE-related	Retrotransposable element Tf2
 bad	TE-related	Transposon Tf2-2 polyprotein
 bad	TE-related	Transposon protein, putative, Pong sub-class
+bad	TE-related	Transposon TX1 uncharacterized
 bad	TE-related	Retrotransposon gag protein
 bad	TE-related	Retrotransposon protein
 bad	TE-related	Retrotransposon protein, putative, Ty1-copia subclass
 bad	TE-related	Retrotransposon protein, putative, Ty3-gypsy subclass
 bad	TE-related	Retrotransposon-derived protein PEG10, putative
 bad	TE-related	Retrotransposon-like protein
+bad	TE-related	Retrotransposon protein, putative, unclassified
 bad	TE-related	Retrovirus-related Pol polyprotein
 bad	TE-related	Retrovirus-related Pol polyprotein LINE-1
+bad	TE-related	LINE-1 reverse transcriptase like
 bad	TE-related	Retrovirus-related Pol polyprotein from transposon 17.6
 bad	TE-related	Retrovirus-related Pol polyprotein from transposon 297
 bad	TE-related	Retrovirus-related Pol polyprotein from transposon RE1
@@ -105,9 +110,15 @@ bad	TE-related	Transposon Tf2-6 polyprotein
 bad	TE-related	Transposon Tf2-8 polyprotein
 bad	TE-related	Transposon Ty3-I Gag-Pol polyprotein
 bad	TE-related	Transposon Ty3-I Gag-Pol polyprotein isoform X1
+bad	TE-related	Transposon Ty3-G Gag-Pol polyprotein
+bad	TE-related	Transposon Tf2-1 polyprotein
+bad	TE-related	Transposon protein, putative, CACTA, En/Spm sub-class
+bad	TE-related	Transposase, Ptta/En/Spm, plant
 bad	TE-related	Ty1-copia retrotransposon protein
 bad	TE-related	Ty3-gypsy retrotransposon protein
 bad	TE-related	Ty3/gypsy retrotransposon protein
+bad	TE-related	Ty3-gypsy retroelement transposase
+bad	TE-related	RNA-directed DNA polymerase (reverse transcriptase)-related family protein
 bad	TE-related	Ulp1-like peptidase
 bad	TE-related	Zf-CCHC domain-containing protein
 bad	TE-related	gag_pre-integrs domain-containing protein
