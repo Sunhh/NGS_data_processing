@@ -1099,7 +1099,11 @@ sub mask_seq_by_list {
 					if ($opts{elseMask}) {
 						# mask un-listed region. 
 						if ($i==0) {
-							$cs > 1 and substr( $relHR->{seq}, 0, $cs-1 ) = &mskSeq( substr( $relHR->{seq}, 0, $cs-1 ), $opts{maskType} ); 
+							$cs > 1 and substr( $relHR->{seq}, 0, $cs-1 ) = &mskSeq( substr( $relHR->{seq}, 0, $cs-1 ), $opts{maskType} );
+							if (scalar( @{ $mask_region{ $relHR->{key} } } ) == 1) {
+								my $seqL = length( $relHR->{seq} );
+								$ce < $seqL and substr( $relHR->{seq}, $ce, $seqL-$ce ) = &mskSeq( substr( $relHR->{seq}, $ce, $seqL-$ce ), $opts{maskType} ); 
+							}
 						}else{
 							my ($ps, $pe) = @{ $mask_region{ $relHR->{key} }[$i-1] }; 
 							substr( $relHR->{seq}, $pe, $cs-1-$pe ) = &mskSeq( substr( $relHR->{seq}, $pe, $cs-1-$pe ), $opts{maskType} ); 
