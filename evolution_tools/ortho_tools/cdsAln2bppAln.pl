@@ -64,7 +64,9 @@ for my $l1 (&fileSunhh::load_tabFile($opts{'in_cdsList'})) {
     $s{$k1}{'seq'} =~ s!\s!!g;
     $seq_len //= length($s{$k1}{'seq'});
     $seq_len == length($s{$k1}{'seq'}) or &stopErr("[Err] sequence length varies in alignment [$fn1]\n");
-    $s{$k1}{'seq'} =~ s!\-!?!g;
+    while ($s{$k1}{'seq'} =~ s!^(\?*)\-!$1?!) {;}
+    while ($s{$k1}{'seq'} =~ s!\-(\?*)$!?$1!) {;}
+    # $s{$k1}{'seq'} =~ s!\-!?!g;
   }
   &fileSunhh::write2file($ofn1, "$seq_num $seq_len\n\n", '>>');
   for my $taxID (@seq_IDs) {
