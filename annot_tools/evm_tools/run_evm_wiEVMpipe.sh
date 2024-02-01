@@ -22,6 +22,7 @@ mkPref=$1
 fnList=$2
 evmProtGff=$3
 evmEstGff=$4
+condaAct=$5
 ### Check the "Prepare protein alignments" section!!!
 ### Check if you have "EST alignments" and revise the '-no_est' parameter in PL_pipeEVM!!!
 
@@ -52,9 +53,14 @@ bash $0  makerGff_prefix  list.gnPref_mkPref_gnFa_gff  prot_aln.evm.gff3  [est_a
   exit 1;
 fi
 
+if [[ $condaAct == "" ]];
+then
+  condaAct="/data/Sunhh/install/anaconda3/bin/activate"
+fi
+
 
 # Parameter settings in general
-CONDA_activate_liftoff="source /data/Sunhh/install/anaconda3/bin/activate liftoff"
+CONDA_activate_liftoff="source $condaAct liftoff"
 CONDA_deactivate="conda deactivate"
 
 export EVM_HOME=/data/Sunhh/src/annotation/evm/EVidenceModeler-1.1.1/

@@ -27,14 +27,19 @@ for (keys %s) {
   $s{$_}{'len'} = length($s{$_}{'seq'});
 }
 my %ltrs;
+my %fullseq;
 for my $l1 (&fileSunhh::load_tabFile($gffFn)) {
-  $l1->[2] eq 'long_terminal_repeat' or next;
+  $l1->[2] eq 'long_terminal_repeat' or $l1->[2] eq 'repeat_region' or next;
   my $ss = substr($s{$l1->[0]}{'seq'}, $l1->[3]-1, $l1->[4]-$l1->[3]+1);
   $l1->[6] eq '-' and &fastaSunhh::rcSeq(\$ss, 'rc');
+  my $cID = 'NA'; $l1->[8] =~ m!(?:^|;)\s*ID=(\S+?)\s*(;|$)!i and $cID = $1;
+  if ($l1->[2] eq 'repeat_region') {
+    $fullseq{$cID} = $ss;
+    next;
+  }
   $l1->[8] =~ m!(?:^|;)\s*Parent=(\S+?)\s*(;|$)!i or die "@$l1\n";
   my $pID = $1;
   my $cls = 'NA'; $l1->[8] =~ m!(?:^|;)\s*Classification=(\S+?)\s*(;|$)!i and $cls = $1;
-  my $cID = 'NA'; $l1->[8] =~ m!(?:^|;)\s*ID=(\S+?)\s*(;|$)!i and $cID = $1;
   my $ident = -1; $l1->[8] =~ m!(?:^|;)\s*ltr_identity=(\S+?)\s*(;|$)!i and $ident = $1;
   my $motif = 'NA'; $l1->[8] =~ m!(?:^|;)\s*motif=(\S+?)\s*(;|$)!i and $motif = $1;
   my $tsd   = 'NA'; $l1->[8] =~ m!(?:^|;)\s*tsd=(\S+?)\s*(;|$)!i and $tsd = $1;
@@ -64,7 +69,7 @@ for (my $i=0; $i<@ltrA; $i++) {
 $pm->wait_all_children;
 
 open O,'>',"$opref.tab" or die;
-print O join("\t", qw/LTR_ID Dist Term1_len Term2_len Term_ident Class Motif TSD Term1_loc Term2_loc/)."\n";
+print O join("\t", qw/LTR_ID Dist Term1_len Term2_len Term_ident Class Motif TSD Term1_loc Term2_loc LTR_seq/)."\n";
 for (my $i=0; $i<@ltrA; $i++) {
   my @a1 = @{$ltrA[$i][1]};
   my @a2 = @{$ltrA[$i][2]};
@@ -74,7 +79,8 @@ for (my $i=0; $i<@ltrA; $i++) {
     m!^\s*\[2\]\s*([eE\-\d.]+)\s*$! and $dist = $1;
   }
   close F;
-  print O join("\t", $ltrA[$i][0], $dist, $a1[2], $a2[2], @a1[3..7], $a2[7])."\n";
+  my $ss = (defined $fullseq{$ltrA[$i][0]}) ? $fullseq{$ltrA[$i][0]} : "" ;
+  print O join("\t", $ltrA[$i][0], $dist, $a1[2], $a2[2], @a1[3..7], $a2[7], $ss)."\n";
 }
 close O;
 
