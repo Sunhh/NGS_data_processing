@@ -20,7 +20,17 @@ library(pheatmap)
 ##############################
 argvs <- commandArgs( trailingOnly=TRUE );
 if ( is.na(argvs[1]) ) {
-  message("Rscript this.R   <exp_mat.tab>  <num_of_group_to_divide>\nOutput: exp_mat.tab.pdf, exp_mat.tab.grp\n");
+  message("\nRscript this.R   <exp_mat.tab>  <num_of_group_to_divide>\nOutput: exp_mat.tab.pdf, exp_mat.tab.grp\n");
+  message("##############################
+# Example of input file <exp_mat.tab>
+##############################
+# ID           GG_XHB   gg_XHBGM  GG_ZZJM  gg_T1
+# Cla001867    49.16    103.02    5.05     34.47
+# Cla002628    10.35    22.8      4.06     10.64
+# Cla002678    10.44    21.67     7.4      28.42
+# Cla003357     3.37     7.42     5.49     21.8
+# Cla003741    14.82    30.29     9.35     42.59
+");
   q();
 }
 
