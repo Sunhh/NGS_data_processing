@@ -23,9 +23,10 @@ while (<$in>) {
   } else {
     $strand = "+";
   }
+  my $sim = sprintf("%0.1f", 100-$div);
 
   # my $attributes = "ID=$id;Target=$repeat $r_start $r_end;Class=$class";
-  my $attributes = "Target=$repeat $r_start $r_end;Class=$class";
+  my $attributes = "Target=$repeat $r_start $r_end;Classification=$class;Identity=$sim";
   my $source = "RepeatMasker";
   my $type = "dispersed_repeat";
 
