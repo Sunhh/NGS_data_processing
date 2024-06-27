@@ -66,7 +66,7 @@ for my $la (@agp_arr) {
 	if ($la->[1] == $new_seq{$newID}{'prevP'} + 1) {
 		; 
 	} elsif ( $la->[4] =~ m/^W$/i ) {
-		&tsmsg("[Wrn] Filling N gaps for $newID\n"); 
+		&tsmsg("[Wrn] Filling N gaps for $newID\n");
 		unless ( $la->[1] > $new_seq{$newID}{'prevP'} + 1 ) {
 			die "@$la\n"; 
 		}
