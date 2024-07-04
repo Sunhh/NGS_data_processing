@@ -4,7 +4,7 @@ use warnings;
 
 !@ARGV and die "perl $0 in.fa.N50 in_2.fa.N50 > out.table\n";
 
-my @oKey = qw/asm_size asm_num longest asm_N25 asm_N50 asm_N90 asm_N95 asm_N99 shortest gnm_size GN50 GN90/;
+my @oKey = qw/asm_size asm_num longest asm_N99 asm_N95 asm_N90 asm_N50 asm_N25 shortest gnm_size GN90 GN50/;
 print join("\t", 'accession', @oKey)."\n";
 for my $fn (@ARGV) {
   my %h;
