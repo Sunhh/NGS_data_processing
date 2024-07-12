@@ -24,7 +24,9 @@ for my $fn (@ARGV) {
     } elsif (m!^Genome Unique Length\s+[\d,]+\s*bp\s+([\d,]+)\s*bp!) {
       $h{'max_genome_uni'} = $1;
       $h{'max_genome_uni'} =~ s!,!!g;
-    } elsif (m!^(?:Heterozygosity|Heterozygous\s*\(\S+\))\s+[\d.]+\%\s+([\d.]+)\%!) {
+    } elsif (m!^(?:Heterozygosity|Heterozygous\s*\([^)]+\))\s+[\d.]+\%\s+([\d.]+)\%\s*$!) {
+      $h{'max_hetePerc'} = $1;
+    } elsif (m!^(?:Heterozygosity|Heterozygous\s*\([^)]+\))\s+([\d.]+)\%\s*$!) {
       $h{'max_hetePerc'} = $1;
     }
   }
