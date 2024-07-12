@@ -1,25 +1,25 @@
-SnpEff_type	Simple_1	Simple_2
-bidirectional_gene_fusion	whole	coding
-gene_fusion	whole	coding
-feature_ablation	whole	coding
-transcript_ablation	whole	coding
-intragenic_variant	mapgene	mapgene
-disruptive_inframe_deletion	coding	coding
-disruptive_inframe_insertion	coding	coding
-frameshift_variant	coding	coding
-exon_loss_variant	coding	coding
-stop_gained	coding	coding
-stop_lost	coding	coding
-start_lost	coding	coding
-missense_variant	coding	coding
-conservative_inframe_insertion	coding	coding
-conservative_inframe_deletion	coding	coding
-synonymous_variant	coding	coding
-splice_region_variant	splice	noncoding
-splice_acceptor_variant	splice	noncoding
-splice_donor_variant	splice	noncoding
-upstream_gene_variant	upstream	5utr
-downstream_gene_variant	downstream	3utr
-intron_variant	intron	noncoding
-intergenic_region	intergenic	intergenic
-chromosome_number_variation	intergenic	intergenic
+snpeff_type	simple_1	simple_2	simple_3	simple_4	order_1	order_2	order_3	order_0	link	description
+chromosome_number_variation	intergenic	intergenic	intergenic	intergenic_high	8	6	5	1	http://sequenceontology.org/browser/current_svn/term/SO:1000182	A kind of chromosome variation where the chromosome complement is not an exact multiple of the haploid number.
+bidirectional_gene_fusion	whole	coding	gene	whole_high	1	1	1	2	http://sequenceontology.org/browser/current_svn/term/SO:0002086	A sequence variant whereby two genes, on alternate strands have become joined.
+gene_fusion	whole	coding	gene	whole_high	1	1	1	3	http://sequenceontology.org/browser/current_svn/term/SO:0001565	A sequence variant whereby a two genes have become joined.
+transcript_ablation	whole	coding	gene	whole_high	1	1	1	4	http://sequenceontology.org/browser/current_svn/term/SO:0001893	A feature ablation whereby the deleted region includes a transcript feature.
+feature_ablation	whole	coding	gene	whole_high	1	1	1	5	http://sequenceontology.org/browser/current_svn/term/SO:0001879	A sequence variant, caused by an alteration of the genomic sequence, where the deletion, is greater than the extent of the underlying genomic features.
+exon_loss_variant	coding	coding	gene	coding_high	2	2	1	6	http://sequenceontology.org/browser/current_svn/term/SO:0001572	A sequence variant whereby an exon is lost from the transcript.
+frameshift_variant	coding	coding	gene	coding_high	2	2	1	7	http://sequenceontology.org/browser/current_svn/term/SO:0001589	A sequence variant which causes a disruption of the translational reading frame, because the number of nucleotides inserted or deleted is not a multiple of three.
+stop_gained	coding	coding	gene	coding_high	2	2	1	8	http://sequenceontology.org/browser/current_svn/term/SO:0001587	A sequence variant whereby at least one base of a codon is changed, resulting in a premature stop codon, leading to a shortened polypeptide.
+stop_lost	coding	coding	gene	coding_high	2	2	1	9	http://sequenceontology.org/browser/current_svn/term/SO:0001578	A sequence variant where at least one base of the terminator codon (stop) is changed, resulting in an elongated transcript.
+start_lost	coding	coding	gene	coding_high	2	2	1	10	http://sequenceontology.org/browser/current_svn/term/SO:0002012	A codon variant that changes at least one base of the canonical start codon.
+splice_acceptor_variant	splice	noncoding	gene	splice_high	3	4	2	11	http://sequenceontology.org/browser/current_svn/term/SO:0001574	A splice variant that changes the 2 base region at the 3' end of an intron.
+splice_donor_variant	splice	noncoding	gene	splice_high	3	4	2	12	http://sequenceontology.org/browser/current_svn/term/SO:0001575	A splice variant that changes the 2 base pair region at the 5' end of an intron.
+missense_variant	coding	coding	gene	coding_moderate	2	2	1	13	http://sequenceontology.org/browser/current_svn/term/SO:0001583	A sequence variant, that changes one or more bases, resulting in a different amino acid sequence but where the length is preserved.
+disruptive_inframe_insertion	coding	coding	gene	coding_high	2	2	1	14	http://sequenceontology.org/browser/current_svn/term/SO:0001824	An inframe increase in cds length that inserts one or more codons into the coding sequence within an existing codon.
+conservative_inframe_insertion	coding	coding	gene	coding_moderate	2	3	1	15	http://www.sequenceontology.org/miso/current_svn/term/SO:0001823	An inframe increase in cds length that inserts one or more codons into the coding sequence between existing codons.
+disruptive_inframe_deletion	coding	coding	gene	coding_high	2	2	1	16	http://sequenceontology.org/browser/current_svn/term/SO:0001826	An inframe decrease in cds length that deletes bases from the coding sequence starting within an existing codon.
+conservative_inframe_deletion	coding	coding	gene	coding_moderate	2	3	1	17	http://www.sequenceontology.org/miso/current_svn/term/SO:0001825	An inframe decrease in cds length that deletes one or more entire codons from the coding sequence but does not change any remaining codons.
+splice_region_variant	splice	noncoding	gene	splice_moderate	3	4	2	18	http://sequenceontology.org/browser/current_svn/term/SO:0001630	A sequence variant in which a change has occurred within the region of the splice site, either within 1-3 bases of the exon or 3-8 bases of the intron.
+synonymous_variant	coding	coding	gene	coding_low	2	3	1	19	http://sequenceontology.org/browser/current_svn/term/SO:0001819	A sequence variant where there is no resulting change to the encoded amino acid.
+upstream_gene_variant	promoter	promoter	promoter	promoter_modifier	6	4	3	20	http://sequenceontology.org/browser/current_svn/term/SO:0001631	A sequence variant located 5' of a gene.
+downstream_gene_variant	downstream	downstream	downstream	downstream_modifier	7	5	4	21	http://sequenceontology.org/browser/current_svn/term/SO:0001632	A sequence variant located 3' of a gene.
+intron_variant	intron	noncoding	gene	intron_modifier	5	5	2	22	http://sequenceontology.org/browser/current_svn/term/SO:0001627	A transcript variant occurring within an intron.
+intragenic_variant	mapgene	mapgene	gene	mapgene_modifier	4	5	1	23	http://sequenceontology.org/browser/current_svn/term/SO:0002011	A variant that occurs within a gene but falls outside of all transcript features. This occurs when alternate transcripts of a gene do not share overlapping sequence.
+intergenic_region	intergenic	intergenic	intergenic	intergenic_modifier	8	7	5	24	http://sequenceontology.org/browser/current_svn/term/SO:0000605	A region containing or overlapping no genes that is bounded on either side by a gene, or bounded by a gene and the end of the chromosome.
