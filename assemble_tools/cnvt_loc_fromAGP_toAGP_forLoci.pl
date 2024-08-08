@@ -87,7 +87,7 @@ while (<$old_locFh>) {
 		}
 		$new_scfPos = $new_scfInf[1]; 
 		$new_value[ $glob{'colN_seqID'}[0] ] //= $new_scfID; 
-		@{$glob{'colN_seqStr'}} > 0 and $new_value[ $glob{'colN_seqStr'}[0] ] //= $new_scfStr; 
+		@{$glob{'colN_seqStr'}} > 0 and $new_value[ $glob{'colN_seqStr'}[0] ] //= $new_scfStr;
 		$new_value[ $cN ] = $new_scfPos; 
 	}
 	@{$glob{'colN_seqStr'}} > 0 and $a1->[ $glob{'colN_seqStr'}[0] ] = $new_value[ $glob{'colN_seqStr'}[0] ]; 

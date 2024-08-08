@@ -176,8 +176,13 @@ unless ($opts{'skip_long2long'}) {
 }
 
 # Generate resulting files.
-&runCmd("cat $fn.short2All.redID $fn.long2long.redID > $fn.redID");
-push(@torm, "$fn.short2All.redID", "$fn.long2long.redID");
+if ($opts{'skip_long2long'}) {
+  &runCmd("cat $fn.short2All.redID > $fn.redID");
+  push(@torm, "$fn.short2All.redID");
+} else {
+  &runCmd("cat $fn.short2All.redID $fn.long2long.redID > $fn.redID");
+  push(@torm, "$fn.short2All.redID", "$fn.long2long.redID");
+}
 open OO,'>',"$fn.noRed.fa" or &stopErr("[Err] open [$fn.noRed.fa]\n");
 for (sort { $seqs{$a}{'Order'} <=> $seqs{$b}{'Order'} } keys %seqs) {
   print OO ">$seqs{$_}{'head'}\n$seqs{$_}{'seq'}\n";
