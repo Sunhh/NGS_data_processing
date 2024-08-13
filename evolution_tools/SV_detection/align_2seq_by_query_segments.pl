@@ -10,7 +10,7 @@ my $pl_dealFasta='deal_fasta.pl';
 my $pl_topBn='perl /home/Sunhh/tools/github/NGS_data_processing/evolution_tools/ortho_tools/filter_bp6_byTopScore.pl';
 my $pl_cnvtLoc='perl /home/Sunhh/tools/github/NGS_data_processing/assemble_tools/cnvt_loc_fromAGP_toAGP_forLoci.pl';
 my $bn6 = 'blastn -outfmt "6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen sstrand"';
-$bn6 .= " -num_threads 30 -evalue 1e-5";
+$bn6 .= " -num_threads 30 -evalue 1e-5 -max_hsps 50 -max_target_seqs 50";
 
 my $qFa = shift;
 my $sFa = shift;
