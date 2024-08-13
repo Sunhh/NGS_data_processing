@@ -7,6 +7,8 @@ use fileSunhh;
 !@ARGV and die "perl $0 query.fa subject.fa out_prefix 'chop_parameters' '-max_diffR 0.01'\n  chop_parameters: -chop_seq -chop_len 1000 -chop_step 500 -chop_min 1000\n";
 
 my $pl_dealFasta='deal_fasta.pl';
+my $pl_colLink='ColLink.pl';
+my $pl_dealTab= 'deal_table.pl';
 my $pl_topBn='perl /home/Sunhh/tools/github/NGS_data_processing/evolution_tools/ortho_tools/filter_bp6_byTopScore.pl';
 my $pl_cnvtLoc='perl /home/Sunhh/tools/github/NGS_data_processing/assemble_tools/cnvt_loc_fromAGP_toAGP_forLoci.pl';
 my $bn6 = 'blastn -outfmt "6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen sstrand"';
@@ -36,7 +38,9 @@ unless (-e "$db.nsq") {
 # Run blastn
 &runCmd("$bn6 -db $db -query $wrkDir/qseg.fa -out $opref.seg.bn6");
 &runCmd("$pl_topBn $paraTop $opref.seg.bn6 > $opref.seg.bn6.s1");
-&runCmd("$pl_cnvtLoc -new_agp $wrkDir/qseg.agp -old_loc $opref.seg.bn6.s1 -new_loc $opref.s1.bn6 -colN_seqID 0 -colN_seqP 6,7,12 -colN_seqStr 14");
+&runCmd("$pl_cnvtLoc -new_agp $wrkDir/qseg.agp -old_loc $opref.seg.bn6.s1 -new_loc $opref.s1a.bn6 -colN_seqID 0 -colN_seqP 6,7,12 -colN_seqStr 14");
+&runCmd("$pl_dealFasta $qFa -attr key:len > $wrkDir/qkl");
+&runCmd("$pl_colLink $opref.s1a.bn6 -f1 $wrkDir/qkl -add -Col1 1 -fill NNNN | $pl_dealTab -column 0-11,15,13,14 > $opref.s1.bn6");
 
 # Done.
 &tsmsg("[Red] done. output files are $opref.s1.bn6 and others ($opref.seg.bn6*)\n");
