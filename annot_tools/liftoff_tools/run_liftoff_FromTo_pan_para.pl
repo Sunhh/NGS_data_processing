@@ -35,7 +35,7 @@ my $htxt = <<HH;
 # Optional parameters:
 # -para_minCov    [0.5]
 # -para_minIdent  [0.75]
-# -para_liftoff   [ -p 20 -s {para_minIdent} -a {para_minCov} -copies ]
+# -para_liftoff   [ -p 20 -s {para_minIdent} -a {para_minCov} -copies -sc 1.0 ]
 # -pl_cntR2Q      [perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/liftoff_tools/cnt_R2Q_liftoff_info.pl]
 # -exe_liftoff    [liftoff]
 ####################################################################################################
@@ -47,7 +47,7 @@ for my $k1 (qw/from_tag from_gff3 from_fas to_tag to_fas/) {
 $opts{'out_dir'}       //= 'output';
 $opts{'para_minCov'}   //= 0.5;
 $opts{'para_minIdent'} //= 0.75;
-$opts{'para_liftoff'}  //= " -p 20 -s $opts{'para_minIdent'} -a $opts{'para_minCov'} -copies ";
+$opts{'para_liftoff'}  //= " -p 20 -s $opts{'para_minIdent'} -a $opts{'para_minCov'} -copies -sc 1.0 ";
 $opts{'pl_cntR2Q'}     //= "perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/liftoff_tools/cnt_R2Q_liftoff_info.pl";
 $opts{'exe_liftoff'}   //= 'liftoff';
 
