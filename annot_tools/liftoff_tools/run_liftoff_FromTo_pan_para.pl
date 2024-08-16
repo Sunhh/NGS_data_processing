@@ -35,19 +35,19 @@ my $htxt = <<HH;
 # Optional parameters:
 # -para_minCov    [0.5]
 # -para_minIdent  [0.75]
-# -para_liftoff   [ -p 20 -s {para_minIdent} -a {para_minCov} -copies ]
+# -para_liftoff   [ -p 20 -s {para_minIdent} -a {para_minCov} -copies -sc 1.0 ]
 # -pl_cntR2Q      [perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/liftoff_tools/cnt_R2Q_liftoff_info.pl]
 # -exe_liftoff    [liftoff]
 ####################################################################################################
 HH
 
-for my $k1 (qw/from_tag from_gff3 from_fas to_tag to_gff3 to_fas/) {
+for my $k1 (qw/from_tag from_gff3 from_fas to_tag to_fas/) {
   defined $opts{$k1} or &LogInforSunhh::usage($htxt);
 }
 $opts{'out_dir'}       //= 'output';
 $opts{'para_minCov'}   //= 0.5;
 $opts{'para_minIdent'} //= 0.75;
-$opts{'para_liftoff'}  //= " -p 20 -s $opts{'para_minIdent'} -a $opts{'para_minCov'} -copies ";
+$opts{'para_liftoff'}  //= " -p 20 -s $opts{'para_minIdent'} -a $opts{'para_minCov'} -copies -sc 1.0 ";
 $opts{'pl_cntR2Q'}     //= "perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/liftoff_tools/cnt_R2Q_liftoff_info.pl";
 $opts{'exe_liftoff'}   //= 'liftoff';
 
@@ -68,13 +68,16 @@ $dta{'toRM'} = [];
 # Copy input files of Liftoff to 'tmp_dir' to avoid conflicts between different processes.
 &fileSunhh::_copy($dta{'from_gff3'}, "$dta{'tmp_dir'}/from.gff3");
 &fileSunhh::_copy($dta{'from_fas'}, "$dta{'tmp_dir'}/from.fas");
-&fileSunhh::_copy($dta{'to_gff3'}, "$dta{'tmp_dir'}/to.gff3");
+defined $dta{'to_gff3'} and &fileSunhh::_copy($dta{'to_gff3'}, "$dta{'tmp_dir'}/to.gff3");
 &fileSunhh::_copy($dta{'to_fas'}, "$dta{'tmp_dir'}/to.fas");
 
 # &runCmd("$dta{'exe_liftoff'} $dta{'para_liftoff'} -dir $dta{'tmp_dir'} -g $dta{'from_gff3'} -o $dta{'out_gff3'} -u $dta{'out_unmap'} $dta{'to_fas'} $dta{'from_fas'}");
 &runCmd("$dta{'exe_liftoff'} $dta{'para_liftoff'} -dir $dta{'tmp_dir'} -g $dta{'tmp_dir'}/from.gff3 -o $dta{'out_gff3'} -u $dta{'out_unmap'} $dta{'tmp_dir'}/to.fas $dta{'tmp_dir'}/from.fas");
 # &runCmd("$dta{'pl_cntR2Q'}   $dta{'from_gff3'}  $dta{'to_gff3'}  $dta{'out_gff3'} > $dta{'out_tbl'}");
-&runCmd("$dta{'pl_cntR2Q'}   $dta{'tmp_dir'}/from.gff3  $dta{'tmp_dir'}/to.gff3  $dta{'out_gff3'} > $dta{'out_tbl'}");
+if (-e "$dta{'out_gff3'}_polished") {
+  $dta{'out_gff3'} = "$dta{'out_gff3'}_polished";
+}
+defined $dta{'to_gff3'} and &runCmd("$dta{'pl_cntR2Q'}   $dta{'tmp_dir'}/from.gff3  $dta{'tmp_dir'}/to.gff3  $dta{'out_gff3'} > $dta{'out_tbl'}");
 push(@{$dta{'toRM'}}, $dta{'tmp_dir'});
 
 for (@{$dta{'toRM'}}) {

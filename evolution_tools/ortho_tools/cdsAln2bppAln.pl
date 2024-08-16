@@ -54,7 +54,9 @@ for my $t1 (@seq_IDs) {
 }
 
 my $aln_num = 0;
-for my $fn1 (map {$_->[0]} &fileSunhh::load_tabFile($opts{'in_cdsList'})) {
+for my $l1 (&fileSunhh::load_tabFile($opts{'in_cdsList'})) {
+  my ($fn1, $fnTag) = @$l1;
+  $fnTag //= "";
   my %s = %{$fas_obj->save_seq_to_hash('faFile' => $fn1)};
   $aln_num ++;
   my $seq_len;
@@ -62,12 +64,14 @@ for my $fn1 (map {$_->[0]} &fileSunhh::load_tabFile($opts{'in_cdsList'})) {
     $s{$k1}{'seq'} =~ s!\s!!g;
     $seq_len //= length($s{$k1}{'seq'});
     $seq_len == length($s{$k1}{'seq'}) or &stopErr("[Err] sequence length varies in alignment [$fn1]\n");
-    $s{$k1}{'seq'} =~ s!\-!?!g;
+    while ($s{$k1}{'seq'} =~ s!^(\?*)\-!$1?!) {;}
+    while ($s{$k1}{'seq'} =~ s!\-(\?*)$!?$1!) {;}
+    # $s{$k1}{'seq'} =~ s!\-!?!g;
   }
   &fileSunhh::write2file($ofn1, "$seq_num $seq_len\n\n", '>>');
   for my $taxID (@seq_IDs) {
     defined $s{$taxID} or &stopErr("[Err] Failed to find sequence for tax ID [$taxID]\n");
-    &fileSunhh::write2file($ofn1, sprintf("^%-${spaceLen}s%s\n", $taxID, $s{$taxID}{'seq'}), '>>');
+    &fileSunhh::write2file($ofn1, $fnTag.sprintf("^%-${spaceLen}s%s\n", $taxID, $s{$taxID}{'seq'}), '>>');
   }
   &fileSunhh::write2file($ofn1, "\n", '>>');
 }
