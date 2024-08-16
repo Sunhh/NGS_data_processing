@@ -64,6 +64,10 @@ while (<$old_locFh>) {
 		$old_scfStr = '+';
 	} elsif ( $old_scfStr eq '-' or $old_scfStr eq 'minus' ) {
 		$old_scfStr = '-';
+	} elsif ( $a1->[$glob{'colN_seqP'}[0]] =~ m!^scaffold|yes|no$!i ) {
+		# This is a gap line in an AGP file.
+		print { $glob{'fh_new_loc'} } join("\t", @$a1)."\n";
+		next;
 	} else {
 		die "Unknown strand [$old_scfStr]\n";
 	}
