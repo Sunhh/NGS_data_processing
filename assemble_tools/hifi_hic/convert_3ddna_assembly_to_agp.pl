@@ -29,7 +29,7 @@ use LogInforSunhh;
 -t and !@ARGV and &stopErr("perl $0 C31_F1.assembly > C31_F1.agp\n"); 
 
 my $infer_gap_len = 1; 
-my $gap_len = 500; 
+my $gap_len = 100; 
 my $asm_prefix = "HiC_scaffold_"; 
 
 my (@segments); 
