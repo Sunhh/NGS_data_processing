@@ -622,7 +622,7 @@ sub switch_position {
 	return (@back); 
 }# sub switch_position () 
 
-=head2 transfer_position( 'from_ref2qry'=>\%agp_scf2ctg, 'to_qry2ref'=>\%agp_ctg2scf, 'fromLoc'=>[$from_scfID, $from_scfPos, $from_scfStrand] )
+=head2 transfer_position( 'from_ref2qry'=>\%agp_scf2ctg, 'to_qry2ref'=>\%agp_ctg2scf, 'fromLoc'=>[$from_scfID, $from_scfPos, $from_scfStrand], 'skipError'=>0 )
 
 Input       : 
 
@@ -642,6 +642,7 @@ sub transfer_position {
 	defined $parm{'fromLoc'}[0] or &stopErr("[Err] No from_scfID defined.\n"); 
 	$parm{'fromLoc'}[1] //= 1; 
 	$parm{'fromLoc'}[2] //= '+'; 
+        $parm{'skipError'}  //= 0;
 
 	my @old_ctgInf = $self->switch_position( 'qry2ref' => $parm{'from_ref2qry'} , 'qryID' => $parm{'fromLoc'}[0] , 'qryPos' => $parm{'fromLoc'}[1] , 'qryStr' => $parm{'fromLoc'}[2] ); 
 	if (@old_ctgInf == 1 and @{$old_ctgInf[0]} == 0) {
@@ -649,6 +650,8 @@ sub transfer_position {
 		$old_ctgInf[0] = $parm{'fromLoc'}; 
 	} elsif ( @old_ctgInf == 1 and defined $old_ctgInf[0][0] ) {
 		; 
+        } elsif ( $parm{'skipError'} == 1 ) {
+                return('', '', '');
 	} else { 
 		&stopErr("[Err] Bad result for [@{$parm{'fromLoc'}}] [@old_ctgInf] [@{$old_ctgInf[0]}]\n"); 
 	}
@@ -658,6 +661,8 @@ sub transfer_position {
 		$new_scfInf[0] = $old_ctgInf[0]; 
 	} elsif ( @new_scfInf == 1 ) {
 		; 
+        } elsif ( $parm{'skipError'} == 1 ) {
+                return('', '', '');
 	} else { 
 		&stopErr("[Err] Bad result for ctg [@{$old_ctgInf[0]}] [@new_scfInf]\n"); 
 	}

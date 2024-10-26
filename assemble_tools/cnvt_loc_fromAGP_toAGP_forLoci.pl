@@ -75,7 +75,11 @@ while (<$old_locFh>) {
 		my ($old_scfID, $old_scfPos) = ( @{$a1}[ $glob{'colN_seqID'}[0], $cN ] ); 
 		my @new_scfInf; 
 #		if ( defined $glob{'fn_old_agp'} ) {
-			@new_scfInf = $ms_obj->transfer_position( 'from_ref2qry' => $glob{'old_s2c'}, 'to_qry2ref' => $glob{'new_c2s'}, 'fromLoc' => [$old_scfID, $old_scfPos, $old_scfStr] ); 
+			@new_scfInf = $ms_obj->transfer_position( 'from_ref2qry' => $glob{'old_s2c'}, 'to_qry2ref' => $glob{'new_c2s'}, 'fromLoc' => [$old_scfID, $old_scfPos, $old_scfStr], 'skipError' => 1 );
+                        if ($new_scfInf[0] eq '' and $new_scfInf[1] eq '') {
+                          &tsmsg("[Err] Unconsistent positions for [$old_scfID, $old_scfPos, $old_scfStr]\n");
+                          next LOC;
+                        }
 #		} else {
 #			@new_scfInf = ( $old_scfID, $old_scfPos, '+' ); 
 #		}
