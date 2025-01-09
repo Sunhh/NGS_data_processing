@@ -31,7 +31,7 @@ in_Gp <- x_Gp[ !k_outliers ]
 # 5. Let theta_mu_bar = log(median(X_T)) , and theta_sd_bar = theta_mu_bar - log(mode_r(X_T)) ; 
 #    mode_r(X_T) is a robust estimator of the mode for continuous variables; 
 #    I saw the QTLseqr package used half-sample mode as this estimator. 
-mode_r <- modeest::mlv( x= in_Gp, bw= 0.5, method= 'hsm' )$M
+mode_r <- modeest::mlv( x= in_Gp, bw= 0.5, method= 'hsm' )
 # mode_r <- modeest::mlv( x= in_Gp, bw= 0.3, method= 'hrm' )$M
 mu_bar <- log( median(in_Gp) )  ;               # This is the mean of log scaled distribution of Gprime; 
 sd_bar <- sqrt( abs(mu_bar - log( mode_r )) ) ; # This is the standard deviation of log scaled distribution of Gprime; 
