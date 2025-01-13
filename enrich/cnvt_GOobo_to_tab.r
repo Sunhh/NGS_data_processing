@@ -39,6 +39,8 @@ library(dplyr)
 obo <- get_ontology(opt$go_obo, extract_tags = "everything", propagate_relationships= c('is_a', 'part_of'))
 
 # Make GO mapping table.
+#   There can be 3%-6% differences between GO enrichment sets from the OBO file-based R program and Blast2GO software.
+#   The EBI QuickGO supports the set from OBO file-based R program.
 ### Map GO IDs with alternative GO IDs (combined), root, GO name, GO description, ancestors.
 good_GO_IDs <- obo$id[grepl("^GO:", obo$id)]
 obo_df1 <- do.call(rbind, lapply(good_GO_IDs, function(term_id) {
