@@ -61,15 +61,16 @@ ego@result <- merge(ego@result, in_uniqGOs, by.x="ID", by.y="GO_ID", all.x=TRUE,
 
 # Calculate new GeneRatio as (GO genes in input) / (GO genes in background)
 ego@result <- ego@result %>%
-  mutate(GeneRatio_GO = paste0(Count, "/", as.numeric(sub("/.*", "", BgRatio))))
+  mutate(GeneRatio_in_term = paste0(Count, "/", as.numeric(sub("/.*", "", BgRatio))))
 
 # Save the results table
 output_table <- paste0(opt$output_prefix, ".tsv")
 write.table(ego@result, file=output_table, sep="\t", quote=FALSE, row.names=FALSE)
 
+if (sum(ego@result$p.adjust < 0.05) > 0) {
 # Filter results for p.adjust < 0.05 and sort by Ontology and p.adjust
 filtered_results <- ego@result %>% filter(p.adjust < 0.05) %>%
-  mutate(GeneRatio = GeneRatio_GO, Ontology = GO_root)
+  mutate(GeneRatio = GeneRatio_in_term, Ontology = GO_root)
 
 # Plot dot plot with facets
 filtered_results$Ontology <- factor(filtered_results$Ontology, levels = c("Biological Process", "Molecular Function", "Cellular Component"))
@@ -78,20 +79,24 @@ plot_ego <- ego
 plot_ego@result <- filtered_results
 
 # Save the plot to an SVG file
+p1 <- dotplot(plot_ego, showCategory=30, split = 'Ontology') +
+ facet_grid(Ontology~., scale="free", space= 'free_y') +
+ theme(panel.grid = element_blank())
 output_svg <- paste0(opt$output_prefix, ".svg")
 svg(output_svg, width=10, height=10)
-dotplot(plot_ego, showCategory=30, split = 'Ontology') +
- facet_grid(Ontology~., scale="free", space= 'free_y') +
- theme(panel.grid = element_blank())
+print(p1);
 dev.off()
 
+if (sum(filtered_results$Count >= 10) > 0) {
 filtered_res2 <- filtered_results %>% filter(Count >= 10)
 plot_ego@result <- filtered_res2
-output_svg2 <- paste0(opt$output_prefix, "-testLg10.svg");
-svg(output_svg2, width=10, height=10)
-dotplot(plot_ego, showCategory=30, split = 'Ontology') +
+p1 <- dotplot(plot_ego, showCategory=30, split = 'Ontology') +
  facet_grid(Ontology~., scale="free", space= 'free_y') +
  theme(panel.grid = element_blank())
+output_svg2 <- paste0(opt$output_prefix, "-testLg10.svg");
+svg(output_svg2, width=10, height=10)
+print(p1)
 dev.off()
-
+}
+}
 

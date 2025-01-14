@@ -1,0 +1,200 @@
+og24679	GO:0005488	Molecular Function	binding
+og24679	GO:0005515	Molecular Function	protein binding
+og24679	GO:0044877	Molecular Function	protein-containing complex binding
+og24679	GO:0010997	Molecular Function	anaphase-promoting complex binding
+og24679	GO:0098772	Molecular Function	molecular function regulator activity
+og24679	GO:0030234	Molecular Function	enzyme regulator activity
+og24679	GO:0140677	Molecular Function	molecular function activator activity
+og24679	GO:0008047	Molecular Function	enzyme activator activity
+og24679	GO:0055106	Molecular Function	ubiquitin-protein transferase regulator activity
+og24679	GO:0097027	Molecular Function	ubiquitin-protein transferase activator activity
+og24679	GO:0065007	Biological Process	biological regulation
+og24679	GO:0050789	Biological Process	regulation of biological process
+og24679	GO:0050794	Biological Process	regulation of cellular process
+og24679	GO:0019222	Biological Process	regulation of metabolic process
+og24679	GO:0060255	Biological Process	regulation of macromolecule metabolic process
+og24679	GO:0080090	Biological Process	regulation of primary metabolic process
+og24679	GO:0051246	Biological Process	regulation of protein metabolic process
+og24679	GO:0031399	Biological Process	regulation of protein modification process
+og24679	GO:1901873	Biological Process	regulation of post-translational protein modification
+og24679	GO:1903320	Biological Process	regulation of protein modification by small protein conjugation or removal
+og24679	GO:0031396	Biological Process	regulation of protein ubiquitination
+og24679	GO:0048518	Biological Process	positive regulation of biological process
+og24679	GO:0048522	Biological Process	positive regulation of cellular process
+og24679	GO:0009893	Biological Process	positive regulation of metabolic process
+og24679	GO:0010604	Biological Process	positive regulation of macromolecule metabolic process
+og24679	GO:0051247	Biological Process	positive regulation of protein metabolic process
+og24679	GO:0031401	Biological Process	positive regulation of protein modification process
+og24679	GO:1901875	Biological Process	positive regulation of post-translational protein modification
+og24679	GO:1903322	Biological Process	positive regulation of protein modification by small protein conjugation or removal
+og24679	GO:0031398	Biological Process	positive regulation of protein ubiquitination
+og24679	GO:0065009	Biological Process	regulation of molecular function
+og24679	GO:0044093	Biological Process	positive regulation of molecular function
+og24679	GO:0050790	Biological Process	regulation of catalytic activity
+og24679	GO:0043085	Biological Process	positive regulation of catalytic activity
+og24679	GO:0051338	Biological Process	regulation of transferase activity
+og24679	GO:0051347	Biological Process	positive regulation of transferase activity
+og24679	GO:0051438	Biological Process	regulation of ubiquitin-protein transferase activity
+og24679	GO:0051443	Biological Process	positive regulation of ubiquitin-protein transferase activity
+og24679	GO:1904666	Biological Process	regulation of ubiquitin protein ligase activity
+og24679	GO:1904668	Biological Process	positive regulation of ubiquitin protein ligase activity
+og24447	GO:0005488	Molecular Function	binding
+og24447	GO:0097159	Molecular Function	organic cyclic compound binding
+og24447	GO:0003676	Molecular Function	nucleic acid binding
+og24447	GO:0003677	Molecular Function	DNA binding
+og24447	GO:0003824	Molecular Function	catalytic activity
+og24447	GO:0016740	Molecular Function	transferase activity
+og24447	GO:0016772	Molecular Function	transferase activity, transferring phosphorus-containing groups
+og24447	GO:0016779	Molecular Function	nucleotidyltransferase activity
+og24447	GO:0140640	Molecular Function	catalytic activity, acting on a nucleic acid
+og24447	GO:0140098	Molecular Function	catalytic activity, acting on RNA
+og24447	GO:0097747	Molecular Function	RNA polymerase activity
+og24447	GO:0034062	Molecular Function	5'-3' RNA polymerase activity
+og24447	GO:0009987	Biological Process	cellular process
+og24447	GO:0008152	Biological Process	metabolic process
+og24447	GO:0044238	Biological Process	primary metabolic process
+og24447	GO:0006139	Biological Process	nucleobase-containing compound metabolic process
+og24447	GO:0043170	Biological Process	macromolecule metabolic process
+og24447	GO:0090304	Biological Process	nucleic acid metabolic process
+og24447	GO:0016070	Biological Process	RNA metabolic process
+og24447	GO:0009058	Biological Process	biosynthetic process
+og24447	GO:0009059	Biological Process	macromolecule biosynthetic process
+og24447	GO:0034654	Biological Process	nucleobase-containing compound biosynthetic process
+og24447	GO:0141187	Biological Process	nucleic acid biosynthetic process
+og24447	GO:0032774	Biological Process	RNA biosynthetic process
+og24447	GO:0003899	Molecular Function	DNA-directed 5'-3' RNA polymerase activity
+og24447	GO:0010467	Biological Process	gene expression
+og24447	GO:0006351	Biological Process	DNA-templated transcription
+og23589	GO:0005488	Molecular Function	binding
+og23589	GO:0097159	Molecular Function	organic cyclic compound binding
+og23589	GO:0003676	Molecular Function	nucleic acid binding
+og23589	GO:0003677	Molecular Function	DNA binding
+og23589	GO:0003824	Molecular Function	catalytic activity
+og23589	GO:0016853	Molecular Function	isomerase activity
+og23589	GO:0140640	Molecular Function	catalytic activity, acting on a nucleic acid
+og23589	GO:0140097	Molecular Function	catalytic activity, acting on DNA
+og23589	GO:0003916	Molecular Function	DNA topoisomerase activity
+og23589	GO:0140657	Molecular Function	ATP-dependent activity
+og23589	GO:0008094	Molecular Function	ATP-dependent activity, acting on DNA
+og23589	GO:0003918	Molecular Function	DNA topoisomerase type II (double strand cut, ATP-hydrolyzing) activity
+og23589	GO:1901265	Molecular Function	nucleoside phosphate binding
+og23589	GO:0036094	Molecular Function	small molecule binding
+og23589	GO:1901363	Molecular Function	heterocyclic compound binding
+og23589	GO:0000166	Molecular Function	nucleotide binding
+og23589	GO:0017076	Molecular Function	purine nucleotide binding
+og23589	GO:0030554	Molecular Function	adenyl nucleotide binding
+og23589	GO:0097367	Molecular Function	carbohydrate derivative binding
+og23589	GO:0032553	Molecular Function	ribonucleotide binding
+og23589	GO:0032555	Molecular Function	purine ribonucleotide binding
+og23589	GO:0032559	Molecular Function	adenyl ribonucleotide binding
+og23589	GO:0043167	Molecular Function	ion binding
+og23589	GO:0043168	Molecular Function	anion binding
+og23589	GO:0035639	Molecular Function	purine ribonucleoside triphosphate binding
+og23589	GO:0005524	Molecular Function	ATP binding
+og23589	GO:0009987	Biological Process	cellular process
+og23589	GO:0008152	Biological Process	metabolic process
+og23589	GO:0044238	Biological Process	primary metabolic process
+og23589	GO:0006139	Biological Process	nucleobase-containing compound metabolic process
+og23589	GO:0043170	Biological Process	macromolecule metabolic process
+og23589	GO:0090304	Biological Process	nucleic acid metabolic process
+og23589	GO:0006259	Biological Process	DNA metabolic process
+og35197			
+og27802			
+og26768			
+og35478			
+og31448			
+og30161			
+og27383			
+og27412			
+og30141			
+og32866			
+og31350			
+og29797			
+og35214			
+og32913			
+og32835			
+og24311			
+og25624			
+og35245			
+og19245			
+og33519			
+og24210			
+og28459			
+og31494			
+og23767			
+og27089			
+og26412			
+og35242			
+og33137			
+og34618			
+og27599			
+og18835			
+og33514			
+og32914			
+og31569			
+og27844			
+og26511			
+og33143			
+og33511			
+og23319			
+og23437			
+og35240			
+og26239			
+og29399			
+og24111			
+og35426			
+og25745			
+og25033			
+og25177			
+og24224			
+og35190			
+og33139			
+og34498			
+og26265			
+og28846			
+og32695			
+og25355			
+og23923			
+og26059			
+og23671			
+og35210			
+og34095			
+og35235			
+og27957			
+og30703			
+og20404			
+og27235			
+og35195			
+og30250			
+og35212			
+og31776			
+og29595			
+og30693			
+og34912			
+og28857			
+og30754			
+og26980			
+og33518			
+og24987			
+og25221			
+og32630			
+og32867			
+og32342			
+og24208			
+og26700			
+og22181			
+og24760			
+og30942			
+og25403			
+og24227			
+og31477			
+og26041			
+og31503			
+og34160			
+og30352			
+og27798			
+og34485			
+og32810			
+og29659			
+og25560			
+og25195			

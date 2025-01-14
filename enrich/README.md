@@ -22,5 +22,24 @@ perl extend_GOannot_for_GOenrich.pl  pub-go.obo.tab  in_whole_genome_gene.annot 
 
 ```sh
 Rscript run_GOenrich.r  --gene_list in_geneID.list  --go_annot_4col in_whole_genome_gene.annot-GOinEnrich  --output_prefix in_geneID-GOen
-
 ```
+
+# How to do IPR enrichment from a gene list.
+
+## Input files:
+- Subset gene list: in\_geneID.list;
+- Background gene to IPR domain file: whole\_genome\_gene-ipr.table; Two columns: gene ID, IPR IDs separated by semicolon;
+- IPR entry list: pub-ipr-entry.list; Downloaded from https://ftp.ebi.ac.uk/pub/databases/interpro/current_release/entry.list
+
+## Generate 3-col gene to IPR mapping table.
+```sh
+perl extend_IPRannot_for_IPRenrich.pl pub-ipr-entry.list whole_genome_gene-ipr.table whole_genome_gene-ipr.table-GOinEnrich
+```
+
+## Execute GO enrichment.
+- Result files: in\_geneID-IPRen.tsv, in\_geneID-IPRen.svg, in\_geneID-IPRen-testLg10.svg;
+```sh
+Rscript run_IPRenrich.r --gene_list in_geneID.txt --ipr_annot_3col whole_genome_gene-ipr.table-GOinEnrich --output_prefix in_geneID-IPRen
+```
+
+
