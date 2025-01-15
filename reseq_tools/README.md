@@ -2,9 +2,9 @@
 
 ## Workflow to count read pairs spanning target region.
 - This method can be used to genotype large deletions/insertions by appropriate target locatioin.
- - Tandem duplication (insertion): targeting junction site between two duplicates.
- - Large deletion: targeting read pairs spanning the entire deleted region.
- - Large exogenous insertion: targeting read pairs spanning the two ends of inserted region.
+  - Tandem duplication (insertion): targeting junction site between two duplicates.
+  - Large deletion: targeting read pairs spanning the entire deleted region.
+  - Large exogenous insertion: targeting read pairs spanning the two ends of inserted region.
 
 ```sh
 # BWA-MEM alignments. "bwa mem -M | samtools view -h -F 12| samtools sort -o PE2allele.bam"
