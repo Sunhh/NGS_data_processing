@@ -12,7 +12,7 @@ read_gene_list <- function(file) {
 # Main script
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) < 1) {
-  stop("Usage: Rscript script.R out_prefix <gene_list_1.txt> <gene_list_2.txt> ...\nInput lists are single-column gene IDs.")
+  stop("\nUsage: Rscript script.R out_prefix <gene_list_1.txt> <gene_list_2.txt> ...\nInput lists are single-column gene IDs.\n\n")
 }
 # args <- c('out', 'cultivated', 'cordophanus', 'mucosospermus', 'amarus', 'colocynthis', 'three_wild');
 
@@ -41,7 +41,7 @@ binary_matrix <- binary_matrix %>% rownames_to_column("Gene")
 # binary_matrix <- binary_matrix[, c("Gene", names(sort(set_size, decreasing = TRUE))) ]
 
 # Save plot to file
-svg(paste0(out_pref, ".svg"), height=3, width= 6)
+pdf(paste0(out_pref, ".pdf"), height=3, width= 6)
 # upset(binary_matrix, sets = rev(colnames(binary_matrix)[-1]), keep.order=TRUE, order.by = "freq", nintersects= NA) # main.bar.color = "blue", sets.bar.color = "blue";
 upset(binary_matrix, sets = rev(colnames(binary_matrix)[-1]), keep.order=TRUE, order.by = "freq", nintersects= 30) # main.bar.color = "blue", sets.bar.color = "blue";
 dev.off()
