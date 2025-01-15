@@ -1,3 +1,4 @@
+#!/usr/bin/env Rscript
 # Load required packages
 suppressMessages({library(optparse)})
 
