@@ -41,7 +41,7 @@ binary_matrix <- binary_matrix %>% rownames_to_column("Gene")
 # binary_matrix <- binary_matrix[, c("Gene", names(sort(set_size, decreasing = TRUE))) ]
 
 # Save plot to file
-svg(paste0(out_pref, ".svg"), height=7, width= 10)
+svg(paste0(out_pref, ".svg"), height=3, width= 6)
 # upset(binary_matrix, sets = rev(colnames(binary_matrix)[-1]), keep.order=TRUE, order.by = "freq", nintersects= NA) # main.bar.color = "blue", sets.bar.color = "blue";
 upset(binary_matrix, sets = rev(colnames(binary_matrix)[-1]), keep.order=TRUE, order.by = "freq", nintersects= 30) # main.bar.color = "blue", sets.bar.color = "blue";
 dev.off()
