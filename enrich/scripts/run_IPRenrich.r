@@ -60,7 +60,8 @@ ego@result <- ego@result %>%
 
 # Save the results table
 output_table <- paste0(opt$output_prefix, ".tsv")
-write.table(ego@result, file=output_table, sep="\t", quote=FALSE, row.names=FALSE)
+output_Tag <- ifelse(ego@result$p.adjust < 0.05, "OVER", "")
+write.table(data.frame(Tag=output_Tag, ego@result), file=output_table, sep="\t", quote=FALSE, row.names=FALSE)
 
 if (sum(ego@result$p.adjust < 0.05) > 0) {
 # Filter results for p.adjust < 0.05 and sort p.adjust
