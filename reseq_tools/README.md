@@ -1,6 +1,7 @@
 # Scripts to process resequencing data.
 
 ## Workflow to count read pairs spanning target region.
+It is recommended to use whole genome as the reference for alignment, because truncated reference can force repeat-related read pairs aligned to the junction site.
 - This method can be used to genotype large deletions/insertions by appropriate target locatioin.
   - Tandem duplication (insertion): targeting junction site between two duplicates.
   - Large deletion: targeting read pairs spanning the entire deleted region.
