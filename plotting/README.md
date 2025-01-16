@@ -17,3 +17,8 @@ Rscript plot_upset.r output_prefix <gene_list_1.txt> <gene_list_2.txt> ...
 Rscript plot_boxplot.r  --pheno_files FleshBrix_22HN_1,FleshBrix_22HN_2,FleshBrix_19YQ_1,FleshBrix_19YQ_2  --test_groups FleshBrix_22HN_1,FleshBrix_22HN_2:FleshBrix_19YQ_1,FleshBrix_19YQ_2  --output_prefix  test_boxplot
 ```
 
+## Plotting barplot.
+- First input column must by `Group` for each bar. The following columns are color groups within each bar.
+```sh
+Rscript plot_barplot.r 65K_DEL-3class 65Kb_DEL-AF_3class
+```
