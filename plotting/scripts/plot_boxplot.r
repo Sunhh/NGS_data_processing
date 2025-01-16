@@ -82,7 +82,7 @@ violin_plot <- ggplot(melted_data, aes(x = Phenotype, y = Value, fill = Phenotyp
   )
 
 box_plot <- ggplot(melted_data, aes(x = Phenotype, y = Value, fill = Phenotype)) +
-  geom_boxplot(width = 0.1, position = position_dodge(width = 0.75), outlier.shape = NA) +
+  geom_boxplot(width = 0.5, position = position_dodge(width = 0.75), outlier.shape = NA) +
   theme_minimal() +
   labs(x = "Phenotype data set", y = "Phenotypic value") +
   theme(
