@@ -10,3 +10,10 @@ Rscript plot_venn.r output_prefix  <gene_list_1.txt> <gene_list_2.txt> ...
 Rscript plot_upset.r output_prefix <gene_list_1.txt> <gene_list_2.txt> ...
 ```
 
+## Plotting boxplot or violin plot.
+- Input files should be 1-column files storing values (comma-separated in `--pheno_files`). The file names will be used as data set names.
+  - Student `t` test P values can be found in tsv files. Consider to use some other tests for non-normal distributions. Group information (`--test_groups` is `:`-separated column groups (comma-separated)).
+```sh
+Rscript plot_boxplot.r  --pheno_files FleshBrix_22HN_1,FleshBrix_22HN_2,FleshBrix_19YQ_1,FleshBrix_19YQ_2  --test_groups FleshBrix_22HN_1,FleshBrix_22HN_2:FleshBrix_19YQ_1,FleshBrix_19YQ_2  --output_prefix  test_boxplot
+```
+
