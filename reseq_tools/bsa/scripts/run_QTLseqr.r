@@ -142,6 +142,10 @@ df_filt <- filterSNPs(
      plotThreshold = FALSE,
      q = 0.01,
      subset = opt$plot_chr
+    ) +
+    theme(
+      panel.grid.major = element_blank(), # Remove grids.
+      panel.grid.minor = element_blank()  # Remove grids.
     )
     print(p4)
     ##### Gprime
@@ -151,6 +155,10 @@ df_filt <- filterSNPs(
      plotThreshold = TRUE,
      q = 0.01,
      subset = opt$plot_chr
+    ) +
+    theme(
+      panel.grid.major = element_blank(), # Remove grids.
+      panel.grid.minor = element_blank()  # Remove grids.
     )
     print(p5)
   }

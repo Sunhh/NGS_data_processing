@@ -79,7 +79,7 @@ bcftools index --tbi --threads 90 vcf/emQ30-gatkAllhard-use.vcf.gz
 ## Perform BSA with R/QTLseqr;
 - Prepare table file from VCF for R/QTLseqr.
  - Keep only high and low bulks.
-- Output file: `vcf/use-2bulk-chrV.table`
+ - Output file: `vcf/use-2bulk-chrV.table`
 ```sh
 bcftools view vcf/emQ30-gatkAllhard-use.vcf.gz -s lowBulk,highBulk -Ov -o vcf/use-2bulk.vcf
 docker run --rm -v $PWD:/mnt broadinstitute/gatk:4.6.1.0 gatk VariantsToTable -R /mnt/db/ref_chr.fa -V /mnt/vcf/use-2bulk.vcf \
@@ -90,8 +90,8 @@ perl -e 'while (<>) { s!^CLV01_Chr0*!!; s!^\t!0\t!; print;}' vcf/use-2bulk.table
 ```
 
 - Perform BSA.
+ - Output files: `output-ana-*`; Tables can be put into `example_data/template-QTLseqr_result.xlsx`;
 ```sh
 Rscript run_QTLseqr.r -i vcf/use-2bulk-chrV.table --high_bulk highBulk --low_bulk lowBulk --indvN_high 20 --indvN_low 20 --window_size 2000000 --window_name 2M --plot_chr 6 -o output
 ```
-
 
