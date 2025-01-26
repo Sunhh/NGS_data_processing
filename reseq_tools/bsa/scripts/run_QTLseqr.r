@@ -58,17 +58,17 @@ df <- importFromGATK(
 pdf(file= paste0(opt$output_prefix, '-depth_ttl.pdf'))
 ggplot(data = df) +
  geom_histogram(aes(x = DP.HIGH + DP.LOW)) +
- xlim(0,200)
+ xlim(0,80)
 dev.off()
 pdf(file= paste0(opt$output_prefix, '-depth_high.pdf'))
 ggplot(data = df) +
  geom_histogram(aes(x = DP.HIGH)) +
- xlim(0,200)
+ xlim(0,80)
 dev.off()
 pdf(file= paste0(opt$output_prefix, '-depth_low.pdf'))
 ggplot(data = df) +
  geom_histogram(aes(x = DP.LOW)) +
- xlim(0,200)
+ xlim(0,80)
 dev.off()
 ### total reference allele frequency
 pdf(file= paste0(opt$output_prefix, '-ref_AF_ttl.pdf'))
@@ -87,11 +87,11 @@ dev.off()
 df_filt <- filterSNPs(
  SNPset = df,
  refAlleleFreq = 0.10,
- minTotalDepth = 20,
- maxTotalDepth = 200,
- depthDifference = 66,
- minSampleDepth = 40,
- minGQ = 99,
+ minTotalDepth = 5,
+ maxTotalDepth = 60,
+ depthDifference = 22,
+ minSampleDepth = 3,
+ minGQ = 30,
  verbose = TRUE
 )
 
@@ -106,13 +106,15 @@ df_filt <- filterSNPs(
    popStruc = "F2",
    bulkSize = c(opt$indvN_high, opt$indvN_low),
    replications = 10000,
-   intervals = c(95, 99)
+   intervals = c(95, 99),
+   maxk = 200
   )
   ### runGprimeAnalysis: performs Magwene et al type G′ analysis
   df_filt_ana <- runGprimeAnalysis(df_filt_ana,
    windowSize = opt$window_size,
    outlierFilter = "deltaSNP",
-   filterThreshold = 0.1
+   filterThreshold = 0.1,
+   maxk = 200
   )
   
   pdf(file= paste0(opt$output_prefix, '-ana-', opt$window_name, '.pdf'), width= 14, height= 7)
