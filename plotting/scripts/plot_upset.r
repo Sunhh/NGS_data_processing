@@ -41,7 +41,7 @@ binary_matrix <- binary_matrix %>% rownames_to_column("Gene")
 # binary_matrix <- binary_matrix[, c("Gene", names(sort(set_size, decreasing = TRUE))) ]
 
 # Save plot to file
-pdf(paste0(out_pref, ".pdf"), height=3, width= 6)
+pdf(paste0(out_pref, ".pdf"), height=3, width= 6, family= "Helvetica")
 # upset(binary_matrix, sets = rev(colnames(binary_matrix)[-1]), keep.order=TRUE, order.by = "freq", nintersects= NA) # main.bar.color = "blue", sets.bar.color = "blue";
 upset(binary_matrix, sets = rev(colnames(binary_matrix)[-1]), keep.order=TRUE, order.by = "freq", nintersects= 30) # main.bar.color = "blue", sets.bar.color = "blue";
 dev.off()
