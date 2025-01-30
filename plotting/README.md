@@ -22,3 +22,8 @@ Rscript plot_boxplot.r  --pheno_files FleshBrix_22HN_1,FleshBrix_22HN_2,FleshBri
 ```sh
 Rscript plot_barplot.r 65K_DEL-3class 65Kb_DEL-AF_3class
 ```
+
+- Plot barplot with two group layers. Add SD lines too.
+```sh
+Rscript plot_barplot_wiSD_twoGroups.r
+```
