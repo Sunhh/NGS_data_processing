@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 # [3/25/2022] The column number may be different!!!
 # [9/28/2022] In some bedtools version, unmapped is presented as '-1' instead of '.'.
+# [2/13/2025] Allow empty file in .m. bedtools intersections.
 use strict;
 use warnings;
 
@@ -15,6 +16,9 @@ my %trans_cdsLen;
 while (<>) {
   chomp;
   my @ta=split(/\t/, $_);
+  if (scalar(@ta) == $cN_ovlLen - 1) {
+    splice(@ta, $#ta, 0, '.', '.');
+  }
   $ta[$cN_mID_2] eq '-1' and $ta[$cN_mID_2] = '.';
   $h{$ta[$cN_mID_1]}{$ta[$cN_mID_2]} += $ta[$cN_ovlLen];
   $trans_cdsLen{$ta[$cN_mID_1]} += $ta[$cN_ovlLen];
