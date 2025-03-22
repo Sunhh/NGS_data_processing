@@ -30,4 +30,9 @@ perl genotype_longDEL_byListBam.pl  list.long_deletions  list.sample_bam  out_ge
 perl cnvt_melt_to_matrix.pl out_geno-melt.tab > out_geno-mat.tab
 ```
 
+## File format convertioin.
+- Convert ClustalW output MSA.fasta file into a SAM file.
 
+```sh
+perl cnvt_msaFa_to_sam.pl  in_MSA.fasta reference_ID_in_MSA  > out_MSA.sam
+```
