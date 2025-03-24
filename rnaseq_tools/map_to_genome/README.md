@@ -14,7 +14,7 @@ hisat2-build in_chr.fa ref_db
 | S1      | S1\_Rep1  |S1\_Rep1 | S1\_Rep1   | path1 | NA    | NA | NA | NA     |
 | S1      | S1\_Rep2  |S1\_Rep2 | S1\_Rep2   | path1 | path2 | NA | NA | NA     |
 
- - Run 2-pass HISAT2 alignments.
+  - Run 2-pass HISAT2 alignments.
 
 ```sh
 mkdir out_bams/
