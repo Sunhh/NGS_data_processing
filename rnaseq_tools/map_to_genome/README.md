@@ -71,10 +71,12 @@ Example of `list.sample_meta`.
 
 
 - Prepare a file listing all comparisons `list.comparison`.
+
 |   group1   | group2     | outPrefix                  |
 |------------|------------|----------------------------|
 | S1G1T1P10D | S1G1T1P18D | PI296341\_flesh\_10D\_18D  |
 | S1G1T1P18D | S1G1T1P26D | PI296341\_flesh\_18D\_26D  |
+
 
 - Compare gene expression for each comparison.
 ```sh
