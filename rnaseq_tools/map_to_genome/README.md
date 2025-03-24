@@ -49,6 +49,38 @@ mkdir -p out_cnt/sep/
 # cut -f 4 list.in_rd |tail -n +2|perl -e 'while (<>) {chomp;print "featureCounts -Q 0 -M -T 8 -s 2 -a ref_protein.gtf -o out_cnt/sep/$_.cnt out_bams/${_}_fixNH.bam\n";}' > cx2cnt
 cut -f 4 list.in_rd|tail -n +2|perl -e 'my @f=<>;chomp(@f);print join(" ", "featureCounts -Q 0 -M -T 8 -s 2 -a ref_protein.gtf -o out_cnt/joint-cnt.txt", map {"out_bams/${_}_fixNH.bam"} @f)."\n";' > cx2cnt
 bash cx2cnt
+perl -e 'while (<>) {s!out_bams/!!g; s!_fixNH.bam!!g; print;}' out_cnt/joint-cnt.txt > out_cnt/joint-cnt_rename.txt
+```
+Convert read counts to TPM.
+```sh
+Rscript cnvt_featureCounts_to_tpm.r out_cnt/joint-cnt_rename.txt out_cnt/joint-tpm.txt
+```
+
+## (3) Detect differentially expressed genes with DESeq2.
+- Prepare sample meta file `list.sample_meta`.
+```sh
+echo -e "sample\tgroup" > list.sample_meta; tail -n +2 list.in_rd|deal_table.pl -column 3,0 >> list.sample_meta;
+```
+Example of `list.sample_meta`.
+| sample           | group      |
+|------------------|------------|
+| S1G1T1P10D\_Rep1 | S1G1T1P10D |
+| S1G1T1P10D\_Rep2 | S1G1T1P10D |
+| S1G1T1P18D\_Rep1 | S1G1T1P18D |
+| S1G1T1P18D\_Rep2 | S1G1T1P18D |
+
+
+- Prepare a file listing all comparisons `list.comparison`.
+|   group1   | group2     | outPrefix                  |
+|------------|------------|----------------------------|
+| S1G1T1P10D | S1G1T1P18D | PI296341\_flesh\_10D\_18D  |
+| S1G1T1P18D | S1G1T1P26D | PI296341\_flesh\_18D\_26D  |
+
+- Compare gene expression for each comparison.
+```sh
+mkdir -p DEGs/sep/
+tail -n +2 list.comparison| perl -e 'while (<>) {chomp; my @a=split; print "Rscript run_deseq2_tpm.r -c joint-cnt_rename.txt  -s list.sample_meta  -t joint-tpm.txt  -g group  --baseline $a[0]  --treatment $a[1]  -o DEGs/sep/res-$a[2]\n";}' > cx3deg
+bash cx3deg
 ```
 
 
