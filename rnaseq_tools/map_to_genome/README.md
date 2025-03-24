@@ -43,10 +43,11 @@ mkdir -p out_cnt/sep/
 featureCounts  -Q 0  -M  -T 8  -s 2  -a ref_protein.gtf  -o out_cnt/sep/S1_Rep1.txt  out_bams/S1_Rep1_fixNH.bam
 ```
 
-Count for all samples listed in file `list.in_rd`.
+Count for all samples listed in file `list.in_rd`. The result file `out_cnt/joint-cnt.txt` has all samples counted.
 ```sh
 mkdir -p out_cnt/sep/
-cut -f 4 list.in_rd |tail -n +2|perl -e 'while (<>) {chomp;print "featureCounts -Q 0 -M -T 8 -s 2 -a db/97103.protein.gtf -o out_cnt/sep/$_.cnt out_bams/${_}_fixNH.bam\n";}' > cx2cnt
+# cut -f 4 list.in_rd |tail -n +2|perl -e 'while (<>) {chomp;print "featureCounts -Q 0 -M -T 8 -s 2 -a ref_protein.gtf -o out_cnt/sep/$_.cnt out_bams/${_}_fixNH.bam\n";}' > cx2cnt
+cut -f 4 list.in_rd|tail -n +2|perl -e 'my @f=<>;chomp(@f);print join(" ", "featureCounts -Q 0 -M -T 8 -s 2 -a ref_protein.gtf -o out_cnt/joint-cnt.txt", map {"out_bams/${_}_fixNH.bam"} @f)."\n";' > cx2cnt
 bash cx2cnt
 ```
 
