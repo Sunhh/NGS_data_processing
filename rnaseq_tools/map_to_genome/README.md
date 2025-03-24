@@ -85,4 +85,19 @@ tail -n +2 list.comparison| perl -e 'while (<>) {chomp; my @a=split; print "Rscr
 bash cx3deg
 ```
 
+- Combine and label DEGs for all comparisons.
+  - Prepare DEG result list file (`list.DEG_res_meta.txt`).
+
+| # DEG result file | comparison ID |
+|------------------------------------|-------------------------|
+|DEGs/sep/res-PI296341\_flesh\_10D\_18D |   PI296341\_flesh\_10D\_18D|
+|DEGs/sep/res-PI296341\_flesh\_18D\_26D |   PI296341\_flesh\_18D\_26D|
+|DEGs/sep/res-PI296341\_flesh\_26D\_34D |   PI296341\_flesh\_26D\_34D|
+
+
+```sh
+perl combine_DEGs.pl  list.DEG_res_meta.txt  > combined_DEG_res.tsv
+perl label_DEGs.pl combined_DEG_res.tsv > combined_DEG_label.tsv
+```
+
 
