@@ -166,9 +166,9 @@ sub stat_aln {
 sub setGlob {
 	$gg{'exe_hisat2'}        = 'hisat2'; 
 	$gg{'exe_samtools'}      = 'samtools'; 
-	$gg{'exe_stringtie'}     = '/Data/Sunhh/src/assemble/stringtie/stringtie-1.3.3b.Linux_x86_64/stringtie'; 
+	$gg{'exe_stringtie'}     = 'stringtie'; 
 	$gg{'exe_perl'}          = 'perl'; 
-	$gg{'pl_fix_NHnum'}      = '/home/Sunhh/tools/github/NGS_data_processing/rnaseq_tools/fix_NHnum.pl'; 
+	$gg{'pl_fix_NHnum'}      = '/home/Sunhh/tools/github/NGS_data_processing/rnaseq_tools/map_to_genome/fix_NHnum.pl'; 
 	$gg{'para_samtools_srt'} = ' -@ 4 -m 5G '; 
 	# $gg{'para_hisat2'} = ' -p 4 --dta-cufflinks -q --phred33 '; 
 	$gg{'para_hisat2'} = ' -p 4 --dta -q --phred33 '; 

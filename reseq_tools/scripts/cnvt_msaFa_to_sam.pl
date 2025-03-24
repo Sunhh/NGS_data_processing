@@ -86,7 +86,7 @@ for my $rdID (@rdIDs) {
     }
   }
   # If the filling element is not used, there must be something wrong!
-  $cigar[0][0] == 0 and $cigar[0][1] eq 'M' and die "Error1: rdTrim=$rdTrim;mapStart=$mapStart;firstCigar=$cigar[0][0]$cigar[0][1];\n";
+  $cigar[0][0] == 0 and $cigar[0][1] eq 'M' and die "Error1: rdID=$rdID;rdTrim=$rdTrim;mapStart=$mapStart;firstCigar=$cigar[0][0]$cigar[0][1];\n";
   $mapStart > 0 or die "Error2: mapStart=$mapStart;\n";
   # Generate CIGAR with soft clips.
   $cigar[-1][1] eq 'I' and $cigar[-1][1] = 'S';
