@@ -7,7 +7,7 @@ hisat2-build in_chr.fa ref_db
 ```
 
 - Map reads to HISAT2 database with two-step mapping.
- - Prepare an input read list (`list.in_rd`) with the format as the example below. dataPrefix and Fq names must be unique. Fq files can be gz.
+  - Prepare an input read list (`list.in_rd`) with the format as the example below. dataPrefix and Fq names must be unique. Fq files can be gz.
 
 | #sample | readGroup | library | dataPrefix | inFq1 | inFq2 | PL | PU | Others |
 |---------|-----------|---------|------------|-------|-------|----|----|--------|
