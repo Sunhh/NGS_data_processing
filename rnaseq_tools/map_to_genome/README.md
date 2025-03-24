@@ -100,4 +100,10 @@ perl combine_DEGs.pl  list.DEG_res_meta.txt  > combined_DEG_res.tsv
 perl label_DEGs.pl combined_DEG_res.tsv > combined_DEG_label.tsv
 ```
 
+- Convert gene-based DEGs to orthologous group-based DEGs.
+
+```sh
+perl cnvt_gene2group_DEGlabel.pl  synOG.grp  combined_DEG_label.tsv  > combined_DEG_group_label.tsv
+```
+
 
