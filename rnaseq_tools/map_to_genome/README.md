@@ -14,7 +14,8 @@ hisat2-build in_chr.fa ref_db
 | S1      | S1\_Rep2  |S1\_Rep2 | S1\_Rep2   | path1 | path2 | NA | NA | NA     |
 
 - Map reads to HISAT2 database with two-step mapping.
-  - Run 2-pass HISAT2 alignments.
+  - Resulting files: `*_fixNH.bam` files in `out_bams/`.
+
 ```sh
 mkdir out_bams/
 perl runHisat2_with2pass.pl \
