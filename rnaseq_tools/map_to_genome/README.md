@@ -15,6 +15,7 @@ hisat2-build in_chr.fa ref_db
 
 - Map reads to HISAT2 database with two-step mapping.
   - Resulting files: `*_fixNH.bam` files in `out_bams/`.
+  - Parameter ` --rna-strandness R ` fits strand-specific RNA-seq with reads on the reverse strand.
 
 ```sh
 mkdir out_bams/
@@ -25,6 +26,28 @@ perl runHisat2_with2pass.pl \
  -wrk_dir      out_bams/ \
  -para_hisat2  ' -p 4 --dta --dta-cufflinks -q --phred33 --rna-strandness R '
 
+```
+
+## (2) Count on-gene reads with featureCounts.
+- Prepare GTF file from GFF3 file using gffread.
+```sh
+gffread  ref_protein.gff3  -T -o ref_protein.gtf
+```
+
+- Count reads using featureCounts.
+  - `-Q 0  -M`: Allow multiple-mapping reads that are aligned to different positions. This is good for quantifying duplicated genes.
+
+Count for one sample.
+```sh
+mkdir -p out_cnt/sep/
+featureCounts  -Q 0  -M  -T 8  -s 2  -a ref_protein.gtf  -o out_cnt/sep/S1_Rep1.txt  out_bams/S1_Rep1_fixNH.bam
+```
+
+Count for all samples listed in file `list.in_rd`.
+```sh
+mkdir -p out_cnt/sep/
+cut -f 4 list.in_rd |tail -n +2|perl -e 'while (<>) {chomp;print "featureCounts -Q 0 -M -T 8 -s 2 -a db/97103.protein.gtf -o out_cnt/sep/$_.cnt out_bams/${_}_fixNH.bam\n";}' > cx2cnt
+bash cx2cnt
 ```
 
 
