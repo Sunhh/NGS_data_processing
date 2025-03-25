@@ -87,6 +87,7 @@ bash cx3deg
 
 - Combine and label DEGs for all comparisons.
   - Prepare DEG result list file (`list.DEG_res_meta.txt`).
+  - Labels: `N` for not-changed, `U` for up-regulated, and `D` for down-regulated from control (baseline) to treatment.
 
 | # DEG result file | comparison ID |
 |------------------------------------|-------------------------|
