@@ -36,3 +36,10 @@ perl cnvt_melt_to_matrix.pl out_geno-melt.tab > out_geno-mat.tab
 ```sh
 perl cnvt_msaFa_to_sam.pl  in_MSA.fasta reference_ID_in_MSA  > out_MSA.sam
 ```
+
+## Miscellaneous functions.
+- Count read mismatch in SAM/BAM file (`in.bam`).
+```sh
+samtools view in.bam | perl cntRdMismatch_inSam.pl > list.rdID_R12_rdLen_rdMismatch
+```
+
