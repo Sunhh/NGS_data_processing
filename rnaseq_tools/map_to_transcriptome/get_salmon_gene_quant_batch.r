@@ -1,15 +1,15 @@
 #!/usr/bin/env Rscript
 
-# Load libraries
-suppressMessages(library(tximport))
-suppressMessages(library(readr))
-
 # Get arguments
 args <- commandArgs(trailingOnly = TRUE)
 
 if (length(args) != 3) {
-  stop("Usage: Rscript get_gene_quant_matrix.R <sample_dirs.txt> <tx2gene.tsv> <out_prefix>")
+  stop("Usage: Rscript get_salmon_gene_quant_batch.r <sample_dirs.txt> <tx2gene.tsv> <out_prefix>")
 }
+
+# Load libraries
+suppressMessages(library(tximport))
+suppressMessages(library(readr))
 
 sample_list_file <- args[1]
 tx2gene_file <- args[2]
