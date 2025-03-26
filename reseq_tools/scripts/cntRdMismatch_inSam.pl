@@ -22,7 +22,7 @@ if ($opts{'nameSorted'}) {
     my @ta=split(/\t/, $_);
     $ta[5] eq '*' and next;
     defined $flag_UN{$ta[1]} and next; # Read is unmapped.
-    my $rdID = (defined $flag_P{$ta[1]}) ? "$ta[0]\tR1" : "$ta[0]\tR2" ;
+    my $rdID = (defined $flag_P{$ta[1]}) ? "$ta[0]|R1" : "$ta[0]|R2" ;
     my $cigarH = &SeqAlnSunhh::parseCigar( $ta[5] );
     my $global_mismat = 0;
     for my $tk (qw/Slen Hlen/) { defined $cigarH->{$tk} and $global_mismat += $cigarH->{$tk}; }
