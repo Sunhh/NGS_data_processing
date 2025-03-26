@@ -14,7 +14,7 @@ GetOptions(\%opts,
 my %flag_UN = %{ &SeqAlnSunhh::mk_flag( 'keep' => '2=1' ) };
 my %flag_P  = %{ &SeqAlnSunhh::mk_flag( 'keep' => '0=1,6=1;0=0')};
 
-print STDOUT join("\t", qw/readName R12 readLength mismatch/)."\n";
+print STDOUT join("\t", qw/readName|R12 readLength mismatch/)."\n";
 if ($opts{'nameSorted'}) {
   my ($prevID, $prevLen, $prevMis) = ('', '', '');
   while (<>) {
