@@ -40,6 +40,7 @@ library(ggplot2)
 library(GO.db)
 library(ontologyIndex)
 library(dplyr)
+library(Cairo)
 });
 
 # Read input files
@@ -80,11 +81,13 @@ filtered_results$Ontology <- factor(filtered_results$Ontology, levels = c("Biolo
 plot_ego <- ego
 plot_ego@result <- filtered_results
 
-# Save the plot to an SVG file
+# Save the plot to an PDF file
+output_svg <- paste0(opt$output_prefix, ".pdf")
+output_svg2 <- paste0(opt$output_prefix, "-testLg10.pdf");
+if (0) {
 p1 <- dotplot(plot_ego, showCategory=30, split = 'Ontology') +
  facet_grid(Ontology~., scale="free", space= 'free_y') +
  theme(panel.grid = element_blank())
-output_svg <- paste0(opt$output_prefix, ".svg")
 svg(output_svg, width=10, height=10)
 print(p1);
 dev.off()
@@ -95,10 +98,30 @@ plot_ego@result <- filtered_res2
 p1 <- dotplot(plot_ego, showCategory=30, split = 'Ontology') +
  facet_grid(Ontology~., scale="free", space= 'free_y') +
  theme(panel.grid = element_blank())
-output_svg2 <- paste0(opt$output_prefix, "-testLg10.svg");
 svg(output_svg2, width=10, height=10)
 print(p1)
 dev.off()
 }
+} else {
+  p1 <- dotplot(plot_ego, showCategory=30, split = 'Ontology') +
+   facet_grid(Ontology~., scale="free", space= 'free_y') +
+   theme(panel.grid = element_blank())
+  CairoPDF(output_svg, width= 10, height= 10)
+  print(p1)
+  dev.off()
+
+if (sum(filtered_results$Count >= 10) > 0) {
+filtered_res2 <- filtered_results %>% filter(Count >= 10)
+plot_ego@result <- filtered_res2
+p1 <- dotplot(plot_ego, showCategory=30, split = 'Ontology') +
+ facet_grid(Ontology~., scale="free", space= 'free_y') +
+ theme(panel.grid = element_blank())
+CairoPDF(output_svg2, width=10, height=10)
+print(p1)
+dev.off()
+}
+
+}
+
 }
 
