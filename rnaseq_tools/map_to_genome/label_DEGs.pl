@@ -24,7 +24,7 @@ while (<>) {
   }
   $. < $startLineN and next;
   for (my $i=$startColN; $i<@ta; $i+=4) {
-    my $isDEG = ($ta[$i] eq 'NA' or $ta[$i] >= $minFDR) ? 'N' : ($ta[$i+1] > $minlog2) ? 'U' : ($ta[$i+1] < $minlog2) ? 'D' : 'N';
+    my $isDEG = ($ta[$i] eq 'NA' or $ta[$i] >= $minFDR) ? 'N' : ($ta[$i+1] > $minlog2) ? 'U' : ($ta[$i+1] < -$minlog2) ? 'D' : 'N';
     push(@o, $isDEG);
   }
   print STDOUT join("\t", @o)."\n";
