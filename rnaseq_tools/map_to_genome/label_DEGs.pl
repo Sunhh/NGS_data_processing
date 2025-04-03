@@ -7,7 +7,7 @@ use warnings;
 my $minFDR  = 0.05;
 my $minlog2 = 1;
 my $startLineN = 3;
-my $startColN = 1;
+my $startColN = 3;
 
 my @h1;
 while (<>) {
