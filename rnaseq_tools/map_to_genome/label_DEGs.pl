@@ -7,6 +7,7 @@ use warnings;
 my $minFDR  = 0.05;
 my $minlog2 = 1;
 my $startLineN = 3;
+my $startColN = 1;
 
 my @h1;
 while (<>) {
@@ -22,7 +23,7 @@ while (<>) {
     next;
   }
   $. < $startLineN and next;
-  for (my $i=3; $i<@ta; $i+=4) {
+  for (my $i=$startColN; $i<@ta; $i+=4) {
     my $isDEG = ($ta[$i] eq 'NA' or $ta[$i] >= $minFDR) ? 'N' : ($ta[$i+1] > $minlog2) ? 'U' : ($ta[$i+1] < $minlog2) ? 'D' : 'N';
     push(@o, $isDEG);
   }
