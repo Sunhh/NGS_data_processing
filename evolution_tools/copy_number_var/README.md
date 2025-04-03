@@ -18,3 +18,11 @@ echo -e "cordophanus_to_landrace.CNV.tbl\tCLC_land" >> meta.comparison_name
 perl combine_DEGs.pl meta.comparison_name 1 > combined.CNV.tbl
 ```
 
+## Identify gene families with truely expansion enriched in one group.
+- Those gene families with contraction enriched in the other group should be removed.
+- For example, expanded in `CLV` instead of contracted in `CA`.
+
+```sh
+perl get_CLV_expansion.pl -final_label CLV_high -expan_label CLV_high CA_to_CLV.tbl > CA_to_CLV-CLV_expanded.tbl
+```
+
