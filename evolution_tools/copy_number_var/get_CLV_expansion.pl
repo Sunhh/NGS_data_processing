@@ -10,10 +10,14 @@ GetOptions(\%opts,
   "help!",
 );
 
--t and !@ARGV and die "perl $0 CA_to_CLV.tbl > CA_to_CLV-CLV_expanded.tbl\n";
-
 $opts{'final_label'} //= 'CLV_high';
 $opts{'expan_label'} //= 'CLV_high';
+
+my $htxt = <<HH;
+perl $0 CA_to_CLV.tbl [-final_label CLV_high  -expan_label CLV_high]
+HH
+
+-t and !@ARGV and die $htxt;
 
 my $expect_Final = $opts{'final_label'};
 my $expect_Expan = $opts{'expan_label'};
