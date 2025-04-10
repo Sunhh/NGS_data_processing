@@ -25,12 +25,21 @@ my $expect_Expan = $opts{'expan_label'};
 while (<>) {
   chomp;
   my @ta=split(/\t/, $_);
-  $ta[1] eq 'Final' and do { print "$_\n"; next; };
+  $ta[1] eq 'Final' and do { print join("\t", qw/Gene base_size Mode_all Final Expansion Contraction/)."\n"; next; };
   $ta[11] < 1 and next;
   if ($ta[11] == 1) {
-    $ta[1] eq $expect_Final and $ta[1] eq $expect_Expan and print "$_\n";
+    if ($ta[1] eq $expect_Final and $ta[2] eq $expect_Expan) {
+      # >= 2 gene family size is enriched in 'expect_Final';
+      print join("\t", $ta[0], 1, @ta[11,1,2,3])."\n";
+    }
   } else {
-    $ta[1] eq $expect_Final and print "$_\n";
+    if ($ta[1] eq $expect_Final and $ta[2] eq $expect_Expan) {
+      # > Mode_all ($ta[11]) is enriched in 'expect_Final'
+      print join("\t", $ta[0], $ta[11], @ta[11,1,2,3])."\n";
+    } elsif ($ta[1] eq $expect_Final) {
+      # < Mode_all ($ta[11]) contraction is enriched in the other group.
+      print join("\t", $ta[0], $ta[11]-1, @ta[11,1,2,3])."\n";
+    }
   }
 }
 
