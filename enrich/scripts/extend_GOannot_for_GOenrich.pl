@@ -33,6 +33,7 @@ my %notFound;
 while (<F2>) {
   chomp;
   my ($geneID, $goID)=split(/\t/, $_);
+  $goID //= "";
   if ($goID eq "") {
     print O1 join("\t", $geneID, "", "", "")."\n";
     $hasOut{$geneID}{""} = 1;
