@@ -70,9 +70,8 @@ while (<IN>) {
 	}elsif($pre_position){ #From the second time we read in a line, it goes this way.
         my $distance = $temp_line[1] - $pre_position; 
 		$all_rows[0] .= " $distance";
-	}else{
-		$pre_position = $temp_line[1]; # store the position in order to calculate distrance between two adjacent loci;
 	}
+	$pre_position = $temp_line[1]; # store the position in order to calculate distrance between two adjacent loci;
 
 	for (my $i = 2; $i <= $cout_num+1; $i++) {
 defined $iupac{$temp_line[$i]} or die "|$temp_line[$i]|\n"; 
