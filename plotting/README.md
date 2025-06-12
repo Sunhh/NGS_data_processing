@@ -27,3 +27,11 @@ Rscript plot_barplot.r 65K_DEL-3class 65Kb_DEL-AF_3class
 ```sh
 Rscript plot_barplot_wiSD_twoGroups.r
 ```
+
+## Plot GWAS P values with an array of genes below.
+- Required columns in `gene_list.tsv`: geneID  chrID   start   end     strand  highlight
+- Required columns in `gwas_Pvalues.tsv`: chr     pos     SV.length       P.value
+```sh
+Rscript plot_gene_array_with_gwas.r --gene_tsv gene_list.tsv --gwas_tsv gwas_Pvalues.tsv --region CLV01_Chr03:31445138-31699695 --cutP 5.96657624451305 --output CBP60_cluster.pdf
+```
+
