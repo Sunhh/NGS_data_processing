@@ -13,7 +13,8 @@ function tsmsg {
 
 # Specify for each server. 
 dir_NGS=$HOME/tools/github/NGS_data_processing/
-dir_snap='/data/Sunhh/src/Annotation/maker/maker.3.01.03/exe/snap'
+dir_snap='/data/Sunhh/src/annotation/maker/maker/exe/snap'
+exe_maker2zff='/data/Sunhh/src/annotation/maker/maker/bin/maker2zff'
 
 # Specify for each run
 ovl_len=2000
@@ -34,7 +35,7 @@ cat $genom_fa >> $in_gff
 export PATH="$PATH:$dir_snap"
 pl_goodWrn="$dir_NGS/annot_tools/snap_good_wrn_by_valid.pl"
 
-exe_cmd "maker2zff -n $in_gff"
+exe_cmd "$exe_maker2zff -n $in_gff"
 # exe_cmd "maker2zff -x 0 -o 1 -c 1 -l 30 $in_gff"
 exe_cmd "fathom genome.ann genome.dna -validate   > genome.fat_valid"
 exe_cmd "fathom genome.ann genome.dna -gene-stats > genome.fat_stats"
