@@ -1,3 +1,4 @@
+#!/usr/bin/bash
 ### Basic functions.
 function exe_cmd {
 	echo "[$(date)][CMD] $1"
