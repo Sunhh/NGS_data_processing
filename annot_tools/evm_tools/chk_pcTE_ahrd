@@ -259,3 +259,11 @@ suspect	TE-related:hAT	Dimer_Tnp_hAT domain-containing protein
 suspect	TE-related:part	CRIB domain-containing protein
 suspect	TE-related:part	DNA/RNA polymerases superfamily protein
 suspect	TE-sometimes	DUF4216 domain-containing protein
+bad	TE-related	En/Spm-like transposon protein
+bad	TE-related	Retrovirus-related Pol polyprotein from type-1 retrotransposable element
+bad	TE-related	Transposon Pol polyprotein
+bad	TE-related	Retrovirus-related Pol polyprotein from transposon 297 family
+bad	TE-related	Gag/pol polyprotein
+bad	TE-related	RNA-directed DNA polymerase, eukaryota, Reverse transcriptase zinc-binding domain protein
+bad	TE-related	Copia-like polyprotein
+bad	TE-related	Reverse transcriptase domain, reverse transcriptase zinc-binding domain protein
