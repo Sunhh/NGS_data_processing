@@ -141,7 +141,6 @@ bad	TE-related:retro	T4.15 protein
 bad	TE-related:tnp2	DUF4218 domain-containing protein
 bad	TE-related	Transposase tnp2
 bad	TE-related:zinc-binding in reverse transcriptase	zf-RVT domain-containing protein
-bad	Various uncharacterized	Unknown protein
 bad	chloroplast	30S ribosomal protein S3, chloroplastic
 bad	chloroplast	50S ribosomal protein L16, chloroplastic
 bad	chloroplast	ATPase_AAA_core domain-containing protein
@@ -246,6 +245,7 @@ good	unknown	S locus-related glycoprotein 1 binding pollen coat
 good	unknown	TTF-type domain-containing protein
 good	unknown	Vacuolar protein sorting-associated protein 35
 good	unknown	transcription elongation factor B polypeptide 3
+suspect	Various uncharacterized	Unknown protein
 suspect	TE-related	Beta-galactosidase
 suspect	TE-related	Chromo domain-containing protein
 suspect	TE-related	DNA polymerase
