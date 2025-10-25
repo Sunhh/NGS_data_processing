@@ -1,6 +1,7 @@
 #!/bin/env perl
 # Author email : hs738@cornell.edu or biosunhh@gmail.com
 
+# 2025-10-25: Add -kSrch_noCase to enable case-insensitive match.
 # 2006-11-17 13:18 准备加入一个best_uniq函数，用来处理*.psl格式文件，尚未完成；
 # 2006-11-24 13:33 加入一个小函数,UniqColLine,finished.
 # 2006-11-24 15:16 测试best_uniq
@@ -54,7 +55,7 @@ GetOptions(\%opts,
 	"trimEndReturn!", 
 	"fillNull:s", 
 	"transpose!", "skip_null_line!", "beMatrix!", "fill_new:s",      # transpose a matrix. 
-	"kSrch_idx:s","kSrch_idxCol:s","kSrch_srcCol:s","kSrch_drop!", "kSrch_line!", # Similar to linux command join, without joining and with more index columns. Combined from uniqComb.pl 
+	"kSrch_idx:s","kSrch_idxCol:s","kSrch_srcCol:s","kSrch_drop!", "kSrch_line!", "kSrch_noCase!", # Similar to linux command join, without joining and with more index columns. Combined from uniqComb.pl 
 	"dR2dN!", 
 	"col_head!", 
 	"chID_RefLis:s", "chID_Row!", "chID_OldColN:i", "chID_NewColN:i", "chID_skipH:i", "chID_RowColN:i", # Change Column/Row names according to reference. 
@@ -120,7 +121,7 @@ command:perl $0 <STDIN|parameters>
                     Be aware that only the new added cells will be filled with this character! 
                     So the raw NULL cells will remain unchanged! 
 
-  '-kSrch_idx:s','-kSrch_idxCol:s','-kSrch_srcCol:s','-kSrch_drop!', '-kSrch_line!', # Similar to linux command join, without joining and with more index columns. Combined from uniqComb.pl 
+  '-kSrch_idx:s','-kSrch_idxCol:s','-kSrch_srcCol:s','-kSrch_drop!', '-kSrch_line!', '-kSrch_noCase', # Similar to linux command join, without joining and with more index columns. Combined from uniqComb.pl 
 
   # Change Column/Row names according to reference. Need -chID_RefLis . 
   -chID_RefLis      [filename] With OldCol and NewCol for name conversion; 
@@ -574,6 +575,7 @@ sub kSrch {
 		if ( $opts{kSrch_line} ) {
 			while (<$fh>) {
 				$opts{'log_ln'} > 0 and &fileSunhh::log_section( $. , \%tmp_cnt ) and &tsmsg("[Msg] Reading [$.] line in kSrch_idx\n"); 
+				$opts{'kSrch_noCase'} and $_ = lc($_);
 				$idx_key{$_} = 1; 
 			}
 		}else{
@@ -582,6 +584,7 @@ sub kSrch {
 				chomp; 
 				my @temp = &splitL($symbol, $_); 
 				my $tkey = join("\t", @temp[@idx_Cols]); 
+				$opts{'kSrch_noCase'} and $tkey = lc($tkey);
 				$idx_key{$tkey} = 1; 
 			}
 		}
@@ -604,10 +607,11 @@ sub kSrch {
 					open F,'<',"$sfn" or die; 
 					open O,'>',"$sfn.o" or die; 
 					while (<F>) {
+						my $tkey = $_; $opts{'kSrch_noCase'} and $tkey = lc($tkey);
 						if ($opts{kSrch_drop}) {
-							$idx_key{$_} or print O $_; 
+							$idx_key{$tkey} or print O $_; 
 						}else{
-							$idx_key{$_} and print O $_; 
+							$idx_key{$tkey} and print O $_; 
 						}
 					}#End while 
 					close O; 
@@ -626,10 +630,11 @@ sub kSrch {
 			} else {
 				while (<$fh>) {
 					$opts{'log_ln'} > 0 and &fileSunhh::log_section( $. , \%tmp_cnt ) and &tsmsg("[Msg] Reading [$.] line in kSrch_src\n"); 
+					my $tkey = $_; $opts{'kSrch_noCase'} and $tkey = lc($tkey);
 					if ($opts{kSrch_drop}) {
-						$idx_key{$_} or print; 
+						$idx_key{$tkey} or print; 
 					}else{
-						$idx_key{$_} and print; 
+						$idx_key{$tkey} and print; 
 					}
 				}#End while 
 			}
@@ -650,6 +655,7 @@ sub kSrch {
 						chomp; 
 						my @temp = &splitL($symbol, $_); 
 						my $tkey = join("\t", @temp[@src_Cols]); 
+						$opts{'kSrch_noCase'} and $tkey = lc($tkey);
 						if ($opts{kSrch_drop}) {
 							$idx_key{$tkey} or print O "$_\n"; 
 						}else{
@@ -675,6 +681,7 @@ sub kSrch {
 					chomp; 
 					my @temp = &splitL($symbol, $_); 
 					my $tkey = join("\t", @temp[@src_Cols]); 
+					$opts{'kSrch_noCase'} and $tkey = lc($tkey);
 					if ($opts{kSrch_drop}) {
 						$idx_key{$tkey} or print STDOUT "$_\n"; 
 					}else{
