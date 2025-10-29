@@ -1,3 +1,12 @@
+# 2025/10/29: Allow parameters. If failed because of high memory cost, try to hard-mask input fasta with dustmasker.
+### Example command lines:
+###   deal_fasta.pl M77.chr.fa -attr key:len|tail -n +2|deal_table.pl -label_mark 1|deal_table.pl -column 1,0,2 > M77.chr.fa.se
+###   deal_fasta.pl M77.chr.fa -maskByList -maskList M77.chr.fa.se -maskType uc > M77-upcase.fa
+###   dustmasker -in M77-upcase.fa -outfmt fasta -out M77-softmask.fa
+###   deal_fasta.pl M77-softmask.fa -listSite '[atgc]+' -listNum Min| tail -n +2| deal_table.pl -column 0,2,3 > M77-dust.se
+###   deal_fasta.pl M77.chr.fa -maskByList -maskList M77-dust.se -maskType N > M77-hardmask.fa
+###   rm -f M77-upcase.fa M77.chr.fa.se M77-softmask.fa
+
 ### Basic functions.
 function exe_cmd {
 	echo "[$(date)][CMD] $1"
