@@ -12,12 +12,21 @@ function tsmsg {
 pl_dealFa=$HOME/tools/github/NGS_data_processing/deal_fasta.pl
 pl_addClass=$HOME/tools/github/NGS_data_processing/repAnno_tools/add_repClass.pl
 
-pl_MITE=$HOME/src/Annotation/MITE_Hunter/MITE_Hunter_blast216/MITE_Hunter_manager.pl
+# pl_MITE=/data/Sunhh/src/annotation/mite_hunter/MITE_Hunter_blast216/MITE_Hunter_manager.pl
 
-refFa='P1All.scf.fa'
-outG='P1AllGt5hScf'
-cpuN=10
-grpN=10
+# refFa='M77.chr.fa'
+# outG='M77'
+refFa=$1
+outG=$2
+pl_MITE=${3:-"/data/Sunhh/src/annotation/mite_hunter/MITE_Hunter_blast216/MITE_Hunter_manager.pl"}
+cpuN=40
+grpN=40
+
+# check mandatory arguments
+if [[ -z "$refFa" || -z "$outG" ]]; then
+    echo "Usage: bash $0 in.fasta outPrefix [/path/to/MITE_Hunter_manager.pl]"
+    exit 1
+fi
 
 tsmsg "Start."
 
