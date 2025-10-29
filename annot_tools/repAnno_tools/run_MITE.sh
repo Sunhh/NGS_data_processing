@@ -19,7 +19,7 @@ function tsmsg {
 }
 
 pl_dealFa=$HOME/tools/github/NGS_data_processing/deal_fasta.pl
-pl_addClass=$HOME/tools/github/NGS_data_processing/repAnno_tools/add_repClass.pl
+pl_addClass=$HOME/tools/github/NGS_data_processing/annot_tools/repAnno_tools/add_repClass.pl
 
 # pl_MITE=/data/Sunhh/src/annotation/mite_hunter/MITE_Hunter_blast216/MITE_Hunter_manager.pl
 
