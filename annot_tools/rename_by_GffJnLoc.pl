@@ -1,10 +1,24 @@
 #!/usr/bin/perl
+# 20251029: Allow -start_list for gene number
 use strict;
 use warnings;
 
--t and !@ARGV and die "perl $0 prefix_of_gene input.gff.JnLoc > map.oriMID_newMID_oriGID_newGID\n";
+-t and !@ARGV and die "perl $0 prefix_of_gene [-start_list in_list.chrN_nextGeneN]  input.gff.JnLoc > map.oriMID_newMID_oriGID_newGID\n";
 
 my $pref=shift;
+my %chr2cnt;
+
+if ($ARGV[0] =~ m!^\-start_list$!i) {
+  shift;
+  my $f1 = shift;
+  open F,"<$f1" or die;
+  while (<F>) {
+    chomp;
+    my @ta=split(/\t/, $_);
+    $chr2cnt{$ta[0]} = $ta[1];
+  }
+  close F;
+}
 
 my (%onChr);
 while (<>) {
@@ -26,6 +40,9 @@ for my $ori_chrID  (sort keys %onChr) {
   my $chrNum = $1; $chrNum += 0;
   @{$onChr{$ori_chrID}} = sort { $a->[2] <=> $b->[2] || $a->[3] <=> $b->[3] } @{$onChr{$ori_chrID}};
   my $cnt=0;
+  if (defined $chr2cnt{$chrNum}) {
+    $cnt = $chr2cnt{$chrNum}-1;
+  }
   for my $t1 (@{$onChr{$ori_chrID}}) {
     $cnt ++;
     my $new_geneID = sprintf("%sC%02dG%06d", $pref, $chrNum, $cnt*10);
