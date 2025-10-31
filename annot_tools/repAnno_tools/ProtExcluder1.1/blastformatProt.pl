@@ -1,4 +1,5 @@
 #! /usr/bin/perl
+# 20251031: HS edit to fit new BlastX output.
 
 $usage = "blastformatProt.pl blastx_output_file score_cutoff identity_cutoff\nwhere the latter two are optional (default 0)\n";
 
@@ -17,7 +18,7 @@ while (<BLT>) {
 	$query_current = $1;
 	$ct = "q";
     }
-    elsif (/^>\s(\S+)/) {
+    elsif (/^>\s*(\S+)/) {
 	$sbjct_current = $1;
 	$ct = "sb";
     }

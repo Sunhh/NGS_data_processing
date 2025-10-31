@@ -1,4 +1,5 @@
 #! /usr/bin/perl
+# 20251031: HS edit to fit new BlastX output.
 
 $usage = "matchtract.pl blastx_output_file\n";
 
@@ -16,7 +17,7 @@ while (<BLT>) {
     if (/^Query=\s+(\S+)/) {
 	$query = $1;
     }
-    elsif (/^>\s+(\S+)/) {
+    elsif (/^>\s*(\S+)/) {
 	$subject = $1;
 	printf ">%s %s\n",$subject,$query;
     }
