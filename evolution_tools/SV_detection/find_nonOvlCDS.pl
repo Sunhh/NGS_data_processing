@@ -22,7 +22,7 @@ while (<F1>) {
 close F1;
 for (keys %loc1) { @{$loc1{$_}} = sort {$a->[0] <=> $b->[0] || $a->[1] <=> $b->[1]} @{$loc1{$_}}; }
 
-open F2,'-|',"perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -inGff $f2 -getJnLoc " or die;
+open F2,'-|',"perl ~/tools/github/NGS_data_processing/temp/deal_gff3.pl -inGff $f2 -getJnLoc " or die;
 &fileSunhh::write2file("${opre}.list","", '>');
 while (<F2>) {
   chomp;
@@ -39,5 +39,5 @@ while (<F2>) {
   &fileSunhh::write2file("${opre}.list", "$ta[0]\n",'>>');
 }
 close F2;
-&runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl -inGff $f2 -gffret ${opre}.list -idType mRNA > ${opre}.gff3");
+&runCmd("perl ~/tools/github/NGS_data_processing/temp/deal_gff3.pl -inGff $f2 -gffret ${opre}.list -idType mRNA > ${opre}.gff3");
 
