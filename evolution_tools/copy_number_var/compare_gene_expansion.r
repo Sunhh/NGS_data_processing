@@ -20,8 +20,8 @@ option_list <- list(
 opt <- parse_args(OptionParser(option_list = option_list))
 
 # Load input data
-gene_data <- read.table(opt$inputA, header = TRUE, sep = "\t")
-group_data <- read.table(opt$inputB, header = FALSE, sep = "\t")
+gene_data <- read.table(opt$inputA, header = TRUE, sep = "\t", check.names = FALSE)
+group_data <- read.table(opt$inputB, header = FALSE, sep = "\t", check.names = FALSE)
 
 # Ensure matching individuals
 common_individuals <- intersect(colnames(gene_data)[-1], group_data$V1)
