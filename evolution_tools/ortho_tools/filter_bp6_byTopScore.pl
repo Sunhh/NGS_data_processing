@@ -21,6 +21,9 @@ my $htxt = <<HH;
 #
 # -max_diffR     [$opts{'max_diffR'}] [0-1); 
 #
+# -ncol_score    [$opts{'ncol_score'}]
+# -ncol_index    [$opts{'ncol_index'}]
+#
 HH
 $opts{'help'} and die "$htxt"; 
 -t and !@ARGV and die "$htxt"; 
