@@ -103,7 +103,8 @@ for (chr in unique_chromosomes) {
 }
 
 # manhattan plot of P value.
-pdf(file= paste0(opt$output_prefix, ".P.pdf"), width=14, height=7, useDingbats = FALSE, family = "Arial")
+# pdf(file= paste0(opt$output_prefix, ".P.pdf"), width=14, height=7, useDingbats = FALSE, family = "Arial")
+cairo_pdf(file= paste0(opt$output_prefix, ".P.pdf"), width=14, height=7, family = "Arial")
 # manhattan(a1, chr="V2", bp="V4", snp="V1", p="V5",
 #   annotatePval = NULL, annotateTop= F,
 #   col = c("blue4", "orange3"), cex= 0.6, 
@@ -156,12 +157,13 @@ if (is.na(tgt_chr)) {
   legend('topright', legend=c("SNP", "SV"), pch= c(20, 2))
   axis(1)
 }
-abline(h= cut1Red,  col= 'red',    lty= 1, lwd=3 );
-abline(h= cut2Blue, col= 'green', lty= 2, lwd=3 );
+abline(h= cut1Red,  col= 'red',    lty= 2, lwd=3 );
+abline(h= cut2Blue, col= 'green',  lty= 2, lwd=3 );
 dev.off()
 
 # Plot manhattan frame with blank plotting area.
-pdf(file= paste0(opt$output_prefix, ".P-blank.pdf"), width=14, height=7, useDingbats = FALSE, family = "Arial")
+# pdf(file= paste0(opt$output_prefix, ".P-blank.pdf"), width=14, height=7, useDingbats = FALSE, family = "Arial")
+cairo_pdf(file= paste0(opt$output_prefix, ".P-blank.pdf"), width=14, height=7, family = "Arial")
 if (nrow(SNP_snps) == 0) {
   plot(
     SNP_svs$cum_pos, -log10(SNP_svs$Pvalue), 
@@ -201,11 +203,13 @@ dev.off()
 # qq-plot
 # png(file= paste0(opt$output_prefix, ".qq.png"))
 if (is.na(tgt_chr)) {
-  pdf(file= paste0(opt$output_prefix, ".qq.pdf"), family = "Arial", useDingbats = FALSE)
+  # pdf(file= paste0(opt$output_prefix, ".qq.pdf"), family = "Arial", useDingbats = FALSE)
+  cairo_pdf(file= paste0(opt$output_prefix, ".qq.pdf"), family = "Arial")
   qq(a1$Pvalue)
   dev.off()
   # Plot a blank QQ plot.
-  pdf(file= paste0(opt$output_prefix, ".qq-blank.pdf"), family = "Arial", useDingbats = FALSE)
+  # pdf(file= paste0(opt$output_prefix, ".qq-blank.pdf"), family = "Arial", useDingbats = FALSE)
+  cairo_pdf(file= paste0(opt$output_prefix, ".qq-blank.pdf"), family = "Arial")
   qq(a1$Pvalue, type= 'n')
   dev.off()
 }
