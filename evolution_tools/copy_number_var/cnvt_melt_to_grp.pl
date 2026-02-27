@@ -1,6 +1,14 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
+use Getopt::Long;
+
+my %opts;
+GetOptions(\%opts,"help!",
+  "missValue:s",
+);
+
+$opts{'missValue'} //= "";
 
 my $help_txt = <<HH;
 ######################################################
@@ -8,7 +16,7 @@ my $help_txt = <<HH;
 # 
 #   Format of grp_melt: OGID \\t cellValue \\t columnID
 #
-# # The missing value will be empty.
+# # The missing value (-missValue) will be empty.
 ######################################################
 
 HH
@@ -16,7 +24,7 @@ HH
 !@ARGV and die "$help_txt";
 
 my $fnCol = shift;
-my $missVal = "";
+my $missVal = $opts{'missValue'};
 
 open F1,'<',"$fnCol" or die;
 my (@cols);
@@ -36,7 +44,7 @@ print STDOUT join("\t", "OGID", @cols)."\n";
 for my $ogID (sort {$ogRank{$a} <=> $ogRank{$b}} keys %cellFill) {
   my @o1=($ogID);
   for my $colID (@cols) {
-    $cellFill{$ogID}{$colID} //= [];
+    $cellFill{$ogID}{$colID} //= [$missVal];
     push(@o1, join(", ", @{$cellFill{$ogID}{$colID}}));
   }
   print STDOUT join("\t", @o1)."\n";
