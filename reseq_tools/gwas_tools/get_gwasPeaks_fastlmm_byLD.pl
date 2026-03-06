@@ -33,11 +33,12 @@ if (-f $pCut) {
 my $ifh=&openFH($fn);
 my $ofh=&openFH("$fn.sig1", '>');
 my @vars;
+my $has_sig1Head = 0;
 while (<$ifh>) {
   chomp;
   my @ta=split(/\t/,$_);
   # $ta[5] <= $pCut or next; # For emmax .p file.
-  $ta[0] eq 'SNP' and next;
+  if ($ta[0] eq 'SNP' and $has_sig1Head == 0) { print {$ofh} "$_\n"; $has_sig1Head = 1; next; }
   $ta[4] <= $pCut or next; # For FaSTLMM 
   push(@vars, [@ta]); # In the format of FaSTLMM.res;
   print {$ofh} "$_\n";
