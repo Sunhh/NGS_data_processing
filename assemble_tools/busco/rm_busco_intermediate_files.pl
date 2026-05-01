@@ -12,12 +12,17 @@ for my $dd (@ARGV) {
   my @files = grep { $_ !~ m!^\.+$! } readdir($dir);
   closedir($dir);
   for my $f1 (@files) {
-    if ($f1 =~ m!^run_\S+_odb\d+$!) {
+    if ($f1 =~ m!^run_(\S+_odb\d+)$!) {
+      my $dbID = $1;
       -e "$dd/$f1/hmmer_output/" and &fileSunhh::_rmtree("$dd/$f1/hmmer_output/");
       -e "$dd/$f1/busco_sequences/" and &fileSunhh::_rmtree("$dd/$f1/busco_sequences/");
       -e "$dd/$f1/metaeuk_output/" and &fileSunhh::_rmtree("$dd/$f1/metaeuk_output/");
+      -e "$dd/$f1/miniprot_output/" and &fileSunhh::_rmtree("$dd/$f1/miniprot_output/");
+      -e "$dd/logs/miniprot_align_${dbID}_out.log" and &fileSunhh::_rmtree("$dd/logs/miniprot_align_${dbID}_out.log");
+      -e "$dd/logs/miniprot_align_${dbID}_out.log.gz" and &fileSunhh::_rmtree("$dd/logs/miniprot_align_${dbID}_out.log.gz");
     }
   }
+  -e "$dd/tmp" and &fileSunhh::_rmtree("$dd/tmp");
   for my $a1 (qw/busco hmmsearch_out metaeuk_out hmmsearch_err metaeuk_err/) {
     -e "$dd/logs/$a1.log" and &runCmd("bgzip -@ 10 $dd/logs/$a1.log");
   }

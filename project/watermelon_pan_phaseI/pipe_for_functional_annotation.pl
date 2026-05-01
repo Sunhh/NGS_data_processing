@@ -1,1 +1,1 @@
-/home/Sunhh/tools/github/NGS_data_processing/annot_tools/ahrd/pipe_for_functional_annotation.pl
+../../annot_tools/ahrd/pipe_for_functional_annotation.pl
