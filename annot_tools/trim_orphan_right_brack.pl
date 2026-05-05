@@ -1,1 +1,0 @@
-/home/Sunhh/tools/github/NGS_data_processing/annot_tools/ahrd/trim_orphan_right_brack.pl
