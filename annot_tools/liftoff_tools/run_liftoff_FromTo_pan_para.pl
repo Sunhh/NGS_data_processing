@@ -4,6 +4,7 @@
 #             Strand-specific overlapping has been fixed.
 # [3/23/2022] I decide not to filter coverage in this program, but I'll output the coverage bases in the output intersection file.
 # [10/11/2022] Duplicate input files of Liftoff to avoid using of a single file by multiple Liftoff processes.
+# [260702] Add trim2cds step to skip preparing GFF3 files.
 use strict;
 use warnings;
 use LogInforSunhh;
@@ -21,7 +22,9 @@ GetOptions(\%opts,
   "para_minCov:f",   # 0.5
   "para_minIdent:f", # 0.75
   "para_liftoff:s",  # " -p 20 -s $opts{'para_minIdent'} -a $opts{'para_minCov'} -copies "
-  "pl_cntR2Q:s",     # "perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/liftoff_tools/cnt_R2Q_liftoff_info.pl "
+  "pl_cntR2Q:s",     # "perl ~/tools/github/NGS_data_processing/annot_tools/liftoff_tools/cnt_R2Q_liftoff_info.pl"
+  "proc_trim2cds!",
+  "pl_trim2cds:s",   # "perl ~/tools/github/NGS_data_processing/annot_tools/liftoff_tools/fmt_gff_trim2CDS.pl"
   "exe_liftoff:s",   # "liftoff"
   "help!"
 );
@@ -36,8 +39,10 @@ my $htxt = <<HH;
 # -para_minCov    [0.5]
 # -para_minIdent  [0.75]
 # -para_liftoff   [ -p 20 -s {para_minIdent} -a {para_minCov} -copies -sc 1.0 ]
-# -pl_cntR2Q      [perl /home/sunhh/tools/github/NGS_data_processing/annot_tools/liftoff_tools/cnt_R2Q_liftoff_info.pl]
+# -pl_cntR2Q      [perl ~/tools/github/NGS_data_processing/annot_tools/liftoff_tools/cnt_R2Q_liftoff_info.pl]
 # -exe_liftoff    [liftoff]
+# -proc_trim2cds  [Boolean]
+# -pl_trim2cds    [perl ~/tools/github/NGS_data_processing/annot_tools/liftoff_tools/fmt_gff_trim2CDS.pl]
 ####################################################################################################
 HH
 
@@ -48,7 +53,8 @@ $opts{'out_dir'}       //= 'output';
 $opts{'para_minCov'}   //= 0.5;
 $opts{'para_minIdent'} //= 0.75;
 $opts{'para_liftoff'}  //= " -p 20 -s $opts{'para_minIdent'} -a $opts{'para_minCov'} -copies -sc 1.0 ";
-$opts{'pl_cntR2Q'}     //= "perl /home/sunhh/tools/github/NGS_data_processing/annot_tools/liftoff_tools/cnt_R2Q_liftoff_info.pl";
+$opts{'pl_cntR2Q'}     //= "perl ~/tools/github/NGS_data_processing/annot_tools/liftoff_tools/cnt_R2Q_liftoff_info.pl";
+$opts{'pl_trim2cds'}   //= "perl ~/tools/github/NGS_data_processing/annot_tools/liftoff_tools/fmt_gff_trim2CDS.pl";
 $opts{'exe_liftoff'}   //= 'liftoff';
 
 my %dta;
@@ -66,9 +72,14 @@ $dta{'out_unmap'} = "$dta{'out_dir'}/mapCDS.$dta{'from_tag'}.to.$dta{'to_tag'}.u
 $dta{'toRM'} = [];
 
 # Copy input files of Liftoff to 'tmp_dir' to avoid conflicts between different processes.
-&fileSunhh::_copy($dta{'from_gff3'}, "$dta{'tmp_dir'}/from.gff3");
+if ($opts{'proc_trim2cds'}) {
+  &runCmd("$opts{'pl_trim2cds'} $dta{'from_gff3'} > $dta{'tmp_dir'}/from.gff3");
+  defined $dta{'to_gff3'} and &runCmd("$opts{'pl_trim2cds'} $dta{'to_gff3'} > $dta{'tmp_dir'}/to.gff3");
+} else {
+  &fileSunhh::_copy($dta{'from_gff3'}, "$dta{'tmp_dir'}/from.gff3");
+  defined $dta{'to_gff3'} and &fileSunhh::_copy($dta{'to_gff3'}, "$dta{'tmp_dir'}/to.gff3");
+}
 &fileSunhh::_copy($dta{'from_fas'}, "$dta{'tmp_dir'}/from.fas");
-defined $dta{'to_gff3'} and &fileSunhh::_copy($dta{'to_gff3'}, "$dta{'tmp_dir'}/to.gff3");
 &fileSunhh::_copy($dta{'to_fas'}, "$dta{'tmp_dir'}/to.fas");
 
 # &runCmd("$dta{'exe_liftoff'} $dta{'para_liftoff'} -dir $dta{'tmp_dir'} -g $dta{'from_gff3'} -o $dta{'out_gff3'} -u $dta{'out_unmap'} $dta{'to_fas'} $dta{'from_fas'}");
