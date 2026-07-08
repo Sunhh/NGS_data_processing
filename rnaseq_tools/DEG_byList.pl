@@ -363,7 +363,7 @@ sub load_rdCnt {
 
 sub setup_glob {
 	$gg{'exe_Rscript'} //= 'Rscript'; 
-	$gg{'pl_cnt2TPM'}  //= '/home/Sunhh/tools/github/NGS_data_processing/rnaseq_tools/cnvt_cnt_to_TPM.pl'; 
+	$gg{'pl_cnt2TPM'}  //= '/home/sunhh/tools/github/NGS_data_processing/rnaseq_tools/cnvt_cnt_to_TPM.pl'; 
 	$gg{'cutFDR'}      //= 0.01; 
 	$gg{'cutFC'}       //= 2; 
 	$gg{'minExp'}      //= 0.01; 
