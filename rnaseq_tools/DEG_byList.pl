@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# 260708: Simplify eleID in outAddTbl.
 use strict; 
 use warnings; 
 use fileSunhh; 
@@ -139,7 +140,7 @@ y2.res.df <- data.frame( eleID=rownames(y2.res), as.data.frame(y2.res) )
 
 ### Output FDR. 
 outFDR.ID    <- tibble::as_tibble( list(eleID=rownames(rdCntData)) )
-toAddTbl     <- dplyr::as_tibble( y2.res.df ) %>% dplyr::select( "padj" ) %>% dplyr::mutate( eleID=rownames(y2.res.df) )
+toAddTbl     <- dplyr::as_tibble( y2.res.df ) %>% dplyr::select( "eleID", "padj" )
 outTbl       <- dplyr::left_join( x=outFDR.ID, y=toAddTbl, by= "eleID" )
 colnames(outTbl) <- c("eleID", "FDR")
 write.table( outTbl, file="$wrkDir/fdr.tab", sep="\\t", col.names=TRUE, row.names=FALSE, quote=FALSE )
