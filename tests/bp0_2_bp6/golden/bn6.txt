@@ -1,0 +1,5 @@
+qseqid	sseqid	pident	aln_len	mismatch	gapopen	qstart	qend	sstart	send	evalue	bitscore	qlen	slen	strand	sdef
+q1	s1	96	25	1	0	1	25	10	34	1e-05	50.0	100	200	++	subject one desc
+q1	s1	100	15	0	0	40	54	100	86	1e-02	30.0	100	200	+-	subject one desc
+q1	s2	100	20	0	0	5	24	50	69	1e-03	40.0	100	300	++	subject two desc
+q2	s3	100	18	0	0	3	20	7	24	1e-04	35.0	90	150	++	subject three

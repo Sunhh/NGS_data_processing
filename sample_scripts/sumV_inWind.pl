@@ -57,14 +57,13 @@ HH
 
 my %glob; 
 ## Setup windows. 
-my $mm = mathSunhh->new(); 
 my %chr_wind; 
 if ( defined $opts{'wind_se_file'} ) {
 	$glob{'wind_se'} = {}; 
 	%{$glob{'wind_se'}} = map { $_->[0] => [ $_->[1], $_->[2] ] }&fileSunhh::load_tabFile( $opts{'wind_se_file'}, 0 ); 
 	if ($opts{'showAll'}) {
 		for my $chrV (keys %{$glob{'wind_se'}}) {
-			$chr_wind{$chrV} = $mm->setup_windows(
+			$chr_wind{$chrV} = mathSunhh::setup_windows(
 			  'ttl_start' => ( defined $glob{'wind_se'}{$chrV} ) ? $glob{'wind_se'}{$chrV}[0] : $opts{'wind_start'}, 
 			  'ttl_end'   => ( defined $glob{'wind_se'}{$chrV} ) ? $glob{'wind_se'}{$chrV}[1] : $opts{'wind_end'}, 
 			  'wind_size' => $opts{'wind_length'}, 
@@ -105,7 +104,7 @@ while (<>) {
 	my $cntV = ( defined $opts{'cnt_colN'}  ) ? $ta[ $opts{'cnt_colN'} ] : 1 ; 
 	my $posV = ( $opts{'pos_colN'} == 999999 ) ? $cntV : $ta[ $opts{'pos_colN'} ] ; 
 	( defined $cntV and $cntV ne '' and $cntV !~ m!^(\.|NA|NAN|N|U)$!i ) or next; 
-	defined $chr_wind{$chrV} or $chr_wind{$chrV} = $mm->setup_windows(
+	defined $chr_wind{$chrV} or $chr_wind{$chrV} = mathSunhh::setup_windows(
 	  'ttl_start' => ( defined $glob{'wind_se'}{$chrV} ) ? $glob{'wind_se'}{$chrV}[0] : $opts{'wind_start'}, 
 	  'ttl_end'   => ( defined $glob{'wind_se'}{$chrV} ) ? $glob{'wind_se'}{$chrV}[1] : $opts{'wind_end'}, 
 	  'wind_size' => $opts{'wind_length'}, 
@@ -114,7 +113,7 @@ while (<>) {
 	); 
 	
 	$opts{'maxLine'} > 0 and $inLine > $opts{'maxLine'} and last; 
-	my (@wind_i) = @{ $mm->map_windows( 'posi' => $posV , 'wind_hash' => $chr_wind{$chrV} ) }; 
+	my (@wind_i) = @{ mathSunhh::map_windows( 'posi' => $posV , 'wind_hash' => $chr_wind{$chrV} ) }; 
 	for my $ti ( @wind_i ) {
 		if ( defined $opts{'freq_colN'} ) {
 			for (my $j=0; $j<$ta[ $opts{'freq_colN'} ]; $j++) {

@@ -3,20 +3,20 @@
 use strict;
 use warnings;
 use fileSunhh;
+use FindBin; (my $REPO = $FindBin::RealBin) =~ s{(/NGS_data_processing)(/.*)?$}{$1};  # portable repo root
 
 !@ARGV and die "perl $0 outPrefix minuslogP_cut in_fastlmm.res bo.vcf.gz peak_flank_distance_1e6 block_join_distance_100e3\n";
 
 my $opref = shift;
 my $pCut=shift;
 my $fn=shift;
-my $boVCF = '/data/Sunhh/wmhifi/analysis/sv_association/gwas_gbat/genotype/boAll.vcf.gz';
-$boVCF = shift;
+my $boVCF = shift;
 my $dist=1e6;
 scalar(@ARGV) > 0 and $dist = shift;
 my $sepDist = 1e5;
 scalar(@ARGV) > 0 and $sepDist = shift; # If two blocks have distance <= this value, they are joined.
 
-my $pl_peak2LD = 'perl /home/sunhh/tools/github/NGS_data_processing/reseq_tools/gwas_tools/peak2LD_plink_fastlmm.pl';
+my $pl_peak2LD = "perl $REPO/reseq_tools/gwas_tools/peak2LD_plink_fastlmm.pl";
 
 my $wdir = &fileSunhh::new_tmp_dir('create' => 1);
 

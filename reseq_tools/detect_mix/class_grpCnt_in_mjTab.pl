@@ -4,7 +4,6 @@ use warnings;
 use LogInforSunhh; 
 use fileSunhh; 
 use mathSunhh; 
-my $ms_obj = mathSunhh->new(); 
 use Getopt::Long; 
 my %opts; 
 GetOptions(\%opts, 
@@ -157,7 +156,7 @@ for ( my $i=0; $i<@InFp; $i++ ) {
 			    : 'Rest' 
 			; 
 			unless ( defined $chr_wind{$chrID} ) {
-				$chr_wind{$chrID} = $ms_obj->setup_windows(
+				$chr_wind{$chrID} = mathSunhh::setup_windows(
 				  'ttl_start' => $opts{'wind_start'}, 
 				  'ttl_end'   => $opts{'wind_end'}, 
 				  'wind_size' => $opts{'wind_length'}, 
@@ -165,7 +164,7 @@ for ( my $i=0; $i<@InFp; $i++ ) {
 				  'minRatio'  => 0
 				); 
 			}
-			my (@wind_i) = @{ $ms_obj->map_windows( 'posi' => $chrPos , 'wind_hash' => $chr_wind{$chrID} ) }; 
+			my (@wind_i) = @{ mathSunhh::map_windows( 'posi' => $chrPos , 'wind_hash' => $chr_wind{$chrID} ) }; 
 			for my $ti (@wind_i) {
 				$chr_wind{$chrID}{'cnt'}{$ti}{$g1} ++; 
 				$chr_wind{$chrID}{'cnt'}{$ti}{$g2} ++; 

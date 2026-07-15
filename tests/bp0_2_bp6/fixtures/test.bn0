@@ -1,0 +1,51 @@
+BLASTN 2.2.26
+
+Query= q1 first query description
+         (100 letters)
+
+>s1 subject one desc
+          Length = 200
+
+ Score =  50.0 bits (25), Expect = 1e-05
+ Identities = 24/25 (96%)
+ Strand=Plus/Plus
+
+Query: 1 ACGTACGTACGTACGTACGTACGTA 25
+Sbjct: 10 ACGTACGTACCTACGTACGTACGTA 34
+
+ Score =  30.0 bits (15), Expect = 1e-02
+ Identities = 15/15 (100%)
+ Strand=Plus/Minus
+
+Query: 40 ACGTACGTACGTACG 54
+Sbjct: 100 ACGTACGTACGTACG 86
+
+>s2 subject two desc
+          Length = 300
+
+ Score =  40.0 bits (20), Expect = 1e-03
+ Identities = 20/20 (100%)
+ Strand=Plus/Plus
+
+Query: 5 ACGTACGTACGTACGTACGT 24
+Sbjct: 50 ACGTACGTACGTACGTACGT 69
+
+Query= q2 second query
+
+ ***** No hits found *****
+
+Query= q3 third query
+         (90 letters)
+
+>s3 subject three
+          Length = 150
+
+ Score =  35.0 bits (18), Expect = 1e-04
+ Identities = 18/18 (100%)
+ Strand=Plus/Plus
+
+Query: 3 ACGTACGTACGTACGTAC 20
+Sbjct: 7 ACGTACGTACGTACGTAC 24
+
+Lambda     K      H
+   1.37    0.711     1.31

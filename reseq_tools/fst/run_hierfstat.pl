@@ -15,16 +15,16 @@ GetOptions(\%opts,
 	"minGrp2N:i",  # 1 
 	"rmNegNeiFst!", 
 	"rmNegWcFst!", 
-	"exe_Rscript:s", # ~/bin/Rscript 
+	"exe_Rscript:s", # Rscript 
 	"generateR:s", 
 ); 
-$opts{'exe_Rscript'} //= '~/bin/Rscript'; 
+$opts{'exe_Rscript'} //= 'Rscript'; 
 $opts{'maxNmissR'} //= 1; 
 $opts{'minGrp1N'} //= 1; 
 $opts{'minGrp2N'} //= 1; 
 my $help_txt = <<HH; 
 
-perl $0 -fst_in in_fst_prefix -mrk_info mrk_info -exe_Rscript '~/bin/Rscript' 
+perl $0 -fst_in in_fst_prefix -mrk_info mrk_info -exe_Rscript 'Rscript' 
 
 -inList      [Bool] This option mask -mrk_info . 
 -maxNmissR   [$opts{'maxNmissR'}] [0-1] Maximum N missing ratio allowed in each group. 
@@ -139,14 +139,6 @@ sub load_mrk_info {
 	return \%mrk2loc; 
 }
 
-sub run_fst_R_old {
-	my $tmp_R = &fileSunhh::new_tmp_file(); 
-	&_write_fst_R( $tmp_R ); 
-	&exeCmd_1cmd("$opts{'exe_Rscript'} $tmp_R $opts{'fst_in'}") and &stopErr("[Err] Failed to run Rscript.\n"); 
-	unlink($tmp_R); 
-	return $tmp_R; 
-}
-
 sub run_fst_R {
 	my $tmp_R = &fileSunhh::new_tmp_file(); 
 	&_write_fst_R_byList( $tmp_R ); 
@@ -223,7 +215,7 @@ L0
 library(hierfstat);
 argvs <- commandArgs( trailingOnly=TRUE ) ;
 if ( length(argvs) == 0 ) {
-	.tsmsg("[Err] Should be : ~/bin/Rscript   aa.R  file_list [AllowMaxNmissingR[0-1]   0_1_ifRmNegNeiFst   0_1_ifRmNegWcFst]\n")
+	.tsmsg("[Err] Should be : Rscript   aa.R  file_list [AllowMaxNmissingR[0-1]   0_1_ifRmNegNeiFst   0_1_ifRmNegWcFst]\n")
 	q() 
 }
 flist <- read.table( file = argvs[1], stringsAsFactors=F, colClasses=c('character'), header=F ) ;

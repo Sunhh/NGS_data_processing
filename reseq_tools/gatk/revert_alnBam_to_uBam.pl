@@ -16,9 +16,9 @@ GetOptions(\%opts,
 	"outFq:s", 
 	"onlyFq!", 
 ); 
-$opts{'exe_java'}   //= '/usr/java/jre1.8.0_144/bin/java'; 
-$opts{'jar_picard'} //= "/home/Sunhh/src/align/picard/v2.10.3/picard.jar"; 
-$opts{'exe_samtools'} //= '/opt/align/samtools/samtools-1.5/samtools'; 
+$opts{'exe_java'}   //= 'java'; 
+$opts{'jar_picard'} //= 'picard.jar'; 
+$opts{'exe_samtools'} //= 'samtools'; 
 
 $opts{'maxDropFrac'} //= 0.001; 
 
@@ -98,9 +98,4 @@ if (defined $opts{'outFq'} and $opts{'outFq'} ne '') {
 
 &fileSunhh::_rmtree($tmp_dir); 
 &tsmsg("[Msg] Finish to convert $alnBam to $outBam\n"); 
-
-sub runCmd {
-	&exeCmd_1cmd( $_[0] ) and &stopErr("[Err] Failed at CMD: $_[0]\n"); 
-	return; 
-}# runCmd 
 

@@ -5,7 +5,6 @@ use warnings;
 use LogInforSunhh;
 use fileSunhh;
 use mathSunhh;
-my $ms_obj = mathSunhh->new();
 use Getopt::Long;
 my %opts;
 GetOptions(\%opts,
@@ -182,19 +181,19 @@ sub if_ovlBlk {
   for my $tp (@$poolBlk) {
     my ($ps1, $pe1, $ps2, $pe2) = &ret_se_byChrBlkID($tp->[0], $tp->[1], $tp->[2], $blkHR);
     if ($testBlk->[0] eq $tp->[0]) {
-      my ($ovlLen) = $ms_obj->ovl_region($ts1, $te1, $ps1, $pe1);
+      my ($ovlLen) = mathSunhh::ovl_region($ts1, $te1, $ps1, $pe1);
       ($ovlLen >= $min_anyOvlR * ($te1-$ts1+1) or $ovlLen >= $min_anyOvlR * ($pe1-$ps1+1) ) and do {$is_ovl = 1; last;};
     }
     if ($testBlk->[0] eq $tp->[1]) {
-      my ($ovlLen) = $ms_obj->ovl_region($ts1, $te1, $ps2, $pe2);
+      my ($ovlLen) = mathSunhh::ovl_region($ts1, $te1, $ps2, $pe2);
       ($ovlLen >= $min_anyOvlR * ($te1-$ts1+1) or $ovlLen >= $min_anyOvlR * ($pe2-$ps2+1) ) and do {$is_ovl = 1; last;};
     }
     if ($testBlk->[1] eq $tp->[0]) {
-      my ($ovlLen) = $ms_obj->ovl_region($ts2, $te2, $ps1, $pe1);
+      my ($ovlLen) = mathSunhh::ovl_region($ts2, $te2, $ps1, $pe1);
       ($ovlLen >= $min_anyOvlR * ($te2-$ts2+1) or $ovlLen >= $min_anyOvlR * ($pe1-$ps1+1) ) and do {$is_ovl = 1; last;};
     }
     if ($testBlk->[1] eq $tp->[1]) {
-      my ($ovlLen) = $ms_obj->ovl_region($ts2, $te2, $ps2, $pe2);
+      my ($ovlLen) = mathSunhh::ovl_region($ts2, $te2, $ps2, $pe2);
       ($ovlLen >= $min_anyOvlR * ($te2-$ts2+1) or $ovlLen >= $min_anyOvlR * ($pe2-$ps2+1) ) and do {$is_ovl = 1; last;};
     }
   }

@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 ### Designed referring filterIntronsFindStrand.pl in BRAKER; 
 use strict; 
+use FindBin; (my $REPO = $FindBin::RealBin) =~ s{(/NGS_data_processing)(/.*)?$}{$1};  # portable repo root
 use warnings; 
 use fileSunhh; 
 use LogInforSunhh; 
@@ -16,7 +17,7 @@ GetOptions(\%opts,
 	"pl_dealGff:s",  # /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl
 ); 
 
-$opts{'pl_dealGff'} = '/home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl'; 
+$opts{'pl_dealGff'} = "$REPO/temp/deal_gff3.pl"; 
 
 my $help_txt = <<HH; 
 ######################################################################

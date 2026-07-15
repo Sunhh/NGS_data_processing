@@ -10,13 +10,34 @@
 # 8/16/2023: Change 'SVTYPE' information to ease further check.
 # 8/16/2023: Try to include query location for further check.
 # 8/17/2023: Trim substitutions with same leading/tailing bases.
-# 9/8/20923: Fixing a bug for 'relocation-insertion' on reverse strand.
+# 9/8/2023: Fixing a bug for 'relocation-insertion' on reverse strand.
+#
+# KNOWN ISSUES (found in a 2026-07 code review; fix once test data / genomes are available):
+#  1. Trailing same-base trim of substitutions never runs: the loop condition is
+#     `$pi*-1 > length(...)` (line ~"$pi=-1" block) which is always false; it should be
+#     `$pi*-1 <= length(...)` to mirror the leading-base trim. Effect: substitution alleles
+#     keep redundant trailing bases (not fully left-normalized). NOTE: this normalization was
+#     tuned back-and-forth in Aug 2023 (false positives), so verify before changing.
+#  2. substr($seq, $rS-2, ...) / substr($seq, $rS-1, ...) give a NEGATIVE offset when an SV
+#     starts at reference position 1 (rS==1), so Perl reads from the sequence END -> wrong REF
+#     for SVs at a chromosome's first base. Guard rS==1 (affects deletion/collapsed_repeat/
+#     collapsed_tandem_repeat/relocation/inversion output blocks).
+#  3. Performance: each 'substitution' re-alignment spawns minimap2 (and sometimes EMBOSS
+#     stretcher) as a subprocess with file I/O -> a bottleneck on genomes with many SVs.
+#     Batch, only re-align above a length threshold, or align short seqs in-process.
+#  4. boundary_inBad() is O(n) per variant (linear scan of the N-gap/reshuffling list);
+#     sort %bad_loc and binary-search, or use an interval tree.
+#  5. The substitution trim/normalize block (~"if ($is_good == 0)") duplicates the
+#     leading-trim + rE+1==rS / qE+1==qS / re-extract logic twice; refactor into one
+#     left-normalize-indel helper (which also makes issue #1 obvious).
+#
 
 use strict;
 use warnings;
 use LogInforSunhh;
 use fileSunhh;
 use fastaSunhh;
+use FindBin; (my $REPO = $FindBin::RealBin) =~ s{(/NGS_data_processing)(/.*)?$}{$1};  # portable repo root
 my $fs_obj = fastaSunhh->new();
 
 !@ARGV and die "perl $0 ref.fa.gz qry.fa.gz sampleID out_ref_struct.gff.gz > out_ref_struct.vcf\n";
@@ -28,7 +49,7 @@ my $fnGff = shift;
 
 my $maxDist = 10;
 my $wdir = &fileSunhh::new_tmp_dir('create' => 1);
-my $pl_fmtPaf = "/home/Sunhh/tools/github/NGS_data_processing/evolution_tools/SV_detection/fmt_paf.pl";
+my $pl_fmtPaf = "$REPO/evolution_tools/SV_detection/fmt_paf.pl";
 my $exe_stretcher = "stretcher";
 
 
@@ -90,7 +111,7 @@ print STDOUT <<'HHHS';
 ##ALT=<ID=CTX,Description="Reciprocal chromosomal translocation">
 ##ALT=<ID=DEL,Description="Deletion">
 ##ALT=<ID=DEL:REP,Description="Deletion and collapsed repeat">
-##ALT=<ID=DEL:TAN,Descirption="Collapsed tandem repeat">
+##ALT=<ID=DEL:TAN,Description="Collapsed tandem repeat">
 ##ALT=<ID=DEL:REL,Description="Relocation-shaped deletion">
 ##ALT=<ID=DEL:SUB,Description="Deletion-type substitution">
 ##ALT=<ID=DEL:ALN,Description="Deletion-type substitution from stretcher alignment.">
@@ -99,7 +120,7 @@ print STDOUT <<'HHHS';
 ##ALT=<ID=INS:TAN,Description="Tandem duplication">
 ##ALT=<ID=INS:REL,Description="Relocation-insertion">
 ##ALT=<ID=INS:SUB,Description="Insertion-type substitution">
-##ALT=<ID=INS:ALN,Description="Deletion-type substitution from stretcher alignment.">
+##ALT=<ID=INS:ALN,Description="Insertion-type substitution from stretcher alignment.">
 ##ALT=<ID=DUP,Description="Duplication">
 ##ALT=<ID=INS:ME,Description="Mobile element insertion of unspecified ME class">
 ##ALT=<ID=INS:ME:ALU,Description="Alu element insertion">
@@ -735,15 +756,6 @@ for my $refID (sort keys %allRefID) {
 #
 # Subroutines.
 #
-sub filter_array {
-  my ($ar, $hr) = @_;
-  my @back;
-  for (my $i=0; $i<@$ar; $i++) {
-    defined $hr->{$i} and next;
-    push(@back, $ar->[$i]);
-  }
-  return(@back);
-}
 
 sub sepTA8 {
   my %back;

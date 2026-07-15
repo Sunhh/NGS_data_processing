@@ -6,7 +6,6 @@ use warnings;
 use LogInforSunhh; 
 use mathSunhh; 
 use fileSunhh; 
-my $ms_obj = mathSunhh->new(); 
 use Getopt::Long; 
 my %opts; 
 GetOptions(\%opts, 
@@ -107,8 +106,8 @@ while (<>) {
 
 	$ident >= 100 * $opts{'minIdent'} or next; 
 	# defined $ctg2scf{$qid} or &stopErr("[Err] No contig_ID [$qid] found.\n"); 
-	my @r1s = $ms_obj->switch_position( 'qry2ref'=>\%ctg2scf , 'qryID'=>$qid, 'qryPos'=>$qs ); 
-	my @r1e = $ms_obj->switch_position( 'qry2ref'=>\%ctg2scf , 'qryID'=>$qid, 'qryPos'=>$qe ); 
+	my @r1s = mathSunhh::switch_position( 'qry2ref'=>\%ctg2scf , 'qryID'=>$qid, 'qryPos'=>$qs ); 
+	my @r1e = mathSunhh::switch_position( 'qry2ref'=>\%ctg2scf , 'qryID'=>$qid, 'qryPos'=>$qe ); 
 	unless (@{$r1s[0]} > 0) {
 		@r1s = ([$qid, $qs, '+']); 
 		$info{$qid}{'noN'} //= $ql; 
@@ -120,8 +119,8 @@ while (<>) {
 	$r1s[0][0] eq $r1e[0][0] or &stopErr("[Err] Bad scaffold found [$r1s[0][0]] and [$r1e[0][0]] : $_\n"); 
 	my (@r2s, @r2e); 
 	if (defined $ctg2scf{$tid}) {
-		@r2s = $ms_obj->switch_position( 'qry2ref'=>\%ctg2scf , 'qryID'=>$tid, 'qryPos'=>$ts ); 
-		@r2e = $ms_obj->switch_position( 'qry2ref'=>\%ctg2scf , 'qryID'=>$tid, 'qryPos'=>$te ); 
+		@r2s = mathSunhh::switch_position( 'qry2ref'=>\%ctg2scf , 'qryID'=>$tid, 'qryPos'=>$ts ); 
+		@r2e = mathSunhh::switch_position( 'qry2ref'=>\%ctg2scf , 'qryID'=>$tid, 'qryPos'=>$te ); 
 	} else {
 		@r2s = ([$tid, $ts, '+']); 
 		@r2e = ([$tid, $te, '+']); 
@@ -148,7 +147,7 @@ for my $tk1 (sort keys %blk) {
 	
 	my %blkSum; 
 	for my $tk2 (keys %{$blk{$tk1}}) {
-		$blk{$tk1}{$tk2} = $ms_obj->mergeLocBlk( $blk{$tk1}{$tk2}, 'dist2join'=>1 ); 
+		$blk{$tk1}{$tk2} = mathSunhh::mergeLocBlk( $blk{$tk1}{$tk2}, 'dist2join'=>1 ); 
 		my $tsum = 0; 
 		for my $ar1 ( @{ $blk{$tk1}{$tk2} } ) {
 			$tsum += $ar1->[1]-$ar1->[0]+1; 
@@ -160,7 +159,7 @@ for my $tk1 (sort keys %blk) {
 	for (my $i=0; $i<@srt_tk2; $i++) {
 		$opts{'topNsum'} > 0 and $i >= $opts{'topNsum'} and last; 
 		my $tk2 = $srt_tk2[$i]; 
-		my $tc = $ms_obj->mergeLocBlk( $blk2{$tk2}{$tk1}, 'dist2join'=>1 ); 
+		my $tc = mathSunhh::mergeLocBlk( $blk2{$tk2}{$tk1}, 'dist2join'=>1 ); 
 		my $sum_span = 0; 
 		for my $ar2 (@$tc) {
 			$sum_span += ($ar2->[1]-$ar2->[0]+1); 
@@ -188,10 +187,4 @@ for my $tk1 (sort keys %blk) {
 		)."\n"; 
 	}
 }
-
-sub sep_ctgID {
-	$_[0] =~ m/^(\S+)_(\d+)$/ or die "bad ID [$_[0]]\n"; 
-	return($1, $2); 
-}
-
 

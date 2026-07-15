@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 use strict; 
+use FindBin; (my $REPO = $FindBin::RealBin) =~ s{(/NGS_data_processing)(/.*)?$}{$1};  # portable repo root
 use warnings; 
 use LogInforSunhh; 
 use SeqAlnSunhh; 
@@ -149,8 +150,8 @@ sub setGlob {
 
 	$gg{'exe_samtools'} = 'samtools'; 
 	$gg{'exe_hisat2'}   = 'hisat2'; 
-	$gg{'pl_runHisat2_with2pass'} = '/home/Sunhh/tools/github/NGS_data_processing/rnaseq_tools/runHisat2_with2pass.pl'; 
-	$gg{'pl_fix_NHnum'}           = '/home/Sunhh/tools/github/NGS_data_processing/rnaseq_tools/fix_NHnum.pl'; 
+	$gg{'pl_runHisat2_with2pass'} = "$REPO/rnaseq_tools/pipe_genome_DEG/runHisat2_with2pass.pl"; 
+	$gg{'pl_fix_NHnum'}           = "$REPO/rnaseq_tools/pipe_genome_DEG/fix_NHnum.pl"; 
 	$gg{'max_mismat_cnt'}   = -1; 
 	$gg{'max_mismat_ratio'} = -1; 
 	$gg{'wrk_dir'}          = './'; 

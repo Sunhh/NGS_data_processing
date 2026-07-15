@@ -19,6 +19,7 @@ use Getopt::Long;
 use LogInforSunhh; 
 use fileSunhh; 
 use mathSunhh; 
+use fastaSunhh ();  # rcSeq is called qualified; siteList is defined locally below (do not import+shadow)
 my %opts; 
 
 sub usage {
@@ -129,7 +130,7 @@ defined $opts{'guess_scale'} and $opts{'phred_scale'} = undef();
 
 
 # Making File handles for reading;
-our @InFp = () ; # 2007-8-29 16:07 È«¾Ö±äÁ¿!
+our @InFp = () ; # 2007-8-29 16:07 全局变量!
 if ( !@ARGV )
 {
 	@InFp = (\*STDIN);
@@ -447,7 +448,7 @@ sub searchPattern {
 			while ( my $rdRec = &get_fq_record($fh) ) {
 				$rdRec->{seq} =~ s/\s//g; 
 				my $rdLen = length($rdRec->{seq}); 
-				my $seqRC = $rdRec->{seq}; &rcSeq( \$seqRC, 'rc' ); 
+				my $seqRC = $rdRec->{seq}; &fastaSunhh::rcSeq( \$seqRC, 'rc' ); 
 				my @t_match = &siteList( \$srch_pattern, \$seqRC, $srch_mm ); 
 				if ( $srch_back eq 'read' ) {
 					if ( scalar(@t_match) > 0 ) {
@@ -460,10 +461,10 @@ sub searchPattern {
 					map { print STDOUT join("\t", $rdRec->{id}, $rdLen, $rdLen - $_->[0] + 1, $rdLen - $_->[1] + 1, $_->[1]-$_->[0]+1)."\n"; } @t_match; 
 				} elsif ( $srch_back eq 'match' ) {
 					chomp($rdRec->{id}); 
-					map { &rcSeq(\$_->[2], 'rc'); print STDOUT join("\t", $rdRec->{id}, $rdLen, $_->[1]-$_->[0]+1, $_->[2])."\n"; } @t_match; 
+					map { &fastaSunhh::rcSeq(\$_->[2], 'rc'); print STDOUT join("\t", $rdRec->{id}, $rdLen, $_->[1]-$_->[0]+1, $_->[2])."\n"; } @t_match; 
 				} elsif ( $srch_back eq 'both' ) {
 					chomp($rdRec->{id}); 
-					map { &rcSeq(\$_->[2], 'rc'); print STDOUT join("\t", $rdRec->{id}, $rdLen, $rdLen - $_->[0] + 1, $rdLen - $_->[1] + 1, $_->[1]-$_->[0]+1, $_->[2])."\n"; } @t_match; 
+					map { &fastaSunhh::rcSeq(\$_->[2], 'rc'); print STDOUT join("\t", $rdRec->{id}, $rdLen, $rdLen - $_->[0] + 1, $rdLen - $_->[1] + 1, $_->[1]-$_->[0]+1, $_->[2])."\n"; } @t_match; 
 				} else {
 					&stopErr("[Err] Unknown -srch_back [$srch_back]\n"); 
 				}
@@ -473,7 +474,7 @@ sub searchPattern {
 		for my $fh ( @InFp ) {
 			while ( my $rdRec = &get_fq_record($fh) ) {
 				$rdRec->{seq} =~ s/\s//g; 
-				my $seqRC = $rdRec->{seq}; &rcSeq( \$seqRC, 'rc' ); 
+				my $seqRC = $rdRec->{seq}; &fastaSunhh::rcSeq( \$seqRC, 'rc' ); 
 				my $rdLen = length($rdRec->{seq}); 
 				my @t_match = &siteList( \$srch_pattern, \$rdRec->{seq}, $srch_mm ); 
 				my @t_match_RC = &siteList( \$srch_pattern, \$seqRC, $srch_mm ); 
@@ -490,11 +491,11 @@ sub searchPattern {
 				} elsif ( $srch_back eq 'match' ) {
 					chomp($rdRec->{id}); 
 					map { print STDOUT join("\t", $rdRec->{id}, $rdLen, $_->[1]-$_->[0]+1, $_->[2])."\n"; } @t_match; 
-					map { &rcSeq(\$_->[2], 'rc'); print STDOUT join("\t", $rdRec->{id}, $rdLen, $_->[1]-$_->[0]+1, $_->[2])."\n"; } @t_match_RC; 
+					map { &fastaSunhh::rcSeq(\$_->[2], 'rc'); print STDOUT join("\t", $rdRec->{id}, $rdLen, $_->[1]-$_->[0]+1, $_->[2])."\n"; } @t_match_RC; 
 				} elsif ( $srch_back eq 'both' ) {
 					chomp($rdRec->{id}); 
 					map { print STDOUT join("\t", $rdRec->{id}, $rdLen, $_->[0], $_->[1], $_->[1]-$_->[0]+1, $_->[2])."\n"; } @t_match; 
-					map { &rcSeq(\$_->[2], 'rc'); print STDOUT join("\t", $rdRec->{id}, $rdLen, $rdLen - $_->[0] + 1, $rdLen - $_->[1] + 1, $_->[1]-$_->[0]+1, $_->[2])."\n"; } @t_match_RC; 
+					map { &fastaSunhh::rcSeq(\$_->[2], 'rc'); print STDOUT join("\t", $rdRec->{id}, $rdLen, $rdLen - $_->[0] + 1, $rdLen - $_->[1] + 1, $_->[1]-$_->[0]+1, $_->[2])."\n"; } @t_match_RC; 
 				} else {
 					&stopErr("[Err] Unknown -srch_back [$srch_back]\n"); 
 				}
@@ -563,7 +564,7 @@ sub fragmentRd{
 				push(@Range, "$add_s\-$add_e"); 
 			}
 			my $range = join(',', @Range); 
-			if ( $opts{frag_c} ) { &rcSeq(\$strSeq, 'c'); $range = "C$range"; } 
+			if ( $opts{frag_c} ) { &fastaSunhh::rcSeq(\$strSeq, 'c'); $range = "C$range"; } 
 			if ( $opts{frag_r} ) { $strSeq = reverse($strSeq); $strQual = reverse($strQual); $range = "R$range"; } 
 			chomp($rdRec->{id}); $rdRec->{id} .= " [$range]"; 
 			print STDOUT "\@$rdRec->{id}\n$strSeq\n+\n$strQual\n"; 
@@ -971,17 +972,7 @@ sub guessPhredScale {
 
 # input ($seq_ref, $deal_tag); deal_tag : 'r' => reverse, 'c' => complemented, 'rc' => reverse and complemented; Default 'rc';
 # no output, edit the input sequence reference.
-sub rcSeq {
-	my $seq_r = shift;
-	my $tag = shift; defined $tag or $tag = 'rc'; # $tag = lc($tag);
-	my ($Is_r, $Is_c) = (0)x2;
-	$tag =~ /r/i and $Is_r = 1;
-	$tag =~ /c/i and $Is_c = 1;
-	!$Is_r and !$Is_c and &stopErr( "Wrong Input for function rcSeq! $!\n" );
-	$Is_r and $$seq_r = reverse ($$seq_r);
-	$Is_c and $$seq_r =~ tr/acgturykmbvdhACGTURYKMBVDHwWsSnN/tgcaayrmkvbhdTGCAAYRMKVBHDwWsSnN/; # edit on 2013-09-11 No difference in result.
-	return 0;
-}# 2007-9-11 9:46 ÖÆ×÷¶ÔÓ¦·´Ïò»¥²¹ÐòÁÐ;
+# rcSeq() now provided by fastaSunhh::rcSeq (2026-07-10).
 #        a       a; adenine
 #        c       c; cytosine
 #        g       g; guanine

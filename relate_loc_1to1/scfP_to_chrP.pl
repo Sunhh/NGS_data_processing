@@ -5,7 +5,6 @@ use warnings;
 use LogInforSunhh; 
 use fileSunhh; 
 use mathSunhh; 
-my $ms_obj = mathSunhh->new(); 
 
 !@ARGV and die "perl $0 in.rel_loc in1.agp in2.agp > out.rel_loc\n"; 
 
@@ -27,8 +26,8 @@ while (&wantLineC($fh)) {
 	my @ta = &splitL("\t", $_); 
 	( defined $c2s_1{$ta[0]} and defined $c2s_2{$ta[2]} ) or die "$_\n"; 
 	$ta[4] //= '+'; 
-	@b1 = $ms_obj->switch_position( 'qry2ref'=> \%c2s_1, 'qryID'=> $ta[0] , 'qryPos' => $ta[1], 'qryStr'=>'+' ); 
-	@b2 = $ms_obj->switch_position( 'qry2ref'=> \%c2s_2, 'qryID'=> $ta[2] , 'qryPos' => $ta[3], 'qryStr'=>$ta[4] ); 
+	@b1 = mathSunhh::switch_position( 'qry2ref'=> \%c2s_1, 'qryID'=> $ta[0] , 'qryPos' => $ta[1], 'qryStr'=>'+' ); 
+	@b2 = mathSunhh::switch_position( 'qry2ref'=> \%c2s_2, 'qryID'=> $ta[2] , 'qryPos' => $ta[3], 'qryStr'=>$ta[4] ); 
 	$oStr = ( $b1[0][2] ne $b2[0][2] ) ? '-' : '+' ; 
 	print join("\t", @{$b1[0]}[0,1], @{$b2[0]}[0,1], $oStr)."\n"; 
 }

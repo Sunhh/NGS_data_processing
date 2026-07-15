@@ -6,7 +6,6 @@ use LogInforSunhh;
 use fileSunhh; 
 use mathSunhh; 
 use SeqAlnSunhh; 
-my $ms = mathSunhh->new(); 
 use SVG; 
 use Getopt::Long; 
 my %opts; 
@@ -205,7 +204,7 @@ if ( $opts{'scfE'}-$opts{'scfS'}+1 <= ( ($opts{'bp_overlap'} ) ) ) {
 	$wind_minRatio = ($opts{'bp_overlap'}+1)/$bp_per_line; 
 }
 %bp_line_wind = %{ 
- $ms->setup_windows( 
+ mathSunhh::setup_windows( 
    'ttl_start' => $opts{'scfS'}, 
    'ttl_end'   => $opts{'scfE'}, 
    'wind_size' => $bp_per_line, 
@@ -317,7 +316,7 @@ $grps{'backbone'}->text(
 for (my $i=0; $i<=$opts{'scfE'}; $i+=$opts{'tickStep'}) {
 	$i >= $opts{'scfS'}-1 or next; 
 	my @si = @{ 
-	 $ms->map_windows( 
+	 mathSunhh::map_windows( 
 	   'position'  => $i, 
 	   'wind_hash' => \%bp_line_wind, 
 	 ) 
@@ -347,7 +346,7 @@ for ( my $lineS=$opts{'scfS'}; $lineS<=$opts{'scfE'}; $lineS+=$wind_step ) {
 	my $lineE = $lineS+$bp_per_line-1; 
 	$lineE > $opts{'scfE'} and $lineE = $opts{'scfE'}; 
 	my @si = @{ 
-	 $ms->map_windows( 
+	 mathSunhh::map_windows( 
 	   'position'  => $lineS, 
 	   'wind_hash' => \%bp_line_wind, 
 	 ) 
@@ -381,7 +380,7 @@ for my $tr (@add_blks) {
 		$blkE > $e and $blkE = $e; 
 		$blkS < $s and $blkS = $s; 
 		my @si = @{ 
-		 $ms->map_windows( 
+		 mathSunhh::map_windows( 
 		   'position'  => $blkS, 
 		   'wind_hash' => \%bp_line_wind, 
 		 ) 
@@ -428,7 +427,7 @@ for my $tr (@tag_blks) {
 		$blkE > $e and $blkE = $e; 
 		$blkS < $s and $blkS = $s; 
 		my @si = @{ 
-		 $ms->map_windows( 
+		 mathSunhh::map_windows( 
 		   'position'  => $blkS, 
 		   'wind_hash' => \%bp_line_wind, 
 		 ) 
@@ -473,13 +472,13 @@ for my $tr (@pair_se) {
 		$opts{'limit_long'}  > 0 and $opts{'limit_long'}  < $e-$s+1 and $grp_key = 'readpair_long'; 
 	}
 	my @si_s = @{
-	 $ms->map_windows(
+	 mathSunhh::map_windows(
 	   'position'  => $s, 
 	   'wind_hash' => \%bp_line_wind, 
 	 )
 	}; 
 	my @si_e = @{
-	 $ms->map_windows(
+	 mathSunhh::map_windows(
 	   'position'  => $e, 
 	   'wind_hash' => \%bp_line_wind, 
 	 )

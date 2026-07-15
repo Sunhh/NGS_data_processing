@@ -11,7 +11,6 @@ use fileSunhh;
 use ReadInAlnSunhh; 
 use mathSunhh; 
 
-use Parallel::ForkManager; 
 
 use Getopt::Long; 
 my %opts; 

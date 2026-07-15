@@ -13,11 +13,7 @@
 use strict; 
 use warnings; 
 
-use Bio::PopGen::Statistics; 
-use Bio::PopGen::Individual; 
-use Bio::PopGen::Genotype; 
-
-my $stats = Bio::PopGen::Statistics->new(); 
+use PopGenSunhh; 
 
 # An example of how to use this. 
 use Parallel::ForkManager; 
@@ -34,7 +30,6 @@ use Getopt::Long;
 use fileSunhh; 
 use LogInforSunhh; 
 use mathSunhh; 
-my $ms_obj = mathSunhh->new(); 
 use SNP_tbl; 
 my $st_obj = SNP_tbl->new(); 
 
@@ -143,7 +138,7 @@ sub set_opts {
 	$opts{'chr_colN'}  //= 0; 
 	$opts{'pos_colN'}  //= 1; 
 	$opts{'geno_col'} //= ''; 
-	$opts{'_inner'}{'geno_cols'} = [ &mathSunhh::_parseCol( $opts{'geno_col'} ) ]; 
+	$opts{'_inner'}{'geno_cols'} = [ &mathSunhh::parseCol( $opts{'geno_col'} ) ]; 
 	# Usable keys: 
 	#  '_inner':'inFh'  => file_handle of input. 
 	#  '_inner':'cnt_stat' => [ stat_value_to_be_counted ]
@@ -234,7 +229,7 @@ sub setup_windows {
 	for my $cur_chr ( @chrIDs ) {
 		my $max_len = ( $opts{'wind_end_useMax'} ) ? $opts{'_inner'}{'max_pos'}{$cur_chr} : $opts{'wind_end'} ; 
 		&tsmsg("[Msg]   Setting windows for $cur_chr [ $opts{'wind_start'} - $max_len ]\n"); 
-		$wind{$cur_chr} = $ms_obj->setup_windows(
+		$wind{$cur_chr} = mathSunhh::setup_windows(
 		  'ttl_start'   =>  $opts{'wind_start'}, 
 		  'ttl_end'     =>  $max_len, 
 		  'wind_size'   =>  $opts{'wind_length'}, 
@@ -256,13 +251,13 @@ sub dvd_snp_tbl_inMEM {
 		$ln % 500e3 == 1 and &tsmsg("[Msg] Processed $ln line.\n"); 
 		my $cur_chr = $opts{'_inner'}{'tbl_lines'}[$ln]->[0]; 
 		my $cur_pos = $opts{'_inner'}{'tbl_lines'}[$ln]->[1]; 
-		my (@wind_i) = @{ $ms_obj->map_windows( 'posi'=>$cur_pos, 'wind_hash'=>$wind{$cur_chr} ) }; 
+		my (@wind_i) = @{ mathSunhh::map_windows( 'posi'=>$cur_pos, 'wind_hash'=>$wind{$cur_chr} ) }; 
 		for my $ti ( @wind_i ) {
 			my $file_idx; 
 			if ( defined $opts{'_inner'}{'chrIdx2fIdx'}{$cur_chr}{$ti} ) {
 				$file_idx = $opts{'_inner'}{'chrIdx2fIdx'}{$cur_chr}{$ti}; 
 			} else {
-				$file_idx = $ms_obj->newNumber(); 
+				$file_idx = mathSunhh::newNumber(); 
 				$opts{'_inner'}{'chrIdx2fIdx'}{$cur_chr}{$ti} = $file_idx; 
 			}
 			my $wind_fname = "$tmpDir/wind_${file_idx}"; 
@@ -290,13 +285,13 @@ sub dvd_snp_tbl {
 		$ln % 500e3 == 1 and &tsmsg("[Msg] Processed $ln line.\n"); 
 		my $cur_chr = $opts{'_inner'}{'tbl_lines'}[$ln]->[0]; 
 		my $cur_pos = $opts{'_inner'}{'tbl_lines'}[$ln]->[1]; 
-		my (@wind_i) = @{ $ms_obj->map_windows( 'posi'=>$cur_pos, 'wind_hash'=>$wind{$cur_chr} ) }; 
+		my (@wind_i) = @{ mathSunhh::map_windows( 'posi'=>$cur_pos, 'wind_hash'=>$wind{$cur_chr} ) }; 
 		for my $ti ( @wind_i ) {
 			my $file_idx; 
 			if ( defined $opts{'_inner'}{'chrIdx2fIdx'}{$cur_chr}{$ti} ) {
 				$file_idx = $opts{'_inner'}{'chrIdx2fIdx'}{$cur_chr}{$ti}; 
 			} else {
-				$file_idx = $ms_obj->newNumber(); 
+				$file_idx = mathSunhh::newNumber(); 
 				$opts{'_inner'}{'chrIdx2fIdx'}{$cur_chr}{$ti} = $file_idx; 
 			}
 			my $wind_fname = "$tmpDir/wind_${file_idx}"; 
@@ -336,13 +331,13 @@ sub dvd_cnt_out {
 		$ln % 500e3 == 1 and &tsmsg("[Msg] Processed $ln line.\n"); 
 		my $cur_chr = $opts{'_inner'}{'tbl_lines'}[$ln]->[0]; 
 		my $cur_pos = $opts{'_inner'}{'tbl_lines'}[$ln]->[1]; 
-		my (@wind_i) = @{ $ms_obj->map_windows( 'posi'=>$cur_pos, 'wind_hash'=>$wind{$cur_chr} ) }; 
+		my (@wind_i) = @{ mathSunhh::map_windows( 'posi'=>$cur_pos, 'wind_hash'=>$wind{$cur_chr} ) }; 
 		for my $ti ( @wind_i ) {
 			my $file_idx; 
 			if ( defined $opts{'_inner'}{'chrIdx2fIdx'}{$cur_chr}{$ti} ) {
 				$file_idx = $opts{'_inner'}{'chrIdx2fIdx'}{$cur_chr}{$ti}; 
 			} else {
-				$file_idx = $ms_obj->newNumber(); 
+				$file_idx = mathSunhh::newNumber(); 
 				$opts{'_inner'}{'chrIdx2fIdx'}{$cur_chr}{$ti} = $file_idx; 
 			}
 			my $wind_fname = "$tmpDir/wind_${file_idx}"; 
@@ -515,10 +510,7 @@ sub cnt_val_1tbl_inMEM {
 	my @inds; 
 	my @ncols = @{ $opts{'_inner'}{'geno_cols'} }; 
 	for (my $i=0; $i<@ncols; $i++) {
-		$inds[$i] = Bio::PopGen::Individual->new(
-		  -unique_id   => $i, 
-		  -genotypes   => []
-		); 
+		$inds[$i] = {}; 
 	}
 	# Add genotypes
 	for my $tr ( @{ $opts{'_inner'}{'tbl_lines'} }[ @{ $opts{'_inner'}{'windFH2LineN'}{$inTblFile} } ] ) { 
@@ -549,12 +541,7 @@ sub cnt_val_1tbl_inMEM {
 			} else {
 				&stopErr("[Err] Unknown -ploidy [$opts{'ploidy'}]\n"); 
 			}
-			$inds[$i]->add_Genotype(
-			  Bio::PopGen::Genotype->new(
-			    -alleles     => [@geno], 
-			    -marker_name => $marker_name 
-			  )
-			); 
+			$inds[$i]{$marker_name} = [@geno]; 
 		}
 	}
 	my %val; 
@@ -563,12 +550,12 @@ sub cnt_val_1tbl_inMEM {
 	for my $type (@{$opts{'_inner'}{'cnt_stat'}}) {
 		defined $val{$type} and do { push(@out_arr, $val{$type}); next; }; 
 		if ( $type =~ m!^pi$!i ) {
-			$val{$type} = $stats->pi(\@inds); 
+			$val{$type} = PopGenSunhh::pi(\@inds); 
 		} elsif ( $type =~ m!^theta$!i ) {
 			# $val{$type} = $stats->theta(\@inds); 
 			$val{$type} = &_selfTheta(\@inds); 
 		} elsif ( $type =~ m!tajima_?D!i ) {
-			$val{$type} = $stats->tajima_D(\@inds); 
+			$val{$type} = PopGenSunhh::tajima_D(\@inds); 
 		} else {
 			&stopErr("[Err] Unknown type to count [$type]\n"); 
 		}
@@ -586,10 +573,7 @@ sub cnt_val_1tbl {
 	my @inds; 
 	my @ncols = @{ $opts{'_inner'}{'geno_cols'} }; 
 	for (my $i=0; $i<@ncols; $i++) {
-		$inds[$i] = Bio::PopGen::Individual->new(
-		  -unique_id   => $i, 
-		  -genotypes   => []
-		); 
+		$inds[$i] = {}; 
 	}
 	# Add genotypes
 	my $fh = &openFH($inTblFile, "<"); 
@@ -627,12 +611,7 @@ sub cnt_val_1tbl {
 			#} else {
 			#	@geno = ('N', 'N'); 
 			#}
-			$inds[$i]->add_Genotype(
-			  Bio::PopGen::Genotype->new(
-			    -alleles     => [@geno], 
-			    -marker_name => $marker_name 
-			  )
-			); 
+			$inds[$i]{$marker_name} = [@geno]; 
 		}
 	}# End while ()
 	close($fh); 
@@ -647,12 +626,12 @@ sub cnt_val_1tbl {
 	for my $type (@{$opts{'_inner'}{'cnt_stat'}}) {
 		defined $val{$type} and do { push(@out_arr, $val{$type}); next; }; 
 		if ( $type =~ m!^pi$!i ) {
-			$val{$type} = $stats->pi(\@inds); 
+			$val{$type} = PopGenSunhh::pi(\@inds); 
 		} elsif ( $type =~ m!^theta$!i ) {
 			# $val{$type} = $stats->theta(\@inds); 
 			$val{$type} = &_selfTheta(\@inds); 
 		} elsif ( $type =~ m!tajima_?D!i ) {
-			$val{$type} = $stats->tajima_D(\@inds); 
+			$val{$type} = PopGenSunhh::tajima_D(\@inds); 
 		} else {
 			&stopErr("[Err] Unknown type to count [$type]\n"); 
 		}
@@ -669,33 +648,6 @@ sub cnt_val_1tbl {
 =head1 _selfTheta(\@individuals)
 =cut
 sub _selfTheta {
-	my $individuals = shift; 
-	my $seg_sites = $stats->segregating_sites_count($individuals); 
-	# Count alleles in each marker
-	## Count allele frequencies and sample sizes for each marker. 
-	my (%data, %marker_total);  
-	my @marker_names = $individuals->[0]->get_marker_names; 
-	foreach my $ind ( @$individuals ) {
-		foreach my $m ( @marker_names ) {
-			foreach my $allele ( map { $_->get_Alleles } $ind->get_Genotypes($m) ) {
-				$data{$m}->{$allele} ++; 
-				$marker_total{$m}++; 
-			}
-		}
-	}
-	## Count theta site by site 
-	my $theta = 0; 
-	while ( my ( $marker, $markerdat ) = each %data ) {
-		my $samplesize = $marker_total{$marker}; 
-		$samplesize > 0 or next; 
-		my @alleles = keys %$markerdat; 
-		scalar(@alleles) > 1 or next; 
-		my $a1 = 0; 
-		for (my $k=1; $k<$samplesize; $k++) {
-			$a1 += (1/$k); 
-		}
-		$a1 > 0 or next; 
-		$theta += 1/$a1; 
-	}
-	return ( $theta ); 
+	# Watterson theta; N excluded from per-site sample size (see PopGenSunhh).
+	return PopGenSunhh::theta( $_[0] ); 
 }

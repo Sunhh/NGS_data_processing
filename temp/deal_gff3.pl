@@ -195,7 +195,6 @@ $opts{'help'} and &usage();
 # Required options: -inGff
 my $gff_obj = gffSunhh->new(); 
 my $fas_obj = fastaSunhh->new(); 
-my $mat_obj = mathSunhh->new(); 
 my $iFh; 
 
 if ( defined $opts{'inGff'} ) {
@@ -582,7 +581,7 @@ sub action_seqret {
     for my $tr ( @posi_cds ) {
       push( @sub_seqs, substr($in_seq{$top_chr}, $tr->[0]-1, $tr->[1]-$tr->[0]+1) ); 
     }
-    $top_str == -1 and @sub_seqs = &rev_comp(@sub_seqs); 
+    $top_str == -1 and @sub_seqs = map { my $t = $_; &fastaSunhh::rcSeq(\$t, 'rc'); $t } @sub_seqs; 
     my $final_seq = join('', @sub_seqs); 
     if ( $opts{'extractFeat'} =~ m!^cds$!i ) {
       print {$oFh} ">$top_name [frame=$posi_cds[0][2]]\n$final_seq\n"; 
@@ -677,8 +676,8 @@ sub action_ch_locByAGP {
     my @ta = &splitL("\t", $line_txt); 
     my ($ctgID, $ctgS, $ctgE, $ctgStr) = @ta[0, 3,4, 6]; 
     defined $info_ctg2scf{$ctgID} or next; 
-    my @loc1 = $mat_obj->switch_position( 'qry2ref' => \%info_ctg2scf, 'qryID'=>$ctgID, 'qryPos'=>$ctgS, 'qryStr'=>$ctgStr ); 
-    my @loc2 = $mat_obj->switch_position( 'qry2ref' => \%info_ctg2scf, 'qryID'=>$ctgID, 'qryPos'=>$ctgE, 'qryStr'=>$ctgStr ); 
+    my @loc1 = mathSunhh::switch_position( 'qry2ref' => \%info_ctg2scf, 'qryID'=>$ctgID, 'qryPos'=>$ctgS, 'qryStr'=>$ctgStr ); 
+    my @loc2 = mathSunhh::switch_position( 'qry2ref' => \%info_ctg2scf, 'qryID'=>$ctgID, 'qryPos'=>$ctgE, 'qryStr'=>$ctgStr ); 
     ( @loc1 > 1 or @loc2 > 1 ) and do { &tsmsg("[Wrn] Multiple loci found for ($ctgID, $ctgS, $ctgE, $ctgStr)\n"); }; 
     $loc1[0][0] eq $loc2[0][0] or &stopErr("[Err] Found different scaffold IDs for ($ctgID, $ctgS, $ctgE, $ctgStr): $loc1[0][0] & $loc2[0][0]\n"); 
     $ta[0] = $loc1[0][0]; 
@@ -1174,7 +1173,7 @@ sub fix_locLis {
 # Output: (\@topIDs_accepted)
 sub getID_islandGene_gff {
   my $g1 = shift; 
-  my %parm = $mat_obj->_setHashFromArr(@_); 
+  my %parm = mathSunhh::_setHashFromArr(@_); 
   $parm{'geneFeatType'} //= 'CDS,exon,match_part'; 
   $parm{'islandStrand'} //= 'Both'; 
   $parm{'islandStrand'} =~ m!^Both|Single$! or &stopErr("[Err] -islandStrand must be 'Both'/'Single'\n"); 
@@ -1242,7 +1241,7 @@ sub getID_islandGene_gff {
 # Output: (\@topIDs_accepted)
 sub getID_ovlapLongest_gff {
   my $g1 = shift; 
-  my %parm = $mat_obj->_setHashFromArr(@_); 
+  my %parm = mathSunhh::_setHashFromArr(@_); 
   $parm{'ovlapRatio'} //= -1; 
   $parm{'ovlapLength'} //= ( ( $parm{'ovlapRatio'} == -1 ) ? 1 : -1 ); 
   $parm{'ovlapStrand'} //= 'Both'; 
@@ -1323,7 +1322,7 @@ sub getID_ovlapLongest_gff {
 # Output: (\@loc_arrays); 
 sub _rmClose_blk {
   my $ar = shift; 
-  my %parm = $mat_obj->_setHashFromArr(@_); 
+  my %parm = mathSunhh::_setHashFromArr(@_); 
   $parm{'flank'} //= 4000; 
   $parm{'SEcol'} //= [0,1]; 
   # Sort blocks. 
@@ -1357,7 +1356,7 @@ sub _rmClose_blk {
 # Output : (\@loc_arrays); 
 sub _rmOvlap_blk {
   my $ar = shift; 
-  my %parm = $mat_obj->_setHashFromArr(@_); 
+  my %parm = mathSunhh::_setHashFromArr(@_); 
   $parm{'ovlRatio'}  //= -1; 
   $parm{'ovlRatio1'} //= $parm{'ovlRatio'} // -1; 
   $parm{'ovlRatio2'} //= $parm{'ovlRatio'} // -1; 
@@ -1407,7 +1406,7 @@ sub _rmOvlap_blk {
       my ( $chk_s, $chk_e ) = @{$srt[$j]}[ @{$parm{'ovlSEcol'}} ]; 
       $chk_s > $chk_e and ($chk_e, $chk_s) = ($chk_s, $chk_e); 
       my $chk_len = ( defined $parm{'ovlLenCol'} ) ? ($srt[$j][ $parm{'ovlLenCol'} ]) : ($chk_e-$chk_s+1) ; 
-      my ( $ovl_bp, $ovl_se ) = $mat_obj->ovl_region( $cur_s, $cur_e, $chk_s, $chk_e ); 
+      my ( $ovl_bp, $ovl_se ) = mathSunhh::ovl_region( $cur_s, $cur_e, $chk_s, $chk_e ); 
       $ovl_bp == 0 and next; 
       if ( $parm{'ovlLen'} > 0 ) {
         $ovl_bp >= $parm{'ovlLen'} and do { $is_rm{$j}=1; next; }; 
@@ -1426,7 +1425,7 @@ sub _rmOvlap_blk {
 sub getID_rmOvlap_gff {
   my $g1 = shift; 
   my $g2 = shift; 
-  my %parm = $mat_obj->_setHashFromArr(@_); 
+  my %parm = mathSunhh::_setHashFromArr(@_); 
   $parm{'rmOvlapRatio1'} //= -1; 
   $parm{'rmOvlapRatio2'} //= -1; 
   unless ( defined $parm{'rmOvlapLen'} ) {
@@ -1568,7 +1567,7 @@ sub getID_rmOvlap_gff {
 sub getID_sameIntron_gff {
   my $g1 = shift; 
   my $g2 = shift; 
-  my %parm = $mat_obj->_setHashFromArr(@_); 
+  my %parm = mathSunhh::_setHashFromArr(@_); 
   $parm{'sameSingleExon'} //= undef(); 
   
   my @topID_1 = sort { $g1->{'ID2lineN'}{$a} <=> $g1->{'ID2lineN'}{$b} } keys %{ $g1->{'lineN_group'} }; 
@@ -1618,14 +1617,14 @@ sub getID_sameIntron_gff {
         if ( $#{$intronLoc_2{'locLis'}} == -1 ) {
           # tid2 has no intron either. 
           if ( $parm{'sameSingleExon'} ) {
-            my ($is_same) = $mat_obj->compare_number_list( [ $intronLoc{'minmax'} ], [ $intronLoc_2{'minmax'} ], 'compare'=>'same' ); 
+            my ($is_same) = mathSunhh::compare_number_list( [ $intronLoc{'minmax'} ], [ $intronLoc_2{'minmax'} ], 'compare'=>'same' ); 
             if ( $is_same == 1 ) {
               push(@back_topIDs, $tid1); 
               next CHK_TOPID_1; 
             }
           } else {
             # Accept tid1 if tid1 exon is included by tid2
-            my ( $ovlL1, $ovlL2, $ovlLoc ) = $mat_obj->compare_number_list( [ $intronLoc{'minmax'} ], [ $intronLoc_2{'minmax'} ], 'compare'=>'ovl' ); 
+            my ( $ovlL1, $ovlL2, $ovlLoc ) = mathSunhh::compare_number_list( [ $intronLoc{'minmax'} ], [ $intronLoc_2{'minmax'} ], 'compare'=>'ovl' ); 
             if ( $ovlL1 == $exLen ) {
               push(@back_topIDs, $tid1); 
               next CHK_TOPID_1; 
@@ -1637,7 +1636,7 @@ sub getID_sameIntron_gff {
         }
       } else {
         # There are introns in tid1; 
-        my ($is_same) = $mat_obj->compare_number_list( $intronLoc{'locLis'}, $intronLoc_2{'locLis'}, 'compare'=>'same' ); 
+        my ($is_same) = mathSunhh::compare_number_list( $intronLoc{'locLis'}, $intronLoc_2{'locLis'}, 'compare'=>'same' ); 
         if ( $is_same == 1 ) {
           push(@back_topIDs, $tid1); 
           next CHK_TOPID_1; 
@@ -1792,12 +1791,4 @@ sub load_gff_fas {
 #!/usr/bin/perl
 
 
-sub rev_comp {
-  my @back; 
-  for (@_) {
-    my $ts = reverse($_); 
-    $ts =~ tr/acgturykmbvdhACGTURYKMBVDHwWsSnN/tgcaayrmkvbhdTGCAAYRMKVBHDwWsSnN/; 
-    push(@back, $ts); 
-  }
-  return @back; 
-}
+# rev_comp() replaced by fastaSunhh::rcSeq (2026-07-10).

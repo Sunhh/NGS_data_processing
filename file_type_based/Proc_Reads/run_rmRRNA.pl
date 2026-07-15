@@ -2,13 +2,14 @@
 use strict; 
 use warnings; 
 use LogInforSunhh; 
+use FindBin; (my $REPO = $FindBin::RealBin) =~ s{(/NGS_data_processing)(/.*)?$}{$1};  # portable repo root
 
 -t and !@ARGV and die "perl $0 inLis\n"; 
 
 my $dbRRNA = '/share1/db_bowtie/rRNA_silva111'; 
 my $cpuN = 10; 
 
-my $pl_extractFq = '/home/Sunhh/tools/github/NGS_data_processing/extract_fq_by_list.pl'; 
+my $pl_extractFq = "$REPO/extract_fq_by_list.pl"; 
 
 
 while (<>) {

@@ -1,0 +1,9 @@
+##gff-version 3
+chr1	src	gene	10	70	.	+	.	ID=g1
+chr1	src	mRNA	10	70	.	+	.	ID=m1;Parent=g1
+chr1	src	CDS	10	30	.	+	0	ID=c1;Parent=m1
+chr1	src	CDS	50	70	.	+	0	ID=c2;Parent=m1
+chr1	src	gene	100	160	.	-	.	ID=g2
+chr1	src	mRNA	100	160	.	-	.	ID=m2;Parent=g2
+chr1	src	CDS	100	120	.	-	0	ID=c3;Parent=m2
+chr1	src	CDS	140	160	.	-	0	ID=c4;Parent=m2

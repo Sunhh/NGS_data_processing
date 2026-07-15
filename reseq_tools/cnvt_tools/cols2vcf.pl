@@ -146,16 +146,3 @@ while (<>) {
 
 }
 
-sub geno2num {
-	my $tb = shift; 
-	$tb = $st->SingleChar($tb); 
-	if (defined $allele2num{$tb}) {
-		return ($allele2num{$tb}, $allele2num{$tb}); 
-	} elsif ( defined $dblist{$tb} ) {
-		my @b1 = @{$dblist{ $tb }}; 
-		return ($allele2num{$b1[0]}, $allele2num{$b1[1]}); 
-	} else {
-		return (0, 0); 
-	}
-}
-

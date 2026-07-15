@@ -74,22 +74,3 @@ while (<>) {
 	}
 }
 
-sub olapLen {
-	my ($s1,$e1, $s2, $e2) = @_; 
-	my $s3 = ($s1 > $s2) ? $s1 : $s2 ; 
-	my $e3 = ($e1 < $e2) ? $e1 : $e2 ; 
-	return ($e3-$s3+1) ; 
-}
-
-sub minDist {
-	my ($s1,$e1, $s2, $e2) = @_; 
-	$e2 < $s1 and die "$e2 < $s1 : ($s1,$e1, $s2, $e2)\n"; 
-	$s2 > $e1 and die "$s2 > $e1 : ($s1,$e1, $s2, $e2)\n"; 
-	my $dist1 = $s2-$s1-1; 
-	my $dist2 = $e2-$e1-1; 
-	my $dist = ($dist1 > $dist2) ? $dist2  : $dist1 ; 
-	return $dist ; 
-}
-
-
-

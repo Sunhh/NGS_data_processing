@@ -348,7 +348,7 @@ sub rpkm_to_hash
 my %mean;
 foreach my $gene (sort keys %$total)
 {
-	foreach my $sample ( sort keys $$total{$gene} )
+	foreach my $sample ( sort keys %{$$total{$gene}} )
 	{
 		if (defined $comp_sample{$sample})
 		{

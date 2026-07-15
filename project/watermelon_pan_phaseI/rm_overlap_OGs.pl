@@ -4,7 +4,6 @@ use warnings;
 use fileSunhh;
 use LogInforSunhh;
 use mathSunhh;
-my $ms_obj = mathSunhh->new();
 
 !@ARGV and die "perl $0  final.wiDropped.cds.blk.gff3  final_rmQloc.wiRepre.fmt.PAV.5cols  > final_rmQloc.wiRepre.fmt.PAV.rmOlap\n";
 
@@ -73,7 +72,7 @@ for (my $i=0;$i<@grpIDs;$i++) {
         for (my $n=0; $n<@{$chkLocAH->[$kR]}; $n++) {
           $refLocAH->[$kR][$m][0] eq $chkLocAH->[$kR][$n][0] or next;
           $refLocAH->[$kR][$m][1] eq $chkLocAH->[$kR][$n][1] or next;
-          my ($ovlLen_nonDup, $ovlCnt_mayDup, $ovlLocR) = $ms_obj->compare_number_list($refLocAH->[$kR][$m][2], $chkLocAH->[$kR][$n][2], 'compare'=>'ovl', 'sort'=>0);
+          my ($ovlLen_nonDup, $ovlCnt_mayDup, $ovlLocR) = mathSunhh::compare_number_list($refLocAH->[$kR][$m][2], $chkLocAH->[$kR][$n][2], 'compare'=>'ovl', 'sort'=>0);
           # warn "$refLocAH->[$kR][$m][0]: $ovlLen_nonDup >= $min_ovl_rate * $refLocAH->[$kR][$m][3]\n";
           # warn "$chkLocAH->[$kR][$n][0]: $ovlLen_nonDup >= $min_ovl_rate * $chkLocAH->[$kR][$n][3]\n\n";
           if ($ovlLen_nonDup >= $min_ovl_rate * $refLocAH->[$kR][$m][3] 

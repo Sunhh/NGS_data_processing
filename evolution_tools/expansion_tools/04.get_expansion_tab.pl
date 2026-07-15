@@ -29,8 +29,8 @@ HH
 $opts{'help'} and &LogInforSunhh::usage($help_txt); 
 -t and !@ARGV and &LogInforSunhh::usage($help_txt); 
 
-my @bigC   = &mathSunhh::_parseCol( $opts{'bigCol'} ); 
-my @smallC = &mathSunhh::_parseCol( $opts{'smallCol'} ); 
+my @bigC   = &mathSunhh::parseCol( $opts{'bigCol'} ); 
+my @smallC = &mathSunhh::parseCol( $opts{'smallCol'} ); 
 
 while (<>) {
 	chomp; 

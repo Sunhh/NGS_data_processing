@@ -2,7 +2,6 @@
 use strict; 
 use warnings; 
 use mathSunhh; 
-my $ms_obj = mathSunhh->new(); 
 
 # S1	E1	S2	E2	ID1_1	ID1_2	ID2_1	ID2_2	Span1	Span2	Strand	Size1	Size2	Name1	Name2	Block_Number	Block_Loci
 # 16657	113511	1	95242	73.81	73.81	73.81	73.81	96855	95242	+	8241642	96975	WM97pbV0_000000F	WM97_scaffold1452	1	16657-113511:1-95242
@@ -24,14 +23,14 @@ while (<>) {
 }
 
 for my $k1 (sort {$len1{$b} <=> $len1{$a}} keys %len1) {
-	my $m1 = $ms_obj->mergeLocBlk( $blk1{$k1}, 'dist2join' => 1 ); 
+	my $m1 = mathSunhh::mergeLocBlk( $blk1{$k1}, 'dist2join' => 1 ); 
 	for my $tse (@$m1) {
 		print join("\t", "ID1", $k1, @{$tse}[0,1], $tse->[1]-$tse->[0]+1)."\n"; 
 	}
 }
 
 for my $k2 (sort {$len2{$b} <=> $len2{$a}} keys %len2) {
-	my $m1 = $ms_obj->mergeLocBlk( $blk2{$k2}, 'dist2join' => 1 ); 
+	my $m1 = mathSunhh::mergeLocBlk( $blk2{$k2}, 'dist2join' => 1 ); 
 	for my $tse (@$m1) {
 		print join("\t", "ID2", $k2, @{$tse}[0,1], $tse->[1]-$tse->[0]+1)."\n"; 
 	}

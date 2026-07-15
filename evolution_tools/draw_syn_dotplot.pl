@@ -4,7 +4,6 @@ use strict;
 use warnings; 
 use LogInforSunhh; 
 use fileSunhh; 
-use DBD::Chart::Plot;
 use Getopt::Long; 
 my %opts; 
 GetOptions(\%opts, 
@@ -32,7 +31,7 @@ GetOptions(\%opts,
 ); 
 
 $opts{'bp_per_point'} //= 100; # bps number each point in figure standing for. 
-$opts{'out_fmt'}  //= 'png'; 
+$opts{'out_fmt'}  //= 'svg'; # was png (DBD::Chart::Plot removed 2026-07-10) 
 $opts{'out_name'} //= "out.$opts{'out_fmt'}"; 
 $opts{'img_setopt'} //= 'title=;horizMargin=50;vertMargin=50;xAxisLabel=Genome 1;yAxisLabel=Genome 2'; 
 
@@ -104,7 +103,7 @@ unless (defined $img_para{'img_height'}) {
 	$img_para{'img_height'} = 50 + $img_para{'max_y'} / $opts{'bp_per_point'}; 
 }
 
-my $img = DBD::Chart::Plot->new( $img_para{'img_width'} , $img_para{'img_height'} ); 
+my $img = SynDotPlot->new( $img_para{'img_width'} , $img_para{'img_height'} ); 
 &set_img_opt( $img, $opts{'img_setopt'} ); 
 &set_border( $img, $border_list{'x'}, $img_para{'max_y'}, 'x' ); 
 &set_border( $img, $border_list{'y'}, $img_para{'max_x'}, 'y' ); 
@@ -373,3 +372,66 @@ sub set_border {
 	return undef(); 
 }# set_border() 
 
+
+# --- Minimal SVG dot-plot renderer: drop-in for the DBD::Chart::Plot API used above.
+# --- Added 2026-07-10 because DBD::Chart::Plot is unmaintained/uninstallable. Emits SVG.
+{
+	package SynDotPlot;
+	sub new {
+		my ($class, $w, $h) = @_;
+		return bless { w=>($w||600), h=>($h||600), hm=>75, vm=>50, title=>'', xl=>'', yl=>'', series=>[] }, $class;
+	}
+	sub setOptions {
+		my ($self, %p) = @_;
+		defined $p{'horizMargin'} and $self->{'hm'}    = $p{'horizMargin'};
+		defined $p{'vertMargin'}  and $self->{'vm'}    = $p{'vertMargin'};
+		defined $p{'title'}       and $self->{'title'} = $p{'title'};
+		defined $p{'xAxisLabel'}  and $self->{'xl'}    = $p{'xAxisLabel'};
+		defined $p{'yAxisLabel'}  and $self->{'yl'}    = $p{'yAxisLabel'};
+		return;
+	}
+	sub setPoints {
+		my ($self, $xr, $yr, $style) = @_;
+		push @{$self->{'series'}}, { x=>[@$xr], y=>[@$yr], style=>($style // 'black line points') };
+		return;
+	}
+	sub _esc { my $t = shift; $t //= ''; $t =~ s/&/&amp;/g; $t =~ s/</&lt;/g; $t =~ s/>/&gt;/g; return $t; }
+	sub plot {
+		my ($self) = @_;   # requested format ignored: always emits SVG
+		my ($minx, $maxx, $miny, $maxy);
+		for my $d (@{$self->{'series'}}) {
+			for (@{$d->{'x'}}) { defined $_ or next; $minx = $_ if !defined $minx or $_ < $minx; $maxx = $_ if !defined $maxx or $_ > $maxx; }
+			for (@{$d->{'y'}}) { defined $_ or next; $miny = $_ if !defined $miny or $_ < $miny; $maxy = $_ if !defined $maxy or $_ > $maxy; }
+		}
+		defined $minx or return qq{<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"/>\n};
+		$maxx == $minx and $maxx = $minx + 1;
+		$maxy == $miny and $maxy = $miny + 1;
+		my ($w, $h, $hm, $vm) = @{$self}{qw/w h hm vm/};
+		my $pw = $w - 2*$hm; $pw > 0 or $pw = 1;
+		my $ph = $h - 2*$vm; $ph > 0 or $ph = 1;
+		my $mx = sub { $hm + ($_[0]-$minx)/($maxx-$minx)*$pw };
+		my $myf = sub { $h - $vm - ($_[0]-$miny)/($maxy-$miny)*$ph };
+		my @o;
+		push @o, sprintf('<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d">', $w, $h);
+		push @o, sprintf('<rect x="0" y="0" width="%d" height="%d" fill="white"/>', $w, $h);
+		push @o, sprintf('<rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" fill="none" stroke="gray"/>', $hm, $vm, $pw, $ph);
+		$self->{'title'} ne '' and push @o, sprintf('<text x="%.1f" y="%.1f" text-anchor="middle" font-size="16">%s</text>', $w/2, $vm*0.6, _esc($self->{'title'}));
+		$self->{'xl'}    ne '' and push @o, sprintf('<text x="%.1f" y="%.1f" text-anchor="middle" font-size="12">%s</text>', $w/2, $h-8, _esc($self->{'xl'}));
+		$self->{'yl'}    ne '' and push @o, sprintf('<text x="14" y="%.1f" text-anchor="middle" font-size="12" transform="rotate(-90 14 %.1f)">%s</text>', $h/2, $h/2, _esc($self->{'yl'}));
+		for my $d (@{$self->{'series'}}) {
+			my $st = $d->{'style'};
+			my ($color) = ($st =~ /^\s*(\S+)/); $color //= 'black';
+			my $doLine = ($st =~ /\bline\b/)   ? 1 : 0;
+			my $doPts  = ($st =~ /\bpoints\b/) ? 1 : 0;
+			my @px = map { $mx->($_) } @{$d->{'x'}};
+			my @py = map { $myf->($_) } @{$d->{'y'}};
+			if ($doLine and @px >= 2) {
+				my $pts = join(' ', map { sprintf('%.1f,%.1f', $px[$_], $py[$_]) } 0..$#px);
+				push @o, sprintf('<polyline points="%s" fill="none" stroke="%s" stroke-width="1"/>', $pts, $color);
+			}
+			if ($doPts) { push @o, sprintf('<circle cx="%.1f" cy="%.1f" r="1.5" fill="%s"/>', $px[$_], $py[$_], $color) for 0..$#px; }
+		}
+		push @o, '</svg>';
+		return join("\n", @o) . "\n";
+	}
+}

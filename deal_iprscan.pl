@@ -1,7 +1,6 @@
 #!/usr/bin/perl
 use strict; 
 use warnings; 
-use Time::Piece; 
 use fileSunhh; 
 use LogInforSunhh; 
 use XML::LibXML; 

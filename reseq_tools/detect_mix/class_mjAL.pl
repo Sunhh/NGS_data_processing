@@ -8,15 +8,26 @@ my %opts;
 GetOptions(\%opts, 
 	"help!", 
 	"cpuN:i", 
+	"nAsWildcard!",   # legacy: treat a group's 'N' major allele as matching any allele. 
+	"onlyDiag!",      # only output diagnostic sites (>= 2 distinct non-N group major alleles). 
 ); 
 $opts{'cpuN'} //= 10; 
 
 my $help_txt = <<HH; 
 
-perl $0 set02.tab.filt.mjAL.CLV_CLM_CA_CC > set02.tab.filt.mjAL.class_list
+perl \$0 set02.tab.filt.mjAL.CLV_CLM_CA_CC > set02.tab.filt.mjAL.class_list
 
--cpuN    [$opts{'cpuN'}]
+Classify each site by which reference groups share the same major allele. Input columns:
+  chr  pos  CLV  CLM  CA  CC   (each = that group's major allele, or 'N' if undefined)
+Output: chr, pos, AL(allele), class_1(t-code), class_2(group set, e.g. CC_CA / CLM_CLV).
 
+-cpuN          [$opts{'cpuN'}]
+-onlyDiag      [Boolean] Skip non-diagnostic sites (fewer than 2 distinct non-N major
+               alleles among the groups, i.e. sites that do not distinguish any groups).
+-nAsWildcard   [Boolean] LEGACY behaviour: treat a group whose major allele is 'N' as
+               matching every allele (so an undefined group is added to the shared class).
+               Default (off): 'N' groups are simply left out of the site's class, which
+               avoids assigning an undefined group to overlapping classes.
 -help
 
 HH
@@ -38,6 +49,13 @@ if ( !@ARGV ) {
 }
 
 my $pm = &LogInforSunhh::get_pm( $opts{'cpuN'} ); 
+
+my @GRP_ORDER = qw/CC CA CLM CLV/; 
+my %CLASS2T = (
+	"CC"=>"t1", "CC_CA"=>"t2", "CC_CA_CLM"=>"t3", "CC_CA_CLV"=>"t4", "CC_CA_CLM_CLV"=>"t5", 
+	"CC_CLM"=>"t6", "CC_CLV"=>"t7", "CC_CLM_CLV"=>"t8", "CA_CLM"=>"t9", "CA_CLV"=>"t10", 
+	"CA_CLM_CLV"=>"t11", "CA"=>"t12", "CLM_CLV"=>"t13", "CLM"=>"t14", "CLV"=>"t15", 
+); 
 
 for my $fh ( @InFp ) {
 	# header_txt
@@ -77,66 +95,23 @@ for my $fh ( @InFp ) {
 	&fileSunhh::_rmtree($wrk_dir); 
 }
 
-
-# If 'CC' = 'N', then I may have 'CC_CLM_CLV' and 'CC_CA' together. 
-# At least, there is no difference among 'CC CLM CLV' in 'CC_CLM_CLV' type. 
 sub class_mjAL {
 	my ($clv, $clm, $ca, $cc) = @_; 
-	my %h0 = map { $_ => 1 } grep { $_ ne 'N' } ($clv, $clm, $ca, $cc); 
+	my %al = ( 'CLV'=>$clv, 'CLM'=>$clm, 'CA'=>$ca, 'CC'=>$cc ); 
+	my %distinct = map { $_ => 1 } grep { $_ ne 'N' } values %al; 
 	my @back; 
-	for my $b1 (sort keys %h0) {
-			
-		if ( $b1 eq $cc or $cc eq 'N' ) {
-			if ( $b1 eq $ca or $ca eq 'N' ) {
-				if ( $b1 eq $clm or $clm eq 'N' ) {
-					if ( $b1 eq $clv or $clv eq 'N' ) {
-						push(@back, [ $b1, 't5', 'CC_CA_CLM_CLV' ]); 
-					} else {
-						push(@back, [ $b1, 't3', 'CC_CA_CLM' ]); 
-					}
-				} elsif ( $b1 eq $clv or $clv eq 'N' ) {
-					push(@back, [ $b1, 't4', 'CC_CA_CLV' ]); 
-				} else {
-					push(@back, [ $b1, 't2', 'CC_CA' ]); 
-				}
-			} elsif ( $b1 eq $clm or $clm eq 'N' ) {
-				if ( $b1 eq $clv or $clv eq 'N' ) {
-					push(@back, [ $b1, 't8', 'CC_CLM_CLV' ]); 
-				} else {
-					push(@back, [ $b1, 't6', 'CC_CLM' ]); 
-				}
-			} elsif ( $b1 eq $clv or $clv eq 'N' ) {
-				push(@back, [ $b1, 't7', 'CC_CLV' ]); 
-			} else {
-				push(@back, [ $b1, 't1', 'CC' ]); 
+	# -onlyDiag : skip sites that do not distinguish any group (< 2 distinct non-N alleles). 
+	$opts{'onlyDiag'} and scalar(keys %distinct) < 2 and return(\@back); 
+	for my $b1 (sort keys %distinct) {
+		my @grps; 
+		for my $g (@GRP_ORDER) {
+			if ( $al{$g} eq $b1 or ( $opts{'nAsWildcard'} and $al{$g} eq 'N' ) ) {
+				push(@grps, $g); 
 			}
-		} elsif ( $b1 eq $ca or $ca eq 'N' ) {
-			if ( $b1 eq $clm or $clm eq 'N' ) {
-				if ( $b1 eq $clv or $clv eq 'N' ) {
-					push(@back, [ $b1, 't11', 'CA_CLM_CLV' ]); 
-				} else {
-					push(@back, [ $b1, 't9', 'CA_CLM' ]); 
-				}
-			} elsif ( $b1 eq $clv or $clv eq 'N' ) {
-				push(@back, [ $b1, 't10', 'CA_CLV' ]); 
-			} else {
-				push(@back, [ $b1, 't12', 'CA' ]); 
-			}
-		} elsif ( $b1 eq $clm or $clm eq 'N' ) {
-			if ( $b1 eq $clv or $clv eq 'N') {
-				push(@back, [ $b1, 't13', 'CLM_CLV' ]); 
-			} else {
-				push(@back, [ $b1, 't14', 'CLM' ]); 
-			}
-		} elsif ( $b1 eq $clv ) {
-			push(@back, [ $b1, 't15', 'CLV' ]); 
-		} else {
-			# clv is 'N', this should not happen. 
-			&stopErr("[Err] Bad here. $b1 in [$clv, $clm, $ca, $cc]\n"); 
-			push(@back, [ $b1, 't0' , 'UN' ]); 
 		}
+		my $name  = join('_', @grps); 
+		my $tcode = $CLASS2T{$name} // 't0'; 
+		push(@back, [ $b1, $tcode, $name ]); 
 	}
 	return(\@back); 
 }# class_mjAL() 
-
-

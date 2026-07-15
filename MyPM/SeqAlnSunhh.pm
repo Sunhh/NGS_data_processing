@@ -9,7 +9,6 @@ use warnings;
 use LogInforSunhh; 
 use Exporter qw(import); 
 use mathSunhh; # For usage of mathSunhh->_setHashFromArr(); 
-my $ms=mathSunhh->new(); 
 use fileSunhh; 
 
 our @EXPORT = qw(olap_e2e_A2B); 
@@ -90,7 +89,7 @@ sub new {
 }
 sub _initialize {
 	my $self = shift; 
-	my %parm = $ms->_setHashFromArr(@_); 
+	my %parm = &mathSunhh::_setHashFromArr(@_); 
 	return; 
 }
 
@@ -109,7 +108,7 @@ Input         :
 =cut
 sub aln_tophat2 {
 	my $self = shift; 
-	my %parm = $ms->_setHashFromArr(@_); 
+	my %parm = &mathSunhh::_setHashFromArr(@_); 
 	
 	# Find tophat2 
 	$parm{'exe_tophat'} //= 'tophat'; 
@@ -131,7 +130,7 @@ sub aln_tophat2 {
 	# Separate and group PE/SE fastq files. 
 	$parm{'inFq1'} //= []; 
 	$parm{'inFq2'} //= []; 
-	my $long_idx = $ms->max( $#{$parm{'inFq1'}}, $#{$parm{'inFq2'}} ); 
+	my $long_idx = &mathSunhh::max( $#{$parm{'inFq1'}}, $#{$parm{'inFq2'}} ); 
 	my (@inFqPE1, @inFqPE2, @inFqSE); 
 	for (my $i=0; $i<=$long_idx; $i++) {
 		if ( defined $parm{'inFq1'}[$i] and $parm{'inFq1'}[$i] ne '' ) {
@@ -168,7 +167,7 @@ Description   : Check database index files with given 'index_prefix' and databas
 sub chk_index {
 	my $self = shift; 
 	my $pref = shift; 
-	my %parm = $ms->_setHashFromArr(@_); 
+	my %parm = &mathSunhh::_setHashFromArr(@_); 
 	
 	$parm{'type'} //= 'bowtie2'; 
 	$parm{'type'} = lc($parm{'type'}); 
@@ -201,7 +200,7 @@ Return        : (\%parm)
 =cut
 sub version_samtools {
 	my $self = shift; 
-	my %parm = $ms->_setHashFromArr(@_); 
+	my %parm = &mathSunhh::_setHashFromArr(@_); 
 	$parm{'chk_version'} //= 1; 
 	$parm{'exe_samtools'} //= 'samtools'; 
 	$parm{'ver_samtools'} //= '0'; 
@@ -241,7 +240,7 @@ Input         :
 
 sub bwaAln {
 	my $self = shift; 
-	my %parm = $ms->_setHashFromArr(@_); 
+	my %parm = &mathSunhh::_setHashFromArr(@_); 
 	$parm{'aln_type'} //= 'PE'; 
 	if ( $parm{'aln_type'} eq 'PE' ) {
 		$self->bwaPE(%parm); 
@@ -271,7 +270,7 @@ Input         :
 =cut
 sub bwaPE {
 	my $self = shift; 
-	my %parm = $ms->_setHashFromArr(@_); 
+	my %parm = &mathSunhh::_setHashFromArr(@_); 
 	( ( defined $parm{'inFq1'} or defined $parm{'inFq2'} ) and defined $parm{'db'} ) or &stopErr("[Err] Three paramters must be defined: inFq1/inFq2/db in function bwaPE()\n"); 
 	$parm{'step2do'} //= ['all']; 
 	$parm{'dbTag'} //= 'toDB'; 
@@ -379,7 +378,7 @@ Input         :
 =cut
 sub bwaSE {
 	my $self = shift; 
-	my %parm = $ms->_setHashFromArr(@_); 
+	my %parm = &mathSunhh::_setHashFromArr(@_); 
 	( ( defined $parm{'inFq1'} ) and defined $parm{'db'} ) or &stopErr("[Err] Three paramters must be defined: inFq1/db in function bwaSE()\n"); 
 	$parm{'step2do'} //= ['all']; 
 	$parm{'dbTag'} //= 'toDB'; 
@@ -661,6 +660,19 @@ $infor_flag[ 10] = [qw/10    0x0400  d/, "the read is either a PCR or an optical
 $infor_flag{ 11} = [qw/11    0x0800  d/, "the alignment is supplementary alignment"]; 
 
 =cut
+=head1 sam_flag_table()
+
+Function  : Accessor for the canonical SAM-FLAG bit table (single source of truth,
+            shared with sam_flag_infor()). No arguments.
+
+Return    : (\%infor_flag) where $infor_flag{$bit} = [ bitpos, hex, char, description ]
+            for bit = 0 .. 11 (bit 11 = supplementary alignment).
+
+=cut
+sub sam_flag_table {
+	return ( \%infor_flag ); 
+}# sam_flag_table()
+
 sub sam_flag_infor {
 	my $flag_num = shift; 
 	$flag_num =~ m/^\d+$/ or &stopErr("[Err] Unknown flag_num [$flag_num] in &sam_flag_infor()\n"); 

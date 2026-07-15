@@ -1,6 +1,7 @@
 #/usr/bin/perl
 # 2019-03-08 Transform SNP tables into STRUCTURE input file.
 use strict;
+use FindBin; (my $REPO = $FindBin::RealBin) =~ s{(/NGS_data_processing)(/.*)?$}{$1};  # portable repo root
 use warnings;
 use fileSunhh; 
 use LogInforSunhh; 
@@ -30,8 +31,8 @@ GetOptions(\%opts,
 	##### $opts{'outfile_extraparam'}
 	"outfile_mainparam:s", 
 	"outfile_extraparam:s", 
-	"basic_mainparam:s", # /home/Sunhh/tools/github/NGS_data_processing/structure/mainparams
-	"basic_extraparam:s", # /home/Sunhh/tools/github/NGS_data_processing/structure/extraparams
+	"basic_mainparam:s", # $REPO/evolution_tools/structure/mainparams
+	"basic_extraparam:s", # $REPO/evolution_tools/structure/extraparams
 	"param_K:i",        # KKKKKKK; MAXPOPS 4
 	"param_burn:i",     # AAAAAAA; BURNIN  40000
 	"param_numrep:i",   # BBBBBBB; NUMREPS 15000
@@ -43,7 +44,7 @@ GetOptions(\%opts,
 	"param_lociN:i",    # FFFFFFF; NUMLOCI From $opts{'outfile_struct'}
 
 	"param_seedN:i",    # RRRRRRR; SEED    -1 means randomly select it. 
-	"param_exe:s",      # /home/Sunhh/tools/github/NGS_data_processing/structure/structure
+	"param_exe:s",      # $REPO/evolution_tools/structure/structure
 	# For get_param_n
 	"param_minK:i",     # 1
 	"param_maxK:i",     # 20
@@ -96,7 +97,7 @@ sub run_get_param_1 {
 	if (defined $opts{'param_cmdLis'} and $opts{'task'} eq 'GET_PARAM_1') {
 		&fileSunhh::write2file($opts{'param_cmdLis'}, '', '>'); 
 	}
-	$opts{'param_exe'}    //= '/home/Sunhh/tools/github/NGS_data_processing/structure/structure'; 
+	$opts{'param_exe'}    //= "$REPO/evolution_tools/structure/structure"; 
 	$opts{'param_K'}      //= 4; 
 	$opts{'param_burn'}   //= 40000; 
 	$opts{'param_numrep'} //= 15000; 
@@ -323,7 +324,7 @@ sub set_glob {
 #    -param_sampleN  [num] from param_infile / outfile_struct ; 
 #    -param_lociN    [num] from param_infile / outfile_struct ; 
 #    -param_seedN    [-1] -1 means to randomly select one. 
-#    -param_exe      [/home/Sunhh/tools/github/NGS_data_processing/structure/structure]
+#    -param_exe      [<REPO>/evolution_tools/structure/structure]
 #    -param_cmdLis   [path_to/cmd_list] generate a command list file. 
 #  
 #  -task     get_param_n

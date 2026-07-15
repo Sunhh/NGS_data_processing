@@ -3,6 +3,7 @@
 use strict; 
 use warnings; 
 use SeqAlnSunhh; # For olap_e2e_A2B( seqA, seqB [, {para_hash}])
+use LogInforSunhh; 
 use Getopt::Long; 
 
 my %opts; 
@@ -209,8 +210,4 @@ sub mainBaseRatio {
 	return $vv/$nn ; 
 }
 
-sub tsmsg {
-	my $tt = scalar(localtime()); 
-	print STDERR join('', "[$tt]", @_); 
-}
 

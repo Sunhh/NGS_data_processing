@@ -4,7 +4,6 @@ use warnings;
 use LogInforSunhh; 
 use fileSunhh; 
 use mathSunhh; 
-my $ms_obj = mathSunhh->new(); 
 use Getopt::Long; 
 my %opts; 
 GetOptions(\%opts, 
@@ -130,7 +129,7 @@ sub cnvt_coords_gff2tab {
 					for my $a1 ( @{$scf2ctg{$cnt{$ij}{'scf_info'}[0]}} ) {
 						$a1->[0] > $cnt{$ij}{'scf_info'}[2] and next; 
 						$a1->[1] < $cnt{$ij}{'scf_info'}[1] and next; 
-						my ($ovl_len, $ovl_se) = $ms_obj->ovl_region( $cnt{$ij}{'scf_info'}[1],$cnt{$ij}{'scf_info'}[2], $a1->[0], $a1->[1] ); 
+						my ($ovl_len, $ovl_se) = mathSunhh::ovl_region( $cnt{$ij}{'scf_info'}[1],$cnt{$ij}{'scf_info'}[2], $a1->[0], $a1->[1] ); 
 						$ovl_len > 0 or &stopErr("[Err] $cnt{$ij}{'scf_info'}[1],$cnt{$ij}{'scf_info'}[2], $a1->[0], $a1->[1]\n"); 
 						if ( $a1->[5] eq '+' ) {
 							$cnt{$ij}{'F'} += $ovl_len; 

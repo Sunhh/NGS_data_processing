@@ -4,8 +4,9 @@ use strict;
 use warnings;
 use LogInforSunhh;
 use fileSunhh;
+use FindBin; (my $REPO = $FindBin::RealBin) =~ s{(/NGS_data_processing)(/.*)?$}{$1};  # portable repo root
 
-my $pl_deal_gff3 = 'perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl';
+my $pl_deal_gff3 = "perl $REPO/temp/deal_gff3.pl";
 !@ARGV and die "perl $0 liftoff_out.gff3 > filtered.gff3\n";
 
 my $inFn = shift;

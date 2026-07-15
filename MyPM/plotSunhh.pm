@@ -3,7 +3,7 @@ package plotSunhh;
 use strict; 
 use warnings; 
 use Exporter qw(import);
-our @EXPORT = qw(ins_calc);
+our @EXPORT = qw();
 our @EXPORT_OK = qw();
 
 use LogInforSunhh; 

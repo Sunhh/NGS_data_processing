@@ -5,6 +5,7 @@ use strict;
 use LogInforSunhh;
 use fileSunhh;
 use Getopt::Long;
+use FindBin; (my $REPO = $FindBin::RealBin) =~ s{(/NGS_data_processing)(/.*)?$}{$1};  # portable repo root
 my %opts;
 GetOptions(\%opts,
   "help!",
@@ -13,10 +14,10 @@ GetOptions(\%opts,
   "mkpre:s",         # Required: PI596694_SW1.all.maker.non_overlapping_ab_initio.proteins.fasta.gz
   "in_genomeFas:s",  # Required: in.chr.fa
   "opre:s",          # Default: comb; No directories included.
-  "pl_retMkGff:s",   # Default: 'perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/maker/ret_maker_abinit_gff3.pl'
+  "pl_retMkGff:s",   # Default: "perl $REPO/annot_tools/maker/ret_maker_abinit_gff3.pl"
   "pl_dealFas:s",    # Default: 'deal_fasta.pl'
   "pl_dealTab:s",    # Default: 'deal_table.pl'
-  "pl_dealGff:s",    # Default: 'perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl'
+  "pl_dealGff:s",    # Default: "perl $REPO/temp/deal_gff3.pl"
   "exe_mpi:s",       # Default: '/data/Sunhh/install/mpich/bin/mpiexec'
   "binDir_maker:s",  # Default: '/data/Sunhh/src/annotation/maker/maker.3.01.03/bin'
   "mk_cpuN:i",       # Default: 20
@@ -55,10 +56,10 @@ my $htxt=<<HH;
 HH
 
 $opts{'opre'} //= 'comb';
-$opts{'pl_retMkGff'}  //= 'perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/maker/ret_maker_abinit_gff3.pl';
+$opts{'pl_retMkGff'}  //= "perl $REPO/annot_tools/maker/ret_maker_abinit_gff3.pl";
 $opts{'pl_dealFas'}   //= 'deal_fasta.pl';
 $opts{'pl_dealTab'}   //= 'deal_table.pl';
-$opts{'pl_dealGff'}   //= 'perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl';
+$opts{'pl_dealGff'}   //= "perl $REPO/temp/deal_gff3.pl";
 $opts{'exe_mpi'}      //= '/data/Sunhh/install/mpich/bin/mpiexec';
 $opts{'binDir_maker'} //= '/data/Sunhh/src/annotation/maker/maker.3.01.03/bin/';
 $opts{'mk_cpuN'}      //= 20;

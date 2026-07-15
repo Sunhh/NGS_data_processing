@@ -39,15 +39,6 @@ close ($fh_orth);
 
 
 # Not used here. 
-sub grpID {
-	my $back = $_[0]; 
-	if ($back =~ m/^(\S+)\s*\(\s*\d+\s+genes?\s*,\s*\d+\s*taxa\s*\)/) {
-		$back = $1
-	} else {
-		$back =~ s/\s/_/g;
-	}
-	return $back; 
-}
 
 sub load_name_list {
 	# $_[0] : file name of in_name_list 

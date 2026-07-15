@@ -1,8 +1,8 @@
 #!/usr/bin/perl
 use strict; 
 use warnings; 
-use Statistics::Descriptive::Weighted; 
 
+use SeqAlnSunhh; # canonical SAM-FLAG keep engine (mk_flag)
 -t and !@ARGV and &stopErr("samtools view -h in.bam | perl $0 \n"); 
 
 
@@ -27,42 +27,11 @@ my $max_ins = 50e3;
 # 10  0x0400  d the read is either a PCR or an optical duplicate
 ###### FLAG list prepared.
 
-###### Make FLAG list
-my %flag;
-for (0 .. 2047) {
-	my $binum = unpack("B32", pack("N", $_));
-	$flag{$_} = [ reverse( split(//, sprintf("%011d", $binum) ) ) ];
-}
-
-my $opts_keep = '0=1,2=0,3=0,4=0,5=1'; 
-
-my %use_flag; 
-
-my %keep_flag; 
-for ( sort { $a<=>$b } keys %flag ) {
-	my @ta = @{$flag{$_}}; 
-	CHK_TTL_KEEP:
-	for my $exp1 ( split(/;/, $opts_keep) ) {
-		my $should_keep = 1;
-		CHK_EACH_KEEP:
-		for my $exp2 ( split(/,/, $exp1) ) {
-			$exp2 =~ m/^(\d+)=([01])$/ or die "Failed to parse |$exp2|\n";
-			my ($coln, $colv) = ($1, $2);
-			$ta[$coln] != $colv and do { $should_keep = 0; last CHK_EACH_KEEP; };
-		}#End for my $exp2 [CHK_EACH_KEEP]
-
-		# logical OR, so any of TRUE will make the keeping [CHK_TTL_KEEP] TRUE.
-		$should_keep == 1 and do { $keep_flag{$_} = 1; last CHK_TTL_KEEP; };
-
-	}#End for my $exp1 [CHK_TTL_KEEP]
-
-	if ( defined $keep_flag{$_} and $keep_flag{$_} == 1 ) {
-		defined $use_flag{$_} and &stopErr("[Err]Repeat flag[$_]\n"); 
-		$use_flag{$_} = 1; 
-	} else {
-		$use_flag{$_} = 0; 
-	}
-}
+###### Keep read alignments whose FLAG matches this pattern; canonical engine: SeqAlnSunhh::mk_flag.
+my $opts_keep = '0=1,2=0,3=0,4=0,5=1';
+my $good_flag = &SeqAlnSunhh::mk_flag( 'keep'=>$opts_keep );
+my %use_flag;
+for my $f ( 0 .. 2047 ) { $use_flag{$f} = $good_flag->{$f} ? 1 : 0; }  # 0..2047 as before (excludes bit-11 supplementary)
 
 print STDOUT join("\t", qw/ScaffID ScaffPos FragCov FragLenMean/)."\n"; 
 
@@ -108,11 +77,7 @@ while (<>) {
 			&tsmsg("[Msg]Output $prev_scfID len=$scf_len{$prev_scfID}\n"); 
 			# for (my $p=0; $p<$scf_len{$prev_scfID}; $p++) {
 			for (my $p=$scf_range{min}-1; $p<$scf_range{max}; $p++) {
-				if ( scalar( @{$frag_covs[$p]} ) > 0 ) {
-					print STDOUT join("\t", $prev_scfID, $p+1, 0, -1, '')."\n"; 
-				} else {
-					print STDOUT join( "\t", $prev_scfID, $p+1, scalar( @{$frag_covs[$p]} ), &mean( @{$frag_covs[$p]} ), join(';', @{$frag_covs[$p]}) )."\n"; 
-				}
+				print STDOUT join( "\t", $prev_scfID, $p+1, scalar( @{$frag_covs[$p]} ), &mean( @{$frag_covs[$p]} ), join(';', @{$frag_covs[$p]}) )."\n"; 
 			}
 			
 			$prev_scfID = $scfID; 

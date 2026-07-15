@@ -5,6 +5,7 @@
 # [5/5/2022]
 # [5/10/2022] Fix a bug for score_d2top filtering.
 use strict;
+use FindBin; (my $REPO = $FindBin::RealBin) =~ s{(/NGS_data_processing)(/.*)?$}{$1};  # portable repo root
 use warnings;
 use LogInforSunhh;
 use fileSunhh;
@@ -82,7 +83,7 @@ my $stepL = int($segL/2); $stepL < 1 and $stepL = 1;
     close O1;
     &fileSunhh::_move("$opref.seg.toDb.bn6.1", "$opref.seg.toDb.bn6");
   }
-  $cmd = "perl /home/Sunhh/tools/github/NGS_data_processing/assemble_tools/cnvt_loc_fromAGP_toAGP_forLoci.pl ";
+  $cmd = "perl $REPO/assemble_tools/cnvt_loc_fromAGP_toAGP_forLoci.pl ";
   $cmd .= " -new_agp $opref.seg2ori.agp  ";
   $cmd .= " -old_loc $opref.seg.toDb.bn6 ";
   $cmd .= " -new_loc $opref.ori.toDb.bn6 ";

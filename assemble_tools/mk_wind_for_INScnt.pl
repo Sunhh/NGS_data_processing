@@ -2,7 +2,6 @@
 use strict; 
 use warnings; 
 use mathSunhh; 
-my $ms_obj = mathSunhh->new(); 
 
 @ARGV == 4 or &usage(); 
 
@@ -35,7 +34,7 @@ while (<>) {
 	my @ta = split(/\t/, $_); 
 	my ($chrID, $chrLen, $mS, $mE, $mL) = @ta; 
 	$chrLen =~ m/^length$/i and next; 
-	defined $wind{$chrID} or $wind{$chrID} = $ms_obj->setup_windows( 'ttl_start'=>1, 'ttl_end'=>$chrLen, 'wind_size'=>$wind_len, 'wind_step'=>$wind_step ); 
+	defined $wind{$chrID} or $wind{$chrID} = mathSunhh::setup_windows( 'ttl_start'=>1, 'ttl_end'=>$chrLen, 'wind_size'=>$wind_len, 'wind_step'=>$wind_step ); 
 	$chr_len{$chrID} //= $chrLen; 
 	unless ( defined $si2idx{$chrID} ) {
 		my $idx = 0; 
@@ -45,8 +44,8 @@ while (<>) {
 			$idx ++; 
 		}
 	}
-	my @si_mS = sort { $a <=> $b } @{ $ms_obj->map_windows( 'posi'=>$mS, 'wind_hash'=>$wind{$chrID} ) }; 
-	my @si_mE = sort { $a <=> $b } @{ $ms_obj->map_windows( 'posi'=>$mE, 'wind_hash'=>$wind{$chrID} ) }; 
+	my @si_mS = sort { $a <=> $b } @{ mathSunhh::map_windows( 'posi'=>$mS, 'wind_hash'=>$wind{$chrID} ) }; 
+	my @si_mE = sort { $a <=> $b } @{ mathSunhh::map_windows( 'posi'=>$mE, 'wind_hash'=>$wind{$chrID} ) }; 
 	for my $idx ( $si2idx{$chrID}{ $si_mS[0] } .. $si2idx{$chrID}{ $si_mE[-1] } ) {
 		my $si = $idx2si{$chrID}{$idx}; 
 		my ($wS, $wE, $iL) = @{ $wind{$chrID}{'loci'}{$si} }; 
@@ -78,8 +77,8 @@ for my $chrID (sort keys %si_to_mSE) {
 			}
 		}
 		my (@merged_fwd_blk, @merged_rev_blk); 
-		scalar(@fwd_blks) > 0 and @merged_fwd_blk = @{ $ms_obj->mergeLocBlk( \@fwd_blks ) }; 
-		scalar(@rev_blks) > 0 and @merged_rev_blk = @{ $ms_obj->mergeLocBlk( \@rev_blks ) }; 
+		scalar(@fwd_blks) > 0 and @merged_fwd_blk = @{ mathSunhh::mergeLocBlk( \@fwd_blks ) }; 
+		scalar(@rev_blks) > 0 and @merged_rev_blk = @{ mathSunhh::mergeLocBlk( \@rev_blks ) }; 
 		$w2v{$chrID}{$si}[1] //= 0; # For good forward length 
 		$w2v{$chrID}{$si}[2] //= 0; # For good reverse length 
 		for my $se (@merged_fwd_blk) {
@@ -106,8 +105,8 @@ for my $chrID ( sort keys %wind ) {
 sub blks_by_region {
 	my ($mS, $mE, $chrID) = @_; 
 	my @back_blks; 
-	my @si_mS = sort { $a<=>$b } @{ $ms_obj->map_windows( 'posi'=>$mS, 'wind_hash'=>$wind{$chrID} ) }; 
-	my @si_mE = sort { $a<=>$b } @{ $ms_obj->map_windows( 'posi'=>$mE, 'wind_hash'=>$wind{$chrID} ) }; 
+	my @si_mS = sort { $a<=>$b } @{ mathSunhh::map_windows( 'posi'=>$mS, 'wind_hash'=>$wind{$chrID} ) }; 
+	my @si_mE = sort { $a<=>$b } @{ mathSunhh::map_windows( 'posi'=>$mE, 'wind_hash'=>$wind{$chrID} ) }; 
 	for my $idx ( $si2idx{$chrID}{ $si_mS[0] } .. $si2idx{$chrID}{ $si_mE[-1] } ) {
 		my $si = $idx2si{$chrID}{$idx}; 
 		defined $si_to_mSE{$chrID}{$si} or next; 

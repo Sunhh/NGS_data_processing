@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 use strict;
+use FindBin; (my $REPO = $FindBin::RealBin) =~ s{(/NGS_data_processing)(/.*)?$}{$1};  # portable repo root
 use warnings;
 use LogInforSunhh;
 use fileSunhh;
@@ -22,7 +23,7 @@ while (<F1>) {
 close F1;
 for (keys %loc1) { @{$loc1{$_}} = sort {$a->[0] <=> $b->[0] || $a->[1] <=> $b->[1]} @{$loc1{$_}}; }
 
-open F2,'-|',"perl ~/tools/github/NGS_data_processing/temp/deal_gff3.pl -inGff $f2 -getJnLoc " or die;
+open F2,'-|',"perl $REPO/temp/deal_gff3.pl -inGff $f2 -getJnLoc " or die;
 &fileSunhh::write2file("${opre}.list","", '>');
 while (<F2>) {
   chomp;
@@ -39,5 +40,5 @@ while (<F2>) {
   &fileSunhh::write2file("${opre}.list", "$ta[0]\n",'>>');
 }
 close F2;
-&runCmd("perl ~/tools/github/NGS_data_processing/temp/deal_gff3.pl -inGff $f2 -gffret ${opre}.list -idType mRNA > ${opre}.gff3");
+&runCmd("perl $REPO/temp/deal_gff3.pl -inGff $f2 -gffret ${opre}.list -idType mRNA > ${opre}.gff3");
 

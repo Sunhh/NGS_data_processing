@@ -2,10 +2,10 @@
 # Author email : hs738@cornell.edu or biosunhh@gmail.com
 
 # 2025-10-25: Add -kSrch_noCase to enable case-insensitive match.
-# 2006-11-17 13:18 ×¼±¸¼ÓÈëÒ»¸öbest_uniqº¯Êı£¬ÓÃÀ´´¦Àí*.psl¸ñÊ½ÎÄ¼ş£¬ÉĞÎ´Íê³É£»
-# 2006-11-24 13:33 ¼ÓÈëÒ»¸öĞ¡º¯Êı,UniqColLine,finished.
-# 2006-11-24 15:16 ²âÊÔbest_uniq
-# 2007-1-17 17:16 ÂÔÎ¢²âÊÔÁËbest_uniqCol, Íê³Ébest_rep²ÎÊı;
+# 2006-11-17 13:18 å‡†å¤‡åŠ å…¥ä¸€ä¸ªbest_uniqå‡½æ•°ï¼Œç”¨æ¥å¤„ç†*.pslæ ¼å¼æ–‡ä»¶ï¼Œå°šæœªå®Œæˆï¼›
+# 2006-11-24 13:33 åŠ å…¥ä¸€ä¸ªå°å‡½æ•°,UniqColLine,finished.
+# 2006-11-24 15:16 æµ‹è¯•best_uniq
+# 2007-1-17 17:16 ç•¥å¾®æµ‹è¯•äº†best_uniqCol, å®Œæˆbest_repå‚æ•°;
 # 2007-06029 add a para -label_mark
 # 2007-0711  add a para -col_repCount
 # 2007-9-20 10:58:10 add a output for -col_stat; 
@@ -34,6 +34,7 @@ use strict;
 use warnings; 
 use fileSunhh; 
 use LogInforSunhh; 
+use mathSunhh; 
 
 use Getopt::Long;
 my %opts;
@@ -156,7 +157,7 @@ command:perl $0 <STDIN|parameters>
 INFO
 
 	print STDOUT "$info"; 
-	&stop("[Err] Exit $0\n"); 
+	&stopErr("[Err] Exit $0\n"); 
 	exit(1); 
 }
 
@@ -354,7 +355,7 @@ sub specLoci {
 # Extract columns according to $opts{'colByTbl'}; 
 sub colByTbl {
 	my @col_also = (); 
-	defined $opts{'colByTbl_also'} and @col_also = &parseCol($opts{'colByTbl_also'}); 
+	defined $opts{'colByTbl_also'} and @col_also = &mathSunhh::parseCol($opts{'colByTbl_also'}); 
 	my $idxFh = &openFH($opts{'colByTbl'}, '<'); 
 	my (%needColID, $cnt); 
 	$cnt = 0; 
@@ -566,8 +567,8 @@ sub dR2dN {
 # Similar to linux_join and from perl script uniqComb.pl 
 ## "kSrch_idx:s","kSrch_idxCol:s","kSrch_srcCol:s","kSrch_drop!", # Similar to linux command join, without joining and with more index columns. Combined from uniqComb.pl 
 sub kSrch {
-	my @src_Cols = ( defined $opts{kSrch_srcCol} ) ? ( &parseCol( $opts{ kSrch_srcCol } ) ) : ( 0 ) ; 
-	my @idx_Cols = ( defined $opts{kSrch_idxCol} ) ? ( &parseCol( $opts{ kSrch_idxCol } ) ) : ( 0 ) ; 
+	my @src_Cols = ( defined $opts{kSrch_srcCol} ) ? ( &mathSunhh::parseCol( $opts{ kSrch_srcCol } ) ) : ( 0 ) ; 
+	my @idx_Cols = ( defined $opts{kSrch_idxCol} ) ? ( &mathSunhh::parseCol( $opts{ kSrch_idxCol } ) ) : ( 0 ) ; 
 	my %idx_key; 
 	for my $idxF ( &splitL(",", $opts{'kSrch_idx'}) ) {
 		my $fh = &openFH( $idxF, '<' ); 
@@ -781,7 +782,7 @@ sub cluster_group {
 	my (@tcols, $is_col); 
 	$is_col = 0; 
 	if (defined $opts{cluster_cols}) {
-		@tcols = &parseCol($opts{cluster_cols}); 
+		@tcols = &mathSunhh::parseCol($opts{cluster_cols}); 
 	}
 	@tcols > 0 and $is_col = 1; 
 	for my $fh (@InFp) {
@@ -858,16 +859,16 @@ sub cluster_group {
 #cbind: bind files by columns. 
 # Similar to linux-paste command. 
 sub cbind {
-	@ARGV > 1 or &stop( "[Err]There should be no less than two files for -cbind function.\n" ); 
+	@ARGV > 1 or &stopErr( "[Err]There should be no less than two files for -cbind function.\n" ); 
 	my @col_len = (-1) x scalar(@InFp); 
 	while (!eof($InFp[0])) {
-		$. % 1e6 == 1 and &tmsg( "[Msg]$. lines.\n" ); 
+		$. % 1e6 == 1 and &tsmsg( "[Msg]$. lines.\n" ); 
 		my @line; 
 		for (my $i=0; $i<@InFp; $i++) {
 			my $tfh = $InFp[$i]; 
-			&tmsg("[Rec]Dealing with [0-Idx $i] file [$ARGV[$i]]\n"); 
+			&tsmsg("[Rec]Dealing with [0-Idx $i] file [$ARGV[$i]]\n"); 
 			if (eof($tfh)) {
-				&stop("[Err][$i] file [$ARGV[$i]] ended before others!\n"); 
+				&stopErr("[Err][$i] file [$ARGV[$i]] ended before others!\n"); 
 			}
 			my $tl = <$tfh>; 
 			chomp($tl); $tl =~ s/[\r\b\n]+$//; 
@@ -877,8 +878,8 @@ sub cbind {
 				if ($col_len[$i] == -1) {
 					$col_len[$i] = $coln; 
 				}elsif ($col_len[$i] != $coln) {
-					&tmsg("[Wrn]Column number of file $ARGV[$i] changed at line ($col_len[$i] to $coln): '$tl'\n"); 
-					&tmsg("[Wrn]I modify columns to $col_len[$i].\n"); 
+					&tsmsg("[Wrn]Column number of file $ARGV[$i] changed at line ($col_len[$i] to $coln): '$tl'\n"); 
+					&tsmsg("[Wrn]I modify columns to $col_len[$i].\n"); 
 					$tl = join("$symbol", (&splitL($symbol, $tl))[0..($col_len[$i]-1)]); 
 				}
 			}# End chkColNum 
@@ -887,9 +888,9 @@ sub cbind {
 		print STDOUT join("\t", @line)."\n"; 
 	}# End while !eof($InFp[0])
 	for (my $i=1; $i<@InFp; $i++) {
-		!eof($InFp[$i]) and &tmsg("[Wrn][0-Idx $i] file [$ARGV[$i]] rests lines.\n"); 
+		!eof($InFp[$i]) and &tsmsg("[Wrn][0-Idx $i] file [$ARGV[$i]] rests lines.\n"); 
 	}
-	&tmsg( "[Rec] -cbind Over.\n" ); 
+	&tsmsg( "[Rec] -cbind Over.\n" ); 
 }#End of sub cbind. 
 
 #Labeltbl 2007-06-29
@@ -924,7 +925,7 @@ sub LabelTbl {
 # UniqColLine
 sub UniqColLineF{
 	my %uniqLine;
-	my @Cols = &parseCol($opts{UniqColLine});
+	my @Cols = &mathSunhh::parseCol($opts{UniqColLine});
 	$opts{'topN'} //= 1; 
 	for my $fh (@InFp) {
 		while (<$fh>) {
@@ -950,17 +951,17 @@ sub UniqColLineF{
 sub best_uniqCol{
 	my $rep = 0;
 	defined $opts{'best_rep'} and $rep = 1;
-	$rep == 1 and do { open(REP,'>',$opts{best_rep}) or &stop( "[Err]open file $opts{best_rep} failed!\n" ) };
-	my @BestCol   = &parseCol($opts{best_uniqCol});
-	my @SelctCol  = &parseCol($opts{select_col});
-#	my @SelctRule = &parseCol($opts{select_rule});
+	$rep == 1 and do { open(REP,'>',$opts{best_rep}) or &stopErr( "[Err]open file $opts{best_rep} failed!\n" ) };
+	my @BestCol   = &mathSunhh::parseCol($opts{best_uniqCol});
+	my @SelctCol  = &mathSunhh::parseCol($opts{select_col});
+#	my @SelctRule = &mathSunhh::parseCol($opts{select_rule});
 	my @SelctRule = &splitL(',', $opts{'select_rule'}); 
 	foreach my $test (@SelctRule) {
 		$test =~ s/(^\s+|\s+$)//; 
-		($test == 1 or $test == -1) or &stop( "[Err] select_rule mustbe 1/-1!\n" );
+		($test == 1 or $test == -1) or &stopErr( "[Err] select_rule mustbe 1/-1!\n" );
 	}
-	($#BestCol > -1 and $#SelctCol > -1 and $#SelctRule > -1) or &stop("[Err] $#BestCol > -1 and $#SelctCol > -1 and $#SelctRule > -1\n");
-	$#SelctCol == $#SelctRule or &stop("[Err] SelctCol != SelctRule\n");
+	($#BestCol > -1 and $#SelctCol > -1 and $#SelctRule > -1) or &stopErr("[Err] $#BestCol > -1 and $#SelctCol > -1 and $#SelctRule > -1\n");
+	$#SelctCol == $#SelctRule or &stopErr("[Err] SelctCol != SelctRule\n");
 	my %lines;
 	my %slctLines;
 	my %repLines;
@@ -1054,7 +1055,7 @@ sub combine{
 
 #### select special cols to generate a new line
 sub column{
-	my @cols=&parseCol($opts{column});
+	my @cols=&mathSunhh::parseCol($opts{column});
 	my $need_kick = 0; 
 	$opts{'kick_col'} and $need_kick = 1; 
 	for my $fh (@InFp) {
@@ -1119,10 +1120,10 @@ sub extreme{
 	my @cols;
 	my $mode;
 	if ($opts{max_col} ne '') {
-		@cols = &parseCol($opts{max_col});
+		@cols = &mathSunhh::parseCol($opts{max_col});
 		$mode=1;			# 1 for max mode;
 	}else{
-		@cols = &parseCol($opts{min_col});
+		@cols = &mathSunhh::parseCol($opts{min_col});
 		$mode=0;			# 0 for min mode;
 	}
 	my @file;
@@ -1190,7 +1191,7 @@ sub is_digital {
 sub _prep_cSort_ruls {
 	defined $opts{'col_sort_ruls'} and @{$opts{'col_sort_ruls'}} > 0 and return; 
 	$opts{col_sort} //= 0; 
-	$opts{'col_sort_cols'} = [ &parseCol($opts{col_sort}) ]; 
+	$opts{'col_sort_cols'} = [ &mathSunhh::parseCol($opts{col_sort}) ]; 
 	$opts{'col_sort_ruls'} = []; 
 	if (defined $opts{'col_sort_rule'}) {
 		my @rr = map { 
@@ -1220,13 +1221,13 @@ sub uniq_rep{
 	my %rep_count;
 	my @keys;
 	if (&goodVar($opts{col_uniq})) {
-		@cols = &parseCol($opts{col_uniq});
+		@cols = &mathSunhh::parseCol($opts{col_uniq});
 	}elsif (&goodVar($opts{col_reps})) {
-		@cols = &parseCol($opts{col_reps});
+		@cols = &mathSunhh::parseCol($opts{col_reps});
 	}elsif ( &goodVar($opts{col_repCount}) ) {
-		@cols = &parseCol($opts{col_repCount});
+		@cols = &mathSunhh::parseCol($opts{col_repCount});
 	}else{
-		&stop( "[Err]No Cols Found!\n" );
+		&stopErr( "[Err]No Cols Found!\n" );
 	}
 	for my $fh (@InFp) {
 		while (<$fh>) {
@@ -1277,7 +1278,7 @@ sub colStat{
 			$total += $temp[$col]; 
 		}
 	}# End for $fh in @InFp
-	$#Data == -1 and &stop( "[Err]No Data found.\n" );
+	$#Data == -1 and &stopErr( "[Err]No Data found.\n" );
 	my @SortData = sort {$a<=>$b;} @Data;
 	my ($min,$max,$mean) = ($SortData[0],$SortData[$#SortData],$total/($#SortData+1));
 	my $median;
@@ -1305,26 +1306,7 @@ sub colStat{
 ######################################################################
 ##     Inner sub-routines. 
 ######################################################################
-sub parseCol {
-	my @cols = &splitL(',', $_[0]); 
-	my @ncols; 
-	for my $tc (@cols) {
-		$tc =~ s/(^\s+|\s+$)//g; 
-		if ($tc =~ m/^\d+$/) {
-			push(@ncols, $tc); 
-		} elsif ($tc =~ m/^(\d+)\-(\d+)$/) {
-			my ($s, $e) = ($1, $2); 
-			if ($s <= $e) {
-				push(@ncols, ($s .. $e)); 
-			}else{
-				push(@ncols, reverse($e .. $s)); 
-			}
-		} else {
-			&stop("[Err]Unparsable column tag for [$tc]\n");
-		}
-	}
-	return (@ncols); 
-}
+# parseCol() consolidated into mathSunhh::parseCol (2026-07-10).
 
 
 sub goodVar {
@@ -1339,16 +1321,7 @@ sub goodVar {
 	return 0; 
 }# End goodVar
 
-sub tmsg {
-	my $tt = scalar( localtime() ); 
-	print STDERR join('', "[$tt]", @_); 
-}# End tmsg 
 
-sub stop {
-	my $tt = scalar( localtime() ); 
-	print STDERR join('', "[$tt]", @_); 
-	exit 1; 
-}# End stop 
 
 sub loc_tbl2hash {
 	# ID \\t Start \\t End \\n

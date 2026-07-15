@@ -6,6 +6,7 @@ use Parallel::ForkManager;
 use mathSunhh; 
 use fileSunhh; 
 use Getopt::Long; 
+use FindBin; (my $REPO = $FindBin::RealBin) =~ s{(/NGS_data_processing)(/.*)?$}{$1};  # portable repo root
 my %opts; 
 GetOptions(\%opts, 
 	"help!", 
@@ -14,7 +15,7 @@ GetOptions(\%opts,
 	"ncpu:i", # 20 
 	"wind_length:i", "wind_step:i", 
 	"pl_snpTbl_sepByWind:s", 
-	"pl_cnvt_tbl2fstat:s", 
+	"pl_cols2fstat:s", 
 	"pl_run_hierfstat:s", "maxNmissR:f", "minGrp1N:i", "minGrp2N:i", "rmNegNeiFst!", "rmNegWcFst!", 
 	"pl_join_fst_siteChrPos:s", 
 	"exe_Rscript:s", 
@@ -42,7 +43,7 @@ sub run_pipe {
 		while (<F>) {
 			chomp; 
 			my @ta = split(/\t/, $_);
-			&exeCmd_1cmd("perl $opts{'pl_cnvt_tbl2fstat'} $ta[0] -ind2grp_list $opts{'ind2grp_list'} -o_mrk_info $ta[2] > $ta[0].fmt"); 
+			&exeCmd_1cmd("perl $opts{'pl_cols2fstat'} $ta[0] -ind2grp_list $opts{'ind2grp_list'} -o_mrk_info $ta[2] > $ta[0].fmt"); 
 			&exeCmd_1cmd("mv $ta[0].fmt $ta[0]"); 
 		}
 		close F; 
@@ -163,11 +164,11 @@ HH
 }
 
 sub set_opts {
-	$opts{'pl_snpTbl_sepByWind'} //= '/home/Sunhh/tools/github/NGS_data_processing/reseq_tools/fst/snpTbl_sepByWind.pl'; 
-	$opts{'pl_cnvt_tbl2fstat'} //= '/home/Sunhh/tools/github/NGS_data_processing/reseq_tools/fst/cnvt_tbl2fstat.pl'; 
-	$opts{'pl_run_hierfstat'} //= '/home/Sunhh/tools/github/NGS_data_processing/reseq_tools/fst/run_hierfstat.pl'; 
-	$opts{'pl_join_fst_siteChrPos'} //= '/home/Sunhh/tools/github/NGS_data_processing/reseq_tools/fst/join_fst_siteChrPos.pl'; 
-	$opts{'exe_Rscript'} //= '~/bin/Rscript'; 
+	$opts{'pl_snpTbl_sepByWind'} //= "$REPO/reseq_tools/fst/snpTbl_sepByWind.pl"; 
+	$opts{'pl_cols2fstat'} //= "$REPO/reseq_tools/cnvt_tools/cols2fstat.pl"; 
+	$opts{'pl_run_hierfstat'} //= "$REPO/reseq_tools/fst/run_hierfstat.pl"; 
+	$opts{'pl_join_fst_siteChrPos'} //= "$REPO/reseq_tools/fst/join_fst_siteChrPos.pl"; 
+	$opts{'exe_Rscript'} //= 'Rscript'; 
 
 	$opts{'ncpu'} //= 20; 
 	$opts{'wind_length'} //= 10000; 

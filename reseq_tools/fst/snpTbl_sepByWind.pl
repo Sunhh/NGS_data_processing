@@ -25,7 +25,6 @@ use Getopt::Long;
 use fileSunhh; 
 use LogInforSunhh; 
 use mathSunhh; 
-my $ms_obj = mathSunhh->new(); 
 
 ############################################################
 # Basic settings 
@@ -129,7 +128,7 @@ sub set_opts {
 	$opts{'pos_colN'}  //= 1; 
 	$opts{'geno_col'} //= ''; 
 	$opts{'tmp_dir'}  //= ''; 
-	$opts{'_inner'}{'geno_cols'} = [ &mathSunhh::_parseCol( $opts{'geno_col'} ) ]; 
+	$opts{'_inner'}{'geno_cols'} = [ &mathSunhh::parseCol( $opts{'geno_col'} ) ]; 
 	# Usable keys: 
 	#  '_inner':'inFh'  => file_handle of input. 
 	#  'wind_start|end|length|step' => global parameters to setup windows. 
@@ -220,7 +219,7 @@ sub setup_windows {
 	for my $cur_chr ( @chrIDs ) {
 		my $max_len = ( $opts{'wind_end_useMax'} ) ? $opts{'_inner'}{'max_pos'}{$cur_chr} : $opts{'wind_end'} ; 
 		&tsmsg("[Msg]   Setting windows for $cur_chr [ $opts{'wind_start'} - $max_len ]\n"); 
-		$wind{$cur_chr} = $ms_obj->setup_windows(
+		$wind{$cur_chr} = mathSunhh::setup_windows(
 		  'ttl_start'   =>  $opts{'wind_start'}, 
 		  'ttl_end'     =>  $max_len, 
 		  'wind_size'   =>  $opts{'wind_length'}, 
@@ -253,13 +252,13 @@ sub dvd_snp_tbl {
 		$ln % 500e3 == 1 and &tsmsg("[Msg] Processed $ln line.\n"); 
 		my $cur_chr = $opts{'_inner'}{'tbl_lines'}[$ln]->[0]; 
 		my $cur_pos = $opts{'_inner'}{'tbl_lines'}[$ln]->[1]; 
-		my (@wind_i) = @{ $ms_obj->map_windows( 'posi'=>$cur_pos, 'wind_hash'=>$wind{$cur_chr} , 'max_end_wind_num'=>1 ) }; 
+		my (@wind_i) = @{ mathSunhh::map_windows( 'posi'=>$cur_pos, 'wind_hash'=>$wind{$cur_chr} , 'max_end_wind_num'=>1 ) }; 
 		for my $ti ( @wind_i ) {
 			my $file_idx; 
 			if ( defined $opts{'_inner'}{'chrIdx2fIdx'}{$cur_chr}{$ti} ) {
 				$file_idx = $opts{'_inner'}{'chrIdx2fIdx'}{$cur_chr}{$ti}; 
 			} else {
-				$file_idx = $ms_obj->newNumber(); 
+				$file_idx = mathSunhh::newNumber(); 
 				$opts{'_inner'}{'chrIdx2fIdx'}{$cur_chr}{$ti} = $file_idx; 
 			}
 			my $wind_fname = "$tmpDir/wind_${file_idx}"; 

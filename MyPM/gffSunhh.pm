@@ -9,7 +9,6 @@ use mathSunhh;
 #########  Basic settings. 
 ##########################################################
 
-my $mathObj = mathSunhh->new(); 
 my %str2num = qw(
   +      1
   -     -1
@@ -111,7 +110,7 @@ Function : Output gff3 lines to file or file handle (Output to STDOUT in default
 sub write_gff3File {
 	my $self = shift; 
 	### Step1. Setting parameters
-	my %parm = $self->_setHashFromArr(@_); 
+	my %parm = &mathSunhh::_setHashFromArr(@_); 
 
 	##  Require {'outFH'} or {'outFile'} defined. 
 	my $fh; 
@@ -229,7 +228,7 @@ sub ovl_between_gff3 {
 	my $self = shift; 
 	my $set1_href = shift; 
 	my $set2_href = shift; 
-	my %parm = $self->_setHashFromArr(@_); 
+	my %parm = &mathSunhh::_setHashFromArr(@_); 
 	my (@topID1, @topID2); 
 	if ( defined $parm{'topID1'} ) {
 		@topID1 = @{$parm{'topID1'}}; 
@@ -318,7 +317,7 @@ Return   : (\%back_gff, \%back_seq)
 =cut
 sub read_gff3File {
 	my $self = shift; 
-	my %parm = $self->_setHashFromArr(@_); 
+	my %parm = &mathSunhh::_setHashFromArr(@_); 
 	### Step1. Setting parameters. 
 	$parm{'debug'} = $parm{'debug'} // 0; 
 	##   'saveFa' is used to keep fasta sequences in gff3 file into %back_seq hash. 
@@ -383,7 +382,7 @@ sub read_gff3File {
 		
 		### If the current line is a not part of fasta sequence. 
 		# A new (unique) number is assigned to every gff3_line. 
-		my $lineNum = $mathObj->newNumber(); 
+		my $lineNum = mathSunhh::newNumber(); 
 		$back_gff{'lineN2line'}{$lineNum} = $line; # Store all lines in 'lineN2line' hash_ref, and lines could be sorted by keys($lineNum); 
 		$back_gff{'lineN2hash'}{$lineNum} = undef();  # There is no hash for line except parsable gff3_line. 
 		
@@ -435,7 +434,7 @@ sub read_gff3File {
 		$parm{'debug'} and do { &tsmsg("[Wrn] ", scalar(@lost1), " featID in PID2CID not found, for example [$lost1[0]]\n"); }; 
 		# give a lineNum to un-existing featID/PID; 
 		for my $featID (@lost1) {
-			my $lineNum = $mathObj->newNumber(); 
+			my $lineNum = mathSunhh::newNumber(); 
 			$back_gff{'lineN2line'}{$lineNum} = ''; 
 			$back_gff{'lineN2hash'}{$lineNum} = undef(); 
 			$back_gff{'ID2lineN'}{$featID} = $lineNum; 
@@ -447,7 +446,7 @@ sub read_gff3File {
 		$parm{'debug'} and do { &tsmsg("[Wrn] ", scalar(@lost2), " featID in CID2PID not found, for example [$lost2[0]]\n"); }; 
 		# give a lineNum to un-existing featID/CID; 
 		for my $featID (@lost2) {
-			my $lineNum = $mathObj->newNumber(); 
+			my $lineNum = mathSunhh::newNumber(); 
 			$back_gff{'lineN2line'}{$lineNum} = ''; 
 			$back_gff{'lineN2hash'}{$lineNum} = undef(); 
 			$back_gff{'ID2lineN'}{$featID} = $lineNum; 
@@ -498,7 +497,7 @@ sub read_gff3File {
 		$has_topID and next; 
 		
 		# Here I use newNumber() which may not be very safe, but I do like it. 
-		$has_topID or $uniq_top_featID{$pID} = $mathObj->newNumber(); 
+		$has_topID or $uniq_top_featID{$pID} = mathSunhh::newNumber(); 
 	}# End for my $pID (sort { ... 
 	
 	##   Add other undefined top IDs. _allTopParent(); 
@@ -538,7 +537,7 @@ sub read_gff3File {
 			$has_topID and next; 
 			
 			# Here I use newNumber() which may not be very safe, but I do like it. 
-			$has_topID or $uniq_top_featID{$pID1} = $mathObj->newNumber(); 
+			$has_topID or $uniq_top_featID{$pID1} = mathSunhh::newNumber(); 
 		}# End for my $pID1 
 	}# End for my $cID1 ( sort { $back_gff{'ID2lineN'} ... 
 	
@@ -644,7 +643,7 @@ Sample GFF3 format:
 =cut
 sub parse_line {
 	my $self = shift; 
-	my %parm = $self->_setHashFromArr(@_); 
+	my %parm = &mathSunhh::_setHashFromArr(@_); 
 	my @ta; 
 	if ( defined $parm{'ta'} ) {
 		@ta = @{$parm{'ta'}}; 
@@ -683,9 +682,9 @@ sub _allChild {
 	my $self = shift; 
 	my $pID = shift; 
 	my $p2c_hash = shift; # { {parentID} => {childID} => 1 } 
-	my %parm = $self->_setHashFromArr(@_); 
+	my %parm = &mathSunhh::_setHashFromArr(@_); 
 	$parm{'unique'} = $parm{'unique'} // 1; 
-	return [ @{ $mathObj->offspringArray( $pID, sub { return keys %{ $p2c_hash->{$_[0]} }; }, %parm) } ]; 
+	return [ @{ mathSunhh::offspringArray( $pID, sub { return keys %{ $p2c_hash->{$_[0]} }; }, %parm) } ]; 
 }# _allChild()
 
 # Function : Trace all top-parent ids by single child ID. Child ID itself not returned. 
@@ -696,9 +695,9 @@ sub _allTopParent {
 	my $self = shift; 
 	my $cID = shift; 
 	my $c2p_hash = shift; # { {childID} => {parentID} => 1 }
-	my %parm = $self->_setHashFromArr(@_); 
+	my %parm = &mathSunhh::_setHashFromArr(@_); 
 	$parm{'unique'} = $parm{'unique'} // 1; 
-	my @top1 = @{ $mathObj->offspringArray( $cID, sub { return keys %{ $c2p_hash->{$_[0]} }; }, %parm) }; 
+	my @top1 = @{ mathSunhh::offspringArray( $cID, sub { return keys %{ $c2p_hash->{$_[0]} }; }, %parm) }; 
 	my @back_topID; 
 	for my $pID (@top1) {
 		if ( defined $c2p_hash->{$pID} ) {
@@ -717,7 +716,7 @@ sub _allTopParent {
 sub _addParentID {
 	my $self = shift; 
 	my $bkH = shift; 
-	my %parm = $self->_setHashFromArr(@_); 
+	my %parm = &mathSunhh::_setHashFromArr(@_); 
 	my %typeIsCOT; # type that is child of tranID; 
 	%typeIsCOT = qw(
 	  cds    1
@@ -774,7 +773,7 @@ Return      : \%backH
 =cut
 sub _getAttrHash {
 	my $self = shift; 
-	my %parm = $self->_setHashFromArr(@_); 
+	my %parm = &mathSunhh::_setHashFromArr(@_); 
 	$parm{'debug'} = $parm{'debug'} // 1; 
 	defined $parm{'attribText'} or &stopErr("[Err] no {attribText} for _getAttrHash()\n"); 
 	
@@ -875,7 +874,7 @@ sub _getAttrHash {
 
 sub _txt2Array {
 	my $self = shift; 
-	my %parm = $self->_setHashFromArr(@_); 
+	my %parm = &mathSunhh::_setHashFromArr(@_); 
 	defined $parm{'txt'} or return [] ; 
 	$parm{'sepSym'} = $parm{'sepSym'} // "\t"; 
 	my $sepSym = $parm{'sepSym'}; 
@@ -896,7 +895,7 @@ sub _txt2Array {
 # Function : Set default values for $parm{qw/type2include type2separate type2check/}; 
 sub _setParmType {
 	my $self = shift; 
-	my %parm = $self->_setHashFromArr(@_); 
+	my %parm = &mathSunhh::_setHashFromArr(@_); 
 	defined $parm{'type2include'}  or &_setTypeHash('', [ map { lc($_) } @{$parm{'type2include'}}  ],  [ qw/match match_part/ ]); 
 	defined $parm{'type2separate'} or &_setTypeHash('', [ map { lc($_) } @{$parm{'type2separate'}} ],  [ qw/match/ ]); 
 	defined $parm{'type2check'}    or &_setTypeHash('', [ map { lc($_) } @{$parm{'type2check'}}    ],  [ map { lc($_) } sort { $parm{'type2include'}{$a} <=> $parm{'type2include'}{$b} || $a cmp $b } keys %{$parm{'type2include'}} ]); 
@@ -931,34 +930,6 @@ sub _setEleParm {
 	return; 
 }# _setEleParm()
 
-=head2 _setHashFromArr(@keyVal_array)
-
-Required: @keyVal_array
-
-Function: @keyVal_array contain ( key1, val1, key2, val2, ... ) pairs. 
-          It will skip the latter duplicated keyN. 
-          This function has been added to mathSunhh.pm; 
-
-Return  : %back_hash
-  In %back_hash : 
-   {keyN} => valN
-
-=cut
-sub _setHashFromArr {
-	my $self = shift; 
-	my %back_hash; 
-	for (my $i=0; $i<@_; $i+=2) {
-		my $val; 
-		if (exists $_[$i+1]) {
-			$val = $_[$i+1]; 
-		} else {
-			exists $back_hash{$_[$i]} or &tsmsg("[Wrn] Input array is not even! Use undef() for key [", $_[$i],"]\n"); 
-			$val = undef(); 
-		}
-		exists $back_hash{$_[$i]} or $back_hash{$_[$i]} = $val; 
-	}
-	return(%back_hash); 
-}# _setHashFromArr() 
 
 
 1; 

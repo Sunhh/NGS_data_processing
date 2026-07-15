@@ -2,10 +2,6 @@
 # 20211130: Fix grammar format
 use strict; 
 use warnings; 
-BEGIN {
-  use lib "/usr/local/share/perl5/";
-  use lib "/usr/local/lib/perl5/site_perl/5.24.2/";
-}
 use LogInforSunhh; 
 use Parallel::ForkManager; 
 
@@ -66,7 +62,7 @@ $opts{'endLn'} <= 0 and $opts{'endLn'} = $ttlN;
 my $MAX_PROCESSES = $opts{'cpuN'} ; # Sometimes $parm{'cpuN'} - 1 may be better.
 my $pm = new Parallel::ForkManager($MAX_PROCESSES); 
 for (my $i=$opts{'beginLn'}-1; $i<$opts{'endLn'}; $i+=$opts{'grpLn'}) {
-	$MAX_PROCESSES = &change_procN($pm, $opts{'nprocF'}, $MAX_PROCESSES); 
+	$MAX_PROCESSES = &LogInforSunhh::change_procN($pm, $opts{'nprocF'}, $MAX_PROCESSES); 
 	if ($opts{'wait_sec'} > 0) {
 		sleep($opts{'wait_sec'}); 
 	}
@@ -86,7 +82,7 @@ for (my $i=$opts{'beginLn'}-1; $i<$opts{'endLn'}; $i+=$opts{'grpLn'}) {
 		}
 	}
 	$pm->finish; 
-	$MAX_PROCESSES = &change_procN($pm, $opts{'nprocF'}, $MAX_PROCESSES); 
+	$MAX_PROCESSES = &LogInforSunhh::change_procN($pm, $opts{'nprocF'}, $MAX_PROCESSES); 
 }
 $pm->wait_all_children; 
 
@@ -96,22 +92,6 @@ $pm->wait_all_children;
 # Sub-routines 
 ################################################################################
 
-
-sub change_procN {
-	my ($pm, $nprocF, $prev_maxP) = @_; 
-	-e $nprocF or return $prev_maxP; 
-	open F,'<',"$nprocF" or &stopErr("[Err] Failed to open [$nprocF].\n"); 
-	my $new_maxP = <F>; 
-	chomp($new_maxP); 
-	$new_maxP = (split(/\s+/, $new_maxP))[0]; 
-	$new_maxP = int($new_maxP); 
-	close F; 
-	if ($new_maxP > 0 and $new_maxP != $prev_maxP) {
-		$pm->set_max_procs($new_maxP); 
-		&tsmsg("[Rec] Changing MAX_PROCESSES from $prev_maxP to $new_maxP\n"); 
-	}
-	return $new_maxP; 
-}# change_procN()
 
 
 sub linearize {
@@ -143,5 +123,4 @@ sub remove_comment {
 	}
 	return(@back); 
 }# remove_comment() 
-
 

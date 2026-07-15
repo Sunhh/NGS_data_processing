@@ -4,7 +4,6 @@ use warnings;
 use LogInforSunhh; 
 use fileSunhh; 
 use mathSunhh; 
-my $mat_obj = mathSunhh->new(); 
 
 
 my $help_txt = <<HH; 
@@ -26,7 +25,7 @@ for my $chrID (sort { $region_list_in{$a}[0][3] <=> $region_list_in{$b}[0][3] } 
 		for my $tr2 ( @{$region_list_need{$chrID}} ) {
 			$tr2->[0] > $tr1->[1] and last; 
 			$tr2->[1] < $tr1->[0] and next; 
-			my @tt = $mat_obj->ovl_region( $tr1->[0], $tr1->[1], $tr2->[0], $tr2->[1] ); 
+			my @tt = mathSunhh::ovl_region( $tr1->[0], $tr1->[1], $tr2->[0], $tr2->[1] ); 
 			if ( $tt[0] > 0 and $tt[0] == $tr1->[1]-$tr1->[0]+1 ) {
 				$is_ok = 1; 
 				last; 

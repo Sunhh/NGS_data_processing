@@ -1,4 +1,4 @@
-#!/home/Sunhh/bin/Rscript
+#!/usr/bin/env Rscript
 
 .tsmsg <- function(...) {
 	message("[", date(), "]: ", ...)

@@ -15,7 +15,7 @@ use LogInforSunhh;
 use fileSunhh; 
 use fastaSunhh; 
 my $fs_obj = fastaSunhh->new(); 
-use Statistics::Distributions; 
+use mathSunhh; # was Statistics::Distributions (broken CPAN); chisqrprob now in mathSunhh
 use Getopt::Long; 
 my %opts; 
 GetOptions(\%opts, 
@@ -187,7 +187,7 @@ for my $sfn (@sub_fn) {
 		&add_ofn(
 		  "$sfn.test", 
 		  $tr1->[0], 
-		  ($delta_LRT < 0) ? 1 : Statistics::Distributions::chisqrprob( $freedom, $delta_LRT ), 
+		  ($delta_LRT < 0) ? 1 : &mathSunhh::chisqrprob( $freedom, $delta_LRT ), 
 		  $delta_LRT, 
 		  $v_1{'lnL'}, 
 		  $v_0{'lnL'}, 
@@ -227,9 +227,6 @@ for my $sfn (@sub_fn) {
 
 $opts{'keep_tmp'} or &fileSunhh::_rmtree($wrk_dir); 
 
-sub print_std {
-	print STDOUT join("\t", @_)."\n"; 
-}
 sub add_ofn {
 	my $ofn = shift; 
 	&fileSunhh::write2file($ofn,join("\t", @_)."\n",'>>'); 

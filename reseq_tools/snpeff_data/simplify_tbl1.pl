@@ -3,6 +3,7 @@
 use strict;
 use warnings;
 use fileSunhh;
+use FindBin; (my $REPO = $FindBin::RealBin) =~ s{(/NGS_data_processing)(/.*)?$}{$1};  # portable repo root
 
 !@ARGV and die "perl $0 map.geneID_mrnaID in_snpeff.tbl1 > out\n";
 
@@ -14,7 +15,7 @@ for my $l (&fileSunhh::load_tabFile($fn_mapID)) { $g2m{$l->[0]} = $l->[1]; }
 #warn "[Msg] Loaded\n";
 }
 
-my $fn_svClass = '/home/Sunhh/tools/github/NGS_data_processing/reseq_tools/snpeff_data/simple_sv_class';
+my $fn_svClass = "$REPO/reseq_tools/snpeff_data/simple_sv_class";
 my $gen_cn = 6; # 'ANN[*].FEATUREID';
 my $eff_cn = 7; # 'ANN[*].EFFECT';
 my $dis_cn = 8; # '[*].DISTANCE';

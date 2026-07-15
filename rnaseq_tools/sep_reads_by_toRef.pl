@@ -24,6 +24,7 @@ use mathSunhh;
 use SeqAlnSunhh; 
 use LogInforSunhh; 
 use Getopt::Long; 
+use FindBin; (my $REPO = $FindBin::RealBin) =~ s{(/NGS_data_processing)(/.*)?$}{$1};  # portable repo root
 my %opts; 
 GetOptions(\%opts, 
 	"help!", 
@@ -192,7 +193,7 @@ sub _ch_val_inAR {
 sub prepare_input {
 	$opts{'exe_samtools'} //= 'samtools'; 
 	$opts{'exe_perl'} //= 'perl'; 
-	$opts{'pl_extractFq'} //= '/home/Sunhh/tools/github/NGS_data_processing/extract_fq_by_list.pl'; 
+	$opts{'pl_extractFq'} //= "$REPO/extract_fq_by_list.pl"; 
 	$opts{'outPref'} //= 'out.'; 
 	( defined $opts{'inSam1'} and defined $opts{'inSam2'} ) or &stopErr("[Err] Need -inSam1 and -inSam2\n"); 
 	defined $opts{'inFq1'} or &stopErr("[Err] Need -inFq1\n"); 

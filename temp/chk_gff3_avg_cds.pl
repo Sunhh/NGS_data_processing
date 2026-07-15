@@ -6,7 +6,6 @@ use LogInforSunhh;
 use fileSunhh; 
 use gffSunhh; 
 use mathSunhh; 
-my $ms = mathSunhh->new(); 
 use Getopt::Long; 
 my %opts; 
 GetOptions(\%opts, 
@@ -82,8 +81,8 @@ for my $topID ( @topIDs ) {
 			die "$gff_hash{'lineN2line'}{$offLn}\n"; 
 		}
 	}
-	my $stat_exon = $ms->ins_calc(\@len_exon); 
-	my $stat_intron = $ms->ins_calc(\@len_intron); 
+	my $stat_exon = mathSunhh::ins_calc(\@len_exon); 
+	my $stat_intron = mathSunhh::ins_calc(\@len_intron); 
 	$exonNum = $stat_exon->{'COUNT'}; 
 	$avgExonLen = $stat_exon->{'interval_mean'}; 
 	$avgIntronLen = $stat_intron->{'interval_mean'}; 

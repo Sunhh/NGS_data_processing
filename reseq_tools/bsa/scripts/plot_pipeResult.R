@@ -1,4 +1,4 @@
-#!/usr/bin/Rscript
+#!/usr/bin/env Rscript
 
 argvs <- commandArgs( trailingOnly=TRUE ) ; 
 # Example of command : 
@@ -8,13 +8,8 @@ tblF <- as.character( argvs[1] ) ;
 chrF <- as.character( argvs[2] )
 vv   <- as.character( argvs[3] )
 outPdf <- as.character( argvs[4] )
-
-if (length(argvs) >= 5) {
-	usePoint <- as.character( argvs[5] )
-} else {
-	usePoint <- 'point'
-}
-
+usePoint <- if ( length(argvs) >= 5 ) as.character( argvs[5] ) else "point"
+minCnt   <- if ( length(argvs) >= 6 ) as.numeric( argvs[6] ) else 0
 
 library(dplyr)
 library(ggplot2)
@@ -61,16 +56,21 @@ ds <- aa %>% tibble::as_tibble() %>% dplyr::filter( CHROM %in% cc[,1] )
 toPlot <- dplyr::select( ds, one_of('CHROM', 'POS', eval(vv)) )
 colnames(toPlot)[ colnames(toPlot) %in% vv ] <- 'vUse'
 
+# Convert by minCnt
+if (!is.null(minCnt) & minCnt > 0) {
+	toPlot$vUse[ ds[,5] < minCnt ] <- NA
+}
+
 # Plot 
 pdf( file= outPdf, width=21, height=3.5 )
 p <- ggplot2::ggplot( data= toPlot )
 if (usePoint == 'point') {
-	p <- p + ggplot2::geom_point( mapping= ggplot2::aes(x= POS, y= vUse) )
-} else if (usePoint == 'both') {
-	p <- p + ggplot2::geom_point( mapping= ggplot2::aes(x= POS, y= vUse) )
-	p <- p + ggplot2::geom_line( mapping= ggplot2::aes(x= POS, y= vUse) )
+	p <- p + ggplot2::geom_point( mapping= ggplot2::aes(x= POS, y= vUse), na.rm=T )
+} else if ( usePoint == 'both' ) {
+	p <- p + ggplot2::geom_line( mapping= ggplot2::aes(x= POS, y= vUse), na.rm=T )
+	p <- p + ggplot2::geom_point( mapping= ggplot2::aes(x= POS, y= vUse), na.rm=T )
 } else {
-	p <- p + ggplot2::geom_line( mapping= ggplot2::aes(x= POS, y= vUse) )
+	p <- p + ggplot2::geom_line( mapping= ggplot2::aes(x= POS, y= vUse), na.rm=T )
 }
 p <- p + 
 	ggplot2::labs( y= vv ) +

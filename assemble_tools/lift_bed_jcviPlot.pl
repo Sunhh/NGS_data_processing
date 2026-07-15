@@ -10,7 +10,6 @@ use strict;
 use warnings; 
 use LogInforSunhh; 
 use mathSunhh; 
-my $ms_obj = mathSunhh->new();
 use fileSunhh; 
 
 my $help_txt = <<HH; 
@@ -37,7 +36,7 @@ while (<>) {
 	my $ctg_pos = $ta[2]; 
 	$ta[2]-$ta[1] == 1 or die "$_\n"; 
 	my $ctg_str = '+'; 
-	my @new_scfInf = $ms_obj->transfer_position( 'from_ref2qry' => {}, 'to_qry2ref' => \%agp_c2s, 'fromLoc' => [$ctg_ID, $ctg_pos, $ctg_str] ); 
+	my @new_scfInf = mathSunhh::transfer_position( 'from_ref2qry' => {}, 'to_qry2ref' => \%agp_c2s, 'fromLoc' => [$ctg_ID, $ctg_pos, $ctg_str] ); 
 	my $scf_ID  = $new_scfInf[0]; 
 	my $scf_pos = $new_scfInf[1]; 
 	push(@out, [@ta, $scf_ID, $scf_pos]); 

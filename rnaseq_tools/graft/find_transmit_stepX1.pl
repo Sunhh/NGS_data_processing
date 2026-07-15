@@ -4,6 +4,7 @@
 #   Input  : -src_fa , -in_fq1 :@
 #   Output : pref_comb.nonTrans.bam
 use strict; 
+use FindBin; (my $REPO = $FindBin::RealBin) =~ s{(/NGS_data_processing)(/.*)?$}{$1};  # portable repo root
 use warnings; 
 use LogInforSunhh;
 use SeqAlnSunhh;
@@ -114,7 +115,7 @@ sub setGlob {
 
 	$gg{'exe_samtools'} = 'samtools'; 
 	$gg{'exe_hisat2'}   = 'hisat2'; 
-	$gg{'pl_runHisat2_with2pass'} = '/home/Sunhh/tools/github/NGS_data_processing/rnaseq_tools/runHisat2_with2pass.pl'; 
+	$gg{'pl_runHisat2_with2pass'} = "$REPO/rnaseq_tools/pipe_genome_DEG/runHisat2_with2pass.pl"; 
 
 $gg{'help_txt'} = <<"HH"; 
 ################################################################################

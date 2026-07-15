@@ -1,0 +1,10 @@
+#sample	readGroup	library	dataPrefix	inFq1	inFq2	PL	PU	Others
+G1	G1_Rep1	G1_Rep1	G1_Rep1	/path/G1_Rep1.R1.fq.gz	/path/G1_Rep1.R2.fq.gz	ILLUMINA	NA	NA
+G1	G1_Rep2	G1_Rep2	G1_Rep2	/path/G1_Rep2.R1.fq.gz	/path/G1_Rep2.R2.fq.gz	ILLUMINA	NA	NA
+G1	G1_Rep3	G1_Rep3	G1_Rep3	/path/G1_Rep3.R1.fq.gz	/path/G1_Rep3.R2.fq.gz	ILLUMINA	NA	NA
+G2	G2_Rep1	G2_Rep1	G2_Rep1	/path/G2_Rep1.R1.fq.gz	/path/G2_Rep1.R2.fq.gz	ILLUMINA	NA	NA
+G2	G2_Rep2	G2_Rep2	G2_Rep2	/path/G2_Rep2.R1.fq.gz	/path/G2_Rep2.R2.fq.gz	ILLUMINA	NA	NA
+G2	G2_Rep3	G2_Rep3	G2_Rep3	/path/G2_Rep3.R1.fq.gz	/path/G2_Rep3.R2.fq.gz	ILLUMINA	NA	NA
+G3	G3_Rep1	G3_Rep1	G3_Rep1	/path/G3_Rep1.R1.fq.gz	/path/G3_Rep1.R2.fq.gz	ILLUMINA	NA	NA
+G3	G3_Rep2	G3_Rep2	G3_Rep2	/path/G3_Rep2.R1.fq.gz	/path/G3_Rep2.R2.fq.gz	ILLUMINA	NA	NA
+G3	G3_Rep3	G3_Rep3	G3_Rep3	/path/G3_Rep3.R1.fq.gz	/path/G3_Rep3.R2.fq.gz	ILLUMINA	NA	NA

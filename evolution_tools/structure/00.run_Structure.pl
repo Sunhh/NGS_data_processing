@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 # 2019-03-08 Don't translate geno_tbl to struct. 
 use strict; 
+use FindBin; (my $REPO = $FindBin::RealBin) =~ s{(/NGS_data_processing)(/.*)?$}{$1};  # portable repo root
 use warnings; 
 use LogInforSunhh; 
 use fileSunhh; 
@@ -29,7 +30,7 @@ $opts{'snp_number'} //= 1000;
 $opts{'minR'} <= $opts{'maxR'} or die "minR > maxR\n"; 
 $opts{'OutDir'} //= `pwd`; 
 chomp($opts{'OutDir'}); 
-$opts{'BinDir'} //= '/home/Sunhh/tools/github/NGS_data_processing/structure'; 
+$opts{'BinDir'} //= "$REPO/evolution_tools/structure"; 
 # die  "perl $0  <add_ref_list> <individual> <snp_number> <run>\n" unless ($#ARGV==2);
 my $seed_tag = ''; 
 $opts{'randSeed'} and $seed_tag = '-randSeed'; 

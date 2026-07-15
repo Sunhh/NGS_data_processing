@@ -18,7 +18,6 @@ my $opre   = shift;
 my $alnPaf = shift;
 my $refFa  = shift;
 
-my $ms_obj = mathSunhh->new();
 my $fas_obj = fastaSunhh->new();
 my %seqR = %{$fas_obj->save_seq_to_hash('faFile'=>$refFa)};
 for (keys %seqR) {$seqR{$_}{'seq'} =~ s!\s!!g; $seqR{$_}{'seq'}=uc($seqR{$_}{'seq'}); $seqR{$_}{'len'}=length($seqR{$_}{'seq'});}
@@ -51,7 +50,7 @@ for my $a1 (@aln1) {
   for my $a2 (@{$loc1R{$a1->[0]}}) {
     $a1->[1] > $a2->[1] and next;
     $a1->[2] < $a2->[0] and last;
-    my ($ovlLen, $ovlAH) = $ms_obj->ovl_region($a1->[1], $a1->[2], $a2->[0], $a2->[1]);
+    my ($ovlLen, $ovlAH) = mathSunhh::ovl_region($a1->[1], $a1->[2], $a2->[0], $a2->[1]);
     $ovlLen >= $maxOvlLen or next;
     $stime ++;
     $stime >= 2 and last;
@@ -61,7 +60,7 @@ for my $a1 (@aln1) {
   for my $a2 (@{$loc1Q{$a1->[3]}}) {
     $a1->[4] > $a2->[1] and next;
     $a1->[5] < $a2->[0] and last;
-    my ($ovlLen, $ovlAH) = $ms_obj->ovl_region($a1->[4], $a1->[5], $a2->[0], $a2->[1]);
+    my ($ovlLen, $ovlAH) = mathSunhh::ovl_region($a1->[4], $a1->[5], $a2->[0], $a2->[1]);
     $ovlLen >= $maxOvlLen or next;
     $qtime ++;
     $qtime >= 2 and last;

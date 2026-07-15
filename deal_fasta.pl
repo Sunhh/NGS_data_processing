@@ -24,8 +24,8 @@
 ### 2007-08-03 add a function to chop key's unexpected words.
 ### 2007-8-31 9:19 Here i have updated the computing method for function get_attribute(), it is really a new test for me! Well, it can save very much more time when calculating large number of sequences; And i give out a fuction get_fasta_seq(), which should be added to other functions; Well, I love it! So i want to give a version to this perl script. 
 ### 2007-9-10 16:16 edit N50 subroutine. 
-### 2007-9-11 11:29 ¸üĞÂÁËÒ»Ğ©º¯ÊıµÄĞ´·¨, °üÀ¨cut_fasta, ÓÃ·¨ÉÏ»¹²î²»¶à±£Áô, Ôö¼ÓÁËcut_prefix²ÎÊı, ¸ü¸ÄÁË×Ô¶¯Éú³ÉÎÄ¼şÃû·½Ê½, Ö§³ÖSTDINÊäÈë; 
-### 2007-9-11 16:00 ´Ë´Î¸üĞÂ½áÊø; 
+### 2007-9-11 11:29 æ›´æ–°äº†ä¸€äº›å‡½æ•°çš„å†™æ³•, åŒ…æ‹¬cut_fasta, ç”¨æ³•ä¸Šè¿˜å·®ä¸å¤šä¿ç•™, å¢åŠ äº†cut_prefixå‚æ•°, æ›´æ”¹äº†è‡ªåŠ¨ç”Ÿæˆæ–‡ä»¶åæ–¹å¼, æ”¯æŒSTDINè¾“å…¥; 
+### 2007-9-11 16:00 æ­¤æ¬¡æ›´æ–°ç»“æŸ; 
 ### 2007-9-28 edit sub rcSeq; 
 ### 2007-11-29 add a output for qual_c
 ### 2008-1-4 13:01:38 edit get_fasta_seq subroutine to correct error when the former sequence is empty. 
@@ -60,6 +60,7 @@ use fileSunhh;
 use LogInforSunhh; 
 use mathSunhh; 
 use fastaSunhh; 
+use ReadInSeqSunhh; # provides the (strict) get_fasta_seq reader
 my %opts;
 
 sub usage {
@@ -242,7 +243,7 @@ GetOptions(\%opts,"help!",
 #****************************************************************#
 
 # Making File handles for reading; 
-our @InFp = () ; # 2007-8-29 16:07 È«¾Ö±äÁ¿! 
+our @InFp = () ; # 2007-8-29 16:07 å…¨å±€å˜é‡! 
 if ( !@ARGV ) 
 {
 	@InFp = (\*STDIN); 
@@ -351,7 +352,7 @@ sub cds2aa {
 						$t_frame == 2 and $t_seq = substr($t_seq, 2); # y = (4-x) % 3;
 						$t_frame == 3 and $t_seq = substr($t_seq, 1);
 					} elsif ($t_frame < 0) {
-						&rcSeq(\$t_seq, 'rc');
+						&fastaSunhh::rcSeq(\$t_seq, 'rc');
 						$t_frame == -2 and $t_seq = substr($t_seq, 2);
 						$t_frame == -3 and $t_seq = substr($t_seq, 1);
 					} else {
@@ -361,7 +362,7 @@ sub cds2aa {
 					if ($t_frame > 0) {
 						$t_frame > 1 and $t_seq = substr($t_seq, $t_frame-1); 
 					} elsif ($t_frame < 0) {
-						&rcSeq(\$t_seq, 'rc'); 
+						&fastaSunhh::rcSeq(\$t_seq, 'rc'); 
 						$t_frame < -1 and $t_seq = substr($t_seq, -$t_frame-1); 
 					} else {
 						&stopErr("[Err] Bad frame number [$t_frame]\n"); 
@@ -419,7 +420,7 @@ sub cds2aa {
 	return; 
 }# cds2aa() 
 sub aa2cds {
-	&setup_codon_tbl(); 
+	&fastaSunhh::setup_codon_tbl(); 
 	my %stop_codon; 
 	for my $tc (qw/TAA TGA TAG/) {
 		$stop_codon{$tc} = 1; 
@@ -747,7 +748,7 @@ sub reorderSeq {
 sub replaceID {
 	my $lisFh = &openFH( $opts{'replaceIDlist'}, '<' ); 
 	$opts{'replaceIDcol'} = $opts{'replaceIDcol'} // '0,1'; 
-	my ( $cOLD, $cNEW ) = map { int($_) } &parseCol( $opts{'replaceIDcol'} ); 
+	my ( $cOLD, $cNEW ) = map { int($_) } &mathSunhh::parseCol( $opts{'replaceIDcol'} ); 
 	my %old2new; 
 	while (<$lisFh>) {
 		chomp; m/^\s*$/ and next; 
@@ -926,12 +927,12 @@ sub keep_len {
 }# sub keep_len
 
 
-# 2013-10-30 ¸ø¶¨ÁĞ±í, ÌáÈ¡ÁĞ±íÄÚĞòÁĞ
+# 2013-10-30 ç»™å®šåˆ—è¡¨, æå–åˆ—è¡¨å†…åºåˆ—
 # Related parameters:  "drawByList!", "drawList:s", "drawLcol:s", "drawWhole!", "drawIDmatch!", "dropMatch!"
 sub extract_seq_by_list {
 	# Parameters. 
 	defined $opts{drawLcol} or $opts{drawLcol} = "0,1,2,3,4"; 
-	my ($cRID, $cS, $cE, $cStr, $cNID) = &parseCol( $opts{drawLcol} ); 
+	my ($cRID, $cS, $cE, $cStr, $cNID) = &mathSunhh::parseCol( $opts{drawLcol} ); 
 	$cRID = int($cRID); 
 	# (defined $cRID and $cRID ne '') or die "[Err]At least to assign column number for key(ID).\n"; 
 	($cS, $cE, $cStr, $cNID) = map { (defined $_ and $_ ne '') ? $_ : 'U'; } ($cS, $cE, $cStr, $cNID); 
@@ -1023,7 +1024,7 @@ sub outDrawnSeq ($$$$) {
 			$oNID = "$oNID$faR->{definition}"; 
 			
 			my $oseq = substr( $rawSeq, $tS-1, $tE-$tS+1 ); 
-			$tStr eq 'R' and &rcSeq(\$oseq, 'rc'); 
+			$tStr eq 'R' and &fastaSunhh::rcSeq(\$oseq, 'rc'); 
 			
 			print STDOUT ">$oNID\n$oseq\n"; 
 			########## Edit here. 
@@ -1043,7 +1044,7 @@ sub outDrawnSeq ($$$$) {
 
 
 
-# 2013-10-30 ¸øÈëÇøÓòÁĞ±í, ÒÀ´Ë¶ÔÊäÈëÎÄ¼ş½øĞĞmask; 
+# 2013-10-30 ç»™å…¥åŒºåŸŸåˆ—è¡¨, ä¾æ­¤å¯¹è¾“å…¥æ–‡ä»¶è¿›è¡Œmask; 
 # Region list format : [seqID Start END]
 sub mask_seq_by_list {
 	my %useType=qw(
@@ -1148,7 +1149,7 @@ sub mskSeq {
 }#End mskSeq 
 
 
-# 2008-1-4 13:05:22 µ±fastaÎÄ¼şÄÚÍ¬Ò»¸öĞòÁĞ´æ·Å¶à´ÎÊ±, ÏÈÈ¥µôseqÎª¿ÕµÄĞòÁĞ, ¸ù¾İĞòÁĞkeyµÄÎ¨Ò»ĞÔ, °´ÕÕÔ­Ë³ĞòÃ¿¸ökey¶ÔÓ¦ĞòÁĞ½öÊä³öÒ»´Î. 
+# 2008-1-4 13:05:22 å½“fastaæ–‡ä»¶å†…åŒä¸€ä¸ªåºåˆ—å­˜æ”¾å¤šæ¬¡æ—¶, å…ˆå»æ‰seqä¸ºç©ºçš„åºåˆ—, æ ¹æ®åºåˆ—keyçš„å”¯ä¸€æ€§, æŒ‰ç…§åŸé¡ºåºæ¯ä¸ªkeyå¯¹åº”åºåˆ—ä»…è¾“å‡ºä¸€æ¬¡. 
 sub uniqSeq {
 	my %k; 
 	
@@ -1244,7 +1245,7 @@ sub editkey {
   		print STDOUT ">$relHR->{head}\n$relHR->{seq}\n"; 
   	}
   }
-}# end editkey, ÓÃÀ´È¥µôkeyÖĞ²»ÏëÒªµÄ²¿·Ö; 2007-9-10 16:31 
+}# end editkey, ç”¨æ¥å»æ‰keyä¸­ä¸æƒ³è¦çš„éƒ¨åˆ†; 2007-9-10 16:31 
 
 sub rmDefinition {
 	for my $fh (@InFp) {
@@ -1356,13 +1357,13 @@ sub site_list {
 				map { print STDOUT join("\t", $relHR->{key}, $len, $_->[0], $_->[1], $_->[1]-$_->[0]+1         )."\n"; } &siteList(\$opts{listSite}, \$relHR->{seq}, $opts{listNum}); 
 			}
 			if ($opts{listBoth}) {
-				my $rcseq = $relHR->{seq}; &rcSeq(\$rcseq, 'rc'); 
+				my $rcseq = $relHR->{seq}; &fastaSunhh::rcSeq(\$rcseq, 'rc'); 
 				if ( $opts{listSeq} ) {
-					map { &rcSeq(\$_->[2], 'rc'); print STDOUT join("\t", $relHR->{key}, $len, $len-$_->[0]+1, $len-$_->[1]+1, $_->[1]-$_->[0]+1, $_->[2] )."\n"; } &siteList(\$opts{listSite},\$rcseq,$opts{listNum});
+					map { &fastaSunhh::rcSeq(\$_->[2], 'rc'); print STDOUT join("\t", $relHR->{key}, $len, $len-$_->[0]+1, $len-$_->[1]+1, $_->[1]-$_->[0]+1, $_->[2] )."\n"; } &siteList(\$opts{listSite},\$rcseq,$opts{listNum});
 				}else{
 					map { print STDOUT join("\t", $relHR->{key}, $len, $len-$_->[0]+1, $len-$_->[1]+1, $_->[1]-$_->[0]+1                        )."\n"; } &siteList(\$opts{listSite},\$rcseq,$opts{listNum});
 				}
-			}# Ôö¼Ó·´Ïò»¥²¹ĞòÁĞ½á¹û; 
+			}# å¢åŠ åå‘äº’è¡¥åºåˆ—ç»“æœ; 
 		}# end for; 
 	}
 }# end site_list 2007-9-11 10:08 
@@ -1405,7 +1406,7 @@ sub cut_fasta{
 		}
 	}# 
 	close OUT; 
-	# ĞèÒª°ÑcutÎÄ¼şÃû¸ü¸ÄÒ»ÏÂ; ÕâÀïµ÷ÓÃÏµÍ³ÃüÁî"mv"; 
+	# éœ€è¦æŠŠcutæ–‡ä»¶åæ›´æ”¹ä¸€ä¸‹; è¿™é‡Œè°ƒç”¨ç³»ç»Ÿå‘½ä»¤"mv"; 
 	chdir ($out_dir) or die "[Err]Failed to chdir to [$out_dir]:$!\n"; 
 	( my $mark = $total_seq_num ) =~ tr/[0123456789]/0/; $mark++; 
 	for (0..($file_name-1)) {
@@ -1443,7 +1444,7 @@ sub res_match_seqs{
 			$record_num++; 
 			if ($max > 0 and $record_num >= $max) {
 				$record_num = 0; 
-				last SEQUENCE; # ´Óµ±Ç°ÎÄ¼şÌø³ö; ½øÈëÏÂÒ»¸öÎÄ¼şµÄ¶ÁÈ¡; 
+				last SEQUENCE; # ä»å½“å‰æ–‡ä»¶è·³å‡º; è¿›å…¥ä¸‹ä¸€ä¸ªæ–‡ä»¶çš„è¯»å–; 
 			}
 		}
 	}# end for FILESH; 
@@ -1476,7 +1477,7 @@ sub get_sample{
 			$record_num ++; 
 			if ($end ne 'end' && $loop == $end) {
 				$loop = 0; 
-				last SEQUENCE; # Ìø³öµ±Ç°ÎÄ¼ş, ½øÈëÏÂÒ»¸öÎÄ¼ş¶ÁÈ¡; 
+				last SEQUENCE; # è·³å‡ºå½“å‰æ–‡ä»¶, è¿›å…¥ä¸‹ä¸€ä¸ªæ–‡ä»¶è¯»å–; 
 			}elsif ($max > 0 and $record_num == $max) {
 				$record_num = 0; 
 				last SEQUENCE; 
@@ -1519,8 +1520,8 @@ sub frag{
 				push(@Range, "$add_s-$add_e"); 
 			}
 			my $range = join(',', @Range); 
-			if ( $opts{frag_c} ) { &rcSeq(\$str, 'c'); $range = "C$range"; } 
-			if ( $opts{frag_r} ) { &rcSeq(\$str, 'r'); $range = "R$range"; } 
+			if ( $opts{frag_c} ) { &fastaSunhh::rcSeq(\$str, 'c'); $range = "C$range"; } 
+			if ( $opts{frag_r} ) { &fastaSunhh::rcSeq(\$str, 'r'); $range = "R$range"; } 
 			my $dispR = &Disp_seq(\$str, $opts{frag_width}); 
 			substr($relHR->{head}, length($relHR->{key}),0) = ":$range"; 
 			$opts{frag_head}?(print STDOUT ">$relHR->{head}\n$$dispR"):(print STDOUT $$dispR);	# 2007-1-9 9:31 
@@ -1545,10 +1546,10 @@ sub upper_lower{
 #	-attribute<item>    head:seq:key:len:GC:mask:model, output atrribution of sequences
 ####################################################
 sub get_attribute{
-	my %ok_key = ( 'key'=>1, 'head'=>1, 'seq'=>1, 'len'=>1, 'GC'=>1, 'GCnum'=>1, 'AG'=>1, 'AGnum'=>1, 'mask'=>1, 'masknum'=>1, 'GC3'=>1, 'seq_line'=>1);  # ÔİÊ±È¥µômodel¹¦ÄÜ, Õâ¸ö¹¦ÄÜºÜ²»ÍêÉÆ; , 'model'=>1 ); 
+	my %ok_key = ( 'key'=>1, 'head'=>1, 'seq'=>1, 'len'=>1, 'GC'=>1, 'GCnum'=>1, 'AG'=>1, 'AGnum'=>1, 'mask'=>1, 'masknum'=>1, 'GC3'=>1, 'seq_line'=>1);  # æš‚æ—¶å»æ‰modelåŠŸèƒ½, è¿™ä¸ªåŠŸèƒ½å¾ˆä¸å®Œå–„; , 'model'=>1 ); 
 	
 	# define out_code(s); 
-	my $recVar = sub { my $v = shift; return '$relHR->{'.$v.'}'; }; # record Var. Í³Ò»ĞÎÊ½; 
+	my $recVar = sub { my $v = shift; return '$relHR->{'.$v.'}'; }; # record Var. ç»Ÿä¸€å½¢å¼; 
 	my %out_code; 
 	%out_code = (
 		'key' => $recVar->('key'), 
@@ -1801,71 +1802,9 @@ sub qual{
 # return (\% , has_get_next) 
 # 2007-12-14 13:02:52 about \%, {seq, key, head}
 # 2013-11-01 13:02:52 about \%, {seq, key, head, definition}
-sub get_fasta_seq {
-	my $fh = shift;
-	my $has_head = shift; 
-	my $has_get = 0; # ¼ì²âÊÇ·ñÕ¼ÓÃÁËÏÂÒ»ÌõĞòÁĞµÄ">"ºÅ; 
-	my %backH; 
-	( defined $has_head and $has_head =~ /^0+$/ ) or $has_head = 1; 
-	ref($fh) eq 'GLOB' or ref($fh) eq '' or die "Wrong input!\n"; 
-	my %back; 
-	if ( $has_head == 1 ) 
-	{
-		defined ( $backH{head} = readline($fh) ) or return (undef(),undef()); 
-		$backH{head} =~ s/^>//g; chomp $backH{head}; 
-		$backH{key} = (split(/\s+/,$backH{head}))[0]; 
-		( $backH{definition} = $backH{head} ) =~ s/^(\S+)//; 
-	}
-	my $r = $/; local $/ = "$r>"; 
-	defined ( $backH{seq} = readline($fh) ) or do { warn "[Err]The last sequence [$backH{head}] is empty, and it is not calculated!\n"; return (undef(),undef()); } ; 
-	chomp $backH{seq} > length($r) and $has_get = 1; 
-	local $/ = $r; chomp $backH{seq}; 
-	# check if this sequence is a NULL one. 2008-1-4 13:01:22 
-	# print "head=+$backH{head}+\nseq=+$backH{seq}+\n"; 
-	while ($backH{seq} =~ s/^>//gs) { 
-		warn "[Err]Sequence [$backH{head}] is empty, and it is not calculated!\n"; 
-		if ($backH{seq} =~ s/^([^$r]+)(?:$r|$)//s) {
-			$backH{head} = $1; $backH{key} = (split(/\s+/, $backH{head}))[0]; 
-			( $backH{definition} = $backH{head} ) =~ s/^(\S+)//; 
-		}
-	}
-	# check if this sequence is a NULL one. 2008-1-4 13:01:25 
-	return (\%backH, $has_get); 
-}# end sub get_fasta_seq
+# get_fasta_seq() now provided by ReadInSeqSunhh (strict reader; fails on headers lacking an ID). 2026-07-10
 
-# input ($seq_ref, $deal_tag); deal_tag : 'r' => reverse, 'c' => complemented, 'rc' => reverse and complemented; Default 'rc'; 
-# no output, edit the input sequence reference. 
-sub rcSeq {
-	my $seq_r = shift; 
-	my $tag = shift; defined $tag or $tag = 'rc'; # $tag = lc($tag); 
-	my ($Is_r, $Is_c) = (0)x2; 
-	$tag =~ /r/i and $Is_r = 1; 
-	$tag =~ /c/i and $Is_c = 1; 
-	#$tag eq 'rc' and ( ($Is_r,$Is_c) = (1)x2 ); 
-	#$tag eq 'r' and $Is_r = 1; 
-	#$tag eq 'c' and $Is_c = 1; 
-	!$Is_r and !$Is_c and die "Wrong Input for function rcSeq! $!\n"; 
-	$Is_r and $$seq_r = reverse ($$seq_r); 
-	# $Is_c and $$seq_r =~ tr/acgturyksbdhvnACGTURYKSBDHVN/tgcaayrmwvhdbnTGCAAYRMWVHDBN/;  # 2007-07-18 refer to NCBI;
-	# $Is_c and $$seq_r =~ tr/acgturykmbvdhACGTURYKMBVDH/tgcaayrmkvbhdTGCAAYRMKVBHD/; # edit on 2010-11-14; 
-	$Is_c and $$seq_r =~ tr/acgturykmbvdhACGTURYKMBVDHwWsSnN/tgcaayrmkvbhdTGCAAYRMKVBHDwWsSnN/; # edit on 2013-09-11 No difference in result. 
-	return 0; 
-}# 2007-9-11 9:46 ÖÆ×÷¶ÔÓ¦·´Ïò»¥²¹ĞòÁĞ; 
-#        a       a; adenine
-#        c       c; cytosine
-#        g       g; guanine
-#        t       t; thymine in DNA; uracil in RNA
-#        m       a or c
-#        k       g or t
-#        r       a or g
-#        y       c or t
-#        w       a or t
-#        s       c or g
-#        v       a or c or g; not t
-#        b       c or g or t; not a
-#        h       a or c or t; not g
-#        d       a or g or t; not c
-#        n       a or c or g or t
+# rcSeq() is provided by fastaSunhh (&fastaSunhh::rcSeq); local copy removed 2026-07-10.
 
 
 #usage: disp_seq(\$string,$num_line);output a seq. sting
@@ -1882,55 +1821,8 @@ sub Disp_seq{
 	return \$disp;
 }
 
-#check whether a sequence accord with gene model
-#############################################
-sub check_CDS{
-	my $seq=shift;
-	my ($start,$end,$mid,$triple);
-	$mid=1;
-	my $len=length($seq);
-	$triple=1 if($len%3 == 0);
-	$start=1 if($seq=~/^ATG/);
-	$end=1 if($seq=~/(TAA)|(TAG)|(TGA)$/);
-	for (my $i=3; $i<$len-3; $i+=3) {
-		my $codon=substr($seq,$i,3);
-		$mid=0 if($codon eq 'TGA' || $codon eq 'TAG' || $codon eq 'TAA');
-	}
-	if ($start && $mid && $end && $triple ) {
-		return 1;
-	}else{
-		return 0;
-	}
-}# never use again. 
 
-sub parseCol {
-	my @cols = split(/,/, $_[0]);
-	my @ncols;
-	for my $tc (@cols) {
-		$tc =~ s/^\s+//;
-		$tc =~ s/\s+$//; 
-		if ($tc =~ m/^\d+$/) {
-			push(@ncols, $tc);
-		} elsif ($tc =~ m/^(\d+)\-(\d+)$/) {
-			my ($s, $e) = ($1, $2);
-			if ($s <= $e) {
-				push(@ncols, ($s .. $e));
-			}else{
-				push(@ncols, reverse($e .. $s));
-			}
-		} elsif ( $tc =~ m/^$/ ) { 
-			warn "[Err]Null column number set here.\n"; 
-			push(@ncols, ''); 
-		} else {
-			die "[Err]Unparsable column tag for [$tc]\n";
-		}
-	}
-	return (@ncols);
-}
+# parseCol() consolidated into mathSunhh::parseCol (2026-07-10).
 
-#sub tsmsg {
-#	my $tt = scalar( localtime() );
-#	print STDERR join('', "[$tt]", @_);
-#}#End tsmsg()
 
 

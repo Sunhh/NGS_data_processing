@@ -7,7 +7,6 @@ use fastaSunhh;
 my $fs_obj = fastaSunhh->new(); 
 use fileSunhh; 
 use mathSunhh; 
-my $ms_obj = mathSunhh->new(); 
 
 use Getopt::Long; 
 my %opts; 
@@ -158,7 +157,7 @@ sub r_loc_in_bn6 {
 	}
 	close($fh); 
 	for my $tr (keys %sep_blk) {
-		my $tb = $ms_obj->mergeLocBlk( $sep_blk{$tr} , 'dist2join'=>1 ); 
+		my $tb = mathSunhh::mergeLocBlk( $sep_blk{$tr} , 'dist2join'=>1 ); 
 		@{$sep_blk{$tr}} = @$tb; 
 	}
 	return (\%sep_blk); 
@@ -178,7 +177,7 @@ sub q_loc_in_bn6 {
 	}
 	close($fh); 
 	for my $tr (keys %sep_blk) {
-		my $tb = $ms_obj->mergeLocBlk( $tr , 'dist2join'=>1 ); 
+		my $tb = mathSunhh::mergeLocBlk( $tr , 'dist2join'=>1 ); 
 		@$tr = @$tb; 
 	}
 	return (\%sep_blk); 

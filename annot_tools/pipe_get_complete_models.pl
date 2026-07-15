@@ -4,6 +4,7 @@ use warnings;
 use LogInforSunhh;
 use fileSunhh;
 use Getopt::Long;
+use FindBin; (my $REPO = $FindBin::RealBin) =~ s{(/NGS_data_processing)(/.*)?$}{$1};  # portable repo root
 my %opts;
 GetOptions(\%opts,
   "gene_distance:i", # 2000
@@ -35,8 +36,8 @@ my $db       = shift;
 # Required paths
 my $exe_diamond = 'diamond';
 my $pl_dealFas  = 'deal_fasta.pl';
-my $pl_dealGff  = 'perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl';
-my $pl_rmRedPr  = 'perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/rmRedunt_inputProt.pl';
+my $pl_dealGff  = "perl $REPO/temp/deal_gff3.pl";
+my $pl_rmRedPr  = "perl $REPO/annot_tools/rmRedunt_inputProt.pl";
 
 
 my $wdir = &fileSunhh::new_tmp_dir('create' => 1);

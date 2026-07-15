@@ -6,6 +6,7 @@
 # [10/11/2022] Duplicate input files of Liftoff to avoid using of a single file by multiple Liftoff processes.
 # [260702] Add trim2cds step to skip preparing GFF3 files.
 use strict;
+use FindBin; (my $REPO = $FindBin::RealBin) =~ s{(/NGS_data_processing)(/.*)?$}{$1};  # portable repo root
 use warnings;
 use LogInforSunhh;
 use fileSunhh;
@@ -22,9 +23,9 @@ GetOptions(\%opts,
   "para_minCov:f",   # 0.5
   "para_minIdent:f", # 0.75
   "para_liftoff:s",  # " -p 20 -s $opts{'para_minIdent'} -a $opts{'para_minCov'} -copies "
-  "pl_cntR2Q:s",     # "perl ~/tools/github/NGS_data_processing/annot_tools/liftoff_tools/cnt_R2Q_liftoff_info.pl"
+  "pl_cntR2Q:s",     # "perl $REPO/annot_tools/liftoff_tools/cnt_R2Q_liftoff_info.pl"
   "proc_trim2cds!",
-  "pl_trim2cds:s",   # "perl ~/tools/github/NGS_data_processing/annot_tools/liftoff_tools/fmt_gff_trim2CDS.pl"
+  "pl_trim2cds:s",   # "perl $REPO/annot_tools/liftoff_tools/fmt_gff_trim2CDS.pl"
   "exe_liftoff:s",   # "liftoff"
   "help!"
 );
@@ -53,8 +54,8 @@ $opts{'out_dir'}       //= 'output';
 $opts{'para_minCov'}   //= 0.5;
 $opts{'para_minIdent'} //= 0.75;
 $opts{'para_liftoff'}  //= " -p 20 -s $opts{'para_minIdent'} -a $opts{'para_minCov'} -copies -sc 1.0 ";
-$opts{'pl_cntR2Q'}     //= "perl ~/tools/github/NGS_data_processing/annot_tools/liftoff_tools/cnt_R2Q_liftoff_info.pl";
-$opts{'pl_trim2cds'}   //= "perl ~/tools/github/NGS_data_processing/annot_tools/liftoff_tools/fmt_gff_trim2CDS.pl";
+$opts{'pl_cntR2Q'}     //= "perl $REPO/annot_tools/liftoff_tools/cnt_R2Q_liftoff_info.pl";
+$opts{'pl_trim2cds'}   //= "perl $REPO/annot_tools/liftoff_tools/fmt_gff_trim2CDS.pl";
 $opts{'exe_liftoff'}   //= 'liftoff';
 
 my %dta;

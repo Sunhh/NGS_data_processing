@@ -126,18 +126,9 @@ for my $topID ( keys %{$gff_hash{'lineN_group'}} ) {
 	for my $tr ( @posi_cds ) {
 		push( @sub_seqs, substr($seq_hash{$top_chr}, $tr->[0]-1, $tr->[1]-$tr->[0]+1) ); 
 	}
-	$top_str == -1 and @sub_seqs = &rev_comp(@sub_seqs); 
+	$top_str == -1 and @sub_seqs = map { my $t = $_; &fastaSunhh::rcSeq(\$t, 'rc'); $t } @sub_seqs; 
 	my $final_seq = join('', @sub_seqs); 
 	$oSeqWidth > 0 and do { $final_seq =~ s!(.{$oSeqWidth})!$1\n!og; chomp($final_seq); }; 
 	print STDOUT ">$top_name [frame=$cdsP_to_frame{$cdsP_1_k}]\n$final_seq\n"; 
 }
 
-sub rev_comp {
-	my @back; 
-	for (@_) {
-		my $ts = reverse($_); 
-		$ts =~ tr/acgturykmbvdhACGTURYKMBVDHwWsSnN/tgcaayrmkvbhdTGCAAYRMKVBHDwWsSnN/; 
-		push(@back, $ts); 
-	}
-	return @back; 
-}

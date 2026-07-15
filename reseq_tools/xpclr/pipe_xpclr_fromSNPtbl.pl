@@ -18,6 +18,7 @@ GetOptions(\%opts,
 	"chk_scripts!", 
 	"use_sepRunXPCLR!", 
 	"stopBeforeXPCLR!", "runAfterXPCLR!", "getCmdXPCLR!", 
+  "cpuN:i", 
 ); 
 
 my %glob; 
@@ -56,6 +57,7 @@ for my $a1 (@{$glob{'set_para_default'}}) {
 if ( $opts{'getCmdXPCLR'} ) {
 	$opts{'stopBeforeXPCLR'} = 1; 
 }
+$opts{'cpuN'} //= 50; 
 
 
 my $help_txt = <<HH; 
@@ -152,11 +154,15 @@ if ( !($opts{'runAfterXPCLR'}) and !($opts{'getCmdXPCLR'}) ) {
 		&fileSunhh::write2file( "$wrk_dir/lis_B", join("\n", map { "$_\t$lis{'grpIDs'}[0]"; } @{$lis{'IDs'}{ $lis{'grpIDs'}[0] }})."\n" ); 
 	}
 	mkdir("$wrk_dir/input/"); 
-	&exeCmd_1cmd("$glob{'prepare_xpclr_input_wiGmP.pl'} $wrk_dir/input/input $fn_snp_wiGmP $wrk_dir/lis_A $wrk_dir/lis_B $fn_chrID2num") and &stopErr("[Err] here.\n"); 
+	&exeCmd_1cmd("$glob{'prepare_xpclr_input_wiGmP.pl'} $wrk_dir/input/input $fn_snp_wiGmP $wrk_dir/lis_A $wrk_dir/lis_B \'$fn_chrID2num\' $opts{'cpuN'}") and &stopErr("[Err] here.\n"); 
 }
 
 $glob{'fh_o_wXPCLR'} = &openFH( "$wrk_dir/xpclr_$glob{'windTag'}" , '>' ) if ( !($opts{'stopBeforeXPCLR'}) ) ; 
 opendir DD,"$wrk_dir/input/" or &stopErr("[Err] Failed to opendir [$wrk_dir/input/]\n"); 
+my $pm; 
+$opts{'cpuN'} > 1 and $pm = &LogInforSunhh::get_pm( $opts{'cpuN'} );
+my $runPM = 0; 
+        
 INPUT_CHR: 
 for my $d (readdir(DD)) {
 	$d =~ m/^\./ and next INPUT_CHR; 
@@ -185,7 +191,13 @@ for my $d (readdir(DD)) {
 		} elsif ( $opts{'runAfterXPCLR'} ) {
 			&tsmsg("[Rec] Skipped command: $cmd_xpclr\n"); 
 		} else {
-			&exeCmd_1cmd("$cmd_xpclr | grep -v process") and &stopErr("[Err] Failed command: $cmd_xpclr\n"); 
+      if ($opts{'cpuN'} <= 1) {
+			  &exeCmd_1cmd("$cmd_xpclr | grep -v process") and &stopErr("[Err] Failed command: $cmd_xpclr\n"); 
+      } else {
+        $runPM = 1; 
+        my $pid = $pm->start and next;
+			  &exeCmd_1cmd("$cmd_xpclr | grep -v process") and &stopErr("[Err] Failed command: $cmd_xpclr\n"); 
+      }
 		}
 	} else {
 		my $cmd_xpclr = "XPCLR -xpclr ${i_pref}.${chrID}_g1.geno ${i_pref}.${chrID}_g2.geno ${i_pref}.${chrID}.snp ${i_pref}.${chrID}.snp.out -w1 0.0005 100 100 $chrN -p0 0.7"; 
@@ -199,7 +211,13 @@ for my $d (readdir(DD)) {
 		} elsif ( $opts{'runAfterXPCLR'} ) {
 			&tsmsg("[Rec] Skipped command: $cmd_xpclr\n"); 
 		} else {
-			&exeCmd_1cmd("$cmd_xpclr | grep -v process") and &stopErr("[Err] Failed command: $cmd_xpclr\n"); 
+      if ($opts{'cpuN'} <= 1) {
+			  &exeCmd_1cmd("$cmd_xpclr | grep -v process") and &stopErr("[Err] Failed command: $cmd_xpclr\n"); 
+      } else {
+        $runPM = 1; 
+        my $pid = $pm->start and next; 
+			  &exeCmd_1cmd("$cmd_xpclr | grep -v process") and &stopErr("[Err] Failed command: $cmd_xpclr\n"); 
+      }
 		}
 	}
 	if ( $opts{'stopBeforeXPCLR'} ) {
@@ -216,7 +234,9 @@ for my $d (readdir(DD)) {
 		print { $glob{'fh_o_wXPCLR'} } join("\t", @ta)."\n" if ( !($opts{'stopBeforeXPCLR'}) ); 
 	}
 	close($fh); 
+  $pm->finish; 
 }# End INPUT_CHR; 
+$runPM == 1 and $pm->wait_all_children;
 closedir(DD); 
 close( $glob{'fh_o_wXPCLR'} ) if ( !($opts{'stopBeforeXPCLR'}) ); 
 if ( $opts{'stopBeforeXPCLR'} ) {

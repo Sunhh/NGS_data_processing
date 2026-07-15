@@ -1,4 +1,4 @@
-#!/usr/bin/Rscript
+#!/usr/bin/env Rscript
 
 fixNegLog10P <- function (x) {
 	x[ is.infinite(x) & !is.na(x) ] <- 1 + max( x[ !is.infinite(x) ],na.rm=TRUE )

@@ -4,6 +4,7 @@ use warnings;
 use LogInforSunhh; 
 use fileSunhh; 
 use Getopt::Long; 
+use FindBin; (my $REPO = $FindBin::RealBin) =~ s{(/NGS_data_processing)(/.*)?$}{$1};  # portable repo root
 my %opts; 
 GetOptions(\%opts, 
 	"help!", 
@@ -17,7 +18,7 @@ GetOptions(\%opts,
 
 $opts{'out_prefix'}             //= 'opref'; 
 
-$opts{'pl_run_primer3_general'} //= '/home/Sunhh/tools/github/NGS_data_processing/pcr_tools/run_primer3_general.pl'; 
+$opts{'pl_run_primer3_general'} //= "$REPO/pcr_tools/run_primer3_general.pl"; 
 $opts{'sconf_primer_size'}      //= '20:18:27'; # [opt:min:max] from run_primer3_general.pl 
 $opts{'sconf_product_size'}     //= [ '151-200', '201-250', '101-150', '251-350' ]; # from run_primer3_general.pl 
 my $gg_product_size  = join(" ", map { "-sconf_product_size $_" } @{$opts{'sconf_product_size'}}); 

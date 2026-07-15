@@ -16,7 +16,7 @@ while (<>) {
   $ord{$ta[0]} //= $.;
 }
 for my $k1 (sort { $ord{$a} <=> $ord{$b} } keys %ord) {
-  print join("\t", $)."\n";
+  print join("	", $k1, $inCnt{$k1})."\n";
 }
 
 

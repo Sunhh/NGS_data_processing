@@ -5,6 +5,7 @@
 use strict; 
 use Getopt::Long; 
 
+use SeqAlnSunhh; # canonical SAM-FLAG keep/drop engine (mk_flag)
 my %opts; 
 
 GetOptions(\%opts, 
@@ -150,83 +151,16 @@ if (defined $opts{NMperc}) {
 ###### End set maximum NM% allowed. 
 
 
-###### Make FLAG list 
-my %flag; 
-for (0 .. 4095) {
-	my $binum = unpack("B32", pack("N", $_)); 
-	$flag{$_} = [ reverse( split(//, sprintf("%011d", $binum) ) ) ]; 
-}
-
-
-######### Set FLAGs in or out. 
-# Writing format for -drop/-keep parameter : 
-# -drop 2=1;4=0,5=0
-# -keep 4=1,5=1;3=1
-# drop and keep are both considered at the same time if assigned. 
-#   rules separated by ";" are calculated as logical "OR" , 
-#   rules separated by "," are calculated as logical "AND" . 
-my ($have_drop, $have_keep) = (0, 0); 
-defined $opts{drop} and $opts{drop} ne '' and $have_drop = 1; 
-defined $opts{keep} and $opts{keep} ne '' and $have_keep = 1; 
-
-my %is_output; 
-FLAG_NUM: 
-for (sort { $a<=>$b } keys %flag) {
-	my @ta = @{$flag{$_}}; 
-	my (%drop_flag, %keep_flag); # Actually these variables are not very useful, but I add them here for future extending functions. 
-
-	if ($have_drop) {
-		# logical OR, so any of TRUE will make the dropping [CHK_TTL_DROP] TRUE. 
-		CHK_TTL_DROP: 
-		for my $exp1 ( split(/;/, $opts{drop}) ) {
-
-			my $should_drop = 1; 
-			# logical AND, so any of FALSE will make the $should_drop [CHK_EACH_DROP] FALSE. 
-			CHK_EACH_DROP: 
-			for my $exp2 ( split(/,/, $exp1) ) {
-				$exp2 =~ m/^(\d+)=([01])$/ or die "Failed to parse |$exp2|\n"; 
-				my ($coln, $colv) = ($1, $2); 
-				$ta[$coln] != $colv and do { $should_drop = 0; last CHK_EACH_DROP; }; 
-			}#End for my $exp2 [CHK_EACH_DROP]
-
-			# logical OR, so any of TRUE will make the dropping [CHK_TTL_DROP] TRUE. 
-			$should_drop == 1 and do { $drop_flag{$_} = 1; last CHK_TTL_DROP; }; 
-
-		}# End for my $exp1 
-		$is_output{$_} = ( defined $drop_flag{$_} and $drop_flag{$_} == 1 ) ? 0 : 1 ; 
-	}#End if have_drop
-
-	if ($have_keep) {
-		# logical OR, so any of TRUE will make the keeping [CHK_TTL_KEEP] TRUE. 
-		CHK_TTL_KEEP: 
-		for my $exp1 ( split(/;/, $opts{keep}) ) {
-
-			my $should_keep = 1; 
-			# logical AND, so any of FALSE will make the $should_keep [CHK_EACH_KEEP] FALSE. 
-			CHK_EACH_KEEP: 
-			for my $exp2 ( split(/,/, $exp1) ) {
-				$exp2 =~ m/^(\d+)=([01])$/ or die "Failed to parse |$exp2|\n"; 
-				my ($coln, $colv) = ($1, $2); 
-				$ta[$coln] != $colv and do { $should_keep = 0; last CHK_EACH_KEEP; }; 
-			}#End for my $exp2 [CHK_EACH_KEEP]
-
-			# logical OR, so any of TRUE will make the keeping [CHK_TTL_KEEP] TRUE. 
-			$should_keep == 1 and do { $keep_flag{$_} = 1; last CHK_TTL_KEEP; }; 
-
-		}# End for my $exp1 [CHK_TTL_KEEP]
-		if (defined $keep_flag{$_} and $keep_flag{$_} == 1) {
-			defined $is_output{$_} or $is_output{$_} = 1; 
-		} else {
-			$is_output{$_} = 0; 
-		}
-	}#End if have_keep 
-
-	if (!defined $is_output{$_}) {
-		die "\n\nNo filter parameter accepted! Please check your input for -drop/-keep!\n\n$help_doc\n"; 
-#		$is_output{$_} = 1; 
-	}
-}# End for ( sort { $a<=>$b } keys %flag ) [FLAG_NUM]
-###### Set FLAGs OK. 
+###### Build the include/exclude flag set via MyPM/SeqAlnSunhh::mk_flag (canonical engine).
+my ($have_drop, $have_keep) = (0, 0);
+defined $opts{drop} and $opts{drop} ne '' and $have_drop = 1;
+defined $opts{keep} and $opts{keep} ne '' and $have_keep = 1;
+($have_drop or $have_keep) or die "\n\nNo filter parameter accepted! Please check your input for -drop/-keep!\n\n$help_doc\n";
+my $good_flag = &SeqAlnSunhh::mk_flag( 'keep'=>$opts{keep}, 'drop'=>$opts{drop} );
+# Preserve the original %is_output representation: 1 for kept, 0 for excluded, defined for all 0..4095.
+my %is_output;
+for my $f ( 0 .. 4095 ) { $is_output{$f} = $good_flag->{$f} ? 1 : 0; }
+###### Set FLAGs OK.
 
 ###### Show flag number usage: If we only need to show flag number usage. 
 if ( $opts{showNumber} ) {

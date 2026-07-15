@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 use strict; 
+use FindBin; (my $REPO = $FindBin::RealBin) =~ s{(/NGS_data_processing)(/.*)?$}{$1};  # portable repo root
 use warnings; 
 use LogInforSunhh; 
 use Getopt::Long; 
@@ -82,15 +83,15 @@ sub run_last2scaff {
 	my %tools; 
 	my $HOME = `echo \$HOME`; 
 	chomp($HOME); 
-	my $SRC  = "/data/Sunhh/src"; 
+	my $SRC  = $ENV{MUGSY_SRC} // "/data/Sunhh/src"; # override with $MUGSY_SRC (Mugsy install root)
 
-	$tools{pl_clipScaf}    = "perl $HOME/tools/github/NGS_data_processing/assemble_tools/clip_scaf_end.pl"; 
-	$tools{pl_addTag2fa}   = "perl $HOME/tools/github/NGS_data_processing/assemble_tools/add_tag_to_fsa.pl"; 
-	$tools{pl_formatMAF}   = "perl $HOME/tools/github/NGS_data_processing/assemble_tools/format_maf_forMugsy.pl"; 
-	$tools{pl_maf2fasta}   = "perl $HOME/tools/github/NGS_data_processing/assemble_tools/maf2fasta.pl"; 
-	$tools{pl_pairedMAF}   = "perl $HOME/tools/github/NGS_data_processing/assemble_tools/get_paired_maf.pl"; 
-	$tools{pl_goodLink}    = "perl $HOME/tools/github/NGS_data_processing/assemble_tools/good_link_fromMaf.pl"; 
-	$tools{pl_joinScaf}    = "perl $HOME/tools/github/NGS_data_processing/assemble_tools/join_link.pl"; 
+	$tools{pl_clipScaf}    = "perl $REPO/assemble_tools/clip_scaf_end.pl"; 
+	$tools{pl_addTag2fa}   = "perl $REPO/assemble_tools/add_tag_to_fsa.pl"; 
+	$tools{pl_formatMAF}   = "perl $REPO/assemble_tools/format_maf_forMugsy.pl"; 
+	$tools{pl_maf2fasta}   = "perl $REPO/assemble_tools/maf2fasta.pl"; 
+	$tools{pl_pairedMAF}   = "perl $REPO/assemble_tools/get_paired_maf.pl"; 
+	$tools{pl_goodLink}    = "perl $REPO/assemble_tools/good_link_fromMaf.pl"; 
+	$tools{pl_joinScaf}    = "perl $REPO/assemble_tools/join_link.pl"; 
 	$tools{exe_lastdb}     = "$HOME/bin/lastdb"; 
 	$tools{exe_lastal}     = "$HOME/bin/lastal"; 
 	$tools{exe_paraFa}     = "$HOME/bin/parallel-fasta"; 

@@ -2,6 +2,7 @@
 # [4/20/2022] Transform the maker ab-init gff3 gene models (composed of match/match_part elements) to normal gene models (gene/mRNA/exon/CDS/...)
 #   Need to set up a proper environment for maker software.
 use strict;
+use FindBin; (my $REPO = $FindBin::RealBin) =~ s{(/NGS_data_processing)(/.*)?$}{$1};  # portable repo root
 use warnings;
 use LogInforSunhh;
 
@@ -18,7 +19,7 @@ $idxPref =~ s!\.fa(sta)?$!!i;
 my $exe_maker = "/data/Sunhh/src/Support/mpich/maker_mpich/install/bin/mpiexec -n 20 /data/Sunhh/src/Annotation/maker/maker.3.01.03/bin/maker ";
 $exe_maker = "maker ";
 $exe_maker = "mpiexec -n 20 maker ";
-my $pl_rmMkFa = "perl /home/Sunhh/tools/github/NGS_data_processing/annot_tools/maker/rm_maker_fasta.pl ";
+my $pl_rmMkFa = "perl $REPO/annot_tools/maker/rm_maker_fasta.pl ";
 
 &runCmd("maker -CTL");
 open F1,'<',"maker_opts.ctl" or die "maker_opts.ctl\n";

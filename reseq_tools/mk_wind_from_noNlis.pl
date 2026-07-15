@@ -2,7 +2,6 @@
 use strict; 
 use warnings; 
 use mathSunhh; 
-my $ms_obj = mathSunhh->new(); 
 
 @ARGV == 3 or &usage(); 
 
@@ -32,7 +31,7 @@ while (<>) {
 	my @ta = split(/\t/, $_); 
 	my ($chrID, $chrLen, $mS, $mE, $mL) = @ta; 
 	$chrLen =~ m/^length$/i and next; 
-	defined $wind{$chrID} or $wind{$chrID} = $ms_obj->setup_windows( 'ttl_start'=>1, 'ttl_end'=>$chrLen, 'wind_size'=>$wind_len, 'wind_step'=>$wind_step ); 
+	defined $wind{$chrID} or $wind{$chrID} = mathSunhh::setup_windows( 'ttl_start'=>1, 'ttl_end'=>$chrLen, 'wind_size'=>$wind_len, 'wind_step'=>$wind_step ); 
 	unless ( defined $si2idx{$chrID} ) {
 		my $idx = 0; 
 		for my $si ( sort { $a<=>$b } keys %{$wind{$chrID}{'loci'}} ) {
@@ -41,8 +40,8 @@ while (<>) {
 			$idx ++; 
 		}
 	}
-	my @si_mS = sort { $a <=> $b } @{ $ms_obj->map_windows( 'posi'=>$mS, 'wind_hash'=>$wind{$chrID} ) }; 
-	my @si_mE = sort { $a <=> $b } @{ $ms_obj->map_windows( 'posi'=>$mE, 'wind_hash'=>$wind{$chrID} ) }; 
+	my @si_mS = sort { $a <=> $b } @{ mathSunhh::map_windows( 'posi'=>$mS, 'wind_hash'=>$wind{$chrID} ) }; 
+	my @si_mE = sort { $a <=> $b } @{ mathSunhh::map_windows( 'posi'=>$mE, 'wind_hash'=>$wind{$chrID} ) }; 
 	for my $idx ( $si2idx{$chrID}{ $si_mS[0] } .. $si2idx{$chrID}{ $si_mE[-1] } ) {
 		my $si = $idx2si{$chrID}{$idx}; 
 		my ($wS, $wE, $iL) = @{ $wind{$chrID}{'loci'}{$si} }; 

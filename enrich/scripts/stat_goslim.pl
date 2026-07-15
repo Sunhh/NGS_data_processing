@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 use strict; 
+use FindBin; (my $REPO = $FindBin::RealBin) =~ s{(/NGS_data_processing)(/.*)?$}{$1};  # portable repo root
 use warnings; 
 use LogInforSunhh; 
 use fileSunhh; 
@@ -20,9 +21,9 @@ GetOptions(\%opts,
 
 defined $opts{'in_idlist'} or die "perl $0 -in_idlist in_geneID.list   -opref out_prefix   -ref_goslim goslim_plant.obo.20181129  -ref_bgobo gene_ontology_edit.obo.2018-05-01  -ref_bggaf ngsV1.GAFngsV1.GAF\n"; 
 
-$opts{'pl_obo2tab'} //= 'perl /home/Sunhh/tools/github/NGS_data_processing/enrich/cnvt_GOobo_to_tab.pl'; 
+$opts{'pl_obo2tab'} //= "perl $REPO/enrich/scripts/cnvt_GOobo_to_tab.pl"; 
 $opts{'pl_map2slim'} //= 'map2slim'; 
-$opts{'ref_goslim'}  //= '/home/Sunhh/tools/github/NGS_data_processing/enrich/goslim_plant.obo.20181129'; 
+$opts{'ref_goslim'}  //= "$REPO/enrich/example_data/goslim_plant.obo.20181129"; 
 # $opts{'ref_bgobo'}   //= '/home/Sunhh/tools/github/NGS_data_processing/enrich/gene_ontology_edit.obo.2018-05-01.gz'; 
 $opts{'ref_bgobo'}   //= '/home/Sunhh/tools/github/NGS_data_processing/enrich/gene_ontology_edit.obo.2018-05-01.gz'; 
 $opts{'ref_bggaf'}   //= '/Data/Sunhh/watermelon/rnaseq/01_work/ref_WM97ngsV1Scf/for_fruitDev/ref/ngsV1.GAF'; 
@@ -93,6 +94,3 @@ close($ofh_3);
 
 &fileSunhh::_rmtree($wdir); 
 
-sub runCmd {
-	&exeCmd_1cmd($_[0]) and &stopErr("[Err] Failed at cmd: $_[0]\n"); 
-}

@@ -1,0 +1,78 @@
+1	A	A	10	q1	s1	100	200	+	+	subject one desc
+2	C	C	11	q1	s1	100	200	+	+	subject one desc
+3	G	G	12	q1	s1	100	200	+	+	subject one desc
+4	T	T	13	q1	s1	100	200	+	+	subject one desc
+5	A	A	14	q1	s1	100	200	+	+	subject one desc
+6	C	C	15	q1	s1	100	200	+	+	subject one desc
+7	G	G	16	q1	s1	100	200	+	+	subject one desc
+8	T	T	17	q1	s1	100	200	+	+	subject one desc
+9	A	A	18	q1	s1	100	200	+	+	subject one desc
+10	C	C	19	q1	s1	100	200	+	+	subject one desc
+11	G	C	20	q1	s1	100	200	+	+	subject one desc
+12	T	T	21	q1	s1	100	200	+	+	subject one desc
+13	A	A	22	q1	s1	100	200	+	+	subject one desc
+14	C	C	23	q1	s1	100	200	+	+	subject one desc
+15	G	G	24	q1	s1	100	200	+	+	subject one desc
+16	T	T	25	q1	s1	100	200	+	+	subject one desc
+17	A	A	26	q1	s1	100	200	+	+	subject one desc
+18	C	C	27	q1	s1	100	200	+	+	subject one desc
+19	G	G	28	q1	s1	100	200	+	+	subject one desc
+20	T	T	29	q1	s1	100	200	+	+	subject one desc
+21	A	A	30	q1	s1	100	200	+	+	subject one desc
+22	C	C	31	q1	s1	100	200	+	+	subject one desc
+23	G	G	32	q1	s1	100	200	+	+	subject one desc
+24	T	T	33	q1	s1	100	200	+	+	subject one desc
+25	A	A	34	q1	s1	100	200	+	+	subject one desc
+40	A	A	100	q1	s1	100	200	+	-	subject one desc
+41	C	C	99	q1	s1	100	200	+	-	subject one desc
+42	G	G	98	q1	s1	100	200	+	-	subject one desc
+43	T	T	97	q1	s1	100	200	+	-	subject one desc
+44	A	A	96	q1	s1	100	200	+	-	subject one desc
+45	C	C	95	q1	s1	100	200	+	-	subject one desc
+46	G	G	94	q1	s1	100	200	+	-	subject one desc
+47	T	T	93	q1	s1	100	200	+	-	subject one desc
+48	A	A	92	q1	s1	100	200	+	-	subject one desc
+49	C	C	91	q1	s1	100	200	+	-	subject one desc
+50	G	G	90	q1	s1	100	200	+	-	subject one desc
+51	T	T	89	q1	s1	100	200	+	-	subject one desc
+52	A	A	88	q1	s1	100	200	+	-	subject one desc
+53	C	C	87	q1	s1	100	200	+	-	subject one desc
+54	G	G	86	q1	s1	100	200	+	-	subject one desc
+5	A	A	50	q1	s2	100	300	+	+	subject two desc
+6	C	C	51	q1	s2	100	300	+	+	subject two desc
+7	G	G	52	q1	s2	100	300	+	+	subject two desc
+8	T	T	53	q1	s2	100	300	+	+	subject two desc
+9	A	A	54	q1	s2	100	300	+	+	subject two desc
+10	C	C	55	q1	s2	100	300	+	+	subject two desc
+11	G	G	56	q1	s2	100	300	+	+	subject two desc
+12	T	T	57	q1	s2	100	300	+	+	subject two desc
+13	A	A	58	q1	s2	100	300	+	+	subject two desc
+14	C	C	59	q1	s2	100	300	+	+	subject two desc
+15	G	G	60	q1	s2	100	300	+	+	subject two desc
+16	T	T	61	q1	s2	100	300	+	+	subject two desc
+17	A	A	62	q1	s2	100	300	+	+	subject two desc
+18	C	C	63	q1	s2	100	300	+	+	subject two desc
+19	G	G	64	q1	s2	100	300	+	+	subject two desc
+20	T	T	65	q1	s2	100	300	+	+	subject two desc
+21	A	A	66	q1	s2	100	300	+	+	subject two desc
+22	C	C	67	q1	s2	100	300	+	+	subject two desc
+23	G	G	68	q1	s2	100	300	+	+	subject two desc
+24	T	T	69	q1	s2	100	300	+	+	subject two desc
+3	A	A	7	q2	s3	90	150	+	+	subject three
+4	C	C	8	q2	s3	90	150	+	+	subject three
+5	G	G	9	q2	s3	90	150	+	+	subject three
+6	T	T	10	q2	s3	90	150	+	+	subject three
+7	A	A	11	q2	s3	90	150	+	+	subject three
+8	C	C	12	q2	s3	90	150	+	+	subject three
+9	G	G	13	q2	s3	90	150	+	+	subject three
+10	T	T	14	q2	s3	90	150	+	+	subject three
+11	A	A	15	q2	s3	90	150	+	+	subject three
+12	C	C	16	q2	s3	90	150	+	+	subject three
+13	G	G	17	q2	s3	90	150	+	+	subject three
+14	T	T	18	q2	s3	90	150	+	+	subject three
+15	A	A	19	q2	s3	90	150	+	+	subject three
+16	C	C	20	q2	s3	90	150	+	+	subject three
+17	G	G	21	q2	s3	90	150	+	+	subject three
+18	T	T	22	q2	s3	90	150	+	+	subject three
+19	A	A	23	q2	s3	90	150	+	+	subject three
+20	C	C	24	q2	s3	90	150	+	+	subject three

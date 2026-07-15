@@ -2,6 +2,7 @@
 # [4/9/2022] Need to convert this as pipeline some day later for repeat works!!!
 # [5/5/2022] Fit diamond blastx to Nr database.
 use strict;
+use FindBin; (my $REPO = $FindBin::RealBin) =~ s{(/NGS_data_processing)(/.*)?$}{$1};  # portable repo root
 use warnings;
 use LogInforSunhh;
 use fileSunhh;
@@ -43,41 +44,41 @@ my $opref   = shift;
 
 &runCmd("deal_fasta.pl -keep_len 0-$max_len $ctgFa > $opref.tochk.fa");
 if ($opts{'bn_task'} eq 'blastx') {
-  &runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/assemble_tools/classify_tools/run_seg_blastn.pl  $opref.tochk2Nt  1000   $opref.tochk.fa  $opts{'bn_db'}  -bn_task $opts{'bn_task'}");
+  &runCmd("perl $REPO/assemble_tools/classify_tools/run_seg_blastn.pl  $opref.tochk2Nt  1000   $opref.tochk.fa  $opts{'bn_db'}  -bn_task $opts{'bn_task'}");
 } else {
-  &runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/assemble_tools/classify_tools/run_seg_blastn.pl  $opref.tochk2Nt  10000  $opref.tochk.fa  $opts{'bn_db'}  -bn_task $opts{'bn_task'}");
+  &runCmd("perl $REPO/assemble_tools/classify_tools/run_seg_blastn.pl  $opref.tochk2Nt  10000  $opref.tochk.fa  $opts{'bn_db'}  -bn_task $opts{'bn_task'}");
 }
 {
   # I'd like to keep rDNA as good assembly for contamination removal. 
   # However, it might be worth another try to treat them as contamination for chromosome anchoring.
-  my $cmd = "perl /home/Sunhh/tools/github/NGS_data_processing/assemble_tools/classify_tools/classify_region_byBn6.pl ";
+  my $cmd = "perl $REPO/assemble_tools/classify_tools/classify_region_byBn6.pl ";
   $cmd .= " $opref.tochk2Nt.bn6  -joinInEx $opref.tochk2Nt.bn6.jnInEx ";
   $cmd .= " -InList Eukaryota:Satellite:rDNA:Chloroplast:Mitochondrion:Plastid ";
   $cmd .= " -ExList NA:Viruses:Bacteria:Archaea ";
   $cmd .= " > $opref.tochk2Nt.bn6.class ";
   &runCmd($cmd);
 }
-&runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/assemble_tools/classify_tools/get_Ex_region.pl $opref.tochk2Nt.bn6.class 1> $opref.tochk2Nt.bn6.class.sep 2> $opref.tochk2Nt.bn6.class.jn");
+&runCmd("perl $REPO/assemble_tools/classify_tools/get_Ex_region.pl $opref.tochk2Nt.bn6.class 1> $opref.tochk2Nt.bn6.class.sep 2> $opref.tochk2Nt.bn6.class.jn");
 if ($opts{'bn_task'} eq 'blastx') {
-  &runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/assemble_tools/classify_tools/recog_organelle_rDNA_from_classJn.pl $opref.tochk2Nt.bn6.class.jn -for_bx6 > $opref.tochk2Nt.bn6.class.jn.s1");
+  &runCmd("perl $REPO/assemble_tools/classify_tools/recog_organelle_rDNA_from_classJn.pl $opref.tochk2Nt.bn6.class.jn -for_bx6 > $opref.tochk2Nt.bn6.class.jn.s1");
 } else {
-  &runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/assemble_tools/classify_tools/recog_organelle_rDNA_from_classJn.pl $opref.tochk2Nt.bn6.class.jn > $opref.tochk2Nt.bn6.class.jn.s1");
+  &runCmd("perl $REPO/assemble_tools/classify_tools/recog_organelle_rDNA_from_classJn.pl $opref.tochk2Nt.bn6.class.jn > $opref.tochk2Nt.bn6.class.jn.s1");
 }
 
 # In order to detect rDNA and organelle genomes.
 {
-  my $cmd = "perl /home/Sunhh/tools/github/NGS_data_processing/assemble_tools/classify_tools/classify_region_byBn6.pl ";
+  my $cmd = "perl $REPO/assemble_tools/classify_tools/classify_region_byBn6.pl ";
   $cmd .= " $opref.tochk2Nt.bn6  -joinInEx $opref.tochk2Nt.bn6.highCopy.jnInEx ";
   $cmd .= " -InList Eukaryota:NA:Viruses:Bacteria:Archaea ";
   $cmd .= " -ExList Chloroplast:Mitochondrion:Plastid:Satellite:rDNA ";
   $cmd .= " > $opref.tochk2Nt.bn6.highCopy.class ";
   &runCmd($cmd);
 }
-&runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/assemble_tools/classify_tools/get_Ex_region.pl $opref.tochk2Nt.bn6.highCopy.class 1> $opref.tochk2Nt.bn6.highCopy.class.sep 2> $opref.tochk2Nt.bn6.highCopy.class.jn");
+&runCmd("perl $REPO/assemble_tools/classify_tools/get_Ex_region.pl $opref.tochk2Nt.bn6.highCopy.class 1> $opref.tochk2Nt.bn6.highCopy.class.sep 2> $opref.tochk2Nt.bn6.highCopy.class.jn");
 if ($opts{'bn_task'} eq 'blastx') {
-  &runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/assemble_tools/classify_tools/recog_organelle_rDNA_from_classJn.pl $opref.tochk2Nt.bn6.highCopy.class.jn -for_bx6 > $opref.tochk2Nt.bn6.highCopy.class.jn.s1");
+  &runCmd("perl $REPO/assemble_tools/classify_tools/recog_organelle_rDNA_from_classJn.pl $opref.tochk2Nt.bn6.highCopy.class.jn -for_bx6 > $opref.tochk2Nt.bn6.highCopy.class.jn.s1");
 } else {
-  &runCmd("perl /home/Sunhh/tools/github/NGS_data_processing/assemble_tools/classify_tools/recog_organelle_rDNA_from_classJn.pl $opref.tochk2Nt.bn6.highCopy.class.jn > $opref.tochk2Nt.bn6.highCopy.class.jn.s1");
+  &runCmd("perl $REPO/assemble_tools/classify_tools/recog_organelle_rDNA_from_classJn.pl $opref.tochk2Nt.bn6.highCopy.class.jn > $opref.tochk2Nt.bn6.highCopy.class.jn.s1");
 }
 
 # deal_fasta.pl -keep_len 0-1000000 ../db/C31.hf2a.noRed.fa > C31.tochk.fa

@@ -10,7 +10,6 @@
 
 use strict;
 use List::Util qw(min max);
-use File::Spec;
 use Getopt::Long; 
 
 use Bio::DB::Fasta;

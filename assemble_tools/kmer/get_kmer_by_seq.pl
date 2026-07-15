@@ -127,7 +127,3 @@ sub rc {
 }
 
 
-sub tsmsg {
-	my $tt = scalar(localtime()); 
-	print STDERR join('', "[$tt]", @_); 
-}

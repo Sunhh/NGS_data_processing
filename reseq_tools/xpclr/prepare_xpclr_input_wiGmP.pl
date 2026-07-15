@@ -111,20 +111,6 @@ sub indv_list {
 }
 
 
-sub load_gmP {
-  my $fn = shift; 
-  my %back; 
-  my $fh = &openFH($fn, '<'); 
-  while (&wantLineC($fh)) {
-    # chr \\t pos \\t cM 
-    my @ta = &splitL("\t", $_); 
-    $ta[0] eq 'chr' and next; 
-    $back{$ta[0]}{$ta[1]} = $ta[2]; 
-  }
-  close($fh); 
-  return(%back); 
-}
-
 sub proc_file {
   my ($fh_snp, $o_pref, $indv_1h, $indv_2h, $useID) = @_; 
   $useID //= 0; 

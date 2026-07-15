@@ -309,8 +309,3 @@ sub resolve_id {
   return("${basic}__${news}_${newe}"); 
 }# resolve_id() 
 
-sub runCmd {
-  &exeCmd_1cmd($_[0]) and &stopErr("[Err] $_[0]\n"); 
-}# runCmd() 
-
-

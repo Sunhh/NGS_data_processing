@@ -7,7 +7,6 @@
 use strict;
 use warnings;
 use mathSunhh;
-my $ms_obj = mathSunhh->new();
 
 !@ARGV and die "perl $0 in.gff3 > in_fix.gff3\n";
 

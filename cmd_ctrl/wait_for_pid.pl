@@ -3,10 +3,6 @@
 # [4/7/2022] Invoke 'ps' command instead of kill() function to see if a PID is running, because I need authority to correctly use kill().
 use strict; 
 use warnings; 
-BEGIN {
-	use lib "/usr/local/share/perl5/";
-	use lib "/Data/Sunhh/src/general/conda/pkgs/perl-parallel-forkmanager-1.17-0/lib/perl5/site_perl/5.22.0/";
-}
 
 use Getopt::Long; 
 use LogInforSunhh; 

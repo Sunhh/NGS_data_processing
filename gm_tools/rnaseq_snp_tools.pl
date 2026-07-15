@@ -19,6 +19,8 @@ GetOptions(\%opts,
 		"offs_colN:s", 
 		"infer_PG!", 
 		"keep_abnormal!", 
+		"out_itayCsv:s", # task:get_abh — also write per-chromosome itayNeed CSV files named <pref><chr>.csv
+		"out_itayCnt:s", # task:cnt_pop_allele — also write a compact chr/pos/Total/A_N/B_N/AF% table here
 	
 	# task: get_abh() 
 	#  Same parameters to task:cnt_pop_allele, 
@@ -619,7 +621,7 @@ sub get_abh {
 	my $tab_header; 
 	my @offs_colN; 
 	if ( defined $glob{'offs_colN'} ) {
-		@offs_colN = &mathSunhh::_parseCol( $glob{'offs_colN'} ); 
+		@offs_colN = &mathSunhh::parseCol( $glob{'offs_colN'} ); 
 		@offs_colN > 0 or &stopErr("[Err] Input -offs_colN [$glob{'offs_colN'}] doesn't work.\n"); 
 	}
 	LINE: 
@@ -727,6 +729,14 @@ sub get_abh {
 			&SNP_tbl::tab_allele_to_genotype(\@p2_al), 
 			@{$off_geno{'offs_abh'}}[@offs_colN]
 		)."\n"; 
+		if ( defined $glob{'out_itayCsv'} ) {
+			my $fn = "$glob{'out_itayCsv'}$ta[0].csv"; 
+			unless ( $glob{'_itay_have'}{$fn} ) {
+				$glob{'_itay_have'}{$fn} = 1; 
+				&fileSunhh::write2file($fn, join("\t", 'marker', 'position(bp)', @{$tab_header}[@offs_colN])."\n", '>'); 
+			}
+			&fileSunhh::write2file($fn, join("\t", "$ta[0]_$ta[1]", $ta[1], @{$off_geno{'offs_abh'}}[@offs_colN])."\n", '>>'); 
+		}
 	}# End while (readline($inTabH)) 
 	close($inTabH); 
 	return; 
@@ -744,10 +754,14 @@ sub cnt_pop_allele {
 	&chk_para('cnt_pop_allele'); 
 	my $inTabH = &openFH( $glob{'vcf_tab'}, '<' ); 
 	my $need_header = 1; 
+	if ( defined $glob{'out_itayCnt'} ) {
+		$glob{'_itayCnt_fh'} = &openFH($glob{'out_itayCnt'}, '>'); 
+		print {$glob{'_itayCnt_fh'}} join("\t", qw/chr pos Total A_N B_N AF%/)."\n"; 
+	}
 	my $tab_header; 
 	my @offs_colN; 
 	if ( defined $glob{'offs_colN'} ) {
-		@offs_colN = &mathSunhh::_parseCol( $glob{'offs_colN'} ); 
+		@offs_colN = &mathSunhh::parseCol( $glob{'offs_colN'} ); 
 		@offs_colN > 0 or &stopErr("[Err] Input -offs_colN [$glob{'offs_colN'}] doesn't work.\n"); 
 	}
 	LINE: 
@@ -869,8 +883,15 @@ sub cnt_pop_allele {
 			@{$off_geno{'cntN'}}{qw/offs_totalN miss_N homo_P1 homo_P2 hete_PP non_PP bad_PP/}, 
 			join(";;", map { "$_=$off_geno{'cntN'}{'other'}{$_}" } sort keys %{$off_geno{'cntN'}{'other'}})
 		) . "\n"; 
+		if ( defined $glob{'_itayCnt_fh'} ) {
+			my $a = $off_geno{'cntN'}{'homo_P1'}; my $b = $off_geno{'cntN'}{'homo_P2'}; my $h = $off_geno{'cntN'}{'hete_PP'}; 
+			my $ttl = 2*$a + 2*$b + 2*$h; my $ca = 2*$a + $h; my $cb = 2*$b + $h; 
+			my $af = $ttl > 0 ? sprintf("%.2f", $ca/$ttl*100) : 'NA'; 
+			print {$glob{'_itayCnt_fh'}} join("\t", @ta[0,1], $ttl, $ca, $cb, $af)."\n"; 
+		}
 		
 	}# End while 
+	defined $glob{'_itayCnt_fh'} and close($glob{'_itayCnt_fh'}); 
 	close($inTabH); 
 	return; 
 }# cnt_pop_allele() 
@@ -954,6 +975,7 @@ my $help_txt = <<HH;
 #   -offs_colN        [''] Column numbers of offsprings; Use all except parents if not given. 
 #   -infer_PG         [Boolean] If this is given, try to infer one parent genotype from high frequence offspring alleles. 
 #   -keep_abnormal    [Boolean] If this is given, all lines will be output ignoring if it is bad line. 
+#   -out_itayCnt      [filename] Also write a compact per-site table: chr <tab> pos <tab> Total <tab> A_N <tab> B_N <tab> AF% . 
 # 
 #  task:get_abh 
 #   Same parameters to task:cnt_pop_allele except 'keep_abnormal'; 
@@ -963,6 +985,8 @@ my $help_txt = <<HH;
 #     'a' - for P1 genotype; 
 #     'b' - for P2 genotype; 
 #     'h' - for heterozygous genotype; 
+#   -out_itayCsv      [pref] Also write one CSV per chromosome (<pref><chr>.csv), header 'marker <tab> position(bp) <tab> offspringIDs', 
+#                     rows '<chr>_<pos> <tab> <pos> <tab> a/b/h/- per offspring' (parents/REF excluded; replaces the old cnvt_snp_to_itayNeed.pl). 
 #     '-' - for unknown/missing genotype; 
 # 
 #  task:blk_abh 

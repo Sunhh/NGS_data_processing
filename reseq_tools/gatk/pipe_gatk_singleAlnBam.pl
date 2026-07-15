@@ -43,7 +43,7 @@ GetOptions(\%opts,
 ################################################################################
 my $usage_txt = <<HH; 
 
-perl $0 fasdfasf
+perl $0 -in_pref_list in_pref_list -conf_file pipe_gatk_conf [-prj_ID prjID]
 
 	"in_pref_list:s", # Required. 
 	                    Format : SAMPLE_NAME <tab> READ_GROUP_NAME <tab> LIBRARY_NAME <tab> dataPrefix <tab> in_fq1 <tab> in_fq2
@@ -74,7 +74,7 @@ $cfg{'nct_hapCaller'} //= 5;
 my %example; 
 $example{'file_cfg'} = <<'CFG'; 
 
-pl_getSam             /home/Sunhh/tools/github/NGS_data_processing/Proc_Sam/get_required_sam.pl
+pl_getSam             /home/Sunhh/tools/github/NGS_data_processing/file_type_based/Proc_Sam/get_required_sam.pl
 
 exe_perl              /usr/bin/perl
 exe_java              /usr/bin/java

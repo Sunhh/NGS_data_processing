@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 use strict;
+use FindBin; (my $REPO = $FindBin::RealBin) =~ s{(/NGS_data_processing)(/.*)?$}{$1};  # portable repo root
 use warnings;
 use fastaSunhh;
 use LogInforSunhh;
@@ -9,7 +10,7 @@ use fileSunhh;
 
 my $exemegacc = 'megacc';
 my $exemuscle = 'muscle';
-my $plFa2Meg  = 'perl /home/Sunhh/tools/github/NGS_data_processing/reseq_tools/cnvt_tools/fas2meg.pl';
+my $plFa2Meg  = "perl $REPO/reseq_tools/cnvt_tools/fas2meg.pl";
 
 use Parallel::ForkManager;
 my $pm = new Parallel::ForkManager(80);

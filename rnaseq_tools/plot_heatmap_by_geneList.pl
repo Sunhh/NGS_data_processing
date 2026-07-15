@@ -9,9 +9,11 @@ GetOptions(\%opts,
 	"help!", 
 	"pdf_width:i", # 10
 	"pdf_height:i", # 10
+	"exe_Rscript:s", # Rscript (from PATH)
 ); 
 $opts{'pdf_width'}  //= 10; 
 $opts{'pdf_height'} //= 10; 
+$opts{'exe_Rscript'} //= 'Rscript';
 !@ARGV and die "perl $0 <exp.txt> <gene_list> <out_pref>\n"; 
 my $expF = shift; 
 my $genF = shift; 
@@ -109,7 +111,7 @@ dev.off()
 
 RRRR
 close($ofh2); 
-$cmd = "/home/Sunhh/bin/Rscript $wrkDir/hmap1.r"; 
+$cmd = "$opts{'exe_Rscript'} $wrkDir/hmap1.r"; 
 &exeCmd_1cmd( $cmd ) and &stopErr("[Err] Failed at cmd: $cmd\n"); 
 
 &fileSunhh::_rmtree( $wrkDir ); 

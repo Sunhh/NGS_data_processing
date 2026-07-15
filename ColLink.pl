@@ -64,8 +64,6 @@ my @KC1 = (0);
 my @KC2 = (0); 
 defined $opts{keyC1} and @KC1 = &parseCol($opts{keyC1}); 
 defined $opts{keyC2} and @KC2 = &parseCol($opts{keyC2}); 
-#my $kc1 = $opts{keyC1};
-#my $kc2 = $opts{keyC2};
 my $file1 = $opts{f1};
 my $fh_out = (defined $opts{out}) ? &openFHwrite($opts{out}) : \*STDOUT;
 my ($yS,$nS);
@@ -136,7 +134,6 @@ while (<>) {
 	}
 	print $fh_out "$line\t$add\n";
 }
-#close OUT;
 print STDERR "[Stat] All finished. " . scalar(localtime()) . "\n"; 
 
 sub openFHwrite {

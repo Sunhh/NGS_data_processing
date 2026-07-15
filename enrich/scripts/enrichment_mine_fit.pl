@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Statistics::R;
+use mathSunhh;
 
 !@ARGV and die "perl $0 background_IPR subset_list\n"; 
 
@@ -50,6 +50,7 @@ while (<B>)
 }
 	my $back_num = scalar keys %back_list;
 	
+	my @pvals;   # p-values in out_1 row order, for BH adjustment below
 	foreach $ip ( sort keys %sub_ipr)
 	{
 		my $sub_gene;
@@ -61,18 +62,17 @@ while (<B>)
 				$sub_gene= join (";",@{$sub_ipr{$ip}});
 				$pvalue = hypergeometric($back_num,$back_list_num,$sub_num,$sub_list_num);
 				print O "$ip\t$back_num\t$back_list_num\t$sub_num\t$sub_list_num\t$sub_gene\t$pvalue\n";
+				push @pvals, $pvalue;
 #		}
 	}
 
-	my $R=Statistics::R->new();
-	$R->set('tmp1',$out_1);
-	$R->set('tmp2',$out_2);
-my $Rcmd1=<<EOF;
-		 data<- read.delim(tmp1,header=F,sep="\t")
-	   bh<-p.adjust( data[,7],method="BH",n = length(data[,7]))
-     write.table(bh, file = tmp2, sep="\t",row.names = F, col.names = F,quote = F)
-EOF
-	$R->run($Rcmd1);
+	close (O);
+	# Benjamini-Hochberg FDR adjustment of the p-values (col 7 of $out_1), in the
+	# same row order. Pure-Perl replacement for R p.adjust(...,method="BH").
+	my $adjp = &mathSunhh::p_adjust_BH(\@pvals);
+	open (A,">$out_2") or die "[Err] Failed to write $out_2: $!\n";
+	print A "$_\n" for @$adjp;
+	close (A);
 
 
 

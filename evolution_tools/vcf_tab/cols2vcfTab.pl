@@ -106,7 +106,7 @@ for my $fh ( @InFp ) {
 				my @med; 
 				defined $opts{'colN_ref'} and @med = ($ta[$opts{'colN_ref'}]); 
 				my @tb = @ta[ $opts{'colN_start'} .. $#ta ]; 
-				&aref_cols2tab( \@tb, $used{'bad_geno'}, \%d2b_list, $opts{'noSrtAllele'} ); 
+				&SNP_tbl::aref_cols2tab( \@tb, $used{'bad_geno'}, \%d2b_list, $opts{'noSrtAllele'} ); 
 				print O join("\t", @ta[ 0 .. ($opts{'colN_start'} - 1) ], @med, @tb)."\n";  
 			}
 			close O; 
@@ -139,84 +139,10 @@ for my $fh ( @InFp ) {
 				print STDOUT join("\t", @ta[ 0 .. ($opts{'colN_start'} - 1) ], @med, @tb)."\n"; 
 				next; 
 			}
-			&aref_cols2tab( \@tb, $used{'bad_geno'}, \%d2b_list, $opts{'noSrtAllele'} ); 
+			&SNP_tbl::aref_cols2tab( \@tb, $used{'bad_geno'}, \%d2b_list, $opts{'noSrtAllele'} ); 
 			print STDOUT join("\t", @ta[ 0 .. ($opts{'colN_start'} - 1) ], @med, @tb)."\n";  
 		}
 	}
 	close($fh); 
 }
-
-=head1 aref_cols2tab( \@input_cols, \%used_bad_genotype, \%d2b_list, $doNotSortAlleles )
-
- $doNotSortAlleles is 0 by default, which means sort alleles (FALSE). 
-
- @input_cols and %used_bad_genotype will be modified. 
-
- %d2b_list comes from &SNP_tbl::get_diploid_d2b(); 
-
- Input array 
-  @input_cols = ( 'n',   'a',   'A',   '*',   '-',   'W',   'TA',  '*T', 'T+AA',    'TT+AA', '*T+AA', 'GAT', 'B'  ) 
- will be changed to 
-  @input_cols = ( './.', 'A/A', 'A/A', '*/*', '*/*', 'A/T', 'A/T', 'T/*','TAA/TAA', 'T/TAA', '*/TAA', './.', './.')
- Input %used_bad_genotype will have 
-  $used_bad_genotype{'GAT'} = 1; 
-  $used_bad_genotype{'B'} = 1; 
-
- If $doNotSortAlleles is 1, 'TA' will be 'T/A' instead of 'A/T'; 
-
-Return : undef(); 
-
-
-=cut
-sub aref_cols2tab {
-	my ($ar, $href_used, $href_d2b, $noSrtAl) = @_; 
-	defined $href_used or &stopErr("[Err] Need \%bad_geno_record\n"); 
-	defined $href_d2b or &stopErr("[Err] Need \%d2b_list\n"); 
-	$noSrtAl //= 0; 
-	for my $tb (@$ar) {
-		$tb = uc($tb); 
-		$tb eq '-' and $tb = '*'; 
-		my @tc; 
-		if ( $tb =~ m!^([ATGC\*])$! ) {
-			@tc = ($1, $1); 
-		} elsif ( $tb eq 'N' ) {
-			@tc = ('.', '.'); 
-		} elsif ( defined $href_d2b->{$tb} ) {
-			@tc = @{$href_d2b->{$tb}}; 
-			# if ( $noSrtAl ) {
-			# } else {
-			#	@tc = sort @{$href_d2b->{$tb}}; 
-			#	$tc[0] eq '*' and @tc[0,1] = @tc[1,0]; 
-			#}
-		} elsif ( $tb =~ m!^([ATGC\*])([ATGC\*])$! ) {
-			@tc = ($1,$2); 
-			unless ( $noSrtAl ) {
-				@tc = sort @tc; 
-				$tc[0] eq '*' and @tc[0,1] = @tc[1,0]; 
-			}
-		} elsif ( $tb =~ m!^([ATGC])\+N+$! ) {
-			@tc = ($1, $1);  
-		} elsif ( $tb =~ m!^([ATGC])\+([ATGCN]+)$! ) {
-			@tc = ("$1$2", "$1$2"); 
-		} elsif ( $tb =~ m!^([ATGC\*])([ATGC])\+N+$! ) {
-			@tc = ($1, $2); 
-			unless ( $noSrtAl ) {
-				@tc = sort @tc; 
-				$tc[0] eq '*' and @tc[0,1] = @tc[1,0]; 
-			}
-		} elsif ( $tb =~ m!^([ATGC\*])([ATGC])\+([ATGCN]+)$! ) {
-			@tc = ($1, "$2$3"); 
-		} elsif ( $tb =~ m!^\+! ) {
-			@tc = ('.', '.'); 
-		} else {
-			unless (defined $href_used->{$tb}) {
-				$href_used->{$tb} = 1; 
-				&tsmsg("[Wrn] Ignore bad genotype [$tb]\n"); 
-			}
-			@tc = ('.', '.'); 
-		}
-		$tb = $tc[0] . '/' . $tc[1]; 
-	}
-	return; 
-}# aref_cols2tab() 
 

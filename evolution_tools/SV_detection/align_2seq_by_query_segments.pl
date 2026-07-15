@@ -3,14 +3,15 @@ use strict;
 use warnings;
 use LogInforSunhh;
 use fileSunhh;
+use FindBin; (my $REPO = $FindBin::RealBin) =~ s{(/NGS_data_processing)(/.*)?$}{$1};  # portable repo root
 
 !@ARGV and die "perl $0 query.fa subject.fa out_prefix 'chop_parameters' '-max_diffR 0.01'\n  chop_parameters: -chop_seq -chop_len 1000 -chop_step 500 -chop_min 1000\n";
 
 my $pl_dealFasta='deal_fasta.pl';
 my $pl_colLink='ColLink.pl';
 my $pl_dealTab= 'deal_table.pl';
-my $pl_topBn='perl /home/Sunhh/tools/github/NGS_data_processing/evolution_tools/ortho_tools/filter_bp6_byTopScore.pl';
-my $pl_cnvtLoc='perl /home/Sunhh/tools/github/NGS_data_processing/assemble_tools/cnvt_loc_fromAGP_toAGP_forLoci.pl';
+my $pl_topBn="perl $REPO/evolution_tools/ortho_tools/filter_bp6_byTopScore.pl";
+my $pl_cnvtLoc="perl $REPO/assemble_tools/cnvt_loc_fromAGP_toAGP_forLoci.pl";
 my $bn6 = 'blastn -outfmt "6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen sstrand"';
 $bn6 .= " -num_threads 30 -evalue 1e-5 -max_hsps 50 -max_target_seqs 50";
 

@@ -29,14 +29,6 @@ HELP
 	exit(0); 
 }#end for usage(); 
 
-#sub openFH {
-#	my $f = shift;
-#	my $type = shift; (defined $type and $type =~ /^[<>|]+$/) or $type = '<';
-#	local *FH;
-#	open FH,$type,"$f" or die "Failed to open file [$f]:$!\n";
-#	return *FH;
-#}# end sub openFH
-
 
 $opts{help} and &usage(); 
 
@@ -74,19 +66,7 @@ while (<$fh_bn0>) {
 	s/[^\S\t]+$//; 
 	if ($region eq 'head') {
 		if (@ta = /^Query\s*=\s*(\S+)\s*(.*)/i) {
-			if (defined $info{send}) {
-				defined $info{qstr} or $info{qstr} = 'NA'; defined $info{sstr} or $info{sstr} = 'NA'; 
-				my $oline = join("\t", &outline(), @info{qw/qlen slen/}, "$info{qstr}$info{sstr}", $info{sdef}); 
-				$opts{snp} or print $obn6fh "$oline\n"; 
-				if ($opts{snp}) {
-					for my $snpl (@{$snpaln{$info{qid}}}) {
-						index($oline, $snpl) == -1 and next; 
-						# $oline =~ /^$snpl/ or next; 
-						&listSNP(\%info, $opts{'geno'}); 
-					}
-				}
-				$info{send} = undef(); 
-			}
+			&flush_record() and $info{send} = undef();
 			$info{qid} = $ta[0]; 
 			$info{qdef} = $ta[1]; 
 			$info{get_qlen} =  $info{get_sdef} = 0; 
@@ -95,19 +75,7 @@ while (<$fh_bn0>) {
 	}elsif ($region eq 'query') {
 		#if (@ta = /^>\s*(\S+)\s*(.*)/) {
 		if (@ta = /^>\s*(\S+)\s*(.*)/ or @ta = /^Subject\s*=\s*(\S+)\s*(.*)/i) {
-			if (defined $info{send}) {
-				defined $info{qstr} or $info{qstr} = 'NA'; defined $info{sstr} or $info{sstr} = 'NA'; 
-				my $oline = join("\t", &outline(), @info{qw/qlen slen/}, "$info{qstr}$info{sstr}", $info{sdef}); 
-				$opts{snp} or print $obn6fh "$oline\n"; 
-				if ($opts{snp}) {
-					for my $snpl (@{$snpaln{$info{qid}}}) {
-						index($oline, $snpl) == -1 and next; 
-						# $oline =~ /^$snpl/ or next; 
-						&listSNP(\%info, $opts{'geno'}); 
-					}
-				}# if ($opts{snp})
-				$info{send} = undef(); 
-			}
+			&flush_record() and $info{send} = undef();
 			$info{sid} = $ta[0]; 
 			$info{sdef} = $ta[1]; 
 			$info{get_slen} = $info{get_sdef} = 0; 
@@ -124,19 +92,7 @@ while (<$fh_bn0>) {
 		}
 	}elsif ($region eq 'sbjct') {
 		if (@ta = /^Query\s*=\s*(\S+)\s*(.*)/i) {
-			if (defined $info{send}) {
-				defined $info{qstr} or $info{qstr} = 'NA'; defined $info{sstr} or $info{sstr} = 'NA'; 
-				my $oline = join("\t", &outline(), @info{qw/qlen slen/}, "$info{qstr}$info{sstr}", $info{sdef}); 
-				$opts{snp} or print $obn6fh "$oline\n"; 
-				if ($opts{snp}) {
-					for my $snpl (@{$snpaln{$info{qid}}}) {
-						index($oline, $snpl) == -1 and next; 
-						# $oline =~ /^$snpl/ or next; 
-						&listSNP(\%info, $opts{'geno'}); 
-					}
-				}
-				$info{send} = undef(); 
-			}
+			&flush_record() and $info{send} = undef();
 			$info{qid} = $ta[0]; 
 			$info{qdef} = $ta[1]; 
 			$info{get_qlen} = $info{get_sdef} = 0; 
@@ -201,57 +157,21 @@ while (<$fh_bn0>) {
 		}
 	}elsif ($region eq 'alignment') {
 		if (@ta = /^Query\s*=\s*(\S+)\s*(.*)/i) {
-			if (defined $info{send}) {
-				defined $info{qstr} or $info{qstr} = 'NA'; defined $info{sstr} or $info{sstr} = 'NA'; 
-				my $oline = join("\t", &outline(), @info{qw/qlen slen/}, "$info{qstr}$info{sstr}", $info{sdef}); 
-				$opts{snp} or print $obn6fh "$oline\n"; 
-				if ($opts{snp}) {
-					for my $snpl (@{$snpaln{$info{qid}}}) {
-						index($oline, $snpl) == -1 and next; 
-						# $oline =~ /^$snpl/ or next; 
-						&listSNP(\%info, $opts{'geno'}); 
-					}
-				}
-				$info{send} = undef(); 
-			}
+			&flush_record() and $info{send} = undef();
 			$info{qid} = $ta[0]; 
 			$info{qdef} = $ta[1]; 
 			$info{get_qlen} = $info{get_sdef} = 0; 
 			$region = 'query'; 
 		#}elsif (@ta = /^>\s*(\S+)\s*(.*)/) {
 		}elsif (@ta = /^>\s*(\S+)\s*(.*)/ or @ta = /^Subject\s*=\s*(\S+)\s*(.*)/i) {
-			if (defined $info{send}) {
-				defined $info{qstr} or $info{qstr} = 'NA'; defined $info{sstr} or $info{sstr} = 'NA'; 
-				my $oline = join("\t", &outline(), @info{qw/qlen slen/}, "$info{qstr}$info{sstr}", $info{sdef}); 
-				$opts{snp} or print $obn6fh "$oline\n"; 
-				if ($opts{snp}) {
-					for my $snpl (@{$snpaln{$info{qid}}}) {
-						index($oline, $snpl) == -1 and next; 
-						# $oline =~ /^$snpl/ or next; 
-						&listSNP(\%info, $opts{'geno'}); 
-					}
-				}
-				$info{send} = undef(); 
-			}
+			&flush_record() and $info{send} = undef();
 			$info{sid} = $ta[0]; 
 			$info{sdef} = $ta[1]; 
 			$info{get_slen} = $info{get_sdef} = 0; 
 			$region = 'sbjct'; 
 		}elsif (@ta = /^\s*Score += +(\S+) +bits +\((\d+)\), +Expect(?:\(\d+\))? += +(\S+)/i) {
 # editting here. 
-			if (defined $info{send}) {
-				defined $info{qstr} or $info{qstr} = 'NA'; defined $info{sstr} or $info{sstr} = 'NA'; 
-				my $oline = join("\t", &outline(), @info{qw/qlen slen/}, "$info{qstr}$info{sstr}", $info{sdef}); 
-				$opts{snp} or print $obn6fh "$oline\n"; 
-				if ($opts{snp}) {
-					for my $snpl (@{$snpaln{$info{qid}}}) {
-						index($oline, $snpl) == -1 and next; 
-						# $oline =~ m/^$snpl/ or next; 
-						&listSNP(\%info, $opts{'geno'}); 
-					}
-				}
-				$info{send} = undef(); 
-			}
+			&flush_record() and $info{send} = undef();
 			$info{score} = $ta[0]; 
 			$info{bs} = $ta[1]; 
 			($info{evalue} = $ta[2]) =~ s/,$//; 
@@ -271,19 +191,7 @@ while (<$fh_bn0>) {
 			# defined $info{send} or $info{send} = $ta[2]; 
 			# $info{send} > $ta[2] and $info{send} = $ta[2]; 
 		}elsif (/^Lambda/) {
-			if (defined $info{send}) {
-				defined $info{qstr} or $info{qstr} = 'NA'; defined $info{sstr} or $info{sstr} = 'NA'; 
-				my $oline = join("\t", &outline(), @info{qw/qlen slen/}, "$info{qstr}$info{sstr}", $info{sdef}); 
-				$opts{snp} or print $obn6fh "$oline\n"; 
-				if ($opts{snp}) {
-					for my $snpl (@{$snpaln{$info{qid}}}) {
-						index($oline, $snpl) == -1 and next; 
-						# $oline =~ /^$snpl/ or next; 
-						&listSNP(\%info, $opts{'geno'}); 
-					}
-				}
-				%info = (); 
-			}# for lambda 
+			&flush_record() and %info = ();  # for lambda
 		}else{
 			; 
 		}
@@ -292,7 +200,23 @@ while (<$fh_bn0>) {
 close($fh_bn0); 
 $opts{snp} or close ($obn6fh); 
 
-sub outline {
+# Emit the current record (bn6 line and/or its SNPs) if one is pending; returns 1 if it flushed.
+# Factored out of the 7 identical inline blocks that used to guard on defined $info{send}.
+sub flush_record {
+	defined $info{send} or return 0; 
+	defined $info{qstr} or $info{qstr} = 'NA'; defined $info{sstr} or $info{sstr} = 'NA'; 
+	my $oline = join("\t", &outline(), @info{qw/qlen slen/}, "$info{qstr}$info{sstr}", $info{sdef}); 
+	$opts{snp} or print $obn6fh "$oline\n"; 
+	if ($opts{snp}) {
+		for my $snpl (@{$snpaln{$info{qid}}}) {
+			index($oline, $snpl) == -1 and next; 
+			&listSNP(\%info, $opts{'geno'}); 
+		}
+	}
+	return 1; 
+}
+
+ sub outline {
 	return join("\t", @info{qw/qid sid ident aln_len mis_mat gap_open qstart qend sstart send evalue score/}); 
 }
 

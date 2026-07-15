@@ -15,7 +15,6 @@ our @EXPORT_OK;
 ##########################################################
 #########  Basic settings.
 ##########################################################
-my $mathObj = mathSunhh->new(); 
 my %str2num = qw(
   +      1
   -     -1
@@ -71,7 +70,7 @@ sub new {
 sub _initialize {
 	my $self = shift; 
 	
-	my %parm = $mathObj->_setHashFromArr(@_); 
+	my %parm = &mathSunhh::_setHashFromArr(@_); 
 	for my $k ( keys %parm ) {
 		$self->{$k} = $parm{$k}; 
 	}
@@ -106,7 +105,7 @@ Return       : (\%key_to_infor)
 =cut
 sub save_seq_to_hash {
 	my $self = shift; 
-	my %parm = $mathObj->_setHashFromArr(@_); 
+	my %parm = &mathSunhh::_setHashFromArr(@_); 
 	my $fh = $parm{'faFh'} // &fileSunhh::openFH($parm{'faFile'}, '<') // &stopErr("[Err] No valid file handle in get_fasta_seq()\n"); 
 	$parm{'has_head'} //= 1; 
 	$parm{'has_head'} =~ m/^0+$/ or $parm{'has_head'} = 1; 
@@ -167,7 +166,7 @@ for (my $relHR = $fs->get_fasta_seq('faFile'=>$inFa); $relHR->{'has_get'} == 1; 
 =cut
 sub get_fasta_seq {
 	my $self = shift; 
-	my %parm = $mathObj->_setHashFromArr(@_); 
+	my %parm = &mathSunhh::_setHashFromArr(@_); 
 	my $fh = $parm{'faFh'} // &fileSunhh::openFH($parm{'faFile'}, '<') // &stopErr("[Err] No valid file handle in get_fasta_seq()\n"); 
 	$parm{'has_head'} //= 1; 
 	$parm{'has_head'} =~ m/^0+$/ or $parm{'has_head'} = 1; 
@@ -285,7 +284,7 @@ Return       : ( \@piece_strings )
 
 =cut
 sub chop_seq {
-	my %parm = $mathObj->_setHashFromArr(@_); 
+	my %parm = &mathSunhh::_setHashFromArr(@_); 
 	defined $parm{'seq'} or &stopErr( "[Err] 'seq' in chop_seq() is not defined.\n" ); 
 	$parm{'len'}  //= 100; 
 	$parm{'step'} //= $parm{'len'}; 
@@ -772,7 +771,7 @@ Return    : (%calc)
 
 =cut
 sub cnt_4dtv {
-	my %parm = $mathObj->_setHashFromArr(@_); 
+	my %parm = &mathSunhh::_setHashFromArr(@_); 
 	$parm{'fd_codon'}   //= &get_4d_codon(1); 
 	$parm{'need_align'} //= 0; 
 	$parm{'id_1'}       //= 'seq_1'; 

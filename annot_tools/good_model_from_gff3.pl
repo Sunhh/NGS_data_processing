@@ -7,6 +7,7 @@ use strict;
 use warnings; 
 use LogInforSunhh; 
 use Getopt::Long; 
+use FindBin; (my $REPO = $FindBin::RealBin) =~ s{(/NGS_data_processing)(/.*)?$}{$1};  # portable repo root
 my %opts; 
 GetOptions(\%opts, 
 	"help!", 
@@ -58,7 +59,7 @@ for (my $i=0; $i<@fl_sizes; $i++) {
 	my %ta = map { $_ => 1 } @fl_names; 
 	(keys %ta) == @fl_names or &stopErr("[Err] there are repeated flankName.\n"); 
 }
-my $pl_dg = $opts{'pl_dg'} // '/home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl'; 
+my $pl_dg = $opts{'pl_dg'} // "$REPO/temp/deal_gff3.pl"; 
 my $call_dg = ( -e $pl_dg ) ? "perl $pl_dg" : "$pl_dg" ; 
 
 &tsmsg("[Rec] All begin.\n"); 

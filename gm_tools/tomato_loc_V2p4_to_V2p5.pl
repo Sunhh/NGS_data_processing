@@ -3,7 +3,6 @@ use strict;
 use warnings; 
 use fileSunhh; 
 use mathSunhh; 
-my $ms_obj = mathSunhh->new(); 
 use LogInforSunhh; 
 
 !@ARGV and die "perl $0 in_old.agp in_new.agp loci_list\n"; 
@@ -25,7 +24,7 @@ for my $a1 (@aa_loci) {
 	@$a1 == 0 and do { print "chr\tpos\tstr\n"; next; }; 
 	$a1->[0] =~ m!^\s*#! and do { print join("\t", @$a1, qw/chr pos str/)."\n"; next; }; 
 	my ($old_scfID, $old_scfPos) = ($a1->[0], $a1->[1]); 
-	my @new_scfInf = $ms_obj->transfer_position( 'from_ref2qry' => \%old_s2c, 'to_qry2ref' => \%new_c2s, 'fromLoc' => [$old_scfID, $old_scfPos] ); 
+	my @new_scfInf = mathSunhh::transfer_position( 'from_ref2qry' => \%old_s2c, 'to_qry2ref' => \%new_c2s, 'fromLoc' => [$old_scfID, $old_scfPos] ); 
 	print join("\t", $old_scfID, $old_scfPos, $new_scfInf[0], $new_scfInf[1], $new_scfInf[2])."\n"; 
 }
 

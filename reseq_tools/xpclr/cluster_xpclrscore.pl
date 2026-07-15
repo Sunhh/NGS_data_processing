@@ -4,7 +4,6 @@ use warnings;
 use fileSunhh; 
 use LogInforSunhh; 
 use mathSunhh; 
-my $ms_obj = mathSunhh->new(); 
 use Getopt::Long; 
 my %opts; 
 GetOptions(\%opts, 
@@ -36,7 +35,7 @@ HH
 my %xpclr = %{ &load_xpclr( $ARGV[0] ) }; 
 $opts{'wind_start'} eq '' and $opts{'wind_start'} = $xpclr{'min'}; 
 $opts{'wind_end'}   eq '' and $opts{'wind_end'}   = $xpclr{'max'}; 
-my %wind = %{ $ms_obj->setup_windows('ttl_start' => $opts{'wind_start'}, 'ttl_end'=>$opts{'wind_end'}, 'wind_size'=>$opts{'wind_size'}, 'wind_step'=> $opts{'wind_step'}, 'minRatio'=> 0.8) }; 
+my %wind = %{ mathSunhh::setup_windows('ttl_start' => $opts{'wind_start'}, 'ttl_end'=>$opts{'wind_end'}, 'wind_size'=>$opts{'wind_size'}, 'wind_step'=> $opts{'wind_step'}, 'minRatio'=> 0.8) }; 
 
 my %score; 
 my %glb; 
@@ -49,7 +48,7 @@ for my $ar1 (@{$xpclr{'line'}}) {
 	$v =~ m/^inf$/i and next; 
 	$p < $opts{'wind_start'} and next; 
 	$p > $opts{'wind_end'} and next; 
-	my @si_ar = @{ $ms_obj->map_windows( 'wind_hash'=>\%wind, 'posi' => $p ) }; 
+	my @si_ar = @{ mathSunhh::map_windows( 'wind_hash'=>\%wind, 'posi' => $p ) }; 
 	for my $si ( @si_ar ) {
 		push(@{$score{$si}}, $v); 
 	}

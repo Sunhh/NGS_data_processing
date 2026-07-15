@@ -4,6 +4,7 @@ use warnings;
 use LogInforSunhh; 
 use fileSunhh; 
 use Getopt::Long; 
+use FindBin; (my $REPO = $FindBin::RealBin) =~ s{(/NGS_data_processing)(/.*)?$}{$1};  # portable repo root
 my %opts; 
 GetOptions(\%opts, 
 	"help!", 
@@ -13,7 +14,7 @@ GetOptions(\%opts,
 	"mcs_gff:s", # ma_mo.gff 
   "mcs_bp6:s@", # In file ma_mo.blast, there should not be ma_ma or mo_mo blast results. 
 
-	"pl_rbh_byBp6:s", # /home/Sunhh/tools/github/NGS_data_processing/evolution_tools/rbh_byBp6.pl
+	"pl_rbh_byBp6:s", # $REPO/evolution_tools/rbh_byBp6.pl
   "para_rbh_byBp6:s", # ' -min_similarity 0.4 -max_lenDiffR 1.5 -log_lines 10000 '
 ); 
 
@@ -21,7 +22,7 @@ my $help_txt = <<HH;
 
 perl $0 -mcs_bp6 ma_mo.bp6 -mcs_bp6 mo_ma.bp6 -mcs_tbl ./ma_mo.collinearity.ks.tab -mcs_gff ./ma_mo.gff 
 
--pl_rbh_byBp6          [/home/Sunhh/tools/github/NGS_data_processing/evolution_tools/rbh_byBp6.pl]
+-pl_rbh_byBp6          [$REPO/evolution_tools/rbh_byBp6.pl]
 -para_rbh_byBp6        [ -min_similarity 0.4 -max_lenDiffR 1.5 -log_lines 10000 ]
 
 HH
@@ -29,7 +30,7 @@ HH
 &prepare_input(); 
 
 sub prepare_input {
-	$opts{'pl_rbh_byBp6'} //= '/home/Sunhh/tools/github/NGS_data_processing/evolution_tools/rbh_byBp6.pl'; 
+	$opts{'pl_rbh_byBp6'} //= "$REPO/evolution_tools/rbh_byBp6.pl"; 
 	$opts{'para_rbh_byBp6'} //= ' -min_similarity 0.4 -max_lenDiffR 1.5 -log_lines 10000 '; 
 	for my $tk (qw/mcs_tbl mcs_gff mcs_bp6/) {
 		defined $opts{$tk} or do { &tsmsg("\n"); &tsmsg("[Err] Lack of parameter -$tk\n"); &LogInforSunhh::usage($help_txt); }; 

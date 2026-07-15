@@ -3,7 +3,6 @@
 use strict; 
 use warnings; 
 use mathSunhh; 
-my $ms = mathSunhh->new(); 
 
 my $htxt = <<HH;
 ##########################################################################################
@@ -89,28 +88,28 @@ while (<>) {
 
 print STDERR join("\t", qw/SeqID SeqLen ExMatS ExMatE ExMatLen TypeClasses InExType InMatLen UnMatLen MaxInMatLen/)."\n"; 
 for my $tid (keys %merged_blk) {
-	my $tar = $ms->mergeLocBlk( $merged_blk{$tid} ); 
+	my $tar = mathSunhh::mergeLocBlk( $merged_blk{$tid} ); 
 	my $cnt_len = 0; 
 	for my $tr (@$tar) {
 		$cnt_len += ($tr->[1]-$tr->[0]+1); 
 	}
 	my $cnt_len_in = 0; 
 	if (defined $merged_in_blk{$tid}) {
-		my $tar = $ms->mergeLocBlk( $merged_in_blk{$tid} ); 
+		my $tar = mathSunhh::mergeLocBlk( $merged_in_blk{$tid} ); 
 		for my $tr (@$tar) {
 			$cnt_len_in += ($tr->[1]-$tr->[0]+1); 
 		}
 	}
 	my $cnt_len_maxIn = 0;
 	if (defined $merged_maxIn_blk{$tid}) {
-		my $tar = $ms->mergeLocBlk( $merged_maxIn_blk{$tid} ); 
+		my $tar = mathSunhh::mergeLocBlk( $merged_maxIn_blk{$tid} ); 
 		for my $tr (@$tar) {
 			$cnt_len_maxIn += ($tr->[1]-$tr->[0]+1); 
 		}
 	}
 	my $cnt_len_un = 0; 
 	if (defined $merged_un_blk{$tid}) {
-		my $tar = $ms->mergeLocBlk( $merged_un_blk{$tid} ); 
+		my $tar = mathSunhh::mergeLocBlk( $merged_un_blk{$tid} ); 
 		for my $tr (@$tar) {
 			$cnt_len_un += ($tr->[1]-$tr->[0]+1); 
 		}

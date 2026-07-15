@@ -2,7 +2,6 @@
 # [4/12/2022] Make it simple and see if it works. I'll revise this if it is worthy.
 use strict;
 use warnings;
-use Statistics::Regression;
 use fileSunhh;
 
 !@ARGV and die "perl $0 t1 out_prefix\n";
@@ -81,11 +80,16 @@ sub extAln {
       next;
     }
     if ($has_fit == 0) {
-      my $reg = Statistics::Regression->new( "pain", [ "const", "someX"] );
+      # Simple ordinary-least-squares (y = fA + fB*x); replaces Statistics::Regression. 2026-07-10
+      my ($nP, $sx, $sy, $sxx, $sxy) = (0,0,0,0,0);
       for (my $ti = $#$aR; $ti > $#$aR-$tail_lmN and $ti >= 0; $ti--) {
-        $reg->include( $obs[$aR->[$ti][2]][0], $obs[$aR->[$ti][2]][1] );
+        my $y = $obs[$aR->[$ti][2]][0];
+        my $x = $obs[$aR->[$ti][2]][1]{'someX'};
+        $nP++; $sx += $x; $sy += $y; $sxx += $x*$x; $sxy += $x*$y;
       }
-      ($fA, $fB) = $reg->theta();
+      my $den = $nP*$sxx - $sx*$sx;
+      $fB = ($den != 0) ? ($nP*$sxy - $sx*$sy)/$den : 0;
+      $fA = ($nP > 0) ? ($sy - $fB*$sx)/$nP : 0;
       $has_fit = 1;
     }
     my $t_d2 = &d_p2l($vR->[$j], $fA, $fB);

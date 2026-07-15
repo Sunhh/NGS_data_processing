@@ -1,4 +1,4 @@
-#!/home/Sunhh/bin/Rscript
+#!/usr/bin/env Rscript
 argvs <- commandArgs( trailingOnly=TRUE );
 if ( is.na(argvs[1]) ) {
   message("Rscript this.R   <sim_mat.tab>   <out_pdf_file>");

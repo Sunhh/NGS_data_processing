@@ -5,7 +5,6 @@ use warnings;
 use LogInforSunhh; 
 use fileSunhh; 
 use mathSunhh; 
-my $ms_obj = mathSunhh->new(); 
 use Getopt::Long; 
 my %opts; 
 GetOptions(\%opts, 
@@ -165,7 +164,7 @@ sub load_chop_info {
 		}
 
 		unless ( defined $chr_windows{$key} ) {
-			($chr_windows{$key}) = $ms_obj->setup_windows(
+			($chr_windows{$key}) = mathSunhh::setup_windows(
 			  'ttl_start' => 1, 
 			  'ttl_end'   => $ta[7], # Chr length 
 			  'wind_size' => $opts{'wind_len'}, 
@@ -183,18 +182,6 @@ sub load_chop_info {
 	}
 	close($fh); 
 	return(\%back); 
-}
-
-sub idx_by_Pos {
-	my ($p, $wind_hr) = @_; 
-	my @back; 
-
-	my $si_ar = $ms_obj->map_windows( 'position' => $p, 'wind_hash' => $wind_hr ); 
-	for my $si (@$si_ar) {
-		push(@back, $wind_hr->{'info'}{'Sloc2wi'}{$si}); 
-	}
-
-	return(\@back); 
 }
 
 sub idx_by_WL_WStep {

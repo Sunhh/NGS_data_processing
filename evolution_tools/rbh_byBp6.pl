@@ -17,12 +17,10 @@ GetOptions(\%opts,
 	"gene2_list:s", 
 	"combine_gene12!", 
 	"paired_need!", 
-#	"min_cscore:f", 
 ); 
 
 $opts{'min_similarity'} //= 0; 
 $opts{'max_lenDiffR'} //= 0; 
-#$opts{'min_cscore'} //= 0; 
 $opts{'log_lines'} //= 0; 
 
 my $help_txt = <<HH; 
@@ -49,7 +47,6 @@ my %rbh_hash;
 $rbh_hash{'in_bp6'} = $opts{'in_bp6'}; 
 $rbh_hash{'min_similarity'} = $opts{'min_similarity'}; 
 $rbh_hash{'max_lenDiffR'} = $opts{'max_lenDiffR'}; 
-$rbh_hash{'min_cscore'} = $opts{'min_cscore'}; 
 $rbh_hash{'log_lines'}  = $opts{'log_lines'}; 
 $rbh_hash{'gene1_need'} = &load_gene_list( $opts{'gene1_list'} ); 
 $rbh_hash{'gene2_need'} = &load_gene_list( $opts{'gene2_list'} ); 

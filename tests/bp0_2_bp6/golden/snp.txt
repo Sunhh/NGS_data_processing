@@ -1,0 +1,1 @@
+11	G	C	20	q1	s1	100	200	+	+	subject one desc

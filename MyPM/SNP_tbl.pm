@@ -4,7 +4,6 @@ use warnings;
 use LogInforSunhh; 
 use fileSunhh; 
 use mathSunhh; 
-my $ms_obj = mathSunhh->new(); 
 my $st_obj = SNP_tbl->new(); 
 
 # 2014-12-23 Time flies fast! It's time to step on higher perl skills. I am coming. 
@@ -998,36 +997,14 @@ sub rmClose_idx {
 }# sub rmClose_idx () 
 
 sub permutations {
-	my ($list, $n) = @_; 
-	$n = $n // scalar(@$list); 
-	$n > @$list and return ($list); 
-	$n <= 1 and return(map {[$_]} @$list); 
-	my @perm; 
-	for my $i (0 .. $#$list) {
-		my @rest = @$list; 
-		my $val = splice(@rest, $i, 1); 
-		for ( &permutations(\@rest, $n-1) ) {
-			push(@perm, [$val, @$_]); 
-		}
-	}
-	return @perm; 
+	# Deduplicated 2026-07-09: delegate to canonical mathSunhh::permutations(); kept for backward compatibility.
+	return &mathSunhh::permutations(@_); 
 }#sub permutations() 
 
 sub combinations {
-	my ($list, $n) = @_; 
-	$n = $n // scalar(@$list); 
-	$n > @$list and return ($list); 
-	$n <= 1 and return(map {[$_]} @$list); 
-	my @comb; 
-	for (my $i=0; $i+$n<=@$list; $i++) {
-		my $val = $list->[$i]; 
-		my @rest = @$list[$i+1 .. $#$list]; 
-		for (&combinations(\@rest, $n-1)) {
-			push(@comb, [$val, @$_]); 
-		}
-	}
-	return @comb; 
-}#sub combinations
+	# Deduplicated 2026-07-09: delegate to canonical mathSunhh::combinations(); kept for backward compatibility.
+	return &mathSunhh::combinations(@_); 
+}#sub combinations() 
 
 =head1 dna_d2b('A|C|G|T|U|W|S|M|K|R|Y|B|D|H|V|N|-')
 
@@ -1088,7 +1065,7 @@ Function   : Convert linyong_SNP.tbl to bioperl_PopGen.csv
 
 =cut
 sub file_tbl2csv {
-	my %parm = $ms_obj->_setHashFromArr(@_); 
+	my %parm = &mathSunhh::_setHashFromArr(@_); 
 	my $fh = $parm{'inFh'} // &openFH( $parm{'in'}, '<' ); 
 	my $chrIDrel = $parm{'chrIDrel'} // {}; 
 	my @data; 

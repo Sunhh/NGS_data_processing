@@ -7,9 +7,8 @@ use strict;
 use warnings; 
 use fileSunhh; 
 use LogInforSunhh; 
+use ReadInSeqSunhh; # provides get_fasta_seq (strict reader)
 use File::Path qw(make_path remove_tree); 
-use IPC::Open3; 
-use Symbol; 
 use Parallel::ForkManager; 
 use Cwd 'abs_path'; 
 
@@ -451,37 +450,7 @@ sub splitMfasta {
 # return (\% , has_get_next) 
 # 2007-12-14 13:02:52 about \%, {seq, key, head}
 # 2013-11-01 13:02:52 about \%, {seq, key, head, definition}
-sub get_fasta_seq {
-	my $fh = shift;
-	my $has_head = shift; 
-	my $has_get = 0; # 检测是否占用了下一条序列的">"号; 
-	my %backH; 
-	( defined $has_head and $has_head =~ /^0+$/ ) or $has_head = 1; 
-	ref($fh) eq 'GLOB' or ref($fh) eq '' or die "Wrong input!\n"; 
-	my %back; 
-	if ( $has_head == 1 ) 
-	{
-		defined ( $backH{head} = readline($fh) ) or return (undef(),undef()); 
-		$backH{head} =~ s/^>//g; chomp $backH{head}; 
-		$backH{key} = (split(/\s+/,$backH{head}))[0]; 
-		( $backH{definition} = $backH{head} ) =~ s/^(\S+)//; 
-	}
-	my $r = $/; local $/ = "$r>"; 
-	defined ( $backH{seq} = readline($fh) ) or do { warn "[Err]The last sequence [$backH{head}] is empty, and it is not calculated!\n"; return (undef(),undef()); } ; 
-	chomp $backH{seq} > length($r) and $has_get = 1; 
-	local $/ = $r; chomp $backH{seq}; 
-	# check if this sequence is a NULL one. 2008-1-4 13:01:22 
-	# print "head=+$backH{head}+\nseq=+$backH{seq}+\n"; 
-	while ($backH{seq} =~ s/^>//gs) { 
-		warn "[Err]Sequence [$backH{head}] is empty, and it is not calculated!\n"; 
-		if ($backH{seq} =~ s/^([^$r]+)(?:$r|$)//s) {
-			$backH{head} = $1; $backH{key} = (split(/\s+/, $backH{head}))[0]; 
-			( $backH{definition} = $backH{head} ) =~ s/^(\S+)//; 
-		}
-	}
-	# check if this sequence is a NULL one. 2008-1-4 13:01:25 
-	return (\%backH, $has_get); 
-}# end sub get_fasta_seq
+# get_fasta_seq() now provided by ReadInSeqSunhh (strict reader). 2026-07-10
 
 
 sub if_redo {

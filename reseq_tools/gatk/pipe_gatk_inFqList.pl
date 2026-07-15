@@ -120,7 +120,7 @@ $gg{'doStep'}{9} and &step9_gvcf2var( $gg{'jnGVCF_list'}, "$opts{'prj_ID'}", '',
 sub input_good {
 	$gg{'usage_txt'} = <<"H1"; 
 ################################################################################
-perl $0 fasdfasf
+perl $0 -in_pref_list list.in_rd -conf_file pipe_gatk_conf -out_dir out/ -wrk_dir wrk/ [-doStep 1-9] [-ERC GVCF]
 
   -help                 Show this help. 
 
@@ -169,7 +169,7 @@ H1
 ################################################################################
 $gg{'example'}{'text_cfg'} = <<'CFG'; 
 
-pl_getSam             /home/Sunhh/tools/github/NGS_data_processing/Proc_Sam/get_required_sam.pl
+pl_getSam             /home/Sunhh/tools/github/NGS_data_processing/file_type_based/Proc_Sam/get_required_sam.pl
 pl_batchRun           /home/Sunhh/tools/github/NGS_data_processing/run_cmd_in_batch.pl
 batchNum              1
 

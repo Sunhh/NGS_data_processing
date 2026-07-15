@@ -8,6 +8,7 @@ use fileSunhh;
 use SNP_tbl; 
 my $st_obj = SNP_tbl->new(); 
 use Getopt::Long; 
+use FindBin; (my $REPO = $FindBin::RealBin) =~ s{(/NGS_data_processing)(/.*)?$}{$1};  # portable repo root
 my %opts; 
 GetOptions(\%opts, 
 	"help!", 
@@ -37,8 +38,8 @@ my %default_para;
 $default_para{'ncpu'}        = 20; 
 $default_para{'wind_length'} = 10e6; 
 $default_para{'wind_step'}   = 1e6; 
-$default_para{'pl_snpTbl_sepByWind'} = '/home/Sunhh/tools/github/NGS_data_processing/reseq_tools/fst/snpTbl_sepByWind.pl'; 
-$default_para{'pl_dealTbl'}          = '/home/Sunhh/tools/github/NGS_data_processing/deal_table.pl'; 
+$default_para{'pl_snpTbl_sepByWind'} = "$REPO/reseq_tools/fst/snpTbl_sepByWind.pl"; 
+$default_para{'pl_dealTbl'}          = "$REPO/deal_table.pl"; 
 $default_para{'jar_haploview'}       = '/data/Sunhh/src/Evolution/haploview/Haploview4.2.jar'; 
 $default_para{'para_haploview'}      = ''; 
 $default_para{'maxNmissR'}   = 0.10; 

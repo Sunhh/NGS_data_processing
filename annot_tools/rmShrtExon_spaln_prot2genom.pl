@@ -8,7 +8,6 @@ use strict;
 use warnings; 
 use LogInforSunhh; 
 use mathSunhh; 
-my $ms = mathSunhh->new(); 
 use Getopt::Long; 
 my %opts; 
 GetOptions(\%opts, 
@@ -111,7 +110,7 @@ sub rmShrt($$$$$$) {
 		$intron_len >= $dist and $rm_idx{$ex_info[0][2]} = 1; 
 	}
 	for (my $i=1; $i<@ex_len; $i++) {
-		my $stat = $ms->ins_calc( [ @ex_len[0..$i] ] ); 
+		my $stat = mathSunhh::ins_calc( [ @ex_len[0..$i] ] ); 
 		$stat->{'MEAN'} > $len and last; 
 		$rm_idx{$ex_info[$i][2]} = 1; 
 	}
@@ -131,9 +130,9 @@ sub rmShrt($$$$$$) {
 		push(@filtered_gl, $gl_aref->[$i]); 
 		unless ( $is_top{ $gl_aref->[$i][2] } ) {
 			$gl_min //= $gl_aref->[$i][3]; 
-			$gl_min = $ms->min($gl_min, $gl_aref->[$i][3]); 
+			$gl_min = mathSunhh::min($gl_min, $gl_aref->[$i][3]); 
 			$gl_max //= $gl_aref->[$i][4]; 
-			$gl_max = $ms->max($gl_max, $gl_aref->[$i][4]); 
+			$gl_max = mathSunhh::max($gl_max, $gl_aref->[$i][4]); 
 		}
 	}
 	# Give right boundary of 'protein_match'
@@ -150,6 +149,6 @@ sub rmShrt($$$$$$) {
 
 sub intron_len {
 	my ($s1,$e1,$s2,$e2) = @_; 
-	return ($ms->min(abs($s1-$s2), abs($s1-$e2), abs($e1-$s2), abs($e1-$e2)) + 1); 
+	return (mathSunhh::min(abs($s1-$s2), abs($s1-$e2), abs($e1-$s2), abs($e1-$e2)) + 1); 
 }
 

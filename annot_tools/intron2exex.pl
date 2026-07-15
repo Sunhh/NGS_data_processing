@@ -110,13 +110,6 @@ close EXEX;
 close GENOME;
 close MAP if (defined($mapfile));
 
-sub reversecomplement {
-    my $s = shift;
-    $s = reverse $s;
-    $s =~ tr/acgtACGT/tgcaTGCA/;
-    return $s;
-}
-
 __END__
 
 =pod

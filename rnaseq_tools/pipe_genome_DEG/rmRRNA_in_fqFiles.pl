@@ -1,0 +1,1 @@
+../rmRRNA_in_fqFiles.pl

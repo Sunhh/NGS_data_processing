@@ -25,15 +25,16 @@ use strict;
 use warnings;
 use LogInforSunhh;
 use fileSunhh;
+use FindBin; (my $REPO = $FindBin::RealBin) =~ s{(/NGS_data_processing)(/.*)?$}{$1};  # portable repo root
 
 !@ARGV and die "perl $0  R_own.gff3  Q_own.gff3  R_to_Q.liftoff.gff3  >  R_to_Q.info.tbl\n";
 
 my ($rOwnGff, $qOwnGff, $r2qGff) = @ARGV;
 
-my $pl_dealGff    = 'perl /home/sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl';
-my $pl_gff2cdsBed = 'perl /home/sunhh/tools/github/NGS_data_processing/annot_tools/liftoff_tools/cnvt_gff_to_cdsBed.pl ';
-my $pl_infLOgff   = 'perl /home/sunhh/tools/github/NGS_data_processing/annot_tools/liftoff_tools/info_liftoffGff.pl ';
-my $pl_infBTins   = 'perl /home/sunhh/tools/github/NGS_data_processing/annot_tools/liftoff_tools/info_bedtools_intersect.pl ';
+my $pl_dealGff    = "perl $REPO/temp/deal_gff3.pl";
+my $pl_gff2cdsBed = "perl $REPO/annot_tools/liftoff_tools/cnvt_gff_to_cdsBed.pl ";
+my $pl_infLOgff   = "perl $REPO/annot_tools/liftoff_tools/info_liftoffGff.pl ";
+my $pl_infBTins   = "perl $REPO/annot_tools/liftoff_tools/info_bedtools_intersect.pl ";
 my $exe_bedtools  = 'bedtools';
 
 my $wdir = &fileSunhh::new_tmp_dir('create' => 1);

@@ -6,11 +6,11 @@ use warnings;
 use fileSunhh;
 use LogInforSunhh;
 use mathSunhh;
-my $ms_obj = mathSunhh->new();
+use FindBin; (my $REPO = $FindBin::RealBin) =~ s{(/NGS_data_processing)(/.*)?$}{$1};  # portable repo root
 
 !@ARGV and die "[Err] perl $0 100 0.1 gff_list > slct_longestCDS.mrnaID_list\n";
 
-my $pl_dealGff3 = 'perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl';
+my $pl_dealGff3 = "perl $REPO/temp/deal_gff3.pl";
 my $max_olapLen = shift; # 100
 my $max_olapRat = shift; # 0.1
 
@@ -57,7 +57,7 @@ for my $chrID (sort keys %gene_models_onChr) {
         } elsif ($e_loc->[3] > $e_len->[4]) {
           push(@new_loc_sort, $e_loc);
         } else {
-          my ($ovlLen_nonDup, $ovlCnt_mayDup, $ovlLoc_ar) = $ms_obj->compare_number_list($e_len->[5], $e_loc->[5], 'compare'=>'ovl', 'sort'=>0);
+          my ($ovlLen_nonDup, $ovlCnt_mayDup, $ovlLoc_ar) = mathSunhh::compare_number_list($e_len->[5], $e_loc->[5], 'compare'=>'ovl', 'sort'=>0);
           if ($ovlLen_nonDup > $max_olapLen or $ovlLen_nonDup > $max_olapRat * $e_len->[2]) {
             # This gene ($e_loc) should be removed.
             $is_skip{$e_loc->[0]} = 1;

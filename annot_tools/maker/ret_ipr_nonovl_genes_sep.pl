@@ -4,6 +4,7 @@ use strict;
 use LogInforSunhh;
 use fileSunhh;
 use Getopt::Long;
+use FindBin; (my $REPO = $FindBin::RealBin) =~ s{(/NGS_data_processing)(/.*)?$}{$1};  # portable repo root
 my %opts;
 GetOptions(\%opts,
   "help!",
@@ -13,7 +14,7 @@ GetOptions(\%opts,
   "opre:s",          # Default: comb; No directories included.
   "pl_dealFas:s",    # Default: 'deal_fasta.pl'
   "pl_dealTab:s",    # Default: 'deal_table.pl'
-  "pl_dealGff:s",    # Default: 'perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl'
+  "pl_dealGff:s",    # Default: "perl $REPO/temp/deal_gff3.pl"
   "ipr_cpuN:i",      # Default: 6
   "getFa!",          # Default: Not assigned.
   "noClean!",        # Default: Not assigned. Clean the intermediate files.
@@ -43,7 +44,7 @@ HH
 $opts{'opre'} //= 'out';
 $opts{'pl_dealFas'}   //= 'deal_fasta.pl';
 $opts{'pl_dealTab'}   //= 'deal_table.pl';
-$opts{'pl_dealGff'}   //= 'perl /home/Sunhh/tools/github/NGS_data_processing/temp/deal_gff3.pl';
+$opts{'pl_dealGff'}   //= "perl $REPO/temp/deal_gff3.pl";
 $opts{'ipr_cpuN'}     //= 6;
 
 defined $opts{'help'} and &LogInforSunhh::usage($htxt);

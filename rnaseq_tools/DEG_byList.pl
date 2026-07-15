@@ -6,6 +6,9 @@ use fileSunhh;
 use LogInforSunhh; 
 use mathSunhh; 
 use Getopt::Long; 
+use File::Path qw(make_path); 
+use Cwd qw(abs_path); 
+use FindBin; (my $REPO = $FindBin::RealBin) =~ s{(/NGS_data_processing)(/.*)?$}{$1};  # portable repo root
 my %opts; 
 GetOptions(\%opts, 
 	"rdCntFn:s", 
@@ -20,7 +23,8 @@ GetOptions(\%opts,
 		"cutFDR:f", 
 		"cutFC:f", 
 		"minExp:f", 
-	"pl_cnt2TPM:s", # /home/Sunhh/tools/github/NGS_data_processing/rnaseq_tools/cnvt_cnt_to_TPM.pl 
+	"pl_normExpr:s", # /home/Sunhh/tools/github/NGS_data_processing/rnaseq_tools/cnvt_cnt_to_normExpr.pl 
+	"writeRcode:s", # Write generated R code per comparison to this dir and exit; R is not run. 
 	"help!", 
 ); 
 
@@ -30,15 +34,20 @@ my %gg;
 &load_compareList(); 
 
 for (my $i=0; $i<@{$gg{'compList'}}; $i++) {
-	if      ( $gg{'compList'}[$i][0] eq 'exactTest' ) {
-		&run_exactTest(@{$gg{'compList'}[$i]}); 
-	} elsif ( $gg{'compList'}[$i][0] eq 'DESeq2' ) {
+	my $tt = $gg{'compList'}[$i][0]; 
+	if      ( $tt eq 'DESeq2' ) {
 		&run_DESeq2(@{$gg{'compList'}[$i]}); 
+	} elsif ( $tt eq 'edgeR_glm' or $tt eq 'edgeR_classic' ) {
+		&run_edgeR(@{$gg{'compList'}[$i]}); 
 	} else {
-		&tsmsg("[Wrn] Skip unknown test Type [$gg{'compList'}[$i][0]]\n"); 
+		&tsmsg("[Wrn] Skip unknown test Type [$tt]\n"); 
 	}
 }
 
+if ( defined $gg{'writeRcode'} ) {
+	&tsmsg("[Rec] R code written under $gg{'writeRcode'}/ ; Rscript NOT run. Exiting.\n");
+	exit(0);
+}
 &out_fdr(); 
 
 sub out_fdr {
@@ -54,14 +63,14 @@ sub _cnt2RPKM {
 
 	my %expData; 
 	# Output 4 columns (RPKMmean_1 RPKMmean_2 FoldChange FDR) instead of 1 column (FDR) for each comparison. 
-	my $cmd_t1 = "perl $gg{'pl_cnt2TPM'} -rdCntFn $wrkDir/rdCnt -eleInfoFn $gg{'genLen'} -cntRPKM $wrkDir/rpkm > $wrkDir/tpm"; 
+	my $cmd_t1 = "perl $gg{'pl_normExpr'} --cntFn $wrkDir/rdCnt --fmt matrix --lenFn $gg{'genLen'} --out_type rpkm --outFn $wrkDir/rpkm"; 
 	&exeCmd_1cmd($cmd_t1) and &stopErr("[Err] Failed at CMD: $cmd_t1\n"); 
 	my $fh2 = &openFH("$wrkDir/rpkm",'<'); 
 	while (<$fh2>) {
 		chomp; 
 		my @ta=split(/\t/, $_); 
 		if ($. == 1) {
-			$ta[0] eq 'eleID' or &stopErr("[Err] Bad line 0 [$ta[0]] : $_\n"); 
+			$ta[0] =~ m/^(eleID|GeneID)$/ or &stopErr("[Err] Bad line 0 [$ta[0]] : $_\n"); 
 			for (my $i=0; $i<$g1_repN; $i++) {
 				$ta[$i+1] eq "G1_Rep$i" or &stopErr("[Err] Bad line $i : $_\n"); 
 			}
@@ -100,7 +109,9 @@ sub run_DESeq2 {
 	my $testID = 'ds.' . join("_VS_", $g1_ID, $g2_ID); 
 	my $g1_repN = scalar(@g1_idx); 
 	my $g2_repN = scalar(@g2_idx); 
-	my $wrkDir = &fileSunhh::new_tmp_dir('create'=>1); 
+	my $wrkDir; 
+	if ( defined $gg{'writeRcode'} ) { $wrkDir = "$gg{'writeRcode'}/$testID"; make_path($wrkDir); } 
+	else { $wrkDir = &fileSunhh::new_tmp_dir('create'=>1); } 
 	# Generate new read count file as input. 
 	my $fh1 = &openFH("$wrkDir/rdCnt", '>'); 
 	print {$fh1} join("\t", 'eleID', (map { "G1_Rep$_" } (0 .. $#g1_idx)), (map { "G2_Rep$_" } (0 .. $#g2_idx)))."\n"; 
@@ -112,7 +123,7 @@ sub run_DESeq2 {
 	}
 	close($fh1); 
 	my %expData; 
-	$opts{'addRPKM'} and %expData = &_cnt2RPKM( $wrkDir, $g1_repN, $g2_repN ); 
+	$opts{'addRPKM'} and !defined $gg{'writeRcode'} and %expData = &_cnt2RPKM( $wrkDir, $g1_repN, $g2_repN ); 
 	# Generate command R script. 
 	my $fh3 = &openFH("$wrkDir/DESeq2.R", '>'); 
 	print {$fh3} <<"DESeq2Test"; 
@@ -148,6 +159,8 @@ write.table( y2.res.df, file="$wrkDir/DESeq2_res.tab", sep="\\t", col.names=TRUE
 
 DESeq2Test
 
+	close($fh3); 
+	if ( defined $gg{'writeRcode'} ) { &tsmsg("[Msg] Wrote DESeq2 R code: $wrkDir/DESeq2.R (input $wrkDir/rdCnt)\n"); return; } 
 	# Run Rscript and get result. 
 	&exeCmd_1cmd("$gg{'exe_Rscript'} $wrkDir/DESeq2.R"); 
 	my @fdrTbl = &fileSunhh::load_tabFile( "$wrkDir/fdr.tab", 1 ); 
@@ -199,12 +212,16 @@ sub _degTag {
 	}
 }# _degTag() 
 
-sub run_exactTest {
+sub run_edgeR {
 	my ($testType, $g1, $g2, $cmnDisp) = @_; 
+	my $route = ( $testType =~ m!glm!i ) ? 'glm' : 'classic';  # 'glm' = glmFit+glmLRT ; 'classic' = exactTest
 	my $g1_ID = $g1->[0]; my @g1_idx = @{$g1->[1]}; 
 	my $g2_ID = $g2->[0]; my @g2_idx = @{$g2->[1]}; 
-	my $testID = 'et.' . join("_VS_", $g1_ID, $g2_ID); 
-	my $wrkDir = &fileSunhh::new_tmp_dir('create'=>1); 
+	my $prefix = ( $route eq 'glm' ) ? 'eg.' : 'et.'; 
+	my $testID = $prefix . join("_VS_", $g1_ID, $g2_ID); 
+	my $wrkDir; 
+	if ( defined $gg{'writeRcode'} ) { $wrkDir = "$gg{'writeRcode'}/$testID"; make_path($wrkDir); } 
+	else { $wrkDir = &fileSunhh::new_tmp_dir('create'=>1); } 
 	my $g1_repN = scalar(@g1_idx); 
 	my $g2_repN = scalar(@g2_idx); 
 	# Generate new read count file as input. 
@@ -218,20 +235,28 @@ sub run_exactTest {
 	}
 	close($fh1); 
 	my %expData; 
-	$opts{'addRPKM'} and %expData = &_cnt2RPKM( $wrkDir, $g1_repN, $g2_repN ); 
+	$opts{'addRPKM'} and !defined $gg{'writeRcode'} and %expData = &_cnt2RPKM( $wrkDir, $g1_repN, $g2_repN ); 
 
-	# Generate command R script. 
-	my $code_test = <<"ET_TEST"; 
-y2.et.estD   <- estimateDisp( y2, design=y2.et.design )
-y2.et.et     <- exactTest( y2.et.estD )
-ET_TEST
-	if (@g1_idx == 1 and @g2_idx == 1) {
-		$code_test = <<"ET_TEST_NOREP"; 
-y2.et.et     <- exactTest( y2, dispersion=$cmnDisp )
-ET_TEST_NOREP
+	# Build the route-specific compute block; both routes leave the result in y2.et.topTag.
+	my $noRep = (@g1_idx == 1 and @g2_idx == 1) ? 1 : 0; 
+	my ($code_note, $code_test); 
+	if ( $route eq 'glm' ) {
+		$code_note = "GLM route: glmFit + glmLRT (likelihood-ratio test); design coef 2 is group2 vs group1."; 
+		if ( $noRep ) {
+			$code_test = "y2.design    <- model.matrix( ~y2.grp )\ny2.fit       <- glmFit( y2, y2.design, dispersion=$cmnDisp )\ny2.lrt       <- glmLRT( y2.fit, coef=2 )\ny2.et.topTag <- topTags( y2.lrt, n=Inf )\n"; 
+		} else {
+			$code_test = "y2.design    <- model.matrix( ~y2.grp )\ny2.et.estD   <- estimateDisp( y2, y2.design )\ny2.fit       <- glmFit( y2.et.estD, y2.design )\ny2.lrt       <- glmLRT( y2.fit, coef=2 )\ny2.et.topTag <- topTags( y2.lrt, n=Inf )\n"; 
+		}
+	} else {
+		$code_note = "Classic (traditional) route: exactTest on group-wise dispersions."; 
+		if ( $noRep ) {
+			$code_test = "y2.et.et     <- exactTest( y2, dispersion=$cmnDisp )\ny2.et.topTag <- topTags( y2.et.et, n=Inf )\n"; 
+		} else {
+			$code_test = "y2.et.estD   <- estimateDisp( y2 )\ny2.et.et     <- exactTest( y2.et.estD )\ny2.et.topTag <- topTags( y2.et.et, n=Inf )\n"; 
+		}
 	}
-	my $fh2 = &openFH("$wrkDir/edgeR_exactTest.R", '>'); 
-	print {$fh2} <<"RexactTest"; 
+	my $fh2 = &openFH("$wrkDir/edgeR.R", '>'); 
+	print {$fh2} <<"RedgeR"; 
 library(dplyr)
 library(edgeR)
 
@@ -246,10 +271,8 @@ y2        <- y1[ y2.keep, , keep.lib.sizes=FALSE ]
 y2        <- calcNormFactors(y2)
 y2.grp    <- y1.grp
 
-### Compute FDR. 
-y2.et.design <- model.matrix( ~y2.grp )
+### Compute FDR. ($code_note)
 $code_test
-y2.et.topTag <- topTags( y2.et.et, n=Inf )
 # table( y2.et.topTag\$table\$FDR < 0.01 ) 
 
 ### Output FDR. 
@@ -259,10 +282,11 @@ outTbl       <- dplyr::left_join( x=outFDR.ID, y=toAddTbl, by= "eleID" )
 write.table( outTbl, file="$wrkDir/fdr.tab", sep="\\t", col.names=TRUE, row.names=FALSE, quote=FALSE )
 write.table( y2.et.topTag\$table, file="$wrkDir/topTags.tab", sep="\\t", col.names=TRUE, row.names=TRUE, quote=FALSE )
 
-RexactTest
+RedgeR
 	close($fh2); 
+	if ( defined $gg{'writeRcode'} ) { &tsmsg("[Msg] Wrote edgeR ($route) R code: $wrkDir/edgeR.R (input $wrkDir/rdCnt)\n"); return; } 
 	# Run Rscript and get result. 
-	&exeCmd_1cmd("$gg{'exe_Rscript'} $wrkDir/edgeR_exactTest.R"); 
+	&exeCmd_1cmd("$gg{'exe_Rscript'} $wrkDir/edgeR.R"); 
 	my @fdrTbl = &fileSunhh::load_tabFile( "$wrkDir/fdr.tab", 1 ); 
 	@fdrTbl == @{$gg{'fdr_out'}} or &stopErr("[Err] fdrTbl num $#fdrTbl+1 != fdr_out num $#{$gg{'fdr_out'}}+1\n"); 
 
@@ -282,7 +306,7 @@ RexactTest
 	}
 	&fileSunhh::_rmtree($wrkDir); 
 	return; 
-}# run_exactTest() 
+}# run_edgeR() 
 
 
 sub load_compareList {
@@ -291,7 +315,12 @@ sub load_compareList {
 	while (<$fh>) {
 		chomp; 
 		my @ta = &splitL("\t", $_); 
-		if ($ta[0] =~ m!^\s*(exactTest|DESeq2)\s*$!i) {
+		my $mth = defined $ta[0] ? $ta[0] : ''; $mth =~ s!^\s+|\s+$!!g; 
+		my $testType; 
+		if    ( $mth =~ m!^DESeq2$!i ) { $testType = 'DESeq2'; } 
+		elsif ( $mth =~ m!^(?:edgeR|edgeR[_.]glm|glm)$!i ) { $testType = 'edgeR_glm'; } 
+		elsif ( $mth =~ m!^(?:exactTest|edgeR[_.]classic|edgeR[_.]exact(?:Test)?|classic)$!i ) { $testType = 'edgeR_classic'; } 
+		if ( defined $testType ) {
 			# Only two groups; 
 			my (%grp1, %grp2); 
 			for my $a1 (split(/;/, $ta[1])) {
@@ -322,14 +351,8 @@ sub load_compareList {
 				next; 
 			}
 			# ( @i1 >= 2 and @i2 >= 2 ) or &stopErr("[Err] Not enough replicates for $_.\n"); 
-			&tsmsg("[Msg] Loading $ta[0] between group 1 [$ta[1]] x$repN_1 and group 2 [$ta[2]] x$repN_2\n"); 
-			if ( $ta[0] =~ m!^\s*exactTest\s*$!i ) {
-				push(@{$gg{'compList'}}, ['exactTest', [$ta[1], [@i1]], [$ta[2], [@i2]], $cmnDisp]); # ([testType, [grp1_ID, [grp1_idx]], [grp2_ID, [grp2_idx]], commnDisper], [testType, [], [], cD, cD])
-			} elsif ( $ta[0] =~ m!^\s*DESeq2\s*$! ) {
-				push(@{$gg{'compList'}}, ['DESeq2', [$ta[1], [@i1]], [$ta[2], [@i2]], $cmnDisp]); # ([testType, [grp1_ID, [grp1_idx]], [grp2_ID, [grp2_idx]], commnDisper], [testType, [], [], cD, cD])
-			} else {
-				&stopErr("[Err] Unknown [$ta[0]]\n"); 
-			}
+			&tsmsg("[Msg] Loading $testType between group 1 [$ta[1]] x$repN_1 and group 2 [$ta[2]] x$repN_2\n"); 
+			push(@{$gg{'compList'}}, [$testType, [$ta[1], [@i1]], [$ta[2], [@i2]], $cmnDisp]); # ([testType, [grp1_ID,[idx]], [grp2_ID,[idx]], commonDispersion])
 		} else {
 			&tsmsg("[Wrn] Skip unparsable line : $_\n"); 
 		}
@@ -363,7 +386,7 @@ sub load_rdCnt {
 
 sub setup_glob {
 	$gg{'exe_Rscript'} //= 'Rscript'; 
-	$gg{'pl_cnt2TPM'}  //= '/home/sunhh/tools/github/NGS_data_processing/rnaseq_tools/cnvt_cnt_to_TPM.pl'; 
+	$gg{'pl_normExpr'}  //= "$REPO/rnaseq_tools/cnvt_cnt_to_normExpr.pl"; 
 	$gg{'cutFDR'}      //= 0.01; 
 	$gg{'cutFC'}       //= 2; 
 	$gg{'minExp'}      //= 0.01; 
@@ -386,21 +409,36 @@ sub setup_glob {
 #                   exactTest \\t G1 \\t G3 \\n
 #                   DESeq2    \\t G1 \\t G2 \\n
 #
+# -compareList col1 (method) keywords: 
+#     DESeq2                     : DESeq2                         -> ds. columns 
+#     edgeR | edgeR_glm | glm    : edgeR GLM (glmFit + glmLRT)    -> eg. columns  [DEFAULT edgeR route] 
+#     exactTest | edgeR_classic  : edgeR classic (exactTest)      -> et. columns 
+#
+# -writeRcode      [dirname] Write generated R code (+ per-comparison rdCnt input) for each
+#                    comparison under this dir (one subdir per comparison), then EXIT without
+#                    running Rscript. Lets you inspect/run the exact DESeq2/edgeR recipe
+#                    standalone. -outFDRFn is not required in this mode. 
 # -exe_Rscript     ['$gg{'exe_Rscript'}']; 
-# -pl_cnt2TPM      [$gg{'pl_cnt2TPM'}]
+# -pl_normExpr      [$gg{'pl_normExpr'}]
 # 
 # -addRPKM         [Boolean]
-#   -genLen        [filename] for -eleInfoFn in -pl_cnt2TPM ; 
+#   -genLen        [filename] for --lenFn in -pl_normExpr ; 
 #   -cutFDR
 #   -cutFC
 #
 ################################################################################
 H1
-	for my $k1 (qw/rdCntFn compareList outFDRFn/) {
+	if ( defined $opts{'writeRcode'} ) {
+		make_path($opts{'writeRcode'}); 
+		$gg{'writeRcode'} = abs_path($opts{'writeRcode'}); 
+	}
+	my @req1 = defined $gg{'writeRcode'} ? qw/rdCntFn compareList/ : qw/rdCntFn compareList outFDRFn/; 
+	for my $k1 (@req1) {
 		defined $opts{$k1} or &LogInforSunhh::usage($gg{'htxt'}); 
 		$gg{$k1} = $opts{$k1}; 
 	}
-	for my $k2 (qw/pl_cnt2TPM exe_Rscript genLen cutFDR cutFC minExp/) {
+	defined $opts{'outFDRFn'} and $gg{'outFDRFn'} = $opts{'outFDRFn'}; 
+	for my $k2 (qw/pl_normExpr exe_Rscript genLen cutFDR cutFC minExp/) {
 		defined $opts{$k2} and $gg{$k2} = $opts{$k2}; 
 	}
 	for my $k3 (qw/exe_Rscript/) {

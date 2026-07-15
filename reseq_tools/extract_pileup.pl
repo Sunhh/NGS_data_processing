@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w 
 use strict; 
 
-!@ARGV and die "perl $0 fsadf\n"; 
+!@ARGV and die "perl $0 run   # (project-specific) match every ./*.pileup against ../basic_SNP_WM97toPI -> *.pileup.basic\n"; 
 
 for (`ls *.pileup`) { 
 	chomp; 

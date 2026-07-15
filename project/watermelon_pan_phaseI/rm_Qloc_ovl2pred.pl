@@ -4,7 +4,6 @@ use warnings;
 use LogInforSunhh;
 use fileSunhh;
 use mathSunhh;
-my $ms_obj = mathSunhh->new();
 use Getopt::Long;
 my %opts;
 GetOptions(\%opts,
@@ -50,7 +49,7 @@ my ($gene2loc, $chr2gene) = &load_blk($opts{'in_blk'});
         $gene2loc->{$ta[$i]}[1] eq $gene2loc->{$ta[$j]}[1] or next;
         $gene2loc->{$ta[$i]}[3][0] > $gene2loc->{$ta[$j]}[3][1] and next;
         $gene2loc->{$ta[$i]}[3][1] < $gene2loc->{$ta[$j]}[3][0] and next;
-        my ($ovlLen_nonDup, $ovlCnt_mayDup, $ovlLocAR) = $ms_obj->compare_number_list( $gene2loc->{$ta[$i]}[2], $gene2loc->{$ta[$j]}[2], 'compare' => 'ovl', 'sort'=>'0' );
+        my ($ovlLen_nonDup, $ovlCnt_mayDup, $ovlLocAR) = mathSunhh::compare_number_list( $gene2loc->{$ta[$i]}[2], $gene2loc->{$ta[$j]}[2], 'compare' => 'ovl', 'sort'=>'0' );
         if ($ovlLen_nonDup > $opts{'max_ovlLen'}) {
           # I should remove $i.
           $is_bad = 1;

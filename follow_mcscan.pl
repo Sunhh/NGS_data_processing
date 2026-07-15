@@ -7,7 +7,6 @@ use warnings;
 use LogInforSunhh; 
 use fileSunhh; 
 use mathSunhh; 
-my $ms_obj = mathSunhh->new(); 
 use mcsSunhh; 
 use fastaSunhh; 
 my $fs_obj = fastaSunhh->new(); 
@@ -294,7 +293,7 @@ if ( $opts{'aln2list'} ) {
 ####################################################################################################
 
 sub sep_tab {
-	my %parm = $ms_obj->_setHashFromArr(@_); 
+	my %parm = mathSunhh::_setHashFromArr(@_); 
 	$parm{'sepColN'} //= '0,11,12,13,14,15'; 
 	my @CV = split(/,/, $parm{'sepColN'}); 
 	open F,'<',"$parm{'in_table'}" or die; 
@@ -328,7 +327,7 @@ sub sep_tab {
 }# sep_tab () 
 
 sub mcs_addKaKs {
-	my %parm = $ms_obj->_setHashFromArr(@_); 
+	my %parm = mathSunhh::_setHashFromArr(@_); 
 	$parm{'fas_prot'} //= ''; 
 	$parm{'out_pref'} //= 'paired'; 
 	$parm{'ncpu'} //= 1; 
@@ -477,7 +476,7 @@ sub _readInKsLis {
 
 sub _lis2ks {
 	# Edit on 2020-08-06 to change input sequence ID to a/b before running jcvi; 
-	my %parm = $ms_obj->_setHashFromArr(@_); 
+	my %parm = mathSunhh::_setHashFromArr(@_); 
 	$parm{'fas_prot'} //= ''; 
 	$parm{'out_pref'} //= 'paired'; 
 	$parm{'alnMethod'} //= 'muscle'; 
@@ -548,7 +547,7 @@ sub _lis2ks {
 }# _lis2ks() 
 
 sub _lis2ks_ori {
-	my %parm = $ms_obj->_setHashFromArr(@_); 
+	my %parm = mathSunhh::_setHashFromArr(@_); 
 	$parm{'fas_prot'} //= ''; 
 	$parm{'out_pref'} //= 'paired'; 
 	$parm{'alnMethod'} //= 'muscle'; 
@@ -578,7 +577,7 @@ sub _lis2ks_ori {
 
 
 sub mcs_filterBlast {
-	my %parm = $ms_obj->_setHashFromArr(@_); 
+	my %parm = mathSunhh::_setHashFromArr(@_); 
 	$parm{'max_eval'}    //= -1; 
 	$parm{'min_cscore'}  //= -1; 
 	$parm{'rm_repeat'}   //= undef(); 
@@ -602,7 +601,7 @@ sub mcs_filterBlast {
 }# mcs_filterBlast() 
 
 sub mcs_classDup {
-	my %parm = $ms_obj->_setHashFromArr(@_); 
+	my %parm = mathSunhh::_setHashFromArr(@_); 
 	$parm{'max_eval'}   //= -1; 
 	$parm{'min_cscore'} //= -1; 
 	$parm{'max_proxN'}  //= 20; 
@@ -721,7 +720,7 @@ sub mcs_classDup {
 }# mcs_classDup() 
 
 sub mcs_glist2html {
-	my %parm = $ms_obj->_setHashFromArr(@_); 
+	my %parm = mathSunhh::_setHashFromArr(@_); 
 	defined $parm{'pivot_chrID'} or &stopErr("[Err] -pivot_chrID not defined.\n"); 
 	my $chrID = $parm{'pivot_chrID'}; 
 	
@@ -792,7 +791,7 @@ HEAD
 
 
 sub cvt_ctg2scf_byAGP {
-	my %parm = $ms_obj->_setHashFromArr(@_); 
+	my %parm = mathSunhh::_setHashFromArr(@_); 
 	
 	my %ctg2scf = %{ &fileSunhh::load_agpFile( $parm{'scf_agp'} ) }; 
 	# %ctg2scf = ( $ctgID => [ [ctgS, ctgE, scfID, scfS, scfE, scfStr(+/-/?)], [], ... ] ) # This is sorted. 
@@ -806,8 +805,8 @@ sub cvt_ctg2scf_byAGP {
 		$strand =~ m/^plus$/i and $strand = '+'; 
 		$strand =~ m/^minus$/i and $strand = '-'; 
 		$strand =~ m/^(\+|\-)$/i or &stopErr("[Err] Unknown strand [$strand]\n"); 
-		my ($scf1_aR) = $ms_obj->switch_position( 'qry2ref' => \%ctg2scf, 'qryID' => $ctg1, 'qryPos' => 1, 'strand' => '+' ); 
-		my ($scf2_aR) = $ms_obj->switch_position( 'qry2ref' => \%ctg2scf, 'qryID' => $ctg2, 'qryPos' => 1, 'strand' => $strand ); 
+		my ($scf1_aR) = mathSunhh::switch_position( 'qry2ref' => \%ctg2scf, 'qryID' => $ctg1, 'qryPos' => 1, 'strand' => '+' ); 
+		my ($scf2_aR) = mathSunhh::switch_position( 'qry2ref' => \%ctg2scf, 'qryID' => $ctg2, 'qryPos' => 1, 'strand' => $strand ); 
 		unless ( defined $scf1_aR->[0] ) {
 			defined $unknown_ctg{$ctg1} or do { &tsmsg("[Wrn] No contig information found for [$ctg1] in AGP file.\n"); $unknown_ctg{$ctg1} = 1; }; 
 			$scf1_aR = [ $ctg1, 1, '+' ]; 
@@ -861,7 +860,7 @@ sub out_blk {
 }# out_blk() 
 
 sub trim_block {
-	my %parm = $ms_obj->_setHashFromArr(@_); 
+	my %parm = mathSunhh::_setHashFromArr(@_); 
 
 	my $fh1 = &openFH( $parm{'trim_blkSE'}, '<' ); 
 	my %toAdd; 
@@ -1032,7 +1031,7 @@ sub _update_alnInfo_byText {
 }# _update_alnInfo_byText() 
 
 sub mcs_blkByList {
-	my %parm = $ms_obj->_setHashFromArr(@_); 
+	my %parm = mathSunhh::_setHashFromArr(@_); 
 	
 	my ($alnInfo) = &_readInAln($parm{'in_aln'}, $opts{'useYN'}); 
 	my $inFh = &openFH($parm{'slct_list'}, '<'); 
@@ -1063,7 +1062,7 @@ sub mcs_blkByList {
 }# mcs_blkByList() 
 
 sub msc_glist2pairs {
-	my %parm = $ms_obj->_setHashFromArr(@_); 
+	my %parm = mathSunhh::_setHashFromArr(@_); 
 	
 	my ($glist_arr) = &_readInGlist($parm{'in_glist'}); # [split(/\t/, $in_line)]
 	my $qr_pivot = $parm{'pivot_pat'} // '.*?' ; 
@@ -1098,7 +1097,7 @@ sub msc_glist2pairs {
 }# msc_glist2pairs() 
 
 sub filter_block {
-	my %parm = $ms_obj->_setHashFromArr(@_); 
+	my %parm = mathSunhh::_setHashFromArr(@_); 
 	$parm{'min_blkPair'} //= 2; 
 	
 	my ($alnInfo) = &_readInAln($parm{'in_aln'}, $opts{'useYN'}); 
@@ -1119,7 +1118,7 @@ sub filter_block {
 }# filter_block ()
 
 sub mcs_aln2pair {
-	my %parm = $ms_obj->_setHashFromArr(@_); 
+	my %parm = mathSunhh::_setHashFromArr(@_); 
 	$parm{'useYN'} //= 0; 
 
 	my ($alnInfo) = &_readInAln($parm{'in_aln'}, $parm{'useYN'}); 
@@ -1138,7 +1137,7 @@ sub mcs_aln2pair {
 } # mcs_aln2pair
 
 sub mcs_table2aln {
-  my %parm = $ms_obj->_setHashFromArr(@_);
+  my %parm = mathSunhh::_setHashFromArr(@_);
 
   open F,'<',"$parm{'in_table'}" or die;
   while (<F>) {
@@ -1160,7 +1159,7 @@ sub mcs_table2aln {
 }# mcs_table2aln()
 
 sub msc_aln2table {
-	my %parm = $ms_obj->_setHashFromArr(@_); 
+	my %parm = mathSunhh::_setHashFromArr(@_); 
 	
 	my ($chr2gen, $gen2loc)  = &_readInGff($parm{'in_gff'}); 
 	my ($alnInfo) = &_readInAln($parm{'in_aln'}, $opts{'useYN'}); 
@@ -1196,7 +1195,7 @@ sub msc_aln2table {
 }# msc_aln2table() 
 
 sub msc_aln2list{
-	my %parm = $ms_obj->_setHashFromArr(@_); 
+	my %parm = mathSunhh::_setHashFromArr(@_); 
 	$parm{'addChr'} //= 0; 
 	$parm{'srt_by'} //= 'min'; 
 	$parm{'raw_order'} //= 0; 
@@ -1231,7 +1230,7 @@ sub msc_aln2list{
 					# The gene-$na is on the reference chrom, and gene-$nb is on the target chrom. 
 					push(@sub_alnInfo, $tr); 
 					my @t_sloci = map { $gidx{ $_->[$na] } } @{$tr->{'pair'}}; 
-					my $ic = $ms_obj->ins_calc( \@t_sloci, 0 ); 
+					my $ic = mathSunhh::ins_calc( \@t_sloci, 0 ); 
 					$sub_alnInfo[-1]{'idx'} = $ic->{ $parm{'srt_by'} }; 
 					$parm{'srt_by'} eq 'COUNT' and $sub_alnInfo[-1]{'idx'} *= -1; 
 					last; 
@@ -1275,7 +1274,7 @@ sub msc_aln2list{
 # Return : (\@glist_wiALN, \@depth, \%use_tax)
 #  @glist_wiALN = ( [genID, chrS, ] )
 sub _fill_glist_wiALN {
-	my %parm = $ms_obj->_setHashFromArr(@_); 
+	my %parm = mathSunhh::_setHashFromArr(@_); 
 	$parm{'addChr'} //= 0; 
 	$parm{'srt_by'} //= 'min'; 
 	my @glist_wiALN = @{$parm{'glist'}}; 
@@ -1464,7 +1463,7 @@ sub _avgINS {
 	my @unn = grep { defined $_ and $_ !~ m!^(|\-?nan|\-?inf)$!i and $_ >= 0 } @_; 
 	my $validNum = scalar(@unn); 
 	if ( $validNum > 0 ) {
-		my $ic = $ms_obj->ins_calc(\@unn, 0); 
+		my $ic = mathSunhh::ins_calc(\@unn, 0); 
 		$avg = $ic->{'interval_mean'}; 
 		$med = $ic->{'interval_median'}; 
 		$validNum = $ic->{'interval_cnt'}; 
@@ -1477,7 +1476,7 @@ sub _avg {
 	my @unn = grep { defined $_ and $_ !~ m!^(|\-?nan|\-?inf)$!i and $_ >= 0 } @_; 
 	my $validNum = scalar(@unn); 
 	if ( $validNum > 0 ) {
-		my $ic = $ms_obj->ins_calc(\@unn, 0); 
+		my $ic = mathSunhh::ins_calc(\@unn, 0); 
 		$avg = $ic->{'MEAN'}; 
 		$med = $ic->{'MEDIAN'}; 
 	}
@@ -1530,7 +1529,7 @@ sub _filter_eval {
 # Return : \@tand_gene 
 #   ([blk0_gen1, blk0_gen2, ...], ...)
 sub _tandemGrp {
-	my %parm = $ms_obj->_setHashFromArr(@_); 
+	my %parm = mathSunhh::_setHashFromArr(@_); 
 	$parm{'max_distN'} //= 2; 
 	unless ( defined $parm{'gindex'} and keys %{$parm{'gindex'}} > 0 ) {
 		my $i=0; 

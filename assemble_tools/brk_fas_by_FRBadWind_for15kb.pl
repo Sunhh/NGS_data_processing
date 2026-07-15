@@ -6,7 +6,6 @@ use fastaSunhh;
 my $fasta_obj = fastaSunhh->new(); 
 use ConfigSunhh; 
 use mathSunhh; 
-my $math_obj = mathSunhh->new(); 
 use fileSunhh; 
 use Getopt::Long; 
 my %opts; 
@@ -452,14 +451,14 @@ sub pass_rule_2_1 {
 			$ctg_s > $se1_aref->[1] and last; 
 			$ctg_s < $p->{'local'}{'start'} and $ctg_s = $p->{'local'}{'start'}; 
 			my $ctg_len = $ctg_e-$ctg_s+1; 
-			my ($ovl_len) = $math_obj->ovl_region( $se1_aref->[0], $se1_aref->[1], $ctg_s, $ctg_e ); 
+			my ($ovl_len) = mathSunhh::ovl_region( $se1_aref->[0], $se1_aref->[1], $ctg_s, $ctg_e ); 
 			push(@ctg_se, [ $ctg_s, $ctg_e, $ctg_len, $ovl_len ]); 
 		}
 		my ($ctg_s, $ctg_e) = ($se2_aaref->[-1][1]+1, $seqLen); 
 		$ctg_s < $p->{'local'}{'start'} and $ctg_s = $p->{'local'}{'start'}; 
 		if ( $ctg_e >= $se1_aref->[0] and $ctg_s <= $se1_aref->[1] ) {
 			my $ctg_len = $ctg_e-$ctg_s+1; 
-			my ($ovl_len) = $math_obj->ovl_region( $se1_aref->[0], $se1_aref->[1], $ctg_s, $ctg_e ); 
+			my ($ovl_len) = mathSunhh::ovl_region( $se1_aref->[0], $se1_aref->[1], $ctg_s, $ctg_e ); 
 			push(@ctg_se, [ $ctg_s, $ctg_e, $ctg_len, $ovl_len ]); 
 		}
 	} else {
@@ -698,7 +697,7 @@ sub read_in_badLis {
 	}
 	close F; 
 	for my $k1 (keys %{$back{'loci_array'}}) {
-		$back{'loci_array'}{$k1} = $math_obj->mergeLocBlk( $back{'loci_array'}{$k1}, 'dist2join'=>$dist2jn+1 ); 
+		$back{'loci_array'}{$k1} = mathSunhh::mergeLocBlk( $back{'loci_array'}{$k1}, 'dist2join'=>$dist2jn+1 ); 
 		$back{'loci_to_idx'}{$k1} = &_sort_index_loci_array( $back{'loci_array'}{$k1} ); 
 	}
 	
