@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 # 2018-10-24 : I don't want to keep unmapped reads. 
 # 2018-10-26 : Use --dta instead of --dta-cufflinks for hisat2; 
+# 2026-07-16 : Sort _NHnum.bam file for indexing.
 use strict; 
 use warnings; 
 use fileSunhh; 
@@ -96,7 +97,10 @@ for my $q ( @{$gg{'fq_infor'}} ) {
 	&fileSunhh::_rmtree("$qh{'pref'}_good.bam"); 
 	
 	# Fix NH number after removing bad alignments. 
-	&exeCmd_1cmd("$gg{'exe_perl'} $gg{'pl_fix_NHnum'}   -inBam $qh{'pref'}_srt.bam   -outBam $qh{'pref'}_fixNH.bam") and &stopErr("[Err] Failed to run "); 
+	&exeCmd_1cmd("$gg{'exe_perl'} $gg{'pl_fix_NHnum'}   -inBam $qh{'pref'}_srt.bam   -outBam $qh{'pref'}_fixNH_t.bam") and &stopErr("[Err] Failed to run ");
+	&fileSunhh::_rmtree("$qh{'pref'}_srt.bam");
+	&runCmd("$gg{'exe_samtools'} sort $gg{'para_samtools_srt'} -o $qh{'pref'}_fixNH.bam $qh{'pref'}_fixNH_t.bam");
+	&fileSunhh::_rmtree("$qh{'pref'}_fixNH_t.bam");
 
 	# Run stringtie if required. 
 	if ( $opts{'runStringtie'} ) {
