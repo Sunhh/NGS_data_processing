@@ -6,3 +6,5 @@ _1 Perl scripts. Auto-generated 2026-07-11; synopsis is from each script's own `
 | script | synopsis |
 |---|---|
 | `cnvt_pdf_to_tiff.pl` | cnvt_pdf_to_tiff.pl input.pdf |
+| `FET_test.r` | Rscript FET_test.r |
+
