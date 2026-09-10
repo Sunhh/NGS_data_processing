@@ -51,7 +51,7 @@ sub exeCmd_1cmd {
 		return; 
 	}
 	&tsmsg("[CMD] $cmd\n"); 
-	if ( system($cmd) == 0 ) {
+	if ( system("bash", "-c", $cmd) == 0 ) {
 		&tsmsg("[CMD_done]$cmd\n"); 
 		return 0; 
 	} else {
@@ -112,7 +112,7 @@ Function : Execute commands with system and time record.
 sub exeCmd {
 	for my $cmd ( @_ ) {
 		&tsmsg("[CMD] $cmd\n"); 
-		if ( system($cmd) == 0 ) {
+		if ( system("bash", "-c", $cmd) == 0 ) {
 			&tsmsg("[CMD_done]$cmd\n"); 
 			return 0; 
 		} else {
