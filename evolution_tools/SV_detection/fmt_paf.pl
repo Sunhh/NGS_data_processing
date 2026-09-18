@@ -4,7 +4,7 @@ use warnings;
 
 -t and !@ARGV and die "perl $0 minimap2.paf > minimap2.paf.tbl\n";
 
-print STDOUT join("\t", qw/QID QLen QS QE Str SID SLen SS SE Match BlkLen MapQ QIdent SIdent Ident/)."\n";
+print STDOUT join("\t", qw/QID QLen QS QE Str SID SLen SS SE Match BlkLen MapQ QIdent SIdent Ident PrimaryTag/)."\n";
 while (<>) {
   chomp;
   my @ta=split(/\t/,$_);
@@ -12,7 +12,11 @@ while (<>) {
   my $ident1 = sprintf("%0.1f", $ta[9]/($ta[3]-$ta[2])*100);
   my $ident2 = sprintf("%0.1f", $ta[9]/($ta[8]-$ta[7])*100);
   my $ident3 = sprintf("%0.1f", $ta[9]/$ta[10]*100);
-  print join("\t", @ta[0..11], $ident1, $ident2, $ident3)."\n";
+  my $psi = 'NA'; # Tag for Primary / Secondary / Inversion / i;
+  for my $t1 (@ta[12 .. $#ta]) {
+    $t1 =~ m!^tp:A:(\S+)$! and do { $psi=$1; last; };
+  }
+  print join("\t", @ta[0..11], $ident1, $ident2, $ident3, $psi)."\n";
 }
 
 ### head -2 PAF/refU43_22CEXU11.paf | deal_table.pl -transpose | deal_table.pl -label_mark 0..99 | less -S
