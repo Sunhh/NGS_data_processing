@@ -6,8 +6,11 @@ use warnings;
 !@ARGV and -t and die "perl $0 hifiasm_asm.p_ctg.gfa > hifiasm_asm.p_ctg.fa\n# Used to get the primary contigs in FASTA format.\n\n"; 
 
 while (<>) {
-	chomp; 
-	m!^S\s+(\S+)\s+(\S+)! or next; 
-	print ">$1\n$2\n"; 
+  chomp; 
+  m!^S\s+(\S+)\s+(\S+)! or next; 
+  my ($id, $seq) = ($1, $2);
+  $seq = ~ s!(\S{100})!$1\n!g;
+  1 while (chomp($seq));
+  print ">$id\n$seq\n"; 
 }
 
