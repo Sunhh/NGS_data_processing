@@ -9,7 +9,7 @@ while (<>) {
   chomp; 
   m!^S\s+(\S+)\s+(\S+)! or next; 
   my ($id, $seq) = ($1, $2);
-  $seq = ~ s!(\S{100})!$1\n!g;
+  $seq =~ s!(\S{100})!$1\n!g;
   1 while (chomp($seq));
   print ">$id\n$seq\n"; 
 }
