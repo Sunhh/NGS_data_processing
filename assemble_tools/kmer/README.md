@@ -9,5 +9,7 @@ k-mer counting queries (Jellyfish) and genome-size / heterozygosity summaries.
 | `get_kmer_by_seq_summary.pl` | summarise per-sequence k-mer count output |
 | `cnvt_qualFa_to_wind_avgTbl.pl` | windowed average of a `.qual` fasta (window_size window_step) |
 | `extract_genomescope_summary.pl` | pull genome size / heterozygosity from GenomeScope `summary.txt` |
+| `proc_merqury.sh` | Perform `merqury.sh` after removing existing assembly database to avoid reusing it. |
+| `move_merqury.sh` | Move `merqury.sh` output files with a given prefix. |
 
 _Hand-written._
