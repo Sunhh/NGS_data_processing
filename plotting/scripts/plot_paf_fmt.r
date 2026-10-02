@@ -5,6 +5,12 @@
 # 重构自 example/plot_PUB.r，去除 pafr 与 ggpubr 依赖。
 # 设计依据：REFACTOR_DESIGN.md   输入格式：PAF_FMT_SPEC.md   审计：AUDIT_REPORT.md
 #
+# 修改记录：
+#   2026-10-01  1.2.0  由 plot_paf_fmt.r 1.1.0 另存为本文件，原脚本不动。
+#                      新增 --x-seg / --y-seg：在 allChr、sepChr 点阵图上用灰色虚线标出
+#                      区段的 start 与 end（X 轴区段画竖线，Y 轴区段画横线），线色、线宽
+#                      由 --seg-col、--seg-line-size 调整。不给这两个文件时 PDF 与 1.1.0 相同。
+#
 # 产出（视 --plots 而定）：
 #   <prefix>.allChr.pdf        全基因组点阵
 #   <prefix>.sepChr.<target>.pdf  逐 target 染色体点阵，每个 target 一个文件
@@ -20,7 +26,7 @@
 # 依赖：R >= 4.0，data.table，ggplot2（grid 随 R 分发）
 # =============================================================================
 
-VERSION <- "1.1.0"
+VERSION <- "1.2.0"
 
 # grid 随 R 分发，无需安装；data.table 与 ggplot2 需自行安装
 local({
@@ -69,6 +75,8 @@ ARG_SPEC <- list(
   list("y-seqs",           "",          "chr", "自定义 Y 轴(subject)序列及顺序，逗号分隔"),
   list("x-last-seqs",      "chr00",     "chr", "X 轴排序后挪到末尾的序列名，逗号分隔"),
   list("y-last-seqs",      "chr00",     "chr", "Y 轴排序后挪到末尾的序列名，逗号分隔"),
+  list("x-seg",            "",          "chr", "X 轴(query)区段文件，在每个区段的 start、end 处各画一条竖虚线。格式见下方说明"),
+  list("y-seg",            "",          "chr", "Y 轴(subject)区段文件，在每个区段的 start、end 处各画一条横虚线。格式见下方说明"),
 
   list("xlab",             "Query",     "chr", "X 轴标题"),
   list("ylab",             "Subject",   "chr", "Y 轴标题"),
@@ -86,6 +94,8 @@ ARG_SPEC <- list(
   list("col-forward",      "#1F4E79",   "chr", "正向比对(+)颜色"),
   list("col-reverse",      "#C00000",   "chr", "反向比对(-)颜色"),
   list("cov-fill",         "#2E7D32",   "chr", "覆盖图中已覆盖区块的填充色"),
+  list("seg-col",          "grey40",    "chr", "区段边界线(虚线)的颜色：R 颜色名或 #RRGGBB"),
+  list("seg-line-size",    0.3,         "num", "区段边界线的线宽(pt)"),
 
   list("units",            "mm",        "chr", "画布尺寸单位：mm | cm | in"),
   list("dot-width",        NA,          "num", "allChr 画布宽。留空=按 preset"),
@@ -177,6 +187,19 @@ print_help <- function() {
   cat("\npreset 取值:\n")
   cat("  pub    183x183mm(allChr) 89x89mm(sepChr) 183x100mm(coverage), 标签6pt 标题8pt 线宽0.3pt\n")
   cat("  screen 21x21in           10x10in         14x7in,               标签10pt 标题16pt 线宽0.6pt\n")
+  cat("\n--x-seg / --y-seg 区段文件:\n")
+  cat("  格式  制表符分隔、无表头，每行一个区段：序列名<TAB>start<TAB>end。第 4 列起忽略，\n")
+  cat("        空行和 # 开头的行跳过。例：chr01<TAB>8000000<TAB>18000000\n")
+  cat("  对应  --x-seg 的序列名对应 X 轴的 QID，--y-seg 的对应 Y 轴的 SID。坐标与输入同一坐标系，\n")
+  cat("        按数值直接画，不做 0/1-based 换算（两者只差 1 bp，图上看不出）。\n")
+  cat("  画法  每个区段在 start、end 处各画一条虚线：x 区段画竖线，y 区段画横线，贯穿整个面板。\n")
+  cat("        默认灰色(grey40)、0.3 pt，用 --seg-col、--seg-line-size 调整；画在序列边界点线之上、\n")
+  cat("        比对线之下；位置相同的线只画一条。\n")
+  cat("  范围  只画在 allChr、sepChr 上，coverage 不画；sepChr 每页只画本页序列上的线。\n")
+  cat("  跳过  序列不在图上（输入里没有、被过滤，或未被 --x-seqs/--y-seqs 选中）的行跳过，\n")
+  cat("        allChr 会告警列出这些序列名。\n")
+  cat("  报错  不足 3 列、序列名为空、非数值、负数、start > end、坐标超出序列长度：报错退出，\n")
+  cat("        给出文件名、行号和该行内容。\n")
   cat("\n示例:\n")
   cat("  # 默认只出 allChr\n")
   cat("  Rscript plot_paf_fmt.r --input a.paf.fmt --prefix out\n\n")
@@ -187,6 +210,9 @@ print_help <- function() {
   cat("      --x-seqs LA1593Chr01,LA1593Chr03,LA1593Chr02 --y-seqs chr02,chr04\n\n")
   cat("  # 屏幕探索大图 + 显示局部坐标\n")
   cat("  Rscript plot_paf_fmt.r --input a.paf.fmt --prefix out.big --preset screen --show-axis-coord true\n\n")
+  cat("  # 用灰色虚线标出区段边界（X 轴区段画竖线，Y 轴区段画横线）\n")
+  cat("  Rscript plot_paf_fmt.r --input a.paf.fmt --prefix out --plots allChr,sepChr \\\n")
+  cat("      --x-seg x_seg.tsv --y-seg y_seg.tsv\n\n")
   quit(save = "no", status = 0L)
 }
 
@@ -308,6 +334,9 @@ validate_args <- function(opt) {
     stop_cli("--min-panel (", opt$`min-panel`, ") 不能大于 --max-canvas (",
              opt$`max-canvas`, ")。调小 --min-panel 或调大 --max-canvas")
   if (opt$`label-size` <= 0) stop_cli("--label-size 必须为正，得到 ", opt$`label-size`)
+  if (opt$`seg-line-size` <= 0) stop_cli("--seg-line-size 必须为正，得到 ", opt$`seg-line-size`)
+  if (inherits(tryCatch(grDevices::col2rgb(opt$`seg-col`), error = identity), "error"))
+    stop_cli("--seg-col 不是可识别的颜色：'", opt$`seg-col`, "'（可用颜色名如 grey40，或 #666666）")
 
   tp <- split_csv(opt$`keep-tp`)
   if (length(tp) && !all(tp %in% c("P", "S", "I", "i")))
@@ -321,6 +350,14 @@ validate_args <- function(opt) {
                             "（合法：allChr,sepChr,coverage）")
   opt$.plots <- pl
   opt$.custom <- custom
+
+  for (k in c("x-seg", "y-seg"))
+    if (nzchar(opt[[k]]) && (!file.exists(opt[[k]]) || dir.exists(opt[[k]])))
+      stop_cli("--", k, " 指定的文件不存在：", opt[[k]])
+  opt$.use_seg <- any(c("allChr", "sepChr") %in% pl)
+  if ((nzchar(opt$`x-seg`) || nzchar(opt$`y-seg`)) && !opt$.use_seg)
+    warn_cli("--x-seg/--y-seg 只画在 allChr、sepChr 上，本次 --plots ", opt$plots,
+             " 里没有这两张图，不画区段线")
 
   if (nzchar(opt$`font-file`) && !file.exists(opt$`font-file`))
     stop_cli("--font-file 指定的文件不存在：", opt$`font-file`)
@@ -412,6 +449,60 @@ read_paf_fmt <- function(path, drop_invalid = FALSE) {
                           " 不唯一，取首次出现值：", paste(n[[1]], collapse = ", "))
   }
   dt[]
+}
+
+#' 读 --x-seg/--y-seg 区段文件。制表符分隔、无表头，前 3 列 = 序列名、start、end，
+#' 第 4 列起忽略；空行和 # 开头的行跳过。坐标与输入同一坐标系，不做 0/1-based 换算
+#' （两者只差 1 bp，图上看不出）。非数值、负数、start > end、超出序列长度都报错并给出行号。
+#' len_dt 为输入里的序列长度表 (id, len)；不在其中的序列查不了长度，画图时按"不在图上"跳过。
+#' 返回 data.table(id, start, end, line)；没给文件、或文件没有数据行时返回 NULL
+read_seg <- function(path, key, len_dt) {
+  if (!nzchar(path)) return(NULL)
+  txt <- tryCatch(readLines(path, warn = FALSE),
+                  error = function(e) stop_cli("--", key, " 读取失败：", conditionMessage(e)))
+  tt <- trimws(txt)
+  ln <- which(nzchar(tt) & !startsWith(tt, "#"))
+  if (!length(ln)) {
+    warn_cli("--", key, " ", path, " 没有数据行，不画区段线")
+    return(NULL)
+  }
+  # 序列名一律按字符处理：纯数字名若变成数字，按名字查 offset 会错位（同 read_paf_fmt）
+  f   <- strsplit(txt[ln], "\t", fixed = TRUE)
+  nf  <- lengths(f)
+  col <- function(j) trimws(vapply(f, function(v) if (length(v) >= j) v[j] else "", ""))
+  s_txt <- col(2L); e_txt <- col(3L)
+  seg <- data.table(id = col(1L), start = suppressWarnings(as.numeric(s_txt)),
+                    end = suppressWarnings(as.numeric(e_txt)), line = ln)
+  len  <- len_dt$len[match(seg$id, len_dt$id)]
+  ok_s <- is.finite(seg$start); ok_e <- is.finite(seg$end)
+
+  # 每行只记第一个问题，按下面的先后顺序
+  why <- rep(NA_character_, nrow(seg))
+  put <- function(why, cond, msg) {
+    i <- is.na(why) & cond
+    why[i] <- rep_len(msg, length(why))[i]
+    why
+  }
+  why <- put(why, nf < 3L, "少于 3 列（需要 序列名<TAB>start<TAB>end）")
+  why <- put(why, !nzchar(seg$id), "序列名为空")
+  why <- put(why, !ok_s, paste0("start 不是数值：'", s_txt, "'"))
+  why <- put(why, !ok_e, paste0("end 不是数值：'", e_txt, "'"))
+  why <- put(why, ok_s & ok_e & pmin(seg$start, seg$end) < 0, "坐标不能为负")
+  why <- put(why, ok_s & ok_e & seg$start > seg$end,
+             paste0("start (", s_txt, ") 大于 end (", e_txt, ")"))
+  why <- put(why, ok_e & !is.na(len) & seg$end > len,
+             paste0("end (", e_txt, ") 超出 ", seg$id, " 的长度 ",
+                    format(len, scientific = FALSE, trim = TRUE)))
+  bad <- which(!is.na(why))
+  if (length(bad)) {
+    r <- bad[1]
+    hdr <- r == 1L && nf[r] >= 3L && (!ok_s[r] || !ok_e[r])
+    stop_cli("--", key, " ", path, " 第 ", ln[r], " 行：", why[r],
+             if (hdr) "（区段文件不要表头）" else "",
+             if (length(bad) > 1L) paste0("。共 ", length(bad), " 行有问题") else "",
+             "\n  该行内容：", txt[ln[r]])
+  }
+  seg[]
 }
 
 # =============================================================================
@@ -739,8 +830,19 @@ axis_breaks <- function(lay, opt, strip) {
   list(breaks = nt$pos, labels = nt$lab, sec_breaks = lay$mid, sec_labels = labs)
 }
 
-#' 点阵图主函数
-plot_dotplot <- function(dt, qlay, slay, opt, title = NULL) {
+#' 区段 -> 轴上的位置（序列 offset + start/end）。只取当前布局里的序列，相同位置只留一个。
+#' 返回 list(pos, n_row = 画出的区段行数, miss = 不在布局里的序列名)；seg 为 NULL 时返回 NULL
+seg_positions <- function(seg, lay) {
+  if (is.null(seg)) return(NULL)
+  hit <- seg[id %in% lay$id]
+  off <- setNames(lay$offset, lay$id)
+  pos <- unname(c(hit$start, hit$end) + off[c(hit$id, hit$id)])
+  list(pos = sort(unique(pos)), n_row = nrow(hit),
+       miss = unique(seg$id[!seg$id %in% lay$id]))
+}
+
+#' 点阵图主函数。xseg / yseg 为 --x-seg / --y-seg 区段边界在轴上的位置（seg_positions()$pos）
+plot_dotplot <- function(dt, qlay, slay, opt, title = NULL, xseg = NULL, yseg = NULL) {
   seg <- build_dot_data(dt, qlay, slay)
   xa <- axis_breaks(qlay, opt, opt$`x-label-strip`)
   ya <- axis_breaks(slay, opt, opt$`y-label-strip`)
@@ -752,6 +854,13 @@ plot_dotplot <- function(dt, qlay, slay, opt, title = NULL) {
                linetype = "dotted", colour = "grey55", linewidth = pt_to_lw(0.3)) +
     geom_hline(yintercept = c(slay$offset, max(slay$end)),
                linetype = "dotted", colour = "grey55", linewidth = pt_to_lw(0.3))
+  # 区段边界线：压在序列边界线之上、比对线之下，不遮挡比对
+  if (length(xseg))
+    p <- p + geom_vline(xintercept = xseg, linetype = "dashed", colour = opt$`seg-col`,
+                        linewidth = pt_to_lw(opt$`seg-line-size`))
+  if (length(yseg))
+    p <- p + geom_hline(yintercept = yseg, linetype = "dashed", colour = opt$`seg-col`,
+                        linewidth = pt_to_lw(opt$`seg-line-size`))
   if (!is.null(seg))
     p <- p + geom_segment(data = seg,
                           aes(x = x, xend = xend, y = y, yend = yend, colour = Strand),
@@ -919,6 +1028,14 @@ main <- function() {
   # ---- 读入与过滤 ----
   dt <- read_paf_fmt(opt$input, drop_invalid = opt$`drop-invalid`)
   n_raw <- nrow(dt)
+
+  # ---- --x-seg/--y-seg：按输入里的序列长度检查（被过滤掉的序列也查）----
+  segs <- list(x = NULL, y = NULL)
+  if (opt$.use_seg) {
+    segs$x <- read_seg(opt$`x-seg`, "x-seg", seq_lengths(dt, "QID", "QLen"))
+    segs$y <- read_seg(opt$`y-seg`, "y-seg", seq_lengths(dt, "SID", "SLen"))
+  }
+  seg_qc <- list()                       # 各图画了多少区段线，供 QC 摘要
   flt <- filter_alignments(dt, opt)
   steps <- attr(flt, "steps")
 
@@ -966,7 +1083,12 @@ main <- function() {
       warn_cli("allChr：没有可画的序列，跳过")
     } else {
       f <- paste0(opt$prefix, ".allChr.pdf")
-      pl <- plot_dotplot(sub, qlay, slay, opt)
+      sp <- list(x = seg_positions(segs$x, qlay), y = seg_positions(segs$y, slay))
+      for (k in names(sp)) if (length(sp[[k]]$miss))
+        warn_cli("allChr：--", k, "-seg 中这些序列不在图上（输入里没有，或被过滤、未选中），已跳过：",
+                 paste(sp[[k]]$miss, collapse = ", "))
+      seg_qc$allChr <- sp
+      pl <- plot_dotplot(sub, qlay, slay, opt, xseg = sp$x$pos, yseg = sp$y$pos)
       setattr(pl, "what", "allChr")
       wh <- resolve_canvas(fit_dot_canvas(qlay, slay, opt, pl),
                            "dot-width", "dot-height", opt)
@@ -1004,7 +1126,10 @@ main <- function() {
 
     for (i in seq_along(pg)) {
       x <- pg[[i]]
-      pl <- plot_dotplot(x$sub, x$qlay, x$slay, opt)
+      # 每页只画本页序列上的区段线；其余序列本来就不在这一页，不告警
+      sp <- list(x = seg_positions(segs$x, x$qlay), y = seg_positions(segs$y, x$slay))
+      seg_qc$sepChr[[i]] <- sp
+      pl <- plot_dotplot(x$sub, x$qlay, x$slay, opt, xseg = sp$x$pos, yseg = sp$y$pos)
       setattr(pl, "what", paste0("sepChr/", x$tn))
       pg[[i]]$plot <- pl
       pg[[i]]$wh <- resolve_canvas(fit_dot_canvas(x$qlay, x$slay, opt, pl),
@@ -1090,6 +1215,28 @@ main <- function() {
       add("     %-10s %5.1f%%  (%.1f/%.1f Mb, %d 段, %d 缺口)",
           cov_stat$id[i], cov_stat$pct[i], cov_stat$covered[i] / 1e6,
           cov_stat$len[i] / 1e6, cov_stat$n_block[i], cov_stat$n_gap[i])
+  }
+  if (!is.null(segs$x) || !is.null(segs$y)) {
+    add("  区段边界线  :")
+    for (k in c("x", "y")) {
+      sg <- segs[[k]]
+      if (is.null(sg)) next
+      what <- if (k == "x") "竖线" else "横线"
+      part <- character(0)
+      a <- seg_qc$allChr[[k]]
+      if (!is.null(a))
+        part <- c(part, sprintf("allChr 画 %d/%d 行，%d 条%s", a$n_row, nrow(sg), length(a$pos), what))
+      if (length(seg_qc$sepChr)) {
+        sp <- lapply(seg_qc$sepChr, `[[`, k)
+        part <- c(part, sprintf("sepChr %d/%d 页有%s",
+                                sum(vapply(sp, function(s) length(s$pos) > 0L, TRUE)), length(sp), what))
+        never <- Reduce(intersect, lapply(sp, `[[`, "miss"))
+        if (length(never))
+          part <- c(part, paste0("sepChr 各页都没有：", paste(never, collapse = ", ")))
+      }
+      add("     %s  %s（%d 行）：%s", k, opt[[paste0(k, "-seg")]], nrow(sg),
+          paste(part, collapse = "；"))
+    }
   }
   add("  输出        :")
   for (f in outs) add("     %-34s %8.1f KB", f, file.size(f) / 1024)
