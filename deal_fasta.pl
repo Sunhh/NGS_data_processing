@@ -1812,7 +1812,7 @@ sub qual{
 #############################################
 sub Disp_seq{
 	my $seq_ref=shift;
-	my $num_line=( defined $_[0] and int($_[0]) > 0 ) ? int($_[0]) : 80;
+	my $num_line=( defined $_[0] and int($_[0]) > 0 ) ? int($_[0]) : 100;
 
 	pos($$seq_ref) = 0;
 	(my $disp = $$seq_ref) =~ s/(\S{$num_line})/$1\n/g;
