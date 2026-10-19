@@ -339,8 +339,8 @@ validate_args <- function(opt) {
     stop_cli("--seg-col 不是可识别的颜色：'", opt$`seg-col`, "'（可用颜色名如 grey40，或 #666666）")
 
   tp <- split_csv(opt$`keep-tp`)
-  if (length(tp) && !all(tp %in% c("P", "S", "I", "i")))
-    stop_cli("--keep-tp 只接受 P/S/I/i 的组合，得到 '", opt$`keep-tp`, "'")
+  if (length(tp) && !all(tp %in% c("P", "S", "I", "i", "Manual")))
+    stop_cli("--keep-tp 只接受 P/S/I/i/Manual 的组合，得到 '", opt$`keep-tp`, "'")
 
   custom <- length(split_csv(opt$`x-seqs`)) > 0 || length(split_csv(opt$`y-seqs`)) > 0
   if (!nzchar(opt$plots)) opt$plots <- "allChr"
