@@ -97,7 +97,7 @@ for my $la (@agp_arr) {
 
 &tsmsg("[Msg] Output joined sequences.\n"); 
 for my $tk (sort {$new_seq{$a}{'order'} <=> $new_seq{$b}{'order'}} keys %new_seq) {
-	$new_seq{$tk}{'seq'} =~ s/(.{60})/$1\n/g; chomp( $new_seq{$tk}{'seq'} ); 
+	$new_seq{$tk}{'seq'} =~ s/(.{100})/$1\n/g; chomp( $new_seq{$tk}{'seq'} ); 
 	print STDOUT ">$tk\n$new_seq{$tk}{'seq'}\n"; 
 }
 
@@ -105,7 +105,7 @@ unless ($opts{'noAddRest'}) {
 	&tsmsg("[Msg] Output rest sequences.\n"); 
 	for my $tk (sort { $ctg_fas{$a}{'Order'} <=> $ctg_fas{$b}{'Order'} } keys %ctg_fas) {
 		defined $used_ctg{$tk} and next; 
-		$ctg_fas{$tk}{'seq'} =~ s/(.{60})/$1\n/g; chomp( $ctg_fas{$tk}{'seq'} ); 
+		$ctg_fas{$tk}{'seq'} =~ s/(.{100})/$1\n/g; chomp( $ctg_fas{$tk}{'seq'} ); 
 		print STDOUT ">$tk\n$ctg_fas{$tk}{'seq'}\n"; 
 	}
 }
