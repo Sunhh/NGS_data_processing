@@ -89,10 +89,12 @@ Every script prints its own usage with `-h` or no arguments.
 ### 3f. Downstream
 | script | does |
 |--------|------|
-| `plot_heatmap_by_geneList.pl` | expression heatmap for a gene list (`<exp.txt> <gene_list> <out_pref>`; uses `plot_expr_heatmap.r`) |
+| `plot_heatmap.r` | expression heatmap for a gene list (`-i <exp.txt> -g <gene_list> -o <out_pref>`;). Replace `plot_heatmap_by_geneList.pl`. |
+| `plot_volcano.r` | volcano plot for DEGs. |
 | `fix_excelV.pl` | rewrite tiny/scientific values so Excel doesn't mangle them |
 | `combine_DEGs.pl` | merge per-comparison DESeq2 `res-*` files (`meta_file [cols]`) into one wide table |
 | `label_DEGs.pl` | label that merged table `N`/`U`/`D` per comparison (FDR<0.05 & |log2FC|>1); used by `map_to_transcriptome/` |
+| `plot_heatmap_by_geneList.pl` | Archived. expression heatmap for a gene list (`<exp.txt> <gene_list> <out_pref>`;) |
 
 ### Typical Perl-toolkit chain
 ```
