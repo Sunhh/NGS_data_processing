@@ -33,6 +33,10 @@ add_plot_args <- function(parser) {
     help = "画出每个 term 的横向网格线 [default: 不画]");
   parser$add_argument("--no_facet", action = "store_true", default = FALSE,
     help = "不按类别分面（GO 的 BP / MF / CC，KEGG 的 class A；IPR 本来就不分面），所有 term 画在同一个面板里，按 --order_by 统一排序；--top_n、--simplify 也改为在全部 term 中进行 [default: 分面]");
+  parser$add_argument("--shape_by_class", action = "store_true", default = FALSE,
+    help = "用点的形状区分类别（GO 的 BP / MF / CC，KEGG 的 class A），并加形状图例；常与 --no_facet 一起用。IPR 没有类别，忽略此参数 [default: 不区分]");
+  parser$add_argument("--shapes", default = "21,22,24,23,25",
+    help = "--shape_by_class 按类别顺序（GO 为 BP, MF, CC）依次使用的形状，逗号分隔的 R pch 编号，须为可填色的 21~25：21 圆、22 方、23 菱形、24 上三角、25 下三角 [default: %(default)s]");
   parser$add_argument("--top_n", type = "integer", default = NULL,
     help = "每个分面（--no_facet 时为全部 term 中）只画 p.adjust 最小的前 N 个 term [default: 全部]");
   parser$add_argument("--min_count", type = "integer", default = 1,
@@ -51,6 +55,12 @@ add_plot_args <- function(parser) {
     help = "自定义渐变色（低显著 -> 高显著），逗号分隔，如 \"#FDE725,#21908C,#440154\"；指定后忽略 --palette");
   parser$add_argument("--width", type = "double", default = NULL,
     help = "画布宽度 (mm) [default: pub 180；screen 按内容自动计算]");
+  parser$add_argument("--panel_width", type = "double", default = NULL,
+    help = "面板（图框）宽度 (mm)；指定后画布宽度 = 面板宽度 + term 名称 + 图例等，--width 不再起作用。多张图拼合时各图用相同的值，图框即等长 [default: pub 由 --width 减去其余部分；screen 90]");
+  parser$add_argument("--label_width", type = "double", default = NULL,
+    help = "画布左缘到面板左缘的宽度 (mm)，即 term 名称区宽度；指定后 term 名称按实际字宽折行以放进此宽度（代替 --wrap），不足部分在左侧留白。与 --panel_width 一起用，各图的图框左右位置完全一致，可直接上下对齐拼合 [default: 按最长的 term 名称自动]");
+  parser$add_argument("--legend_width", type = "double", default = NULL,
+    help = "面板右缘到画布右缘的宽度 (mm)，即分面名称 + 图例区宽度；不足部分在右侧留白。与 --label_width、--panel_width 一起用，各图名称区、面板、图例区宽度都相同，画布总宽 = 三者之和 [default: 按图例自动]");
   parser$add_argument("--height", type = "double", default = NULL,
     help = "画布高度 (mm)；指定后不再自动计算 [default: 按 term 数自动计算]");
   parser$add_argument("--max_height", type = "double", default = NULL,
@@ -59,6 +69,8 @@ add_plot_args <- function(parser) {
     help = "基础字号 (pt)，刻度与图例文字比它小 1 pt [default: pub 7；screen 9]");
   parser$add_argument("--dpi", type = "integer", default = NULL,
     help = "png/tiff 分辨率 [default: pub 600；screen 150]");
+  parser$add_argument("--font", default = "Arial", choices = c("Arial", "Helvetica"),
+    help = "图中文字字体：Arial = pdf 中字体名为 ArialMT，并用 ghostscript 嵌入系统中的 Arial 字体（需装有 gs 和 Arial 字体，缺少时自动改用 Helvetica）；Helvetica = R 自带 pdf 设备，嵌入 Nimbus Sans 作为 Helvetica 的替代字体 [default: %(default)s]");
   invisible(parser);
 };
 
@@ -70,6 +82,10 @@ get_preset <- function(args) {
     screen = list(width = NA, max_height = Inf, font_size = 9, min_font = 9, dpi = 150,
       wrap = 0, panel_w = 90, row_pad = 1.6, dot_max = 5, bar_w = 4, bar_h = 30, title = TRUE));
   if (!is.null(args$width)) pr$width <- args$width;
+  if (!is.null(args$panel_width)) {
+    pr$panel_w <- args$panel_width;
+    pr$width <- NA;
+  }
   if (!is.null(args$max_height)) pr$max_height <- args$max_height;
   if (!is.null(args$font_size)) {
     pr$font_size <- args$font_size;
@@ -92,7 +108,79 @@ check_plot_args <- function(args) {
     if (is.na(thr) || thr <= 0 || thr > 1) stop("--simplify 须为 none 或 (0, 1] 之间的数值");
   }
   if (!is.null(args$top_n) && args$top_n < 1) stop("--top_n 须 >= 1");
+  shp <- suppressWarnings(as.integer(trimws(strsplit(args$shapes, ",")[[1]])));
+  if (anyNA(shp) || any(!shp %in% 21:25) || anyDuplicated(shp)) stop("--shapes 须为 21~25 中不重复的整数，逗号分隔");
+  args$shapes <- shp;
+  if (!is.null(args$panel_width) && args$panel_width <= 0) stop("--panel_width 须 > 0");
+  if (!is.null(args$label_width) && args$label_width <= 5) stop("--label_width 须 > 5 mm");
+  if (!is.null(args$legend_width) && args$legend_width < 0) stop("--legend_width 须 >= 0");
+  if (!is.null(args$panel_width) && !is.null(args$width)) message("[警告] 指定了 --panel_width，忽略 --width");
+  if (!is.null(args$label_width) && !is.null(args$wrap)) message("[警告] 指定了 --label_width，term 名称按其宽度折行，忽略 --wrap");
+  args$font_dir <- NULL;
+  if (args$font == "Arial") {
+    args$font_dir <- find_font_dir("Arial");
+    if (!nzchar(Sys.which("gs")) || is.null(args$font_dir)) {
+      message("[警告] 没有 ghostscript (gs) 或系统中没有 Arial 字体，--font 改用 Helvetica");
+      args$font <- "Helvetica";
+    } else {
+      register_arial();
+    }
+  }
   args;
+};
+
+# 系统中某字体文件所在目录（供 ghostscript 嵌入字体）
+find_font_dir <- function(family) {
+  p <- character(0);
+  if (requireNamespace("systemfonts", quietly = TRUE)) {
+    sf <- systemfonts::system_fonts();
+    p <- sf$path[sf$family == family];
+  } else if (nzchar(Sys.which("fc-list"))) {
+    p <- sub(":.*$", "", system2("fc-list", c(shQuote(family), "file"), stdout = TRUE));
+  }
+  p <- p[file.exists(p)];
+  if (length(p) == 0) NULL else unique(dirname(p));
+};
+
+# 在 R 的 pdf 设备中登记 Arial：字宽与 Helvetica 相同，借用 Helvetica 的 AFM，只把字体名改为 ArialMT 等，
+# 输出后再由 ghostscript 从系统字体目录嵌入真正的 Arial
+register_arial <- function() {
+  if ("Arial" %in% names(pdfFonts())) return(invisible(NULL));
+  src <- c("Helvetica", "Helvetica-Bold", "Helvetica-Oblique", "Helvetica-BoldOblique");
+  dst <- c("ArialMT", "Arial-BoldMT", "Arial-ItalicMT", "Arial-BoldItalicMT");
+  afm <- file.path(tempdir(), paste0(dst, ".afm"));
+  for (i in seq_along(src)) {
+    x <- readLines(gzfile(file.path(system.file("afm", package = "grDevices"), paste0(src[i], ".afm.gz"))));
+    writeLines(sub("^FontName .*", paste("FontName", dst[i]), x), afm[i]);
+  }
+  pdfFonts(Arial = Type1Font("Arial", c(afm, pdfFonts("Helvetica")[[1]]$metrics[5])));
+};
+
+# 用 ghostscript 嵌入字体。fontDir 不为空（Arial 等 TrueType 字体）时完整嵌入：gs 只嵌入子集时把 TrueType
+# 写成无编码表的符号字体，Illustrator 打开后换用系统字体、按符号编码取字形而显示乱码；完整嵌入则为标准的 WinAnsi 字体
+embed_pdf_fonts <- function(file, fontDir = NULL) {
+  tmp <- paste0(file, ".tmp.pdf");
+  if (is.null(fontDir)) {
+    embedFonts(file, outfile = tmp);
+  } else {
+    embedFonts(file, outfile = tmp, fontpaths = fontDir, options = "-dSubsetFonts=false");
+    clear_cap_flags(tmp);
+  }
+  invisible(file.rename(tmp, file));
+};
+
+# gs 有时给字体描述的 /Flags 误加 AllCap、SmallCap 标志，原位清除（数字后补空格，字节数不变，不影响交叉引用表）
+clear_cap_flags <- function(file) {
+  x <- readBin(file, "raw", file.size(file));
+  for (p in grepRaw("/Flags [0-9]+", x, all = TRUE)) {
+    s <- p + 7;
+    e <- s;
+    while (e < length(x) && x[e + 1] >= as.raw(48) && x[e + 1] <= as.raw(57)) e <- e + 1;
+    v <- as.integer(rawToChar(x[s:e]));
+    nv <- bitwAnd(v, bitwNot(65536L + 131072L));
+    if (nv != v) x[s:e] <- charToRaw(formatC(nv, width = -(e - s + 1)));
+  }
+  writeBin(x, file);
 };
 
 # 渐变色（低显著 -> 高显著）
@@ -190,17 +278,13 @@ count_breaks <- function(lim) {
   b;
 };
 
-save_plot <- function(g, file, fmt, W, H, dpi) {
+save_plot <- function(g, file, fmt, W, H, dpi, font = "Helvetica", fontDir = NULL) {
   if (fmt == "pdf") {
-    pdf(file, width = W / 25.4, height = H / 25.4, useDingbats = FALSE, family = "Helvetica",
+    pdf(file, width = W / 25.4, height = H / 25.4, useDingbats = FALSE, family = font,
       encoding = "WinAnsi.enc");
     grid.draw(g);
     invisible(dev.off());
-    if (nzchar(Sys.which("gs"))) {
-      tmp <- paste0(file, ".tmp.pdf");
-      embedFonts(file, outfile = tmp);
-      invisible(file.rename(tmp, file));
-    }
+    if (nzchar(Sys.which("gs"))) embed_pdf_fonts(file, fontDir);
   } else if (requireNamespace("ragg", quietly = TRUE)) {
     if (fmt == "png") {
       ragg::agg_png(file, width = W, height = H, units = "mm", res = dpi);
@@ -212,7 +296,7 @@ save_plot <- function(g, file, fmt, W, H, dpi) {
   } else if (nzchar(Sys.which("gs"))) {
     # 没有 ragg 时先画 pdf，再用 ghostscript 转为 png / tiff
     tmp <- tempfile(fileext = ".pdf");
-    save_plot(g, tmp, "pdf", W, H, dpi);
+    save_plot(g, tmp, "pdf", W, H, dpi, font, fontDir);
     gsArgs <- c("-q", "-dNOPAUSE", "-dBATCH", "-dSAFER", "-dTextAlphaBits=4", "-dGraphicsAlphaBits=4",
       if (fmt == "png") "-sDEVICE=png16m" else c("-sDEVICE=tiff24nc", "-sCompression=lzw"),
       paste0("-r", dpi), paste0("-sOutputFile=", shQuote(file)), shQuote(tmp));
@@ -273,6 +357,14 @@ plot_enrich <- function(res, facetCol, facetLevels, kind, prefix, args) {
   } else {
     d[, Facet := "All"];
   }
+  useShape <- isTRUE(args$shape_by_class) && !is.null(facetCol) && facetCol %in% names(d);
+  if (isTRUE(args$shape_by_class) && !useShape) message(sprintf("[%s] 没有类别列，忽略 --shape_by_class", kind));
+  if (useShape) {
+    s <- as.character(d[[facetCol]]);
+    s[is.na(s) | !nzchar(s)] <- "Other";
+    d[, Class_ := s];
+  }
+  shapeTitle <- switch(kind, GO = "Ontology", KEGG = "KEGG class", "Class");
 
   # 选择上图的 term
   sel <- d[!is.na(p.adjust) & p.adjust < args$padj_cutoff & Count >= args$min_count & !is.na(xval)];
@@ -297,10 +389,21 @@ plot_enrich <- function(res, facetCol, facetLevels, kind, prefix, args) {
   }
   if (args$order_by == "x") setorder(sel, Facet, -xval, p.adjust) else setorder(sel, Facet, p.adjust, -xval);
   sel[, Facet := droplevels(Facet)];
+  if (useShape) {
+    lev <- c(intersect(facetLevels, sel$Class_), setdiff(unique(sel$Class_), facetLevels));
+    if (length(lev) > length(args$shapes)) {
+      stop(sprintf("上图的类别有 %d 种，--shapes 只有 %d 个形状；可增加 --shapes 或用 --drop_class 排除类别", length(lev), length(args$shapes)));
+    }
+    sel[, Class_ := factor(Class_, levels = lev)];
+  }
   nF <- nlevels(sel$Facet);
 
   # y 位置：每个 term 占的高度随其名称行数变化；各分面用互不重叠的数值区间，便于共用刻度
-  sel[, Label := if (pr$wrap > 0) {
+  # --label_width：按实际字宽折行，可用宽度扣除左边距 2 mm、刻度线 0.8 mm 与刻度文字间距
+  labGp <- gpar(fontsize = fs, fontfamily = args$font);
+  sel[, Label := if (!is.null(args$label_width)) {
+    vapply(Description, wrap_to_width, "", maxW = args$label_width - 4, gp = labGp)
+  } else if (pr$wrap > 0) {
     vapply(Description, function(s) paste(strwrap(s, width = pr$wrap), collapse = "\n"), "")
   } else Description];
   sel[, unit_ := (lengths(regmatches(Label, gregexpr("\n", Label))) + pr$row_pad) / pr$row_pad];
@@ -320,7 +423,9 @@ plot_enrich <- function(res, facetCol, facetLevels, kind, prefix, args) {
       y = c(off - padU / 2, off + facU$U + padU / 2));
     p <- ggplot(sel, aes(x = xval, y = y)) +
       geom_blank(data = lims, aes(y = y), inherit.aes = FALSE) +
-      geom_point(aes(size = Count, fill = mlog), shape = 21, colour = "black", stroke = lw) +
+      (if (useShape) {
+        geom_point(aes(size = Count, fill = mlog, shape = Class_), colour = "black", stroke = lw)
+      } else geom_point(aes(size = Count, fill = mlog), shape = 21, colour = "black", stroke = lw)) +
       facet_grid(Facet ~ ., scales = "free_y",
         labeller = as_labeller(setNames(hy(stripLab), levels(sel$Facet)))) +
       scale_y_continuous(breaks = sel$y, expand = c(0, 0),
@@ -331,11 +436,17 @@ plot_enrich <- function(res, facetCol, facetLevels, kind, prefix, args) {
           legend.key.width = unit(pr$bar_w, "mm"), legend.key.height = unit(pr$bar_h, "mm"),
           legend.ticks = element_blank()))) +
       scale_size(range = c(max(0.5, dMax * 0.35), dMax) / 0.75, breaks = count_breaks,
-        name = "Count", guide = guide_legend(order = 2, override.aes = list(fill = NA),
+        name = "Count", guide = guide_legend(order = 2, override.aes = list(fill = NA, shape = 21),
           theme = theme(legend.key.height = unit(dMax + 0.5, "mm"),
             legend.key.width = unit(dMax + 0.5, "mm"), legend.key.spacing.y = unit(0.8, "mm")))) +
+      (if (useShape) {
+        scale_shape_manual(values = args$shapes[seq_len(nlevels(sel$Class_))], name = shapeTitle, labels = hy,
+          guide = guide_legend(order = 3, override.aes = list(fill = NA, size = 0.8 * dMax / 0.75),
+            theme = theme(legend.key.height = unit(dMax + 0.5, "mm"),
+              legend.key.width = unit(dMax + 0.5, "mm"), legend.key.spacing.y = unit(0.8, "mm"))))
+      }) +
       labs(x = hy(args$x_col), y = NULL) +
-      theme_bw(base_size = fs, base_family = "Helvetica") +
+      theme_bw(base_size = fs, base_family = args$font) +
       theme(
         panel.border = element_rect(colour = "black", linewidth = lw, fill = NA),
         panel.grid.major.x = element_blank(),
@@ -371,7 +482,18 @@ plot_enrich <- function(res, facetCol, facetLevels, kind, prefix, args) {
     # 面板自上而下即分面水平顺序
     for (j in seq_along(pRows)) g$heights[pRows[j]] <- unit((facU$U[j] + padU[j]) * rowMM, "mm");
     if (is.na(pr$width)) g$widths[pCol] <- unit(pr$panel_w, "mm");
-    list(g = g, pRows = pRows, pCol = pCol);
+    # --label_width：面板左侧不足的宽度补在左边距上，使面板左缘位于固定位置
+    leftW <- sum(convertWidth(g$widths[seq_len(pCol - 1)], "mm", valueOnly = TRUE));
+    if (!is.null(args$label_width) && leftW < args$label_width) {
+      g$widths[1] <- unit(convertWidth(g$widths[1], "mm", valueOnly = TRUE) + args$label_width - leftW, "mm");
+    }
+    # --legend_width：面板右侧不足的宽度补在右边距上
+    nC <- length(g$widths);
+    rightW <- sum(convertWidth(g$widths[seq(pCol + 1, nC)], "mm", valueOnly = TRUE));
+    if (!is.null(args$legend_width) && rightW < args$legend_width) {
+      g$widths[nC] <- unit(convertWidth(g$widths[nC], "mm", valueOnly = TRUE) + args$legend_width - rightW, "mm");
+    }
+    list(g = g, pRows = pRows, pCol = pCol, leftW = leftW, rightW = rightW);
   };
 
   # 先按基础字号算出面板以外的固定高度，再决定 term 名称字号与行高
@@ -406,7 +528,7 @@ plot_enrich <- function(res, facetCol, facetLevels, kind, prefix, args) {
     list(rowMM = rowMM, fy = fy, warn = warn);
   };
   # 分面名称竖排在面板右侧：面板高度至少要容纳名称中最长的单词
-  stripGp <- gpar(fontsize = fs, fontfamily = "Helvetica");
+  stripGp <- gpar(fontsize = fs, fontfamily = args$font);
   needMM <- if (hasFacet) {
     vapply(levels(sel$Facet), function(s) {
       max(vapply(strsplit(s, " ", fixed = TRUE)[[1]], function(w) {
@@ -446,17 +568,25 @@ plot_enrich <- function(res, facetCol, facetLevels, kind, prefix, args) {
   legBox <- "vertical";
   b <- build(fy, rowMM, padU, stripLab);
   legH <- legH_of(b$g);
-  # term 少、上下叠放的图例比图还高时，两个图例改为左右并排
+  # term 少、上下叠放的图例比图还高时，图例改为左右并排（指定 --legend_width 时须放得下）
   if (H < legH + 6) {
     b2 <- build(fy, rowMM, padU, stripLab, legBox = "horizontal");
     legH2 <- legH_of(b2$g);
-    if (legH2 < legH) {
+    if (legH2 < legH && (is.null(args$legend_width) || b2$rightW <= args$legend_width + 0.01)) {
       legBox <- "horizontal";
       b <- b2;
       legH <- legH2;
     }
   }
   g <- b$g;
+  if (!is.null(args$label_width) && b$leftW > args$label_width + 0.01) {
+    message(sprintf("[警告] term 名称中有无法折行的长单词，名称区需要 %.1f mm，超出 --label_width %.1f mm，面板位置与其他图不一致",
+      b$leftW, args$label_width));
+  }
+  if (!is.null(args$legend_width) && b$rightW > args$legend_width + 0.01) {
+    message(sprintf("[警告] 分面名称与图例需要 %.1f mm，超出 --legend_width %.1f mm，画布右侧与其他图不一致",
+      b$rightW, args$legend_width));
+  }
   if (is.na(pr$height) && H < legH + 6) H <- legH + 6;
   fixedW <- sum(convertWidth(g$widths[-b$pCol], "mm", valueOnly = TRUE));
   if (is.na(pr$width)) {
@@ -475,9 +605,9 @@ plot_enrich <- function(res, facetCol, facetLevels, kind, prefix, args) {
     # pdf 以及没有 ragg 时经 pdf 转换的 png / tiff 用软连字符版本
     if (fmt == "pdf" || !useRagg) {
       if (is.null(gSoft)) gSoft <- build(fy, rowMM, padU, stripLab, softHy = TRUE, legBox = legBox)$g;
-      save_plot(gSoft, fn, fmt, W, H, pr$dpi);
+      save_plot(gSoft, fn, fmt, W, H, pr$dpi, args$font, args$font_dir);
     } else {
-      save_plot(g, fn, fmt, W, H, pr$dpi);
+      save_plot(g, fn, fmt, W, H, pr$dpi, args$font, args$font_dir);
     }
     message(sprintf("[%s] %d 个 term -> %s (%.1f x %.1f mm)", kind, nrow(sel), fn, W, H));
   }
@@ -485,7 +615,7 @@ plot_enrich <- function(res, facetCol, facetLevels, kind, prefix, args) {
   # 上图 term 列表，顺序同图中自上而下
   out <- copy(sel);
   out[, Plot_order := seq_len(.N)];
-  drop <- intersect(c("xval", "Label", "unit_", "yEnd_", "off_", "y", "mlog", "M_"), names(out));
+  drop <- intersect(c("xval", "Label", "unit_", "yEnd_", "off_", "y", "mlog", "M_", "Class_"), names(out));
   out[, (drop) := NULL];
   setcolorder(out, c("Plot_order", "Facet"));
   fn <- paste0(prefix, "_plotted.tsv");

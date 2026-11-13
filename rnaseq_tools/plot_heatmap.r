@@ -14,6 +14,76 @@ suppressPackageStartupMessages({
   library(RColorBrewer);
 });
 
+# 系统中某字体文件所在目录（供 ghostscript 嵌入字体）
+find_font_dir <- function(family) {
+  p <- character(0);
+  if (requireNamespace("systemfonts", quietly = TRUE)) {
+    sf <- systemfonts::system_fonts();
+    p <- sf$path[sf$family == family];
+  } else if (nzchar(Sys.which("fc-list"))) {
+    p <- sub(":.*$", "", system2("fc-list", c(shQuote(family), "file"), stdout = TRUE));
+  }
+  p <- p[file.exists(p)];
+  if (length(p) == 0) NULL else unique(dirname(p));
+};
+
+# 在 R 的 pdf 设备中登记 Arial：字宽与 Helvetica 相同，借用 Helvetica 的 AFM，只把字体名改为 ArialMT 等，
+# 输出后再由 ghostscript 从系统字体目录嵌入真正的 Arial
+register_arial <- function() {
+  if ("Arial" %in% names(pdfFonts())) return(invisible(NULL));
+  src <- c("Helvetica", "Helvetica-Bold", "Helvetica-Oblique", "Helvetica-BoldOblique");
+  dst <- c("ArialMT", "Arial-BoldMT", "Arial-ItalicMT", "Arial-BoldItalicMT");
+  afm <- file.path(tempdir(), paste0(dst, ".afm"));
+  for (i in seq_along(src)) {
+    x <- readLines(gzfile(file.path(system.file("afm", package = "grDevices"), paste0(src[i], ".afm.gz"))));
+    writeLines(sub("^FontName .*", paste("FontName", dst[i]), x), afm[i]);
+  }
+  pdfFonts(Arial = Type1Font("Arial", c(afm, pdfFonts("Helvetica")[[1]]$metrics[5])));
+};
+
+# --font 为 Arial 时检查 gs 与字体，缺少时改用 Helvetica；返回 list(font, dir)
+resolve_font <- function(font) {
+  dir <- NULL;
+  if (font == "Arial") {
+    dir <- find_font_dir("Arial");
+    if (!nzchar(Sys.which("gs")) || is.null(dir)) {
+      message("[警告] 没有 ghostscript (gs) 或系统中没有 Arial 字体，--font 改用 Helvetica");
+      font <- "Helvetica";
+      dir <- NULL;
+    } else {
+      register_arial();
+    }
+  }
+  list(font = font, dir = dir);
+};
+
+# 用 ghostscript 嵌入字体。fontDir 不为空（Arial 等 TrueType 字体）时完整嵌入：gs 只嵌入子集时把 TrueType
+# 写成无编码表的符号字体，Illustrator 打开后换用系统字体、按符号编码取字形而显示乱码；完整嵌入则为标准的 WinAnsi 字体
+embed_pdf_fonts <- function(file, fontDir = NULL) {
+  tmp <- paste0(file, ".tmp.pdf");
+  if (is.null(fontDir)) {
+    embedFonts(file, outfile = tmp);
+  } else {
+    embedFonts(file, outfile = tmp, fontpaths = fontDir, options = "-dSubsetFonts=false");
+    clear_cap_flags(tmp);
+  }
+  invisible(file.rename(tmp, file));
+};
+
+# gs 有时给字体描述的 /Flags 误加 AllCap、SmallCap 标志，原位清除（数字后补空格，字节数不变，不影响交叉引用表）
+clear_cap_flags <- function(file) {
+  x <- readBin(file, "raw", file.size(file));
+  for (p in grepRaw("/Flags [0-9]+", x, all = TRUE)) {
+    s <- p + 7;
+    e <- s;
+    while (e < length(x) && x[e + 1] >= as.raw(48) && x[e + 1] <= as.raw(57)) e <- e + 1;
+    v <- as.integer(rawToChar(x[s:e]));
+    nv <- bitwAnd(v, bitwNot(65536L + 131072L));
+    if (nv != v) x[s:e] <- charToRaw(formatC(nv, width = -(e - s + 1)));
+  }
+  writeBin(x, file);
+};
+
 ##############################
 # 命令行参数
 ##############################
@@ -68,7 +138,11 @@ parser$add_argument("--font_size", type = "double", default = NULL,
   help = "基础字号 (pt)，刻度文字比它小 1 pt [default: pub 7；screen 8]");
 parser$add_argument("--dpi", type = "integer", default = NULL,
   help = "png/tiff 分辨率 [default: pub 600；screen 150]");
+parser$add_argument("--font", default = "Arial", choices = c("Arial", "Helvetica"),
+  help = "图中文字字体：Arial = pdf 中字体名为 ArialMT，并用 ghostscript 嵌入系统中的 Arial 字体（需装有 gs 和 Arial 字体，缺少时自动改用 Helvetica）；Helvetica = R 自带 pdf 设备，嵌入 Nimbus Sans 作为 Helvetica 的替代字体 [default: %(default)s]");
 args <- parser$parse_args();
+fnt <- resolve_font(args$font);
+args$font <- fnt$font;
 if (is.null(args$input)) {
   parser$print_help();
   message("\n[错误] 必须用 -i/--input 指定表达量文件");
@@ -274,16 +348,22 @@ mode_desc <- function(mode) {
   sprintf("%s [%s]", tr, sc);
 };
 
+# R 的 pdf 设备把 "-" 画成减号：pdf 输出前把文字中紧跟在非空白字符后的 "-"（如 z-score、基因名中的 -）
+# 换成软连字符 (U+00AD) 以显示为连字符；开头的负号（如刻度 -1.0）仍画成减号
+soft_hyphen <- function(g) {
+  if (inherits(g, "text") && is.character(g$label)) g$label <- gsub("(?<=\\S)-", "\u00ad", g$label, perl = TRUE);
+  if (inherits(g, "gtable")) g$grobs <- lapply(g$grobs, soft_hyphen);
+  if (inherits(g, "gTree")) for (nm in names(g$children)) g$children[[nm]] <- soft_hyphen(g$children[[nm]]);
+  g;
+};
+
 save_plot <- function(g, file, fmt, W, H, dpi) {
   if (fmt == "pdf") {
-    pdf(file, width = W / 25.4, height = H / 25.4, useDingbats = FALSE, family = "Helvetica");
+    g <- soft_hyphen(g);
+    pdf(file, width = W / 25.4, height = H / 25.4, useDingbats = FALSE, family = args$font);
     grid.draw(g);
     invisible(dev.off());
-    if (nzchar(Sys.which("gs"))) {
-      tmp <- paste0(file, ".tmp.pdf");
-      embedFonts(file, outfile = tmp);
-      invisible(file.rename(tmp, file));
-    }
+    if (nzchar(Sys.which("gs"))) embed_pdf_fonts(file, fnt$dir);
   } else if (fmt == "png") {
     ragg::agg_png(file, width = W, height = H, units = "mm", res = dpi);
     grid.draw(g);
@@ -375,7 +455,7 @@ for (mode in modes) {
         legend.key.width = unit(preset$bar_w, "mm"), legend.key.height = unit(preset$bar_h, "mm"),
         legend.ticks = element_blank()))) +
     labs(x = NULL, y = NULL, title = if (preset$title) plotTitle else NULL) +
-    theme_minimal(base_size = fs, base_family = "Helvetica") +
+    theme_minimal(base_size = fs, base_family = args$font) +
     theme(
       panel.grid = element_blank(),
       axis.ticks = element_blank(),

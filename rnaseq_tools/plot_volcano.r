@@ -56,6 +56,33 @@ resolve_font <- function(font) {
   list(font = font, dir = dir);
 };
 
+# 用 ghostscript 嵌入字体。fontDir 不为空（Arial 等 TrueType 字体）时完整嵌入：gs 只嵌入子集时把 TrueType
+# 写成无编码表的符号字体，Illustrator 打开后换用系统字体、按符号编码取字形而显示乱码；完整嵌入则为标准的 WinAnsi 字体
+embed_pdf_fonts <- function(file, fontDir = NULL) {
+  tmp <- paste0(file, ".tmp.pdf");
+  if (is.null(fontDir)) {
+    embedFonts(file, outfile = tmp);
+  } else {
+    embedFonts(file, outfile = tmp, fontpaths = fontDir, options = "-dSubsetFonts=false");
+    clear_cap_flags(tmp);
+  }
+  invisible(file.rename(tmp, file));
+};
+
+# gs 有时给字体描述的 /Flags 误加 AllCap、SmallCap 标志，原位清除（数字后补空格，字节数不变，不影响交叉引用表）
+clear_cap_flags <- function(file) {
+  x <- readBin(file, "raw", file.size(file));
+  for (p in grepRaw("/Flags [0-9]+", x, all = TRUE)) {
+    s <- p + 7;
+    e <- s;
+    while (e < length(x) && x[e + 1] >= as.raw(48) && x[e + 1] <= as.raw(57)) e <- e + 1;
+    v <- as.integer(rawToChar(x[s:e]));
+    nv <- bitwAnd(v, bitwNot(65536L + 131072L));
+    if (nv != v) x[s:e] <- charToRaw(formatC(nv, width = -(e - s + 1)));
+  }
+  writeBin(x, file);
+};
+
 parser <- ArgumentParser(description = "RNA-seq volcano plot (log2FC = log2(treatment/control))");
 parser$add_argument("-i", "--input", default = "avgExp_fdr.tsv",
   help = "输入表格（tsv）[default: %(default)s]");
@@ -269,9 +296,7 @@ if (ext == "pdf") {
     device = "pdf", useDingbats = FALSE, family = args$font, encoding = "WinAnsi.enc");
   # 期刊要求 PDF 嵌入字体，需要 ghostscript
   if (nzchar(Sys.which("gs"))) {
-    tmp <- paste0(args$output, ".tmp.pdf");
-    embedFonts(args$output, outfile = tmp, fontpaths = if (is.null(fnt$dir)) character(0) else fnt$dir);
-    invisible(file.rename(tmp, args$output));
+    embed_pdf_fonts(args$output, fnt$dir);
   } else {
     message("[WARN] 未找到 ghostscript，PDF 字体未嵌入");
   }
